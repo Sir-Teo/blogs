@@ -28,6 +28,7 @@ github_username:  Sir-Teo
 
 # Build settings
 theme: minima
+remote_theme: jekyll/minima
 plugins:
   - jekyll-feed
 
