@@ -305,6 +305,7 @@ PLATFORMS
 DEPENDENCIES
   github-pages
   jekyll (~> 3.9)
+  jekyll-remote-theme
   minima (~> 2.5)
   webrick
 
