@@ -23,6 +23,7 @@ email: zengwc.teo2016@outlook.com
 description: >- # this means to ignore newlines until "baseurl:"
   A blog about my thoughts
 baseurl: "/blogs" # the subpath of your site, e.g. /blog
+url: "https://sir-teo.github.io"   # Your production domain
 github_username:  Sir-Teo
 
 # Build settings
