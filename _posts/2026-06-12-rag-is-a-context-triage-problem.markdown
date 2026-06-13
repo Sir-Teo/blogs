@@ -95,6 +95,53 @@ The more honest picture is a menu:
 
 The architecture is a decision, not a religion.
 
+<figure class="research-figure">
+<svg viewBox="0 0 800 330" role="img" aria-labelledby="rag-triage-title rag-triage-desc">
+  <title id="rag-triage-title">Context triage loop for retrieval-augmented generation</title>
+  <desc id="rag-triage-desc">A query is routed through retrieval, reranking, context packing, generation, abstention, and monitoring.</desc>
+  <defs>
+    <marker id="rag-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#5d6872"></path>
+    </marker>
+  </defs>
+  <rect x="34" y="70" width="116" height="66" rx="8" fill="#ffffff" stroke="#0f766e" stroke-width="2"></rect>
+  <text x="92" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Query</text>
+  <text x="92" y="119" text-anchor="middle" font-size="12" fill="#5d6872">intent + risk</text>
+  <line x1="150" y1="103" x2="202" y2="103" stroke="#5d6872" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+
+  <rect x="210" y="70" width="124" height="66" rx="8" fill="#ffffff" stroke="#0f766e" stroke-width="2"></rect>
+  <text x="272" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Retrieve</text>
+  <text x="272" y="119" text-anchor="middle" font-size="12" fill="#5d6872">sparse + dense</text>
+  <line x1="334" y1="103" x2="386" y2="103" stroke="#5d6872" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+
+  <rect x="394" y="70" width="124" height="66" rx="8" fill="#ffffff" stroke="#0f766e" stroke-width="2"></rect>
+  <text x="456" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Rerank</text>
+  <text x="456" y="119" text-anchor="middle" font-size="12" fill="#5d6872">evidence quality</text>
+  <line x1="518" y1="103" x2="570" y2="103" stroke="#5d6872" stroke-width="2" marker-end="url(#rag-arrow)"></line>
+
+  <rect x="578" y="70" width="140" height="66" rx="8" fill="#ffffff" stroke="#0f766e" stroke-width="2"></rect>
+  <text x="648" y="98" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Pack Context</text>
+  <text x="648" y="119" text-anchor="middle" font-size="12" fill="#5d6872">budget + position</text>
+
+  <path d="M648 152 C648 194, 550 206, 486 210" fill="none" stroke="#5d6872" stroke-width="2" marker-end="url(#rag-arrow)"></path>
+  <rect x="348" y="190" width="132" height="66" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2"></rect>
+  <text x="414" y="218" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Gate</text>
+  <text x="414" y="239" text-anchor="middle" font-size="12" fill="#5d6872">answer or abstain</text>
+
+  <path d="M348 223 C282 222, 230 210, 196 180" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#rag-arrow)"></path>
+  <rect x="74" y="164" width="122" height="66" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"></rect>
+  <text x="135" y="192" text-anchor="middle" font-size="14" font-weight="700" fill="#172026">Monitor</text>
+  <text x="135" y="213" text-anchor="middle" font-size="12" fill="#5d6872">calibrate + drift</text>
+
+  <path d="M196 197 C322 294, 576 292, 688 172" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#rag-arrow)"></path>
+  <text x="400" y="300" text-anchor="middle" font-size="13" fill="#5d6872">outcomes update retrieval confidence, thresholds, and context packing rules</text>
+</svg>
+<figcaption>
+The retrieval layer is only one part of context triage. The gate and monitor
+decide whether retrieved evidence deserves an answer next time.
+</figcaption>
+</figure>
+
 ## Context Is Not Uniform
 
 Even if the relevant passage is inside the window, the model may not use it
