@@ -71,7 +71,8 @@ a:hover {
 .kelly-lab,
 .rag-lab,
 .sampling-lab,
-.proxy-lab {
+.proxy-lab,
+.conformal-lab {
   background: var(--research-panel);
   border: 1px solid var(--research-rule);
   border-radius: 8px;
@@ -89,7 +90,8 @@ a:hover {
 .kelly-lab canvas,
 .rag-lab canvas,
 .sampling-lab canvas,
-.proxy-lab canvas {
+.proxy-lab canvas,
+.conformal-lab canvas {
   display: block;
   max-width: 100%;
 }
@@ -98,7 +100,8 @@ a:hover {
 .kelly-lab canvas,
 .rag-lab canvas,
 .sampling-lab canvas,
-.proxy-lab canvas {
+.proxy-lab canvas,
+.conformal-lab canvas {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -111,7 +114,8 @@ a:hover {
 .kelly-lab__note,
 .rag-lab__note,
 .sampling-lab__note,
-.proxy-lab__note {
+.proxy-lab__note,
+.conformal-lab__note {
   color: var(--research-muted);
   font-size: 0.92rem;
   margin-top: 0.75rem;
@@ -121,7 +125,8 @@ a:hover {
 .kelly-lab__controls,
 .rag-lab__controls,
 .sampling-lab__controls,
-.proxy-lab__controls {
+.proxy-lab__controls,
+.conformal-lab__controls {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -132,7 +137,8 @@ a:hover {
 .kelly-lab label,
 .rag-lab label,
 .sampling-lab label,
-.proxy-lab label {
+.proxy-lab label,
+.conformal-lab label {
   color: var(--research-muted);
   display: grid;
   font-size: 0.88rem;
@@ -143,7 +149,8 @@ a:hover {
 .kelly-lab input[type="range"],
 .rag-lab input[type="range"],
 .sampling-lab input[type="range"],
-.proxy-lab input[type="range"] {
+.proxy-lab input[type="range"],
+.conformal-lab input[type="range"] {
   accent-color: var(--research-accent);
   width: 100%;
 }
@@ -152,7 +159,8 @@ a:hover {
 .kelly-lab__metrics,
 .rag-lab__metrics,
 .sampling-lab__metrics,
-.proxy-lab__metrics {
+.proxy-lab__metrics,
+.conformal-lab__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -163,7 +171,8 @@ a:hover {
 .kelly-lab__metric,
 .rag-lab__metric,
 .sampling-lab__metric,
-.proxy-lab__metric {
+.proxy-lab__metric,
+.conformal-lab__metric {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -174,7 +183,8 @@ a:hover {
 .kelly-lab__metric span,
 .rag-lab__metric span,
 .sampling-lab__metric span,
-.proxy-lab__metric span {
+.proxy-lab__metric span,
+.conformal-lab__metric span {
   color: var(--research-muted);
   display: block;
   font-size: 0.78rem;
@@ -185,7 +195,8 @@ a:hover {
 .kelly-lab__metric strong,
 .rag-lab__metric strong,
 .sampling-lab__metric strong,
-.proxy-lab__metric strong {
+.proxy-lab__metric strong,
+.conformal-lab__metric strong {
   color: var(--research-ink);
   display: block;
   font-size: 1.35rem;
@@ -196,7 +207,8 @@ a:hover {
 .kelly-lab__legend,
 .rag-lab__legend,
 .sampling-lab__legend,
-.proxy-lab__legend {
+.proxy-lab__legend,
+.conformal-lab__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -207,7 +219,8 @@ a:hover {
 .kelly-lab__legend span,
 .rag-lab__legend span,
 .sampling-lab__legend span,
-.proxy-lab__legend span {
+.proxy-lab__legend span,
+.conformal-lab__legend span {
   align-items: center;
   color: var(--research-muted);
   display: inline-flex;
@@ -219,7 +232,8 @@ a:hover {
 .kelly-lab__legend i,
 .rag-lab__legend i,
 .sampling-lab__legend i,
-.proxy-lab__legend i {
+.proxy-lab__legend i,
+.conformal-lab__legend i {
   border-radius: 999px;
   display: inline-block;
   height: 0.65rem;
@@ -249,7 +263,8 @@ a:hover {
   .kelly-lab,
   .rag-lab,
   .sampling-lab,
-  .proxy-lab {
+  .proxy-lab,
+  .conformal-lab {
     border-left: 0;
     border-right: 0;
     border-radius: 0;
