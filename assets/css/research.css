@@ -74,7 +74,8 @@ a:hover {
 .proxy-lab,
 .conformal-lab,
 .abstention-lab,
-.backtest-lab {
+.backtest-lab,
+.benchmark-lab {
   background: var(--research-panel);
   border: 1px solid var(--research-rule);
   border-radius: 8px;
@@ -95,7 +96,8 @@ a:hover {
 .proxy-lab canvas,
 .conformal-lab canvas,
 .abstention-lab canvas,
-.backtest-lab canvas {
+.backtest-lab canvas,
+.benchmark-lab canvas {
   display: block;
   max-width: 100%;
 }
@@ -107,7 +109,8 @@ a:hover {
 .proxy-lab canvas,
 .conformal-lab canvas,
 .abstention-lab canvas,
-.backtest-lab canvas {
+.backtest-lab canvas,
+.benchmark-lab canvas {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -123,7 +126,8 @@ a:hover {
 .proxy-lab__note,
 .conformal-lab__note,
 .abstention-lab__note,
-.backtest-lab__note {
+.backtest-lab__note,
+.benchmark-lab__note {
   color: var(--research-muted);
   font-size: 0.92rem;
   margin-top: 0.75rem;
@@ -136,7 +140,8 @@ a:hover {
 .proxy-lab__controls,
 .conformal-lab__controls,
 .abstention-lab__controls,
-.backtest-lab__controls {
+.backtest-lab__controls,
+.benchmark-lab__controls {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -150,7 +155,8 @@ a:hover {
 .proxy-lab label,
 .conformal-lab label,
 .abstention-lab label,
-.backtest-lab label {
+.backtest-lab label,
+.benchmark-lab label {
   color: var(--research-muted);
   display: grid;
   font-size: 0.88rem;
@@ -164,7 +170,8 @@ a:hover {
 .proxy-lab input[type="range"],
 .conformal-lab input[type="range"],
 .abstention-lab input[type="range"],
-.backtest-lab input[type="range"] {
+.backtest-lab input[type="range"],
+.benchmark-lab input[type="range"] {
   accent-color: var(--research-accent);
   width: 100%;
 }
@@ -176,7 +183,8 @@ a:hover {
 .proxy-lab__metrics,
 .conformal-lab__metrics,
 .abstention-lab__metrics,
-.backtest-lab__metrics {
+.backtest-lab__metrics,
+.benchmark-lab__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -190,7 +198,8 @@ a:hover {
 .proxy-lab__metric,
 .conformal-lab__metric,
 .abstention-lab__metric,
-.backtest-lab__metric {
+.backtest-lab__metric,
+.benchmark-lab__metric {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -204,7 +213,8 @@ a:hover {
 .proxy-lab__metric span,
 .conformal-lab__metric span,
 .abstention-lab__metric span,
-.backtest-lab__metric span {
+.backtest-lab__metric span,
+.benchmark-lab__metric span {
   color: var(--research-muted);
   display: block;
   font-size: 0.78rem;
@@ -218,7 +228,8 @@ a:hover {
 .proxy-lab__metric strong,
 .conformal-lab__metric strong,
 .abstention-lab__metric strong,
-.backtest-lab__metric strong {
+.backtest-lab__metric strong,
+.benchmark-lab__metric strong {
   color: var(--research-ink);
   display: block;
   font-size: 1.35rem;
@@ -232,7 +243,8 @@ a:hover {
 .proxy-lab__legend,
 .conformal-lab__legend,
 .abstention-lab__legend,
-.backtest-lab__legend {
+.backtest-lab__legend,
+.benchmark-lab__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -246,7 +258,8 @@ a:hover {
 .proxy-lab__legend span,
 .conformal-lab__legend span,
 .abstention-lab__legend span,
-.backtest-lab__legend span {
+.backtest-lab__legend span,
+.benchmark-lab__legend span {
   align-items: center;
   color: var(--research-muted);
   display: inline-flex;
@@ -261,7 +274,8 @@ a:hover {
 .proxy-lab__legend i,
 .conformal-lab__legend i,
 .abstention-lab__legend i,
-.backtest-lab__legend i {
+.backtest-lab__legend i,
+.benchmark-lab__legend i {
   border-radius: 999px;
   display: inline-block;
   height: 0.65rem;
@@ -294,7 +308,8 @@ a:hover {
   .proxy-lab,
   .conformal-lab,
   .abstention-lab,
-  .backtest-lab {
+  .backtest-lab,
+  .benchmark-lab {
     border-left: 0;
     border-right: 0;
     border-radius: 0;
