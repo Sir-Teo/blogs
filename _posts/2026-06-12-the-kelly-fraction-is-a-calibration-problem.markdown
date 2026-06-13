@@ -82,7 +82,7 @@ A probability forecast is calibrated when events assigned probability 60%
 actually happen about 60% of the time, events assigned probability 70% happen
 about 70% of the time, and so on. This idea has a long history in forecast
 verification, including Brier's scoring rule for probability forecasts and
-Dawid's work on calibrated Bayesian forecasters.[^brier][^dawid]
+Dawid's work on calibrated Bayesian forecasters.[^brier], [^dawid]
 
 Modern machine learning makes this distinction practical. Guo, Pleiss, Sun, and
 Weinberger showed that modern neural networks can be poorly calibrated even when
@@ -180,10 +180,10 @@ drawdown a human or institution can actually survive.
 
 ## A Small Experiment
 
-A useful local experiment is to create binary opportunities with a real but
-noisy edge. A synthetic model ranks those opportunities, then becomes
-overconfident by stretching its logits. The experiment should compare four
-policies:
+The live experiment below creates binary opportunities with a real but noisy
+edge. A synthetic model ranks those opportunities, then becomes overconfident by
+stretching its logits. A held-out calibration sample estimates how much the
+logits should be shrunk before sizing. The chart compares four policies:
 
 - full Kelly using the raw model probability,
 - half Kelly using the raw model probability,
@@ -191,11 +191,53 @@ policies:
 - a guarded calibrated rule that subtracts a crude uncertainty reserve before
   sizing.
 
-The point would not be that a toy simulator settles portfolio theory. It does
-not. The point is more operational: when the model is overconfident, the raw
-Kelly policy often has the most impressive in-sample story and the ugliest
-realized wealth distribution. Calibration turns a ranking model into a decision
-model.
+<div class="kelly-lab" data-kelly-lab>
+  <div class="kelly-lab__controls">
+    <label>
+      Model overconfidence: <output data-value="overconfidence">180%</output>
+      <input type="range" min="100" max="280" value="180" data-param="overconfidence">
+    </label>
+    <label>
+      Calibration sample: <output data-value="calibration">800</output>
+      <input type="range" min="120" max="2400" step="40" value="800" data-param="calibration">
+    </label>
+    <label>
+      True edge scale: <output data-value="edge">32</output>
+      <input type="range" min="12" max="70" value="32" data-param="edge">
+    </label>
+    <label>
+      Position cap: <output data-value="cap">25%</output>
+      <input type="range" min="5" max="45" value="25" data-param="cap">
+    </label>
+  </div>
+  <div class="kelly-lab__metrics" data-metrics></div>
+  <canvas data-canvas width="800" height="360" aria-label="Terminal wealth distribution by Kelly sizing policy"></canvas>
+  <div class="kelly-lab__legend">
+    <span><i style="background:#b45309"></i> Raw full Kelly</span>
+    <span><i style="background:#7c3aed"></i> Raw half Kelly</span>
+    <span><i style="background:#0f766e"></i> Calibrated Kelly</span>
+    <span><i style="background:#2563eb"></i> Guarded calibrated</span>
+  </div>
+  <p class="kelly-lab__note">
+    Deterministic simulation, 360 paths of 260 even-money bets. Dots are median
+    terminal wealth per $1; whiskers show the 5th to 95th percentile on a log
+    wealth scale.
+  </p>
+</div>
+<script defer src="{{ '/assets/js/kelly-lab.js' | relative_url }}"></script>
+
+The point is not that a toy simulator settles portfolio theory. It does not.
+The point is more operational: when the model is overconfident, the raw Kelly
+policy often has the most impressive in-sample story and the ugliest realized
+wealth distribution. Calibration turns a ranking model into a decision model.
+
+In the default deterministic run, the fitted calibration slope is about 0.33:
+the model's logits need to be cut by roughly two-thirds before they behave like
+probabilities. Expected calibration error falls from about 9.9 percentage points
+to about 1.5 percentage points, while the raw full-Kelly policy's 5th-percentile
+terminal wealth is less than one cent per starting dollar. The exact numbers are
+toy numbers, but the shape of the failure is real: an overconfident model can
+turn a positive ranking signal into a fragile sizing rule.
 
 ## What I Would Monitor
 
@@ -222,7 +264,7 @@ The calibration layer should be refit on a held-out or rolling sample, never on
 the same labels used to train the predictive model without correction. Platt
 scaling, isotonic regression, beta calibration, temperature scaling, and Bayesian
 binning are all reasonable candidates depending on sample size and model
-shape.[^platt][^naeini] The method matters less than the discipline: probability
+shape.[^platt], [^naeini] The method matters less than the discipline: probability
 forecasts must be audited as probabilities.
 
 ## Where the Toy Model Breaks
@@ -237,7 +279,7 @@ Kelly also optimizes long-run logarithmic growth, not comfort, reputation,
 liability matching, or institutional survival. Samuelson objected to careless
 "large numbers" arguments in risk taking, and the later time-average literature
 kept the debate alive by asking what kind of averaging is relevant for a single
-path through time.[^samuelson][^peters] You do not need to take a side in every
+path through time.[^samuelson], [^peters] You do not need to take a side in every
 philosophical argument to get the engineering lesson: the objective function has
 to match the owner of the capital.
 

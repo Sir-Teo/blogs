@@ -67,7 +67,8 @@ a:hover {
 
 .callout,
 .research-figure,
-.fallback-lab {
+.fallback-lab,
+.kelly-lab {
   background: var(--research-panel);
   border: 1px solid var(--research-rule);
   border-radius: 8px;
@@ -81,12 +82,14 @@ a:hover {
 
 .research-figure svg,
 .research-figure canvas,
-.fallback-lab canvas {
+.fallback-lab canvas,
+.kelly-lab canvas {
   display: block;
   max-width: 100%;
 }
 
-.fallback-lab canvas {
+.fallback-lab canvas,
+.kelly-lab canvas {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -95,67 +98,77 @@ a:hover {
 }
 
 .research-figure figcaption,
-.fallback-lab__note {
+.fallback-lab__note,
+.kelly-lab__note {
   color: var(--research-muted);
   font-size: 0.92rem;
   margin-top: 0.75rem;
 }
 
-.fallback-lab__controls {
+.fallback-lab__controls,
+.kelly-lab__controls {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-bottom: 1rem;
 }
 
-.fallback-lab label {
+.fallback-lab label,
+.kelly-lab label {
   color: var(--research-muted);
   display: grid;
   font-size: 0.88rem;
   gap: 0.35rem;
 }
 
-.fallback-lab input[type="range"] {
+.fallback-lab input[type="range"],
+.kelly-lab input[type="range"] {
   accent-color: var(--research-accent);
   width: 100%;
 }
 
-.fallback-lab__metrics {
+.fallback-lab__metrics,
+.kelly-lab__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   margin: 1rem 0;
 }
 
-.fallback-lab__metric {
+.fallback-lab__metric,
+.kelly-lab__metric {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
   padding: 0.75rem;
 }
 
-.fallback-lab__metric span {
+.fallback-lab__metric span,
+.kelly-lab__metric span {
   color: var(--research-muted);
   display: block;
   font-size: 0.78rem;
   text-transform: uppercase;
 }
 
-.fallback-lab__metric strong {
+.fallback-lab__metric strong,
+.kelly-lab__metric strong {
   color: var(--research-ink);
   display: block;
   font-size: 1.35rem;
   margin-top: 0.2rem;
 }
 
-.fallback-lab__legend {
+.fallback-lab__legend,
+.kelly-lab__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 0.75rem;
 }
 
-.fallback-lab__legend span {
+.fallback-lab__legend span,
+.kelly-lab__legend span {
   align-items: center;
   color: var(--research-muted);
   display: inline-flex;
@@ -163,7 +176,8 @@ a:hover {
   gap: 0.35rem;
 }
 
-.fallback-lab__legend i {
+.fallback-lab__legend i,
+.kelly-lab__legend i {
   border-radius: 999px;
   display: inline-block;
   height: 0.65rem;
@@ -189,7 +203,8 @@ a:hover {
 
   .callout,
   .research-figure,
-  .fallback-lab {
+  .fallback-lab,
+  .kelly-lab {
     border-left: 0;
     border-right: 0;
     border-radius: 0;
