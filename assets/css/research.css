@@ -70,7 +70,8 @@ a:hover {
 .fallback-lab,
 .kelly-lab,
 .rag-lab,
-.sampling-lab {
+.sampling-lab,
+.proxy-lab {
   background: var(--research-panel);
   border: 1px solid var(--research-rule);
   border-radius: 8px;
@@ -87,7 +88,8 @@ a:hover {
 .fallback-lab canvas,
 .kelly-lab canvas,
 .rag-lab canvas,
-.sampling-lab canvas {
+.sampling-lab canvas,
+.proxy-lab canvas {
   display: block;
   max-width: 100%;
 }
@@ -95,7 +97,8 @@ a:hover {
 .fallback-lab canvas,
 .kelly-lab canvas,
 .rag-lab canvas,
-.sampling-lab canvas {
+.sampling-lab canvas,
+.proxy-lab canvas {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -107,7 +110,8 @@ a:hover {
 .fallback-lab__note,
 .kelly-lab__note,
 .rag-lab__note,
-.sampling-lab__note {
+.sampling-lab__note,
+.proxy-lab__note {
   color: var(--research-muted);
   font-size: 0.92rem;
   margin-top: 0.75rem;
@@ -116,7 +120,8 @@ a:hover {
 .fallback-lab__controls,
 .kelly-lab__controls,
 .rag-lab__controls,
-.sampling-lab__controls {
+.sampling-lab__controls,
+.proxy-lab__controls {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -126,7 +131,8 @@ a:hover {
 .fallback-lab label,
 .kelly-lab label,
 .rag-lab label,
-.sampling-lab label {
+.sampling-lab label,
+.proxy-lab label {
   color: var(--research-muted);
   display: grid;
   font-size: 0.88rem;
@@ -136,7 +142,8 @@ a:hover {
 .fallback-lab input[type="range"],
 .kelly-lab input[type="range"],
 .rag-lab input[type="range"],
-.sampling-lab input[type="range"] {
+.sampling-lab input[type="range"],
+.proxy-lab input[type="range"] {
   accent-color: var(--research-accent);
   width: 100%;
 }
@@ -144,7 +151,8 @@ a:hover {
 .fallback-lab__metrics,
 .kelly-lab__metrics,
 .rag-lab__metrics,
-.sampling-lab__metrics {
+.sampling-lab__metrics,
+.proxy-lab__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -154,7 +162,8 @@ a:hover {
 .fallback-lab__metric,
 .kelly-lab__metric,
 .rag-lab__metric,
-.sampling-lab__metric {
+.sampling-lab__metric,
+.proxy-lab__metric {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -164,7 +173,8 @@ a:hover {
 .fallback-lab__metric span,
 .kelly-lab__metric span,
 .rag-lab__metric span,
-.sampling-lab__metric span {
+.sampling-lab__metric span,
+.proxy-lab__metric span {
   color: var(--research-muted);
   display: block;
   font-size: 0.78rem;
@@ -174,7 +184,8 @@ a:hover {
 .fallback-lab__metric strong,
 .kelly-lab__metric strong,
 .rag-lab__metric strong,
-.sampling-lab__metric strong {
+.sampling-lab__metric strong,
+.proxy-lab__metric strong {
   color: var(--research-ink);
   display: block;
   font-size: 1.35rem;
@@ -184,7 +195,8 @@ a:hover {
 .fallback-lab__legend,
 .kelly-lab__legend,
 .rag-lab__legend,
-.sampling-lab__legend {
+.sampling-lab__legend,
+.proxy-lab__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -194,7 +206,8 @@ a:hover {
 .fallback-lab__legend span,
 .kelly-lab__legend span,
 .rag-lab__legend span,
-.sampling-lab__legend span {
+.sampling-lab__legend span,
+.proxy-lab__legend span {
   align-items: center;
   color: var(--research-muted);
   display: inline-flex;
@@ -205,7 +218,8 @@ a:hover {
 .fallback-lab__legend i,
 .kelly-lab__legend i,
 .rag-lab__legend i,
-.sampling-lab__legend i {
+.sampling-lab__legend i,
+.proxy-lab__legend i {
   border-radius: 999px;
   display: inline-block;
   height: 0.65rem;
@@ -234,7 +248,8 @@ a:hover {
   .fallback-lab,
   .kelly-lab,
   .rag-lab,
-  .sampling-lab {
+  .sampling-lab,
+  .proxy-lab {
     border-left: 0;
     border-right: 0;
     border-radius: 0;
