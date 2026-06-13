@@ -1,5 +1,5 @@
 /* ============================================================
-   Teo's Research Notebook — minimal theme
+   Teo's Research Notebook - minimal theme
    System fonts, generous whitespace, automatic dark mode.
    ============================================================ */
 
@@ -34,12 +34,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   font-size: 19px;
   line-height: 1.7;
+  margin: 0;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -48,6 +55,7 @@ body {
   max-width: var(--measure);
   margin: 0 auto;
   padding: 0 20px;
+  width: 100%;
 }
 
 a {
