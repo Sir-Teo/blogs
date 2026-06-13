@@ -24,6 +24,11 @@ minima:
 
 exclude:
   - .bundle/
+  - .git/
+  - .github/
   - .jekyll-cache/
   - .sass-cache/
+  - Gemfile
+  - Gemfile.lock
+  - README.md
   - vendor/
