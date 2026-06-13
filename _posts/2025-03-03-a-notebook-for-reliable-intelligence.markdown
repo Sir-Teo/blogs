@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "A Notebook for Reliable Intelligence"
+description: "Why this notebook exists: small technical notes still deserve evidence, context, and enough detail that someone else can disagree productively."
 date: 2025-03-03 11:34:22 -0500
 categories: meta
 tags: [research, writing, ai, statistics]
