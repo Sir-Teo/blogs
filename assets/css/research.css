@@ -77,7 +77,8 @@ a:hover {
 .backtest-lab,
 .benchmark-lab,
 .recommender-lab,
-.double-descent-lab {
+.double-descent-lab,
+.execution-lab {
   background: var(--research-panel);
   border: 1px solid var(--research-rule);
   border-radius: 8px;
@@ -101,7 +102,8 @@ a:hover {
 .backtest-lab canvas,
 .benchmark-lab canvas,
 .recommender-lab canvas,
-.double-descent-lab canvas {
+.double-descent-lab canvas,
+.execution-lab canvas {
   display: block;
   max-width: 100%;
 }
@@ -116,7 +118,8 @@ a:hover {
 .backtest-lab canvas,
 .benchmark-lab canvas,
 .recommender-lab canvas,
-.double-descent-lab canvas {
+.double-descent-lab canvas,
+.execution-lab canvas {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -135,7 +138,8 @@ a:hover {
 .backtest-lab__note,
 .benchmark-lab__note,
 .recommender-lab__note,
-.double-descent-lab__note {
+.double-descent-lab__note,
+.execution-lab__note {
   color: var(--research-muted);
   font-size: 0.92rem;
   margin-top: 0.75rem;
@@ -151,7 +155,8 @@ a:hover {
 .backtest-lab__controls,
 .benchmark-lab__controls,
 .recommender-lab__controls,
-.double-descent-lab__controls {
+.double-descent-lab__controls,
+.execution-lab__controls {
   display: grid;
   gap: 0.85rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -168,7 +173,8 @@ a:hover {
 .backtest-lab label,
 .benchmark-lab label,
 .recommender-lab label,
-.double-descent-lab label {
+.double-descent-lab label,
+.execution-lab label {
   color: var(--research-muted);
   display: grid;
   font-size: 0.88rem;
@@ -185,7 +191,8 @@ a:hover {
 .backtest-lab input[type="range"],
 .benchmark-lab input[type="range"],
 .recommender-lab input[type="range"],
-.double-descent-lab input[type="range"] {
+.double-descent-lab input[type="range"],
+.execution-lab input[type="range"] {
   accent-color: var(--research-accent);
   width: 100%;
 }
@@ -200,7 +207,8 @@ a:hover {
 .backtest-lab__metrics,
 .benchmark-lab__metrics,
 .recommender-lab__metrics,
-.double-descent-lab__metrics {
+.double-descent-lab__metrics,
+.execution-lab__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -217,7 +225,8 @@ a:hover {
 .backtest-lab__metric,
 .benchmark-lab__metric,
 .recommender-lab__metric,
-.double-descent-lab__metric {
+.double-descent-lab__metric,
+.execution-lab__metric {
   background: #ffffff;
   border: 1px solid var(--research-rule);
   border-radius: 6px;
@@ -234,7 +243,8 @@ a:hover {
 .backtest-lab__metric span,
 .benchmark-lab__metric span,
 .recommender-lab__metric span,
-.double-descent-lab__metric span {
+.double-descent-lab__metric span,
+.execution-lab__metric span {
   color: var(--research-muted);
   display: block;
   font-size: 0.78rem;
@@ -251,7 +261,8 @@ a:hover {
 .backtest-lab__metric strong,
 .benchmark-lab__metric strong,
 .recommender-lab__metric strong,
-.double-descent-lab__metric strong {
+.double-descent-lab__metric strong,
+.execution-lab__metric strong {
   color: var(--research-ink);
   display: block;
   font-size: 1.35rem;
@@ -268,7 +279,8 @@ a:hover {
 .backtest-lab__legend,
 .benchmark-lab__legend,
 .recommender-lab__legend,
-.double-descent-lab__legend {
+.double-descent-lab__legend,
+.execution-lab__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -285,7 +297,8 @@ a:hover {
 .backtest-lab__legend span,
 .benchmark-lab__legend span,
 .recommender-lab__legend span,
-.double-descent-lab__legend span {
+.double-descent-lab__legend span,
+.execution-lab__legend span {
   align-items: center;
   color: var(--research-muted);
   display: inline-flex;
@@ -303,7 +316,8 @@ a:hover {
 .backtest-lab__legend i,
 .benchmark-lab__legend i,
 .recommender-lab__legend i,
-.double-descent-lab__legend i {
+.double-descent-lab__legend i,
+.execution-lab__legend i {
   border-radius: 999px;
   display: inline-block;
   height: 0.65rem;
@@ -339,7 +353,8 @@ a:hover {
   .backtest-lab,
   .benchmark-lab,
   .recommender-lab,
-  .double-descent-lab {
+  .double-descent-lab,
+  .execution-lab {
     border-left: 0;
     border-right: 0;
     border-radius: 0;
