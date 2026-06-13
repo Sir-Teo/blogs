@@ -4,15 +4,17 @@ title: About
 permalink: /about/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
+This is my working notebook for ideas that are too interesting to leave as
+scratch notes.
 
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
+I write about AI, machine learning, computer science, statistics, mathematics,
+data systems, and the human side of reasoning with uncertain tools. The goal is
+to make each post useful in three ways:
 
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+- explain the core idea without hiding behind jargon,
+- connect the idea to primary sources or durable references,
+- leave behind a small experiment, visualization, or implementation pattern that
+  can be tested.
 
-
-[jekyll-organization]: https://github.com/jekyll
+Some posts are polished essays; others are research trails that I expect to
+revise as the evidence gets better.
