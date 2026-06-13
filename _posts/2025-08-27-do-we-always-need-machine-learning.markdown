@@ -116,7 +116,7 @@ without sorting all values exactly.[^trino-approx] Athena engine version 3 uses
 t-digest for `approx_percentile`, which is designed for compact approximate
 quantile summaries.[^athena-tdigest] Quantile sketches are a deep area; the
 Greenwald-Khanna algorithm and t-digest are two well-known reference points for
-space-efficient approximate quantiles.[^gk][^tdigest]
+space-efficient approximate quantiles.[^gk], [^tdigest]
 
 The cache table can be built in one pass:
 
@@ -201,7 +201,7 @@ The constant \(k\) is a skepticism parameter. Larger \(k\) means local evidence
 has to work harder before it overrides the broader reference class. This is the
 same practical instinct behind empirical Bayes and hierarchical modeling:
 separate estimates are noisy, and related groups can borrow strength from one
-another.[^efron-morris][^gelman]
+another.[^efron-morris], [^gelman]
 
 ## A Small Experiment
 
