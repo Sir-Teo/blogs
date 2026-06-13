@@ -10,15 +10,36 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
+  <div class="chipbar" role="group" aria-label="Filter posts by topic">
+    <button type="button" class="chip is-active" data-filter="all" aria-pressed="true">All<span class="chip__count">{{ site.posts.size }}</span></button>
+    {%- for cat in site.data.categories -%}
+      {%- assign slug = cat[0] -%}
+      {%- assign meta = cat[1] -%}
+      {%- assign incat = site.categories[slug] -%}
+      {%- if incat and incat.size > 0 -%}
+      <button type="button" class="chip" data-filter="{{ slug }}" aria-pressed="false"><span class="chip__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}<span class="chip__count">{{ incat.size }}</span></button>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+
   <ul class="postlist">
     {%- for post in site.posts -%}
-    <li class="postlist__item">
+    {%- assign slug = post.categories.first -%}
+    {%- assign meta = site.data.categories[slug] -%}
+    <li class="postlist__item" data-category="{{ slug }}">
       <a class="postlist__link" href="{{ post.url | relative_url }}">
+        {%- if meta -%}
+        <span class="postlist__cat"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}</span>
+        {%- endif -%}
         <span class="postlist__title">{{ post.title | escape }}</span>
-        <time class="postlist__date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+        {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+        {%- if desc and desc != "" -%}
+        <span class="postlist__desc">{{ desc | truncate: 150 | escape }}</span>
+        {%- endif -%}
       </a>
     </li>
     {%- endfor -%}
   </ul>
+  <p class="postlist__empty" hidden>No notes under this topic yet.</p>
   {%- endif -%}
 </div>

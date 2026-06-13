@@ -2,11 +2,22 @@
 layout: default
 ---
 
+{%- assign cat_slug = page.categories.first -%}
+{%- assign cat = site.data.categories[cat_slug] -%}
+
 <article class="post h-entry">
   <header class="post-header">
+    {%- if cat -%}
+    <a class="post-cat" href="{{ '/tags/' | relative_url }}#{{ cat_slug }}">
+      <span class="post-cat__dot" style="background: {{ cat.color }}"></span>{{ cat.name }}
+    </a>
+    {%- endif -%}
     <h1 class="post-title p-name">{{ page.title | escape }}</h1>
     <p class="post-meta">
       <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
+      {%- assign words = content | number_of_words -%}
+      {%- assign minutes = words | divided_by: 200 | plus: 1 -%}
+      <span class="post-meta__sep">&middot;</span> {{ minutes }} min read
     </p>
   </header>
 
@@ -14,7 +25,28 @@ layout: default
     {{ content }}
   </div>
 
+  {%- if page.tags.size > 0 -%}
+  <ul class="post-tags" aria-label="Tags">
+    {%- for tag in page.tags -%}
+    <li><a class="post-tag" href="{{ '/tags/' | relative_url }}#tag-{{ tag | slugify }}">{{ tag }}</a></li>
+    {%- endfor -%}
+  </ul>
+  {%- endif -%}
+
+  {%- comment -%} In Jekyll, page.previous is the older post and page.next is the newer one. {%- endcomment -%}
   <nav class="post-nav">
-    <a href="{{ '/' | relative_url }}">&larr; Back</a>
+    {%- if page.previous -%}
+    <a class="post-nav__link post-nav__prev" href="{{ page.previous.url | relative_url }}" rel="prev">
+      <span class="post-nav__dir">&larr; Older</span>
+      <span class="post-nav__name">{{ page.previous.title | escape }}</span>
+    </a>
+    {%- endif -%}
+    {%- if page.next -%}
+    <a class="post-nav__link post-nav__next" href="{{ page.next.url | relative_url }}" rel="next">
+      <span class="post-nav__dir">Newer &rarr;</span>
+      <span class="post-nav__name">{{ page.next.title | escape }}</span>
+    </a>
+    {%- endif -%}
   </nav>
+  <p class="post-nav__home"><a href="{{ '/' | relative_url }}">All notes</a></p>
 </article>

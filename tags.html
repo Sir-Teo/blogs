@@ -1,0 +1,50 @@
+---
+layout: page
+title: Topics
+permalink: /tags/
+---
+
+<div class="topics">
+  <p class="topics__intro">Browse the notebook by category or by tag.</p>
+
+  <h2 class="topics__h">By category</h2>
+  <div class="topics__cats">
+    {%- for cat in site.data.categories -%}
+      {%- assign slug = cat[0] -%}
+      {%- assign meta = cat[1] -%}
+      {%- assign incat = site.categories[slug] -%}
+      {%- if incat and incat.size > 0 -%}
+      <section class="topics__group" id="{{ slug }}">
+        <h3 class="topics__group-title"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}<span class="topics__count">{{ incat.size }}</span></h3>
+        <ul class="topics__list">
+          {%- for post in incat -%}
+          <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </section>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+
+  <h2 class="topics__h">By tag</h2>
+  {%- assign sorted_tags = site.tags | sort -%}
+  <div class="topics__taglist">
+    {%- for tag in sorted_tags -%}
+    {%- assign tagname = tag[0] -%}
+    <a class="topics__tagchip" href="#tag-{{ tagname | slugify }}">{{ tagname }}<span class="topics__count">{{ tag[1].size }}</span></a>
+    {%- endfor -%}
+  </div>
+
+  {%- for tag in sorted_tags -%}
+  {%- assign tagname = tag[0] -%}
+  {%- assign tagposts = tag[1] -%}
+  <section class="topics__group" id="tag-{{ tagname | slugify }}">
+    <h3 class="topics__group-title">{{ tagname }}<span class="topics__count">{{ tagposts.size }}</span></h3>
+    <ul class="topics__list">
+      {%- for post in tagposts -%}
+      <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
+      {%- endfor -%}
+    </ul>
+  </section>
+  {%- endfor -%}
+</div>

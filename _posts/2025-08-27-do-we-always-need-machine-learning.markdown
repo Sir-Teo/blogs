@@ -3,7 +3,7 @@ layout: post
 title: "Do We Always Need Machine Learning? A Fallback Cache Says No"
 description: "A practical pattern for estimating sparse, long-tailed quantities with robust statistics, SQL rollups, partial pooling, and observable fallbacks."
 date: 2025-08-27 10:00:00 -0400
-categories: ml-systems
+categories: ai-systems
 tags: [machine-learning, statistics, data-systems, sql, robust-statistics]
 excerpt: "Sometimes the best production model is not a model at all. It is a statistically disciplined fallback: robust medians, rollups, shrinkage, and monitoring."
 ---

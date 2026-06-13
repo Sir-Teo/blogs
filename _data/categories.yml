@@ -1,0 +1,27 @@
+# Canonical category taxonomy.
+# slug -> display name, dot color, and short filter-chip label.
+# Order here is the order chips render in.
+machine-learning:
+  name: Machine learning
+  short: ML
+  color: "#7F77DD"
+ai-systems:
+  name: AI systems
+  short: Systems
+  color: "#1D9E75"
+computer-science:
+  name: Computer science
+  short: CS
+  color: "#D4537E"
+statistics:
+  name: Statistics
+  short: Statistics
+  color: "#378ADD"
+quantitative-finance:
+  name: Quant finance
+  short: Finance
+  color: "#BA7517"
+meta:
+  name: Meta
+  short: Meta
+  color: "#888780"

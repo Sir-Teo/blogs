@@ -3,7 +3,7 @@ layout: post
 title: "Backtests Are a Multiple Testing Problem"
 description: "A beautiful backtest is weak evidence unless you know how many ideas, parameters, filters, assets, and time windows were tried before it won."
 date: 2026-06-13 00:35:00 -0400
-categories: quant-finance
+categories: quantitative-finance
 tags: [backtesting, quantitative-finance, multiple-testing, sharpe-ratio, overfitting]
 excerpt: "The best strategy in a large research library is selected under intense statistical pressure. Treating its Sharpe ratio as a single clean experiment is how backtests become stories."
 ---

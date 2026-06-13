@@ -22,6 +22,10 @@ plugins:
 minima:
   date_format: "%b %-d, %Y"
 
+header_pages:
+  - about.markdown
+  - tags.html
+
 exclude:
   - .bundle/
   - .git/
