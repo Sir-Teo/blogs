@@ -29,9 +29,9 @@ come from ordinary statistics plus optimization.
 
 The practical question is not "Which metric should we trust?" It is:
 
-\[
+$$
 \text{What happens to the data-generating process when this metric gets power?}
-\]
+$$
 
 That question belongs as much to causal inference as to dashboard design.
 
@@ -46,24 +46,24 @@ were meant to monitor.[^campbell]
 
 Those are not just folk warnings. They describe a structural distinction:
 
-\[
+$$
 M = \text{measure of } Y
 \quad
 \text{is not the same as}
 \quad
 Y = \text{thing we care about}.
-\]
+$$
 
-The metric \(M\) can be useful because it is correlated with \(Y\). But
+The metric $$M$$ can be useful because it is correlated with $$Y$$. But
 correlation is a property of a regime. If the regime changes, the correlation
-can change. In Pearl's language, observing \(M\) and intervening to increase
-\(M\) are different operations.[^pearl]
+can change. In Pearl's language, observing $$M$$ and intervening to increase
+$$M$$ are different operations.[^pearl]
 
-Suppose a company cares about long-run customer trust \(Y\), but measures
-short-run engagement \(M\). In the old regime, better products may have caused
+Suppose a company cares about long-run customer trust $$Y$$, but measures
+short-run engagement $$M$$. In the old regime, better products may have caused
 both trust and engagement. In the optimized regime, the system discovers
 notifications, dark patterns, outrage, and slot-machine timing. The causal path
-into \(M\) changes. The old correlation becomes a historical artifact.
+into $$M$$ changes. The old correlation becomes a historical artifact.
 
 ## Four Failure Modes
 

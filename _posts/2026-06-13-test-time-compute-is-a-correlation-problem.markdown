@@ -24,13 +24,13 @@ compute-optimal allocation by problem difficulty.[^monkeys], [^snell]
 
 The tempting mental model is:
 
-\[
+$$
 \Pr(\text{solve with } n \text{ tries})
 =
 1 - (1-p)^n,
-\]
+$$
 
-where \(p\) is the probability that one sample is correct. If \(p=0.20\), then
+where $$p$$ is the probability that one sample is correct. If $$p=0.20$$, then
 32 independent tries give oracle coverage above 99.9%. That little formula is
 why test-time compute can feel like magic.
 
@@ -50,13 +50,13 @@ Counting effective samples is the hard part.
 ## The Oracle Curve
 
 For code, formal proofs, and some math settings, the best case is unusually
-clean. Generate \(n\) candidates, run a trustworthy checker, and accept the first
+clean. Generate $$n$$ candidates, run a trustworthy checker, and accept the first
 one that passes. The checker does not need to understand the model's reasoning.
 It only needs to verify the final artifact.
 
 That is why pass@k became so useful in code generation. The Codex paper reported
 both single-sample performance and pass@k, and it used an estimator that corrects
-for drawing \(k\) samples from a finite set of generated candidates.[^codex]
+for drawing $$k$$ samples from a finite set of generated candidates.[^codex]
 Repeated sampling is especially attractive when verification is cheap and
 nearly exact.
 
@@ -77,30 +77,30 @@ the same misleading surface cues. Raising temperature may diversify wording
 without diversifying the underlying mistake.
 
 A better toy model is exchangeable rather than independent. For each problem,
-imagine a latent success probability \(\theta\). Easy problems have high
-\(\theta\). Trap problems have low \(\theta\). Conditional on \(\theta\), samples
+imagine a latent success probability $$\theta$$. Easy problems have high
+$$\theta$$. Trap problems have low $$\theta$$. Conditional on $$\theta$$, samples
 are independent:
 
-\[
+$$
 Y_i \mid \theta \sim \text{Bernoulli}(\theta).
-\]
+$$
 
 But unconditionally, attempts on the same problem are correlated because they
-share \(\theta\). The single-sample solve rate is still
+share $$\theta$$. The single-sample solve rate is still
 
-\[
+$$
 p = \mathbb{E}[\theta],
-\]
+$$
 
 while oracle coverage is
 
-\[
+$$
 \Pr(\max_i Y_i = 1)
 =
 1 - \mathbb{E}\left[(1-\theta)^n\right].
-\]
+$$
 
-The mean \(p\) is no longer enough. Two models can have the same pass@1 and very
+The mean $$p$$ is no longer enough. Two models can have the same pass@1 and very
 different pass@32. One spreads probability evenly across problems; another
 solves some problems almost always and fails others almost always. The first
 scales with sampling. The second plateaus.
@@ -108,13 +108,13 @@ scales with sampling. The second plateaus.
 Survey sampling has a useful analogy. Correlated observations have a smaller
 effective sample size than their raw count. A common design-effect intuition is
 
-\[
+$$
 n_{\text{eff}}
 \approx
 \frac{n}{1 + (n-1)\rho},
-\]
+$$
 
-where \(\rho\) is an intraclass correlation.[^kish] The formula is not a theorem
+where $$\rho$$ is an intraclass correlation.[^kish] The formula is not a theorem
 about LLM reasoning, but the warning transfers perfectly: 64 highly correlated
 samples may behave like far fewer independent samples.
 
@@ -139,7 +139,7 @@ compute through search against dense process-based verifier reward models and
 adaptive strategies, emphasizing that the best allocation depends on problem
 difficulty.[^snell]
 
-But a verifier is not an oracle. As \(n\) grows, the system sees more correct
+But a verifier is not an oracle. As $$n$$ grows, the system sees more correct
 candidates and more attractive wrong candidates. If the verifier has a false
 positive tail, large sample budgets eventually find it.
 
@@ -209,7 +209,7 @@ as generation: a better verifier converts coverage into accuracy and turns weak
 evidence into abstention instead of a confident mistake.
 
 The most important slider is shared difficulty. When correlation is low, the
-classic \(1-(1-p)^n\) intuition is not crazy. When correlation is high, raw
+classic $$1-(1-p)^n$$ intuition is not crazy. When correlation is high, raw
 sample count overstates compute. The model is not trying the problem 64 new
 ways. It is often trying the same family of thoughts 64 times.
 
@@ -267,17 +267,17 @@ from the same distribution.
 
 The direction I find most promising is inference portfolios.
 
-Instead of asking one model for \(n\) iid-looking completions, build a portfolio
+Instead of asking one model for $$n$$ iid-looking completions, build a portfolio
 of deliberately different inference procedures:
 
-\[
+$$
 \Pi = \{\pi_1, \pi_2, \ldots, \pi_m\}.
-\]
+$$
 
 Each procedure has a cost, a success profile, and a correlation profile with the
 others. The allocation problem is:
 
-\[
+$$
 \max_{a_1,\ldots,a_m}
 \quad
 \Pr(\text{correct selected answer})
@@ -285,7 +285,7 @@ others. The allocation problem is:
 \text{subject to}
 \quad
 \sum_j c_j a_j \le B.
-\]
+$$
 
 The missing ingredient is a practical estimator for the covariance matrix of
 failure modes. Once you know which procedures fail together, you can buy

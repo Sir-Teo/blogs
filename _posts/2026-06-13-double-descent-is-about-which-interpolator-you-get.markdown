@@ -48,7 +48,7 @@ Above the threshold, there are many exact fits. Ordinary least squares is no
 longer unique. A training algorithm must choose among the interpolators. The
 minimum-norm interpolator is one important choice:
 
-\[
+$$
 \widehat{w}
 =
 \arg\min_w \|w\|_2
@@ -56,7 +56,7 @@ minimum-norm interpolator is one important choice:
 \text{subject to}
 \quad
 Xw = y.
-\]
+$$
 
 Hastie, Montanari, Rosset, and Tibshirani analyze high-dimensional ridgeless
 least-squares interpolation and recover double-descent behavior in a precise

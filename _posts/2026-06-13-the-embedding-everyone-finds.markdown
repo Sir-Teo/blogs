@@ -23,9 +23,9 @@ space become popular nearest neighbors for many unrelated queries.
 Those points are called hubs.
 
 Radovanovic, Nanopoulos, and Ivanovic define hubness through
-\(k\)-occurrence: the number of times a data point appears in other points'
-\(k\)-nearest-neighbor lists.[^radovanovic] A hub is a point with unusually high
-\(k\)-occurrence. This is a graph property, not a vibe. Build the nearest-neighbor
+$$k$$-occurrence: the number of times a data point appears in other points'
+$$k$$-nearest-neighbor lists.[^radovanovic] A hub is a point with unusually high
+$$k$$-occurrence. This is a graph property, not a vibe. Build the nearest-neighbor
 graph, count incoming edges, and the pathology either appears or it does not.
 
 ## A tiny bug report
@@ -88,7 +88,7 @@ components plus a shared direction. Some database vectors are deliberately
 shared direction. Retrieval uses cosine similarity after a postprocessing step
 controlled by the `Remove common direction` slider.
 
-The lab counts how often each database item appears in the top-\(k\) neighbors
+The lab counts how often each database item appears in the top-$$k$$ neighbors
 of all queries. If retrieval were spread evenly, each item would receive about
 the same number of incoming edges. When hubness appears, the top item receives a
 large fraction of all neighbor slots.
@@ -157,7 +157,7 @@ retrieval system should make this kind of geometry inspectable.
 For a real embedding search system, I would log the following before trusting
 offline retrieval metrics:
 
-- the distribution of \(k\)-occurrence counts across indexed items;
+- the distribution of $$k$$-occurrence counts across indexed items;
 - the top hubs and their text, metadata, and source distribution;
 - whether hubs are genuinely canonical items or generic garbage;
 - nearest/farthest similarity contrast by query segment;

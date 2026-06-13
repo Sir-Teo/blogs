@@ -170,16 +170,16 @@ and the level that served it can be monitored, audited, and tuned.
 
 The lookup contract is:
 
-\[
+$$
 \hat{y}(x) = \widehat{Q}_{0.5}(L^\*, x),
 \quad
 L^\* = \max\{L: n_L(x) \ge n_{\min}\}.
-\]
+$$
 
 In words: find the most specific level whose cell has enough observations, and
 use that cell's median.
 
-That minimum count, \(n_{\min}\), is not a theorem. It is an operational
+That minimum count, $$n_{\min}$$, is not a theorem. It is an operational
 threshold. I would start with something like 25 or 30, then tune it against a
 time-split validation set. The point is not that 30 is sacred. The point is that
 one ticket should not carry the authority of a market.
@@ -187,7 +187,7 @@ one ticket should not carry the authority of a market.
 There is a better version for sparse cells: partial pooling. Instead of dropping
 a level entirely when it is small, shrink it toward its parent:
 
-\[
+$$
 \tilde{Q}_{0.5}(L, x)
 =
 w_L(x)\widehat{Q}_{0.5}(L, x)
@@ -195,9 +195,9 @@ w_L(x)\widehat{Q}_{0.5}(L, x)
 \left(1 - w_L(x)\right)\tilde{Q}_{0.5}(L-1, x),
 \quad
 w_L(x) = \frac{n_L(x)}{n_L(x) + k}.
-\]
+$$
 
-The constant \(k\) is a skepticism parameter. Larger \(k\) means local evidence
+The constant $$k$$ is a skepticism parameter. Larger $$k$$ means local evidence
 has to work harder before it overrides the broader reference class. This is the
 same practical instinct behind empirical Bayes and hierarchical modeling:
 separate estimates are noisy, and related groups can borrow strength from one
@@ -212,7 +212,7 @@ compares four strategies:
 
 - global mean,
 - most-specific mean,
-- median cascade with a fixed \(n_{\min}\),
+- median cascade with a fixed $$n_{\min}$$,
 - median shrinkage toward parent levels.
 
 It is not a proof. It is a compact stress test for the failure modes above. Try

@@ -9,8 +9,8 @@ excerpt: "The Kelly criterion is often introduced as a formula for how much to b
 ---
 
 The Kelly criterion is usually taught as a beautiful little answer to a
-gambling question. If a bet pays even money and wins with probability \(p\), bet
-\(2p - 1\) of your bankroll. If \(p = 0.60\), the full Kelly fraction is 20%.
+gambling question. If a bet pays even money and wins with probability $$p$$, bet
+$$2p - 1$$ of your bankroll. If $$p = 0.60$$, the full Kelly fraction is 20%.
 
 That answer is correct for the toy problem. It is also where many real systems
 start to become dangerous.
@@ -37,24 +37,24 @@ positions.
 
 ## The Formula Is the Easy Part
 
-For a binary bet that wins \(b\) units per unit wagered and loses the stake when
-wrong, the expected log-growth from betting fraction \(f\) is
+For a binary bet that wins $$b$$ units per unit wagered and loses the stake when
+wrong, the expected log-growth from betting fraction $$f$$ is
 
-\[
+$$
 G(f; p, b)
 =
 p\log(1 + bf)
 +
 (1-p)\log(1-f).
-\]
+$$
 
 Maximizing this expression gives the classical Kelly fraction
 
-\[
+$$
 f^\* = \frac{bp - (1-p)}{b}.
-\]
+$$
 
-At even money, \(b=1\), so \(f^\* = 2p-1\). The connection to information
+At even money, $$b=1$$, so $$f^\* = 2p-1$$. The connection to information
 theory comes from Kelly's original 1956 paper: the growth rate of capital can be
 linked to the information rate of a channel when bets are sized using the
 available signal.[^kelly] Thorp later made the criterion famous in blackjack,
@@ -132,22 +132,22 @@ calibration; after sizing comes monitoring.
 ## The Overconfidence Tax
 
 The easiest way to see the problem is to write down the wrong-growth function.
-If the true probability is \(p\), but the model reports \(\hat p\), then the
+If the true probability is $$p$$, but the model reports $$\hat p$$, then the
 system may bet
 
-\[
+$$
 \hat f = 2\hat p - 1
-\]
+$$
 
 at even odds, while realized log growth is still
 
-\[
+$$
 G(\hat f; p, 1)
 =
 p\log(1+\hat f)
 +
 (1-p)\log(1-\hat f).
-\]
+$$
 
 The growth function is asymmetric around the optimum. Betting too little gives
 up some growth. Betting too much can destroy it. If the true probability is 53%
@@ -165,16 +165,16 @@ Kelly gambling and deriving a convex risk-constrained formulation.[^busseti]
 
 Fractional Kelly is therefore better understood as a model-risk budget:
 
-\[
+$$
 f_{\text{trade}}
 =
 \lambda f^\*(\tilde p),
 \quad
 0 \le \lambda \le 1,
-\]
+$$
 
-where \(\tilde p\) is a calibrated probability, not the raw model score. The
-fraction \(\lambda\) should not be chosen by vibes. It should reflect calibration
+where $$\tilde p$$ is a calibrated probability, not the raw model score. The
+fraction $$\lambda$$ should not be chosen by vibes. It should reflect calibration
 error, non-stationarity, dependence between bets, liquidity, tail loss, and the
 drawdown a human or institution can actually survive.
 

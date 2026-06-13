@@ -1,0 +1,7 @@
+<footer class="site-footer">
+  <div class="wrapper">
+    &copy; {{ 'now' | date: '%Y' }} {{ site.author.name | default: site.title | escape }}
+    {%- if site.github_username %} &middot; <a href="https://github.com/{{ site.github_username }}" rel="me">GitHub</a>{% endif -%}
+    {%- if site.email %} &middot; <a href="mailto:{{ site.email }}">Email</a>{% endif -%}
+  </div>
+</footer>

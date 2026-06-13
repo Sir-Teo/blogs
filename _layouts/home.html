@@ -1,0 +1,24 @@
+---
+layout: default
+---
+
+<div class="home">
+  {%- if site.description -%}
+  <p class="home-intro">{{ site.description | escape }}</p>
+  {%- endif -%}
+
+  {{ content }}
+
+  {%- if site.posts.size > 0 -%}
+  <ul class="postlist">
+    {%- for post in site.posts -%}
+    <li class="postlist__item">
+      <a class="postlist__link" href="{{ post.url | relative_url }}">
+        <span class="postlist__title">{{ post.title | escape }}</span>
+        <time class="postlist__date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+      </a>
+    </li>
+    {%- endfor -%}
+  </ul>
+  {%- endif -%}
+</div>

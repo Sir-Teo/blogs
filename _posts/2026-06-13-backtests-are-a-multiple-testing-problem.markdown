@@ -51,21 +51,21 @@ has been disclosed.
 
 ## The Max Is Not an Average
 
-Suppose a team tests \(m\) strategies that have no true edge. Each test produces
+Suppose a team tests $$m$$ strategies that have no true edge. Each test produces
 a one-sided p-value. If the team reports the best one, the relevant null is not
 
-\[
+$$
 \Pr(p < 0.05) = 0.05.
-\]
+$$
 
 It is
 
-\[
+$$
 \Pr(\min_i p_i < 0.05) = 1 - 0.95^m,
-\]
+$$
 
-under independent null tests. With \(m=100\), the probability of at least one
-nominally significant false discovery is about 99.4%. With \(m=1000\), it is
+under independent null tests. With $$m=100$$, the probability of at least one
+nominally significant false discovery is about 99.4%. With $$m=1000$$, it is
 essentially certain.
 
 Real strategy libraries are not independent. Variants share signals, assets,
@@ -87,18 +87,18 @@ clustered, regime-dependent, and measured after many design choices.
 
 A useful mental model is
 
-\[
+$$
 \widehat{S}_j = S_j + \epsilon_j,
-\]
+$$
 
-where \(S_j\) is a strategy's true Sharpe and \(\epsilon_j\) is estimation
+where $$S_j$$ is a strategy's true Sharpe and $$\epsilon_j$$ is estimation
 noise. The strategy selected by a backtest is
 
-\[
+$$
 j^\star = \arg\max_j \widehat{S}_j.
-\]
+$$
 
-Selection makes \(\epsilon_{j^\star}\) special. It is likely positive. The
+Selection makes $$\epsilon_{j^\star}$$ special. It is likely positive. The
 winner won partly because its noise term helped it. This is the same reason the
 tallest child in a classroom is likely to be less exceptional on the next
 measurement if yesterday's height included measurement error. In finance, the
@@ -143,7 +143,7 @@ Sharpe after implementation drag.
 The chart compares five selection policies:
 
 - always publish the best in-sample backtest;
-- publish the best strategy with nominal one-sided \(p < 0.05\);
+- publish the best strategy with nominal one-sided $$p < 0.05$$;
 - publish only if the best strategy survives Bonferroni correction;
 - publish using Benjamini-Hochberg false discovery control;
 - reserve a holdout slice, pick the research-half winner, and require

@@ -45,24 +45,24 @@ still be bought.
 ## Confidence Is Not Utility
 
 Suppose a model predicts an action and estimates that it has error probability
-\(r(x)\). Let a correct action produce benefit \(B\), a wrong action cost \(L\),
-and abstention cost \(A\). Acting has estimated utility
+$$r(x)$$. Let a correct action produce benefit $$B$$, a wrong action cost $$L$$,
+and abstention cost $$A$$. Acting has estimated utility
 
-\[
+$$
 U_{\text{act}}(x) = (1-r(x))B - r(x)L,
-\]
+$$
 
 while abstaining has utility
 
-\[
+$$
 U_{\text{abstain}} = -A.
-\]
+$$
 
 The decision boundary is therefore
 
-\[
+$$
 r(x) \leq \frac{B + A}{B + L}.
-\]
+$$
 
 If errors are cheap, the model should answer even when it is not very sure. If
 errors are catastrophic, it should abstain at error probabilities that would be

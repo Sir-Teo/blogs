@@ -41,24 +41,24 @@ that better instruments deserve better interpretation.
 
 The raw score on a multiple-choice benchmark is usually
 
-\[
+$$
 \widehat{p}_m = \frac{1}{n}\sum_{i=1}^{n} Y_{mi},
-\]
+$$
 
-where \(Y_{mi}=1\) if model \(m\) answers item \(i\) correctly. This treats every
+where $$Y_{mi}=1$$ if model $$m$$ answers item $$i$$ correctly. This treats every
 item as equally informative. A trivial item, a saturated item, a noisy item, a
 memorized item, and a sharp diagnostic item all receive the same weight.
 
 Item response theory uses a different lens. In a two-parameter logistic model,
 
-\[
+$$
 \Pr(Y_{mi}=1)
 =
 \sigma(a_i(\theta_m-b_i)),
-\]
+$$
 
-where \(\theta_m\) is latent model ability, \(b_i\) is item difficulty, and
-\(a_i\) is item discrimination. The item is most informative near the ability
+where $$\theta_m$$ is latent model ability, $$b_i$$ is item difficulty, and
+$$a_i$$ is item discrimination. The item is most informative near the ability
 region where the response probability is changing rapidly. Items that everyone
 gets right or everyone gets wrong contribute little to ranking nearby models.
 For multiple-choice tasks, a guessing or chance parameter can be added; the

@@ -36,12 +36,12 @@ in demand formation.
 
 In causal notation, the observed click is
 
-\[
+$$
 Y_i(1)
 \quad \text{only for items that were exposed.}
-\]
+$$
 
-For unshown items, the system does not observe \(Y_i(1)\). It observes nothing.
+For unshown items, the system does not observe $$Y_i(1)$$. It observes nothing.
 The missingness is not random. It is caused by the previous recommender policy,
 the user's past behavior, item popularity, position in the interface, and
 business rules.
@@ -52,17 +52,17 @@ Schnabel, Swaminathan, Singh, Chandak, and Joachims made the causal version
 explicit by treating recommendations as treatments and adapting propensity-based
 estimators from causal inference to debias learning and evaluation.[^schnabel]
 
-The core identity is simple. If item \(i\) is exposed with probability
-\(p_i\), then inverse propensity weighting estimates an average outcome by
+The core identity is simple. If item $$i$$ is exposed with probability
+$$p_i$$, then inverse propensity weighting estimates an average outcome by
 upweighting rare exposures:
 
-\[
+$$
 \widehat{R}_{\text{IPS}}
 =
 \frac{1}{n}\sum_i \frac{E_i Y_i}{p_i},
-\]
+$$
 
-where \(E_i\) indicates exposure. The formula is not magic. It says the logging
+where $$E_i$$ indicates exposure. The formula is not magic. It says the logging
 policy matters. If you do not know how an item came to be shown, you cannot
 interpret the click as a clean preference sample.
 

@@ -12,8 +12,8 @@ Most uncertainty estimates in machine learning ask for trust. Conformal
 prediction asks for a contract.
 
 Give it a calibration set drawn like tomorrow's example, choose a target error
-rate \(\alpha\), and split conformal prediction returns an interval that covers
-the next response with probability at least \(1-\alpha\), without assuming the
+rate $$\alpha$$, and split conformal prediction returns an interval that covers
+the next response with probability at least $$1-\alpha$$, without assuming the
 model is correct, Gaussian, linear, Bayesian, or even especially good. That is a
 remarkable promise.[^vovk], [^lei], [^angelopoulos]
 
@@ -39,25 +39,25 @@ The important word is meaningful, not mystical.
 
 For regression, the simplest version is almost embarrassingly practical.
 
-Fit any model \(\hat f\) on a training set. On a separate calibration set,
+Fit any model $$\hat f$$ on a training set. On a separate calibration set,
 compute nonconformity scores
 
-\[
+$$
 s_i = |y_i - \hat f(x_i)|.
-\]
+$$
 
-Let \(q\) be a high quantile of those calibration residuals, using the conformal
-finite-sample correction. Then for a new \(x\), report
+Let $$q$$ be a high quantile of those calibration residuals, using the conformal
+finite-sample correction. Then for a new $$x$$, report
 
-\[
+$$
 C(x) = [\hat f(x) - q,\ \hat f(x) + q].
-\]
+$$
 
 If the calibration examples and the new example are exchangeable, then
 
-\[
+$$
 \Pr\{Y_{\text{new}} \in C(X_{\text{new}})\} \ge 1-\alpha.
-\]
+$$
 
 The guarantee is marginal. It averages over future draws from the same data
 source. It does not say every subgroup, every individual, every time period, or
@@ -83,9 +83,9 @@ the interval is sharp.
 
 This creates the central engineering tradeoff:
 
-\[
+$$
 \text{validity} \quad \text{versus} \quad \text{efficiency}.
-\]
+$$
 
 Validity is whether the set covers often enough. Efficiency is whether the set
 is small enough to be useful. Lei et al. present a broad distribution-free
@@ -161,7 +161,7 @@ arbitrary.
 ## A Small Experiment
 
 The simulator below creates a regression problem. The model's mean prediction is
-basically right, but the noise level is larger for high \(x\). Calibration data
+basically right, but the noise level is larger for high $$x$$. Calibration data
 come from one covariate distribution. Test data can shift toward the high-noise
 region.
 

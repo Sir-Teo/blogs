@@ -12,8 +12,8 @@ At 9:42 a portfolio manager decides to sell.
 
 The model has done its job. The position is too large for the new forecast; the
 expected return no longer compensates for the risk; the target portfolio is
-clear. On paper, the trade is already finished. Sell \(Q\) shares at the decision
-price \(S_0\), update the book, move on.
+clear. On paper, the trade is already finished. Sell $$Q$$ shares at the decision
+price $$S_0$$, update the book, move on.
 
 The market does not honor that fiction.
 
@@ -37,15 +37,15 @@ executed.
 
 For a buy order, a stripped-down shortfall calculation is
 
-\[
+$$
 \text{shortfall}
 =
 \frac{1}{Q}\sum_{i=1}^N q_i S_i - S_0,
-\]
+$$
 
-where \(q_i\) is the child order filled at step \(i\), \(\sum_i q_i = Q\), and
-\(S_i\) is the realized execution price. For a sell order the sign changes, but
-the benchmark role of \(S_0\) is the same. It is the arrival price: the price at
+where $$q_i$$ is the child order filled at step $$i$$, $$\sum_i q_i = Q$$, and
+$$S_i$$ is the realized execution price. For a sell order the sign changes, but
+the benchmark role of $$S_0$$ is the same. It is the arrival price: the price at
 which the paper decision became an execution problem.
 
 This number is richer than a commission line item. It mixes spread, temporary
@@ -66,12 +66,12 @@ There are three forces in the simple version of the problem.
 
 The first is footprint. A large child order consumes liquidity and pushes the
 execution price away from the arrival price. In the clean quadratic model, if
-\(x_i\) is remaining inventory after step \(i\), then temporary impact behaves
+$$x_i$$ is remaining inventory after step $$i$$, then temporary impact behaves
 like
 
-\[
+$$
 \sum_{i=1}^N (x_{i-1} - x_i)^2.
-\]
+$$
 
 This term likes patience. It says: split the order, avoid concentration, do not
 slam the book unless you must.
@@ -79,9 +79,9 @@ slam the book unless you must.
 The second is weather. While inventory remains, prices move. A stylized
 inventory-risk term is
 
-\[
+$$
 \sigma^2 \sum_{i=1}^N x_i^2 \Delta t.
-\]
+$$
 
 This term likes urgency. High volatility, long horizons, and institutional
 drawdown limits all make residual inventory expensive.
@@ -138,9 +138,9 @@ learned an accounting bug in the market universe it was given.
 
 The audit question is simple:
 
-\[
+$$
 \text{expected cost of a round trip} \ge 0.
-\]
+$$
 
 If that inequality fails, do not tune the policy. Fix the world model.
 
@@ -150,8 +150,8 @@ The lab below solves a discrete liquidation problem. It is deliberately small:
 one asset, uniform time buckets, quadratic temporary impact, inventory risk, and
 an optional drift term while the residual position is still held.
 
-The optimizer chooses an inventory path \(x_0,\ldots,x_N\) with \(x_0=1\) and
-\(x_N=0\). The chart shows that path against VWAP and plots the cost-risk
+The optimizer chooses an inventory path $$x_0,\ldots,x_N$$ with $$x_0=1$$ and
+$$x_N=0$$. The chart shows that path against VWAP and plots the cost-risk
 frontier produced by changing risk aversion. Costs are in basis points of traded
 notional; risk is the standard deviation of implementation shortfall caused by
 holding residual inventory during the horizon.
@@ -159,7 +159,7 @@ holding residual inventory during the horizon.
 Under the hood, the code solves the first-order conditions of a quadratic
 program. For the interior inventory points, the equation is tridiagonal:
 
-\[
+$$
 -\eta x_{k-1}
 +
 (2\eta+\lambda\sigma^2\Delta t)x_k
@@ -167,14 +167,14 @@ program. For the interior inventory points, the equation is tridiagonal:
 \eta x_{k+1}
 =
 \frac{\mu\Delta t}{2}.
-\]
+$$
 
 The left side says that the path should be smooth when temporary impact
-\(\eta\) is expensive, but should shrink inventory when risk aversion
-\(\lambda\) and volatility \(\sigma\) are expensive. The right side is drift
-\(\mu\): positive drift while selling makes waiting less costly; negative drift
+$$\eta$$ is expensive, but should shrink inventory when risk aversion
+$$\lambda$$ and volatility $$\sigma$$ are expensive. The right side is drift
+$$\mu$$: positive drift while selling makes waiting less costly; negative drift
 makes waiting hurt. The JavaScript implementation solves this tridiagonal
-system directly, then recomputes the frontier by sweeping \(\lambda\).
+system directly, then recomputes the frontier by sweeping $$\lambda$$.
 
 <div class="execution-lab" data-execution-lab>
   <div class="execution-lab__controls">

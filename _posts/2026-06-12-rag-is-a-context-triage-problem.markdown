@@ -34,7 +34,7 @@ This post is not an argument that RAG always beats long context. It is an
 argument that "RAG versus long context" is the wrong primitive. The better
 question is:
 
-\[
+$$
 \max_{S \subseteq D}
 \quad
 \Pr(\text{correct answer} \mid q, S)
@@ -42,9 +42,9 @@ question is:
 \lambda_c \cdot \text{context cost}(S)
 -
 \lambda_h \cdot \Pr(\text{false support} \mid q, S).
-\]
+$$
 
-The set \(S\) is the evidence we place in the prompt. The penalties are not
+The set $$S$$ is the evidence we place in the prompt. The penalties are not
 academic decoration. They represent real failure modes: latency, token spend,
 irrelevant but persuasive passages, stale documents, and answers that sound
 grounded because something was retrieved, not because the right thing was
@@ -158,13 +158,13 @@ important evidence hard to attend to.
 
 For a production RAG system, I would separate three probabilities:
 
-\[
+$$
 \Pr(\text{evidence found}),
 \quad
 \Pr(\text{evidence used} \mid \text{found}),
 \quad
 \Pr(\text{answer true} \mid \text{used}).
-\]
+$$
 
 Most dashboards only measure the first one. They report recall@k, hit rate,
 mean reciprocal rank, or citation coverage. Those are necessary, but incomplete.
@@ -241,7 +241,7 @@ enough noise, and knows when the evidence does not justify an answer.
 
 A useful RAG system should make an explicit contract:
 
-\[
+$$
 \text{answer only if}
 \quad
 \widehat{p}_{\text{support}}(q, S) \ge \tau
@@ -249,12 +249,12 @@ A useful RAG system should make an explicit contract:
 \text{and}
 \quad
 \widehat{p}_{\text{contradiction}}(q, S) \le \gamma.
-\]
+$$
 
 The support score should estimate whether the retrieved set actually contains
 answer-bearing evidence. The contradiction score should estimate whether the set
-contains conflicting or misleading evidence. The thresholds \(\tau\) and
-\(\gamma\) are product choices, but they should be calibrated against held-out
+contains conflicting or misleading evidence. The thresholds $$\tau$$ and
+$$\gamma$$ are product choices, but they should be calibrated against held-out
 queries.
 
 This is where the newer self-correcting retrieval literature is interesting.
@@ -323,13 +323,13 @@ Instead of treating RAG as "retrieve k chunks, then generate," treat it as a
 selective prediction system with a context budget. The retriever, reranker, and
 generator should jointly estimate:
 
-\[
+$$
 \widehat{p}(\text{answerable} \mid q, S),
 \quad
 \widehat{p}(\text{unsupported answer} \mid q, S),
 \quad
 \widehat{u}(S; q).
-\]
+$$
 
 Then the system should choose among answer, retrieve more, use a tool, ask a
 clarifying question, or abstain. This connects RAG to older ideas in
