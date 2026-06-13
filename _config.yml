@@ -1,36 +1,17 @@
-# Welcome to Jekyll!
-#
-# This config file is meant for settings that affect your whole blog, values
-# which you are expected to set up once and rarely edit after that. If you find
-# yourself editing this file very often, consider using Jekyll's data files
-# feature for the data you need to update frequently.
-#
-# For technical reasons, this file is *NOT* reloaded automatically when you use
-# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
-#
-# If you need help with YAML syntax, here are some quick references for you:
-# https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/#yaml
-# https://learnxinyminutes.com/docs/yaml/
-#
-# Site settings
-# These are used to personalize your new site. If you look in the HTML files,
-# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
-# You can create any custom variable you would like, and they will be accessible
-# in the templates via {{ site.myvariable }}.
-
 title: Teo's Research Notebook
 email: zengwc.teo2016@outlook.com
-description: >- # this means to ignore newlines until "baseurl:"
+description: >-
   Notes on AI, machine learning, data systems, mathematics, statistics, and
   the psychology of building reliable things.
-baseurl: "/blogs" # the subpath of your site, e.g. /blog
-url: "https://sir-teo.github.io"   # Your production domain
-github_username:  Sir-Teo
-author: Teo
+baseurl: "/blogs"
+url: "https://sir-teo.github.io"
+github_username: Sir-Teo
+author:
+  name: Teo
+  email: zengwc.teo2016@outlook.com
 timezone: America/New_York
 show_excerpts: true
 
-# Build settings
 remote_theme: jekyll/minima
 plugins:
   - jekyll-feed
@@ -41,23 +22,8 @@ plugins:
 minima:
   date_format: "%b %-d, %Y"
 
-
-# Exclude from processing.
-# The following items will not be processed, by default.
-# Any item listed under the `exclude:` key here will be automatically added to
-# the internal "default list".
-#
-# Excluded items can be processed by explicitly listing the directories or
-# their entries' file path in the `include:` list.
-#
-# exclude:
-#   - .sass-cache/
-#   - .jekyll-cache/
-#   - gemfiles/
-#   - Gemfile
-#   - Gemfile.lock
-#   - node_modules/
-#   - vendor/bundle/
-#   - vendor/cache/
-#   - vendor/gems/
-#   - vendor/ruby/
+exclude:
+  - .bundle/
+  - .jekyll-cache/
+  - .sass-cache/
+  - vendor/
