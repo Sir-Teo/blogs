@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Sampler Is Part of the Model"
+title: "Samplers Belong in the Model"
 description: "Diffusion and flow-matching models do not end at the neural network. Their path, vector field, and numerical solver decide what distribution actually appears."
 date: 2026-06-13 03:18:00 -0400
 categories: machine-learning
@@ -327,7 +327,7 @@ crediting the network for quality that came from an expensive sampler
 
 Both happen.
 
-## What I Would Measure
+## The Measurement List
 
 For a serious generative-model report, I would like to see sampler diagnostics
 next to sample-quality metrics.
@@ -386,7 +386,7 @@ It is the one whose continuous story survives discretization.
 
 The sampler is not an accessory. It is the final layer of the generative model.
 
-## Notes
+## Reading Notes
 
 [^ddpm]: Jonathan Ho, Ajay Jain, and Pieter Abbeel, "Denoising Diffusion Probabilistic Models," NeurIPS 2020. [arXiv](https://arxiv.org/abs/2006.11239).
 
