@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Double Descent Is About Which Interpolator You Get"
+title: "Double Descent and the Interpolator Lottery"
 description: "The interpolation threshold is not a moral boundary between underfitting and overfitting. It is a point where geometry, noise, and implicit regularization decide which zero-training-error solution is selected."
 date: 2026-06-13 01:05:00 -0400
 categories: machine-learning
@@ -110,7 +110,7 @@ fitting from the question of selection. Deep learning still has all the hard
 parts: representation learning, optimization dynamics, data structure, and
 distribution shift.
 
-## A Small Experiment
+## A Pocket Experiment
 
 The simulator below fits random-feature ridge regressions to a noisy
 one-dimensional function. The x-axis is the number of random features. Around the
@@ -191,7 +191,7 @@ accuracy against parameter count. I would also log:
 The interpolation threshold is a useful landmark. It is not a deployment
 guarantee.
 
-## The Research Direction
+## Where I Would Push Next
 
 The practical research frontier is to make implicit regularization legible.
 
@@ -214,7 +214,7 @@ Double descent is not a license to ignore overfitting. It is a warning that the
 old vocabulary was too small. In modern ML, "fits the training data" is a weak
 description. The real sentence begins after it: fits the training data how?
 
-## Notes
+## Sources
 
 [^zhang]: Chiyuan Zhang, Samy Bengio, Moritz Hardt, Benjamin Recht, and Oriol Vinyals, "Understanding deep learning requires rethinking generalization," ICLR 2017. [arXiv](https://arxiv.org/abs/1611.03530).
 
