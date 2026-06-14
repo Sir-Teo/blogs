@@ -1,34 +1,36 @@
 ---
 layout: post
-title: "Quorum Geometry Remembers Writes"
-description: "Distributed systems do not remember by hoping replicas agree. They remember through intersection: every future decision must touch enough of the past."
+title: "A Cluster Remembers by Overlap"
+description: "Replicas do not remember because they agree in spirit. They remember when the next decision is forced to meet the last one."
 date: 2026-06-13 19:00:00 -0400
 categories: computer-science
 tags: [distributed-systems, consensus, paxos, raft, quorums, replication, consistency]
-excerpt: "A quorum is not a vibe or a majority ritual. It is a geometric promise that the next operation must overlap with the information that makes the previous operation real."
+excerpt: "A quorum is not a majority sticker. It is the overlap that makes the next read, leader, or configuration bump into the past."
 ---
 
-The word quorum sounds ceremonial.
+The word quorum has a stiff little ceremonial smell.
 
-It evokes committees, bylaws, and the minimum number of people required before a
-meeting can pretend to be serious. In distributed systems the word is less
-decorative. A quorum is how a system remembers.
+It belongs to committees, bylaws, and the minimum number of people required
+before a meeting can pretend to be real. In distributed systems the word is more
+physical. A quorum is how a cluster prevents the future from walking around the
+past.
 
-A replicated system cannot rely on one machine being the source of truth, because
-that machine may fail, pause, partition, reboot, lose messages, or be replaced.
-So the system spreads facts across replicas. Then every future operation has to
-touch enough replicas that it cannot miss the facts that matter.
+One replica is easy to understand and easy to lose. It can fail, pause,
+partition, reboot, drop messages, or come back with a new disk and an innocent
+face. So we spread facts across replicas. Then every future operation has to ask
+enough of them that it cannot quietly miss the fact that made the previous
+operation count.
 
-That is the whole shape of the problem:
+Put the invariant on the whiteboard:
 
 ```text
-past information must intersect future decisions
+past information must intersect future authority
 ```
 
 Majorities are one way to force that intersection. They are not the only way.
 They are just the easiest arithmetic people trust at 3 a.m.
 
-## The Register Version
+## Start With One Register
 
 Start with one replicated register. There are $$N$$ replicas. A write completes
 after reaching $$W$$ replicas. A read consults $$R$$ replicas and returns the
@@ -102,22 +104,23 @@ intersection rule fails.
 </div>
 <script defer src="{{ '/assets/js/quorum-intersection-lab.js?v=20260613a' | relative_url }}"></script>
 
-With five replicas and majority quorums, everything is boring in the intended
+With five replicas and majority quorums, everything is boring in the useful
 way. A read quorum of three intersects a write quorum of three. Any two write
-quorums of three intersect. A system can lose two replicas and still have three
-left.
+quorums of three intersect. The system can lose two replicas and still have
+three left.
 
-Now set **Read quorum** to 2 and **Write quorum** to 2. The lab draws a stale
-read witness: one write can complete on replicas 1 and 2, while a later read can
-consult replicas 3 and 4 and never see it.
+Now do the tempting, bad thing: set **Read quorum** to 2 and **Write quorum** to
+2. The lab draws a stale-read witness. One write can complete on replicas 1 and
+2, while a later read can consult replicas 3 and 4 and never see it.
 
 The system did not merely become "a little less consistent." It stopped having
 the intersection property that made the latest write observable.
 
-## The Paxos Version
+## Paxos Uses the Same Memory Trick
 
-Paxos looks more mysterious because it is about choosing values, not just reading
-and writing versions. But the memory trick is still intersection.
+Paxos has a marble-statue reputation, partly deserved. It is about choosing
+values while messages wander and machines disappear, not merely reading and
+writing versions. Still, the memory trick is the same overlap.
 
 Lamport's "Part-Time Parliament" and "Paxos Made Simple" describe how a value
 can be chosen even while processes fail and messages are delayed.[^part-time][^paxos-simple]
@@ -152,7 +155,7 @@ system what it remembers, but asks the wrong witnesses.
 Consensus safety is not stored in a leader. It is stored in the impossibility of
 missing the past.
 
-## Majorities Are a Design Point
+## Majority Is a Design Point
 
 Majorities are popular because they collapse several constraints into one easy
 rule:
@@ -164,7 +167,7 @@ $$
 If every quorum is a majority, any two quorums intersect. With $$N=2f+1$$
 replicas, a majority quorum survives $$f$$ crash failures.
 
-That symmetry is a gift to operators and implementers. It is also conservative.
+That symmetry is kind to operators and implementers. It is also conservative.
 
 In the lab, set **Replicas** to 7, **Paxos phase 1** to 5, and **Paxos phase 2**
 to 3. Cross-phase intersection still holds because $$5+3>7$$. Steady-state
@@ -172,10 +175,10 @@ phase-2 replication can now run with only three live acceptors, tolerating four
 crashes for that operation. But electing a new leader needs five live acceptors,
 tolerating only two crashes.
 
-That is a real trade. You bought cheaper steady-state replication by making
-recovery and leadership changes harder. Maybe that is exactly right for a
-stable-leader system. Maybe it is a terrible bargain in a fleet with frequent
-leader churn.
+That is a real trade, not a loophole. You bought cheaper steady-state
+replication by making recovery and leadership changes harder. Maybe that is
+exactly right for a stable-leader system. Maybe it is a terrible bargain in a
+fleet with frequent leader churn.
 
 The point is not "use Flexible Paxos everywhere." The point is:
 
@@ -183,7 +186,7 @@ The point is not "use Flexible Paxos everywhere." The point is:
 quorum sizes are workload assumptions made executable
 ```
 
-## Raft Hides the Geometry Nicely
+## Raft Makes the Overlap Feel Ordinary
 
 Raft was designed to be easier to understand than Paxos by decomposing consensus
 into leader election, log replication, and safety.[^raft] Its standard form uses
@@ -195,7 +198,7 @@ A future leader must win a majority. Those two majorities overlap, so a future
 leader cannot be elected entirely from servers that missed the committed entry.
 Raft adds log freshness rules to make that overlap useful, not merely present.
 
-Raft's joint consensus reconfiguration makes the intersection visible. During a
+Raft's joint consensus reconfiguration makes the overlap visible. During a
 membership change, the system requires agreement from overlapping old and new
 configurations so that a committed entry cannot vanish between cluster shapes.
 The mechanism is different from the small register rule, but the invariant has
@@ -205,7 +208,7 @@ the same flavor:
 the next legitimate configuration must touch the previous legitimate memory
 ```
 
-## Dynamo-Style Quorums Are a Different Contract
+## Dynamo-Style Quorums Promise Something Else
 
 Dynamo-style systems use tunable $$N$$, $$R$$, and $$W$$ parameters, but they are
 not the same as Paxos.[^dynamo] Dynamo was built for high availability and used
@@ -213,21 +216,21 @@ versioning, hinted handoff, sloppy quorums, and application-assisted conflict
 resolution. A read/write inequality like $$R+W>N$$ is part of the story, not a
 complete linearizability proof for all failure modes.
 
-This is where engineers get hurt by slogans.
+This is where slogans do real damage.
 
 If a system uses sloppy quorums, a write may be acknowledged by healthy nodes
 outside the nominal replica set and repaired later. If the system accepts
 concurrent writes, a read may need to return multiple versions. If clocks are
 used to pick winners, the quorum math does not rescue you from clock behavior.
 
-The read/write intersection idea remains useful, but the contract has changed.
+The read/write intersection idea remains useful. The contract has changed.
 Sometimes the system is not trying to make every read return the latest write.
 It is trying to keep accepting writes, expose conflicts later, and let the
 application reconcile.
 
 That is not a lesser system. It is a different promise.
 
-## The Shape of a Split Brain
+## Split Brain Is Authority Without Overlap
 
 A split brain is not caused by a network partition alone. Partitions are just the
 weather. Split brain happens when both sides can gather enough authority to make
@@ -246,7 +249,7 @@ able to run with fewer live replicas is availability. Making sure two successful
 operations cannot miss each other is safety. A quorum choice changes both, but
 not in the same direction.
 
-## Linearizability Is a History Claim
+## Linearizability Needs a History Path
 
 Herlihy and Wing's linearizability condition gives one formal way to say a
 concurrent object behaves as if each operation took effect at a single instant
@@ -267,7 +270,7 @@ which future decision is forced to learn that?
 
 If the answer is "none," the system has not remembered. It has merely logged.
 
-## A Run Sheet for Quorum Designs
+## Questions Before Choosing Quorums
 
 Before I trust a replicated design, I want to know:
 
@@ -289,7 +292,7 @@ If the next decision can walk around the previous decision without touching it,
 the system may still be fast, available, and useful. But it is not remembering
 the thing you thought it remembered.
 
-## Citations and Loose Ends
+## Source Notes
 
 [^gifford]: David K. Gifford, ["Weighted Voting for Replicated Data"](https://dl.acm.org/doi/10.1145/800215.806583), *Proceedings of the Seventh Symposium on Operating System Principles*, 1979. A course-hosted PDF is available from [Cornell](https://www.cs.cornell.edu/courses/cs614/2003sp/papers/Gif79.pdf).
 
