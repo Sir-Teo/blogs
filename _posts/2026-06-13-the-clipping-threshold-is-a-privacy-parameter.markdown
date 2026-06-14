@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Clipping Threshold Is a Privacy Parameter"
+title: "Clipping Sets the Privacy Thermostat"
 description: "DP-SGD is often described as SGD plus noise. The more revealing description is clipped influence plus accounted randomness."
 date: 2026-06-13 10:42:00 -0400
 categories: machine-learning
@@ -325,7 +325,7 @@ Then add model-quality evidence that is specifically sensitive to clipping:
 The hard part is not drawing the DP-SGD box. The hard part is preserving the
 meaning of the guarantee as the training pipeline grows around it.
 
-## A Research Direction
+## The Unfinished Part
 
 The next experiment I would like to run is not another leaderboard. It is a
 clipping atlas.
@@ -347,7 +347,7 @@ optimizer, and an engineering system are genuinely entangled. The theorem needs
 sensitivity. The optimizer feels clipping. The system must account for every
 release. The clipping threshold is where all three meet.
 
-## Notes
+## The Trail of Papers
 
 [^dwork]: Cynthia Dwork, Frank McSherry, Kobbi Nissim, and Adam Smith, ["Calibrating Noise to Sensitivity in Private Data Analysis"](https://people.csail.mit.edu/asmith/PS/sensitivity-tcc-final.pdf), TCC 2006. See also the [Springer record](https://link.springer.com/chapter/10.1007/11681878_14).
 
