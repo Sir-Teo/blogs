@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Stop Asking the Aggregate to Referee"
-description: "Simpson's paradox is not an arithmetic prank. It is what happens when a mixture is asked to answer a causal question it was not designed to answer."
+title: "The Average Is a Mixture, Not a Verdict"
+description: "Simpson's paradox is not an arithmetic prank. It appears when a mixture is asked to answer a causal question it was not built to answer."
 date: 2026-06-13 19:36:00 -0400
 categories: statistics
 tags: [simpsons-paradox, collapsibility, odds-ratio, causal-inference, statistics, experimentation]
-excerpt: "A treatment can help in every subgroup and still look harmful in the aggregate. The aggregate did not lie; it answered a different question."
+excerpt: "A treatment can help in every subgroup and still look harmful overall. The aggregate did not lie; it averaged over a different population."
 ---
 
 The aggregate table has a dangerous authority.
@@ -30,7 +30,7 @@ university-wide admission rate is lower.
 
 The aggregate did not make an arithmetic error. It changed the mixture.
 
-## The Smallest Trap
+## The Reversal in Two Buckets
 
 Suppose there are two strata: easy cases and hard cases. Treatment improves the
 success probability in both:
@@ -66,7 +66,7 @@ effect plus change in case mix
 
 Only one of them may answer the causal question.
 
-## A Lab for Reversals and Drift
+## A Mixture You Can Flip
 
 The lab below uses a binary outcome called success. There are easy and hard
 strata. Treatment has the same conditional odds ratio in both strata. The mix
@@ -133,7 +133,7 @@ The distinction matters:
 
 Both are ways an aggregate can surprise you. They are not the same surprise.
 
-## The Berkeley Lesson
+## Berkeley, the Famous Warning
 
 The most famous real example is the 1973 University of California, Berkeley
 graduate admissions data. The aggregate table suggested women had lower admission
@@ -156,7 +156,7 @@ outcome, an effect of treatment, or something else in the causal graph.[^pearl]
 Probability tables tell you where the reversal is. They do not by themselves
 tell you which table answers the intervention question.
 
-## Collapsibility Is Not Confounding
+## Odds Ratios Have Their Own Trick
 
 The word collapsibility asks whether a measure of association keeps the same
 value after averaging over a covariate distribution, assuming the relevant
@@ -194,7 +194,7 @@ The balanced odds ratio still drifts away from the conditional odds ratio. The
 aggregate odds ratio is answering a marginal association question on a nonlinear
 scale.
 
-## Experiments Are Not Immune
+## Randomization Does Not Freeze the Mix
 
 Randomization protects the treatment assignment, not every subgroup comparison
 you might later make.
@@ -229,7 +229,7 @@ It is:
 which population distribution should define the intervention?
 ```
 
-## A Small Run Sheet
+## Questions Before You Trust the Average
 
 Before trusting an aggregate binary-outcome comparison, I want to know:
 
@@ -249,7 +249,7 @@ Before trusting an aggregate binary-outcome comparison, I want to know:
 The last item is the important one. Statistics does not decide whether the
 aggregate or the strata are "right" in the abstract. The decision does.
 
-## The Portable Sentence
+## The Sentence to Keep
 
 Simpson's paradox is not a magic trick. It is a warning label on mixtures.
 
@@ -266,7 +266,7 @@ before asking what the average says, ask what population it averages over
 
 That is where the paradox usually goes to rest.
 
-## Works Cited
+## Sources
 
 [^simpson]: Edward H. Simpson, ["The Interpretation of Interaction in Contingency Tables"](https://math.bme.hu/~marib/bsmeur/simpson.pdf), *Journal of the Royal Statistical Society, Series B*, 1951. DOI page: [Wiley](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1951.tb00088.x).
 
