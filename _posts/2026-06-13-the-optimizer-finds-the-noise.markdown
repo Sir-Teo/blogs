@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Portfolio Optimizers Find the Noise"
+title: "The Inverse Turns Noise Into a Bet"
 description: "Mean-variance optimization is elegant until the covariance matrix is estimated from too little history. The inverse turns tiny noisy eigenvalues into large portfolio bets."
 date: 2026-06-13 18:38:00 -0400
 categories: quantitative-finance
 tags: [covariance-estimation, portfolio-optimization, random-matrix-theory, shrinkage, markowitz, quantitative-finance]
-excerpt: "A covariance matrix is not a table of facts. It is a forecast with thousands of parameters. When a portfolio optimizer inverts it, sampling noise becomes leverage."
+excerpt: "A covariance matrix is not a table of facts. It is a forecast with thousands of parameters. When a portfolio optimizer inverts it, sampling noise can become leverage."
 ---
 
 The mean-variance optimizer has a beautiful one-line answer.
@@ -40,7 +40,7 @@ the bet.
 The optimizer is not stupid. It is obedient. It finds what the objective says is
 cheap.
 
-## A Matrix With Too Much Memory
+## A Matrix With More Parameters Than Mercy
 
 A covariance matrix for $$N$$ assets has
 
@@ -141,7 +141,7 @@ reconstructs the matrix.
 
 It is not a production-grade cleaner. It is a microscope.
 
-## The Inverse Loves Small Eigenvalues
+## Small Eigenvalues Look Cheap
 
 Write the covariance matrix as
 
@@ -171,7 +171,7 @@ minimum-variance portfolio needs large offsetting long and short positions, it
 may be harvesting a fragile covariance story rather than a robust diversification
 story.
 
-## The Noise Has a Spectrum
+## Noise Comes With a Spectrum
 
 Random matrix theory gives a useful null model. If $$N$$ standardized assets are
 actually independent and we estimate their correlation matrix from $$T$$ samples,
@@ -236,7 +236,7 @@ In Bayesian language, shrinkage is a prior. In numerical linear algebra
 language, it is regularization. In portfolio language, it is a defense against
 being seduced by a backtestable hedge that history did not measure well enough.
 
-## Why Equal Weighting Is So Annoying
+## Why 1/N Is So Annoying
 
 Equal weighting is not optimal under the Markowitz model. That is why it is
 annoying.
@@ -256,7 +256,7 @@ The optimizer asks for reliable means, variances, covariances, constraints,
 trading costs, and a stable objective. If you cannot pay that bill, equal
 weighting is not brilliant. It is just harder to fool.
 
-## The Better Question
+## Ask What the Optimizer Had to Believe
 
 The naive question is:
 
@@ -280,7 +280,7 @@ expressing estimator variance.
 If in-sample risk is much lower than true or out-of-sample risk, the optimizer
 has found a hole in the measuring device.
 
-## A Run Sheet for Covariance-Based Portfolios
+## Questions Before Inverting the Matrix
 
 Before I trust an optimized portfolio, I want to know:
 
