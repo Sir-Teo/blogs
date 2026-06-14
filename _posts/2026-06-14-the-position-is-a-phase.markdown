@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Position Is a Phase"
+title: "RoPE Makes Position a Phase"
 description: "Rotary position embeddings do not paste a position vector onto a token. They rotate query and key coordinates so attention sees relative displacement as phase."
 date: 2026-06-14 11:35:00 -0400
 categories: ai-systems
@@ -69,7 +69,7 @@ The lab below verifies that identity numerically with random query and key
 vectors. The default relative-identity error is around `1.6e-13`, which is just
 floating-point noise.
 
-## The Lab
+## The Working Surface
 
 The lab uses a simple diagnostic kernel:
 
