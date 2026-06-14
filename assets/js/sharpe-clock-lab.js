@@ -1,6 +1,15 @@
 (function () {
   var TRADING_DAYS = 252;
 
+  var DEFAULTS = {
+    autocorrelation: 25,
+    baseSharpe: 65,
+    clustering: 40,
+    smoothing: 40,
+    trials: 300,
+    years: 6
+  };
+
   var COLORS = {
     text: "#172026",
     muted: "#5d6872",
@@ -35,6 +44,23 @@
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function numberParam(raw, key) {
+    var value = Number(raw && raw[key]);
+    return Number.isFinite(value) ? value : DEFAULTS[key];
+  }
+
+  function cleanParams(raw) {
+    raw = raw || {};
+    return {
+      autocorrelation: clamp(Math.round(numberParam(raw, "autocorrelation")), -35, 75),
+      baseSharpe: clamp(Math.round(numberParam(raw, "baseSharpe")), 20, 150),
+      clustering: clamp(Math.round(numberParam(raw, "clustering")), 0, 100),
+      smoothing: clamp(Math.round(numberParam(raw, "smoothing")), 0, 85),
+      trials: clamp(Math.round(numberParam(raw, "trials")), 100, 700),
+      years: clamp(Math.round(numberParam(raw, "years")), 2, 15)
+    };
   }
 
   function mean(values) {
@@ -155,6 +181,7 @@
   }
 
   function simulatePath(params, runIndex) {
+    params = cleanParams(params);
     var years = params.years;
     var days = Math.round(years * TRADING_DAYS);
     var annualVol = 0.16;
@@ -221,6 +248,7 @@
   }
 
   function evaluate(params) {
+    params = cleanParams(params);
     var path = simulatePath(params, 0);
     var stats = sharpeStats(path.returns, TRADING_DAYS);
     var lags = autocorrelations(path.returns, 12);
@@ -502,7 +530,7 @@
   }
 
   function render(root) {
-    var params = parseParams(root);
+    var params = cleanParams(parseParams(root));
     var result = evaluate(params);
     updateOutputs(root, params);
     root.querySelector("[data-metrics]").innerHTML = [
@@ -551,6 +579,7 @@
       aggregateReturns: aggregateReturns,
       autocorrelations: autocorrelations,
       clockSharpes: clockSharpes,
+      cleanParams: cleanParams,
       evaluate: evaluate,
       longRunVariance: longRunVariance,
       sharpeStats: sharpeStats,

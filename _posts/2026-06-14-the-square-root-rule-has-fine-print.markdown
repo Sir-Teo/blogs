@@ -1,25 +1,26 @@
 ---
 layout: post
-title: "Square-Root Sharpe Needs Fine Print"
-description: "Annualizing a Sharpe ratio by sqrt(252) is not a law of nature. It is an assumption about the clock, the autocovariances, and how returns are reported."
+title: "The Sharpe Ratio Has a Clock"
+description: "Annualizing a Sharpe ratio by sqrt(252) is not a law of nature. It is an assumption about the sampling clock, the autocovariances, and how returns are reported."
 date: 2026-06-14 12:36:00 -0400
 categories: quantitative-finance
 tags: [sharpe-ratio, autocorrelation, newey-west, hedge-funds, quantitative-finance, risk-management]
-excerpt: "The same strategy can look like a 1.5 Sharpe on daily marks and a 0.9 Sharpe after accounting for serial correlation. The spreadsheet is not always lying; sometimes the clock is."
+excerpt: "The same strategy can look like a 1.47 Sharpe on daily marks and a 0.90 Sharpe after accounting for serial correlation. The spreadsheet is not always lying; sometimes the clock is."
 ---
 
-The most dangerous number in a strategy deck is often the tiny one in front of
-the Sharpe ratio:
+The most dangerous part of a strategy deck is sometimes the tiny multiplier
+standing in front of the Sharpe ratio:
 
 ```text
 daily Sharpe * sqrt(252)
 ```
 
-It looks like a unit conversion, so it inherits the authority of arithmetic.
-Daily becomes annual. Monthly becomes annual. A strategy with smooth marks
-becomes clean. A research note becomes shorter.
+It looks like a unit conversion, so it borrows the authority of arithmetic.
+Daily becomes annual. Monthly becomes annual. Smooth marks look respectable. A
+research note gets shorter.
 
-But the square-root rule is not a law of nature. It is a model.
+But the square-root rule is not a law of nature. It is a model wearing a small
+hat.
 
 It says, roughly: the returns you are scaling are close enough to independent
 draws from a stable process that variance grows linearly with time. When that
@@ -130,6 +131,16 @@ The point is not to mimic any fund exactly. The point is to make a
 measurement error visible: the same economic path can produce a high
 daily-clock Sharpe and a much lower long-run-variance Sharpe.
 
+I audited the lab and the article numbers before rewriting. At the default
+settings, the daily-clock Sharpe is 1.47, the HAC Sharpe is 0.90, lag-1
+autocorrelation is 57.9%, and the long-run variance estimate is 2.66x the daily
+variance. A 648-case sweep over base Sharpe, autocorrelation, smoothing,
+volatility clustering, sample length, and Monte Carlo path count produced finite
+metrics throughout and the requested number of sample paths in every case. The
+audit also found that the exported `evaluate({})` API fell back to zeros instead
+of the UI defaults; the lab now cleans missing parameters the same way the
+sliders do.
+
 <div class="sharpe-clock-lab" data-sharpe-clock-lab>
   <div class="sharpe-clock-lab__controls">
     <label>
@@ -173,7 +184,7 @@ daily-clock Sharpe and a much lower long-run-variance Sharpe.
     are deliberately noisier in short samples.
   </p>
 </div>
-<script defer src="{{ '/assets/js/sharpe-clock-lab.js?v=20260614b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/sharpe-clock-lab.js?v=20260614c' | relative_url }}"></script>
 
 Start with the default settings. The daily-clock Sharpe is much higher than the
 HAC Sharpe. The reason is visible in two places: the lag-1 autocorrelation is
@@ -276,7 +287,8 @@ earned its convenience. If they disagree, that disagreement is not a nuisance
 to hide in an appendix. It is information about the strategy, the marks, and
 the market microstructure underneath the return series.
 
-The Sharpe ratio is not one number. It is a measurement taken through a clock.
+The Sharpe ratio is not one number floating in space. It is a measurement taken
+through a clock.
 
 ## Source Notes
 
