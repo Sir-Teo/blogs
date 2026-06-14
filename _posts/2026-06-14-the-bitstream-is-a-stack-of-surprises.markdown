@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Bitstream Is a Stack of Surprises"
+title: "Entropy Coders Stack Surprises"
 description: "Entropy coding is the quiet machine underneath compression and modern prediction. A good model buys fractional bits; the coder's job is to turn that probability ledger into a reversible stream."
 date: 2026-06-14 08:44:00 -0400
 categories: computer-science
