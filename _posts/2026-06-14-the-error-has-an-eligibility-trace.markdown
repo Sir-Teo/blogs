@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Error Has an Eligibility Trace"
+title: "Eligibility Traces Let Errors Echo"
 description: "TD(lambda) does not wait for the final reward. It lets a prediction error flow backward through a decaying memory of recently visited states."
 date: 2026-06-14 14:10:00 -0400
 categories: machine-learning
