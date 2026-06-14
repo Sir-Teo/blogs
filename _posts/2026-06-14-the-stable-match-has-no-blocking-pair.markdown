@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Stable Match Has No Blocking Pair"
+title: "Stable Matching Hunts Blocking Pairs"
 description: "Deferred acceptance is not a sorting algorithm. It is a way to remove every mutually tempting off-book deal while making one side best off among all stable outcomes."
 date: 2026-06-14 06:42:00 -0400
 categories: computer-science
