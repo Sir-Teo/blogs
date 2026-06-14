@@ -133,7 +133,10 @@
       a.href = '#' + h.id;
       a.setAttribute('aria-label', 'Permalink to this section');
       a.textContent = '#';
-      h.insertBefore(a, h.firstChild);
+      // Appended last: on desktop it is absolutely positioned into the left
+      // margin (order is irrelevant); on narrow screens it falls inline after
+      // the heading text instead of being hidden.
+      h.appendChild(a);
     });
   }
 
@@ -216,41 +219,68 @@
     }
   }
 
-  /* ---------- Copy buttons on code blocks ---------- */
-  var codeBlocks = Array.prototype.slice.call(document.querySelectorAll('.post-content pre'));
-  if (codeBlocks.length && navigator.clipboard) {
-    codeBlocks.forEach(function (pre) {
-      var wrap = document.createElement('div');
-      wrap.className = 'codeblock';
-      pre.parentNode.insertBefore(wrap, pre);
-      wrap.appendChild(pre);
+  /* ---------- Code block enhancements (language label + copy) ---------- */
+  Array.prototype.slice.call(document.querySelectorAll('.post-content pre')).forEach(function (pre) {
+    var wrap = document.createElement('div');
+    wrap.className = 'codeblock';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
 
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'code-copy';
-      btn.textContent = 'Copy';
-      btn.setAttribute('aria-label', 'Copy code to clipboard');
-      wrap.appendChild(btn);
+    // Language label, read from Rouge's `language-xxx` wrapper. Plain text and
+    // unlabelled blocks (the vast majority here) get no tag, to avoid clutter.
+    var langEl = pre.closest('[class*="language-"]');
+    var lang = '';
+    if (langEl) {
+      Array.prototype.forEach.call(langEl.classList, function (c) {
+        if (c.indexOf('language-') === 0) lang = c.slice(9);
+      });
+    }
+    if (lang && lang !== 'text' && lang !== 'plaintext' && lang !== 'plain') {
+      wrap.classList.add('has-lang');
+      var tag = document.createElement('span');
+      tag.className = 'code-lang';
+      tag.textContent = lang;
+      tag.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(tag);
+    }
 
-      var resetTimer;
-      btn.addEventListener('click', function () {
-        var code = pre.querySelector('code') || pre;
-        navigator.clipboard.writeText(code.innerText).then(function () {
-          btn.textContent = 'Copied';
-          btn.classList.add('is-copied');
-          clearTimeout(resetTimer);
-          resetTimer = setTimeout(function () {
-            btn.textContent = 'Copy';
-            btn.classList.remove('is-copied');
-          }, 1600);
-        }).catch(function () {
-          btn.textContent = 'Failed';
-          clearTimeout(resetTimer);
-          resetTimer = setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
-        });
+    if (!navigator.clipboard) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'code-copy';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy code to clipboard');
+    wrap.appendChild(btn);
+
+    var resetTimer;
+    btn.addEventListener('click', function () {
+      var code = pre.querySelector('code') || pre;
+      navigator.clipboard.writeText(code.innerText).then(function () {
+        btn.textContent = 'Copied';
+        btn.classList.add('is-copied');
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () {
+          btn.textContent = 'Copy';
+          btn.classList.remove('is-copied');
+        }, 1600);
+      }).catch(function () {
+        btn.textContent = 'Failed';
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
       });
     });
-  }
+  });
+
+  /* ---------- Mark external links ---------- */
+  Array.prototype.slice.call(document.querySelectorAll('.post-content a[href]')).forEach(function (a) {
+    var href = a.getAttribute('href') || '';
+    if (!/^https?:\/\//i.test(href)) return;
+    if (a.hostname && a.hostname !== location.hostname) {
+      a.classList.add('external-link');
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
 
   /* ---------- Back to top ---------- */
   var toTop = document.createElement('button');
