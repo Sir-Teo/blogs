@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Batch Is a Hidden Input"
+title: "BatchNorm Has Witnesses"
 description: "Batch normalization is not just a layer. In training mode, every example is partly normalized by its neighbors."
 date: 2026-06-14 13:36:00 -0400
 categories: machine-learning
