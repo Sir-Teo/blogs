@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The FFT Thinks the Signal Is a Ring"
+title: "FFTs Wrap the Signal Around"
 description: "FFT convolution is fast because multiplication in frequency space implements convolution. The catch is that the DFT lives on a circle, so missing zero padding turns tails into aliases."
 date: 2026-06-14 05:24:00 -0400
 categories: computer-science
@@ -357,7 +357,7 @@ Zero padding makes that circle large enough to contain the line.
 
 Once you remember the ring, the magic door becomes an engineering tool again.
 
-## Notes
+## Further Reading
 
 [^mit]: MIT OpenCourseWare, "Introduction to Neural Computation," Lecture 12, includes the convolution theorem: convolution in time corresponds to multiplication in frequency. [PDF](https://ocw.mit.edu/courses/9-40-introduction-to-neural-computation-spring-2018/3af4f6a0ae1df1d886293979018142b0_MIT9_40S18_Lec12.pdf).
 
