@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Log-Log Line Is Not a Law"
+title: "The Log-Log Trap"
 description: "Heavy tails are easy to see and hard to prove. A straight-ish line on a log-log plot is a clue, not a statistical argument."
 date: 2026-06-13 02:03:00 -0400
 categories: statistics
@@ -175,7 +175,7 @@ Power laws are among the most interesting statistical objects we have because
 they connect measurement, mechanism, and scale. That is exactly why they deserve
 more care. The plot is an invitation. The law has to be earned.
 
-## Notes
+## Works Cited
 
 [^newman]: M. E. J. Newman, "Power laws, Pareto distributions and Zipf's law," *Contemporary Physics*, 2005. [arXiv](https://arxiv.org/abs/cond-mat/0412004).
 
