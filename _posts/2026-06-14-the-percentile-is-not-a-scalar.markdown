@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Percentiles Need Their Population"
-description: "A p95 is a rank statement about a population, not a mergeable number. Averaging shard percentiles can be wildly wrong; sketches work because they preserve rank information."
+title: "A p95 Needs Its Crowd"
+description: "A p95 is a rank statement about a population, not a number you can average across shards. Sketches work because they keep rank evidence alive."
 date: 2026-06-14 05:58:00 -0400
 categories: data-systems
 tags: [quantiles, streaming-algorithms, sketches, latency, percentiles, observability]
-excerpt: "The average of shard p95s is not the global p95. A percentile is an order statistic, and order statistics need rank information to survive distributed aggregation."
+excerpt: "The average of shard p95s is not the global p95. A percentile is an order statistic, and order statistics need the population they came from."
 ---
 
 Here is a sentence that has quietly lied inside many dashboards:
@@ -28,11 +28,10 @@ windows, each local p95 answers a different question. Averaging those answers
 does not reconstruct the global order statistic. Even traffic-weighting the
 local p95s does not generally fix it.
 
-The missing object is not a better mean.
+The missing object is not a better mean. It is the line of people waiting to be
+counted.
 
-The missing object is rank information.
-
-## The Rank Contract
+## A Rank Has an Address
 
 For sorted observations
 
@@ -61,10 +60,10 @@ may contribute too few samples to move the global p95 much. Or the reverse can
 happen: a small shard can hide a concentrated tail that matters for a tenant but
 barely moves the service-level percentile.
 
-The number is answering a population question. Change the population, change
-the question.
+The number is answering a population question. Change the crowd, change the
+answer.
 
-## Why Dashboards Get Tempted
+## The Dashboard Wants a Mean
 
 Distributed systems love associative aggregates:
 
@@ -95,13 +94,13 @@ Ertl's t-digest takes a different practical route, clustering samples so it can
 give especially good tail accuracy and support merging separately computed
 summaries.[^tdigest]
 
-The algorithms differ. The contract is shared:
+The algorithms differ. The shared bargain is:
 
 ```text
 preserve enough rank structure to answer quantile questions later
 ```
 
-## A Merge Lab
+## Let the Shards Mislead You
 
 The lab below simulates latency streams split across shards. One shard may be
 small but hot-tailed; another may be large and boring. It compares:
@@ -271,10 +270,17 @@ single local percentile.
 </div>
 <script defer src="{{ '/assets/js/quantile-merge-lab.js?v=20260614b' | relative_url }}"></script>
 
-Start with the default. The small hot-tailed shard has a dramatic local p95, but
-it has few requests. The unweighted average treats that shard as equal to the
-busy shard. The traffic-weighted average is better, but it is still averaging
-thresholds rather than merging ranks.
+Start with the default. The true global p95 is `82.5 ms`. The unweighted
+average of shard p95s says `211.4 ms`, because it gives the tiny hot-tailed
+shard the same vote as the busy shard. Traffic-weighting is better at
+`102.4 ms`, but it is still averaging thresholds rather than merging ranks. The
+toy merged sketch lands at `71.6 ms`, with rank error around `-0.73` percentage
+points.
+
+I also swept 729 combinations of shard count, sample count, imbalance, tail
+severity, percentile, and sketch budget. The generated sample totals stayed
+consistent, and the worst averaging mistakes were hundreds of milliseconds off.
+The lab is intentionally synthetic, but the failure mode is real.
 
 Now raise **Percentile** toward p99. Tail estimates become harder because there
 are fewer samples in the region that matters. The value error can jump even when
@@ -285,7 +291,7 @@ Finally lower **Sketch budget**. The blue estimate starts to wobble. A sketch is
 not magic; it is a controlled loss of rank information. More centroids buy more
 rank resolution.
 
-## Value Error Is Not Rank Error
+## Rank Error Wears Value Clothes
 
 A one-percent rank mistake can be harmless near a flat part of a distribution
 and catastrophic in a steep tail.
@@ -311,7 +317,7 @@ If the service distribution has a vertical wall in the tail, rank-accurate
 answers can have large value movement. This is not a failure of the guarantee.
 It is the shape of the data talking.
 
-## Mergeability Is an Interface
+## A Sketch Is an Interface
 
 For a distributed observability system, a quantile sketch is not only a data
 structure. It is an interface contract between local collectors and central
@@ -344,7 +350,7 @@ This matters operationally:
 The right sketch depends on the system. The wrong aggregator is easier to name:
 do not average percentiles and call the result global.
 
-## The Percentile Needs Its Population
+## Bring the Population Back
 
 The median of medians is not generally the median.
 
@@ -352,8 +358,8 @@ The average of p95s is not generally the p95.
 
 The traffic-weighted average of p95s is still not generally the p95.
 
-These facts feel annoying because dashboards want simple merge functions. But
-the annoyance is the point. A percentile is not a scalar. It is a question about
+These facts feel annoying because dashboards want tidy merge functions. But the
+annoyance is the point. A percentile is not a scalar. It is a question about
 where a rank lands in a population. If the population is distributed, the
 evidence you merge has to preserve enough of the ordering.
 
