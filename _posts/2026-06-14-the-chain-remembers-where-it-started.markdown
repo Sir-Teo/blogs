@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "MCMC Chains Remember the Start"
-description: "A Metropolis chain can accept most proposals and still fail to explore. Convergence is not a mood; it is a claim about what the chain has forgotten."
+title: "The Sampler Paced in the Wrong Room"
+description: "A Metropolis chain can accept most proposals and still fail to explore. Convergence is a claim about what the chain has forgotten, not how busy it looks."
 date: 2026-06-14 13:00:00 -0400
 categories: statistics
 tags: [mcmc, metropolis-hastings, markov-chains, bayesian-inference, diagnostics, monte-carlo]
-excerpt: "Acceptance rate is not convergence. A chain can move almost every step, estimate the mean correctly by accident, and still remember which mode it started in."
+excerpt: "Acceptance rate is not convergence. A chain can move almost every step, get the mean right by cancellation, and still remember which mode it started in."
 ---
 
-Here is the trap:
+Here is the diagnostic trap in its most seductive form:
 
 ```text
 the sampler is moving
@@ -20,17 +20,17 @@ therefore the chain has converged
 The first three lines can be true while the fourth is false.
 
 Markov chain Monte Carlo is one of the stranger bargains in computational
-statistics. Instead of drawing independent samples from a distribution, we build
-a machine whose long-run behavior has that distribution as its equilibrium. The
-machine is allowed to be dependent. It is allowed to hesitate. It is allowed to
-walk through probability space one local proposal at a time.
+statistics. Instead of drawing independent samples from a distribution, we
+build a machine whose long-run behavior has that distribution as its
+equilibrium. The machine is allowed to be dependent. It is allowed to hesitate.
+It is allowed to walk through probability space one local proposal at a time.
 
 But in exchange, it must forget.
 
 It must forget its starting point, forget which side of a valley it began on,
 forget the warm-up path, and settle into the stationary distribution we intended
 to sample. A trace plot is not proof of that. Neither is an acceptance rate.
-Neither, by itself, is a pretty posterior mean.
+Neither, by itself, is a posterior mean that happens to look sensible.
 
 The Metropolis paper began with statistical mechanics: use a modified Monte
 Carlo procedure to sample configurations of interacting particles, accepting
@@ -43,14 +43,14 @@ That stationary word is doing heavy work. It says what happens after the chain
 has had enough time. It does not tell you that your finite run has had enough
 time.
 
-## A Chain Memory Lab
+## Four Chains, Two Locked Rooms
 
 The lab below samples from a two-dimensional mixture with two symmetric modes.
-The exact target mean of the `x` coordinate is zero. That makes the default
-run slightly nasty: two chains start on the left, two chains start on the right,
+The exact target mean of the `x` coordinate is zero. That makes the default run
+slightly nasty: two chains start on the left, two chains start on the right,
 none of them cross the valley, and the pooled mean looks almost perfect anyway.
 
-The diagnostics tell different stories:
+The diagnostics are looking at different pieces of the lie:
 
 - **acceptance** says how often proposals are kept;
 - **R-hat** compares between-chain and within-chain variation;
@@ -248,10 +248,10 @@ pooled mean error: about 0.01
 
 That last line is the bait. The target mean is zero and the pooled estimate is
 near zero, but only because the chains are stuck symmetrically. Two chains
-remember "left." Two chains remember "right." The average has forgotten nothing;
-it has merely cancelled two failures.
+remember "left." Two chains remember "right." The average has not forgotten
+anything; it has merely cancelled two failures.
 
-## Acceptance Is a Throughput Counter
+## Acceptance Only Says the Door Opened
 
 For a symmetric random-walk proposal, the Metropolis-Hastings rule accepts a
 proposed state `y` from current state `x` with probability
@@ -261,7 +261,8 @@ min(1, pi(y) / pi(x)).
 ```
 
 That rule is designed to make the target distribution stationary. It is not a
-certificate that the proposal scale is useful.
+certificate that the proposal scale is useful, or that the chain went anywhere
+important.
 
 Roberts and Rosenthal give the clean one-dimensional intuition. If the proposal
 variance is extremely small, nearly every move is accepted, but the chain
@@ -280,9 +281,9 @@ superstition. Roberts, Gelman, and Gilks derived it for a high-dimensional
 asymptotic setting; Roberts and Rosenthal review the broader scaling picture
 and note different targets for different algorithms, such as MALA.[^roberts-rosenthal]
 In this two-dimensional mixture lab, chasing `0.234` is not the point. The point
-is to see why acceptance alone is a weak diagnostic.
+is to see why acceptance alone is a weak witness.
 
-## R-hat Asks Whether Chains Disagree
+## R-hat Listens for Disagreement
 
 Gelman and Rubin's multiple-sequence idea is beautifully practical: start
 several chains from overdispersed points and compare variation between chains
@@ -297,13 +298,13 @@ R-hat is not omniscient. If every chain starts in the same wrong mode, R-hat can
 look too friendly. If modes are visited rarely but synchronously, a finite run
 can still fool you. But it asks a better question than "did the chain move?"
 
-It asks:
+It asks a sharper question:
 
 ```text
 would I believe these chains came from the same settled distribution?
 ```
 
-## ESS Prices Dependence
+## ESS Charges Rent for Dependence
 
 Monte Carlo error gets cheap when samples are independent. MCMC samples are not.
 Effective sample size is an attempt to price that dependence for a chosen
@@ -320,7 +321,7 @@ time: autocorrelation inflates the variance of Monte Carlo estimates.[^roberts-r
 The lab's autocorrelation panel is the visual version. Bars that decay slowly
 mean the chain is still carrying yesterday's state around.
 
-## The Valley Is a Geometry Problem
+## The Valley Is the Actual Problem
 
 The hard part of the default target is not the Gaussian shape inside each mode.
 It is the low-density gap between modes. A local random walk proposes nearby
@@ -334,10 +335,10 @@ Hamiltonian dynamics to propose distant states that can still have high
 acceptance, avoiding the diffusive behavior of simple random walks.[^neal]
 HMC is not a magic answer to isolated modes; Neal explicitly notes tempering as
 useful when multiple isolated modes exist. But the conceptual contrast is
-valuable: good proposals use geometry. Bad proposals ask a random walk to do a
-commute.
+valuable: good proposals use geometry. Bad proposals ask a random walk to
+commute through a low-density valley.
 
-## A Short Checklist I Trust More Than Vibes
+## Receipts I Trust More Than a Plausible Mean
 
 For a serious posterior, I want at least this much evidence:
 
