@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "When Alpha Was Mostly a Clock"
-description: "At high frequency, a lead-lag signal can be a real market effect, a data-engineering artifact, or both. The Epps effect is the warning label."
+title: "The Alpha Was a Timestamp"
+description: "At high frequency, a lead-lag signal can be market structure, a data-engineering artifact, or both. The Epps effect is the warning label."
 date: 2026-06-13 06:18:00 -0400
 categories: quantitative-finance
 tags: [market-microstructure, epps-effect, covariance-estimation, lead-lag, high-frequency-data, quantitative-finance]
-excerpt: "A strategy says one asset predicts another by a few seconds. Before believing the alpha, audit the clocks: asynchronous ticks, previous-tick interpolation, microstructure noise, and lead-lag structure can manufacture a signal."
+excerpt: "A strategy says one asset predicts another by a few seconds. Before believing the alpha, audit the clocks: asynchronous ticks, stale prices, microstructure noise, and timestamp conventions can manufacture a signal."
 ---
 
 The trade looks clean.
@@ -36,7 +36,7 @@ way a correlation can vanish at one sampling frequency and reappear at another.
 It is also about a research habit: before calling a high-frequency relation an
 economic signal, make a ledger of the clocks that produced it.
 
-## The Old Warning
+## The Correlation Changed With the Clock
 
 In 1979, Thomas Epps studied comovements in stock prices over very short
 intervals and reported the phenomenon now bearing his name: empirical
@@ -82,7 +82,7 @@ trading affect variances, autocorrelations, and cross-autocorrelations.[^lo]
 That matters because a lead-lag backtest is usually built from exactly those
 objects.
 
-## A Toy Market With Bad Clocks
+## A Toy Market With Stale Clocks
 
 The lab below simulates two latent correlated log-price paths. The latent paths
 share a common shock, but the observed prices arrive on separate Poisson-like
@@ -168,7 +168,7 @@ bar is tiny while the noise is not. Aggregation helps, but aggregation also
 changes the question. A five-minute correlation is not a one-second trading
 edge.
 
-## The Estimator That Refuses a Grid
+## The Estimator That Asks What Overlapped
 
 The usual realized covariance estimator wants synchronous observations:
 
@@ -226,7 +226,7 @@ If two researchers use the same raw trades but different synchronization rules,
 they can produce different correlations, different lags, and different
 strategies.
 
-## When the Lag Is Real
+## Real Leads Still Need Clock Receipts
 
 None of this means lead-lag effects are fake.
 
@@ -255,7 +255,7 @@ tick data is better described by sampled diffusions or by connected point
 processes.[^discrete] That is the deeper research direction: the Epps curve is
 not merely a nuisance. It is a fingerprint of the data-generating mechanism.
 
-## The Clock Audit
+## Receipts for the Clock
 
 Here is the checklist I would want before trusting a high-frequency lag:
 
@@ -292,7 +292,7 @@ The audit is boring in the way good plumbing is boring. That is why it matters.
 In a slow monthly factor, a one-second timestamp convention is invisible. In a
 one-second strategy, it can be the whole result.
 
-## A Small Research Program
+## Stress-Test the Watch
 
 The next step I would like to build is not a bigger backtest. It is a clock
 stress test.
@@ -316,7 +316,7 @@ assumption about time.
 
 The market may still contain a lead. But first, prove it is not your watch.
 
-## Works Cited
+## Sources
 
 [^epps]: Thomas W. Epps, ["Comovements in Stock Prices in the Very Short Run"](https://www.tandfonline.com/doi/abs/10.1080/01621459.1979.10482508), *Journal of the American Statistical Association*, 1979. See also the [JSTOR record](https://www.jstor.org/stable/2286325).
 
