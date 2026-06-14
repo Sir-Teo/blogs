@@ -61,11 +61,11 @@
     raw = raw || {};
     return {
       alpha: clamp(numericParam(raw, "alpha"), 2, 45) / 100,
-      episodes: clamp(numericParam(raw, "episodes"), 5, 160),
+      episodes: Math.round(clamp(numericParam(raw, "episodes"), 5, 160)),
       lambda: clamp(numericParam(raw, "lambda"), 0, 100) / 100,
       rightProb: clamp(numericParam(raw, "rightProb"), 35, 65) / 100,
-      runs: clamp(numericParam(raw, "runs"), 20, 160),
-      states: clamp(numericParam(raw, "states"), 5, 25),
+      runs: Math.round(clamp(numericParam(raw, "runs"), 20, 160)),
+      states: Math.round(clamp(numericParam(raw, "states"), 5, 25)),
       traceMode: raw.traceMode === "accumulate" ? "accumulate" : DEFAULT_PARAMS.traceMode
     };
   }
