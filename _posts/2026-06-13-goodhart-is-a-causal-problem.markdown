@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Goodhart's Law Is a Causal Problem"
+title: "Goodhart Needs a Causal Diagram"
 description: "Metrics fail under pressure because selection, gaming, and feedback change the data-generating process that made the metric useful."
 date: 2026-06-13 00:15:00 -0400
 categories: statistics
@@ -131,7 +131,7 @@ new causal paths into the metric that do not pass through true value.
 </figcaption>
 </figure>
 
-## A Small Experiment
+## The Small Test Bench
 
 The simulator below creates a world of candidate projects. Each project has a
 true value, a noisy proxy score, and a gameable surface that can inflate the
@@ -270,7 +270,7 @@ Finally, shrinkage helps. Extreme proxy scores should be pulled toward a prior
 unless backed by independent evidence. The more options the optimizer searched,
 the more skepticism the winner deserves.
 
-## The Takeaway
+## The Portable Lesson
 
 Metrics are not bad. A world without measurement is a world where power hides
 behind stories.
