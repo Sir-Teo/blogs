@@ -1,0 +1,477 @@
+---
+layout: post
+title: "The Branch Predictor Is a Tiny Online Learner"
+description: "Modern CPUs guess control flow with small adaptive models. Two-bit counters, gshare, and perceptrons expose the same old machine-learning tradeoff: context helps until memory and representation run out."
+date: 2026-06-14 08:40:00 -0400
+categories: computer-science
+tags: [branch-prediction, computer-architecture, online-learning, perceptrons, speculative-execution, systems]
+excerpt: "A branch predictor is not a fortune teller. It is a tiny online learner with a short memory, a fixed table budget, and a hard deadline."
+---
+
+The CPU has to guess.
+
+Not eventually. Not after a batch job. Now.
+
+A conditional branch says: the next instruction might be over here, or it might
+be over there. A wide out-of-order processor cannot sit quietly until the branch
+resolves. It predicts, fetches down the guessed path, and later either keeps the
+work or throws it away.
+
+That makes branch prediction feel like a hardware topic. Tables, indices,
+pipeline flushes, instruction windows.
+
+But the learning problem is small and familiar:
+
+```text
+given a branch address and a short recent history,
+predict the next binary outcome,
+then update after the true label arrives
+```
+
+It is online binary classification under a brutal latency budget.
+
+The old trick, still worth respecting, is the two-bit saturating counter. Each
+branch maps to a small counter. Taken increments. Not-taken decrements. The high
+bit predicts the next outcome. James Smith's early branch-prediction work studied
+this family of simple dynamic strategies with instruction traces, because even a
+few bits of state can beat static guessing when a branch is biased.[^smith]
+
+Then the field started adding context.
+
+Yeh and Patt's two-level adaptive predictors made branch prediction depend on
+execution history gathered at run time.[^yeh] McFarling's gshare mixed global
+branch history with the branch address by XORing them before indexing a table,
+which can separate contexts that would otherwise collide.[^mcfarling] Jimenez
+and Lin later showed that a perceptron predictor can use much longer histories
+with storage that grows roughly linearly in history length, at least for
+correlations that are close to linearly separable.[^perceptron]
+
+This is the whole machine-learning shape in miniature:
+
+```text
+more context -> better predictions
+more context -> more states to remember
+more states -> more aliasing under a fixed memory budget
+```
+
+The branch predictor is a model. Its weights just happen to live near the front
+end of the processor.
+
+## A Toy Predictor Race
+
+The lab below simulates a stream of conditional branches. It is not a cycle
+accurate CPU model. It does not model fetch bandwidth, branch target buffers,
+wrong-path pollution, update timing, or speculative recovery. It measures only
+direction prediction on a synthetic branch trace, in misses per 1,000 dynamic
+branches.
+
+That narrowness is useful. It lets the learning problem stand still.
+
+The trace contains five branch families:
+
+1. a loop branch, usually taken until a loop exit;
+2. random feeder branches, which are intentionally hard;
+3. a copy branch that repeats the previous random branch, with optional noise;
+4. a parity branch that depends on an XOR-like relation between recent branches;
+5. decoy branches that increase the working set and table aliasing.
+
+The predictors are deliberately small:
+
+1. always taken;
+2. a two-bit bimodal table indexed by branch address;
+3. gshare, a two-bit table indexed by branch address XOR global history;
+4. a perceptron table with one signed weight per history bit.
+
+<style>
+  .branch-lab {
+    background: #ffffff;
+    border: 1px solid #d7dee5;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    padding: 1rem;
+  }
+
+  .branch-lab__controls {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    margin-bottom: 0.85rem;
+  }
+
+  .branch-lab__controls label {
+    color: #172026;
+    display: grid;
+    font-size: 0.83rem;
+    font-weight: 700;
+    gap: 0.35rem;
+  }
+
+  .branch-lab__controls output {
+    color: #0f766e;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .branch-lab__controls input {
+    accent-color: #0f766e;
+    width: 100%;
+  }
+
+  .branch-lab__metrics {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin: 0.2rem 0 0.9rem;
+  }
+
+  .branch-lab__metric {
+    background: #f8fafc;
+    border: 1px solid #e4eaf0;
+    border-radius: 8px;
+    padding: 0.62rem 0.7rem;
+  }
+
+  .branch-lab__metric span {
+    color: #5d6872;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .branch-lab__metric strong {
+    color: #172026;
+    display: block;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.2rem;
+  }
+
+  .branch-lab canvas {
+    border: 1px solid #e4eaf0;
+    border-radius: 8px;
+    display: block;
+    width: 100%;
+  }
+
+  .branch-lab__legend {
+    color: #5d6872;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    font-size: 0.82rem;
+    margin-top: 0.75rem;
+  }
+
+  .branch-lab__legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .branch-lab__legend i {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.72rem;
+    width: 0.72rem;
+  }
+
+  .branch-lab__note {
+    color: #5d6872;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin: 0.7rem 0 0;
+  }
+
+  @media (max-width: 980px) {
+    .branch-lab__controls {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .branch-lab__metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .branch-lab {
+      margin-left: calc(50% - 50vw + 1rem);
+      margin-right: calc(50% - 50vw + 1rem);
+    }
+
+    .branch-lab__controls,
+    .branch-lab__metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 430px) {
+    .branch-lab__controls,
+    .branch-lab__metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="branch-lab" data-branch-predictor-lab>
+  <div class="branch-lab__controls">
+    <label>
+      Table entries <output data-value="entries">64</output>
+      <input type="range" min="4" max="10" step="1" value="6" data-param="entriesExp">
+    </label>
+    <label>
+      History bits <output data-value="history">8</output>
+      <input type="range" min="0" max="14" step="1" value="8" data-param="history">
+    </label>
+    <label>
+      Trace blocks <output data-value="blocks">700</output>
+      <input type="range" min="200" max="1600" step="50" value="700" data-param="blocks">
+    </label>
+    <label>
+      Branch noise <output data-value="noise">5%</output>
+      <input type="range" min="0" max="30" step="1" value="5" data-param="noise">
+    </label>
+    <label>
+      Decoy branches <output data-value="decoys">24</output>
+      <input type="range" min="0" max="96" step="4" value="24" data-param="decoys">
+    </label>
+    <label>
+      Loop period <output data-value="loopPeriod">9</output>
+      <input type="range" min="3" max="24" step="1" value="9" data-param="loopPeriod">
+    </label>
+    <label>
+      Seed <output data-value="seed">23</output>
+      <input type="range" min="1" max="999" step="1" value="23" data-param="seed">
+    </label>
+  </div>
+  <div class="branch-lab__metrics" data-metrics></div>
+  <canvas data-canvas aria-label="Branch predictor simulator comparing always-taken, bimodal, gshare, and perceptron predictors on synthetic branch traces"></canvas>
+  <div class="branch-lab__legend">
+    <span><i style="background:#0f766e"></i> Loop / gshare</span>
+    <span><i style="background:#2563eb"></i> Copy / bimodal</span>
+    <span><i style="background:#b45309"></i> Parity / perceptron</span>
+    <span><i style="background:#64748b"></i> Random</span>
+    <span><i style="background:#7c3aed"></i> Decoy</span>
+    <span><i style="background:#be123c"></i> Misprediction mark</span>
+  </div>
+  <p class="branch-lab__note">
+    Deterministic synthetic experiment. The metric is misses per 1,000 dynamic
+    branches, not processor MPKI. The branch working set counts distinct
+    branch-address plus global-history contexts observed in the trace.
+  </p>
+</div>
+
+<script defer src="{{ '/assets/js/branch-predictor-lab.js?v=20260614b' | relative_url }}"></script>
+
+With the default settings, the table has only `64` entries while the trace
+contains roughly `1,525` distinct branch-address-plus-history contexts. The
+top `95%` of dynamic branch events still need about `1,280` contexts. That is
+an alias load of about `23.8x`.
+
+So the result is not "history always wins."
+
+On this default trace:
+
+```text
+always taken        443 misses / 1k branches
+2-bit bimodal       398 misses / 1k branches
+gshare              422 misses / 1k branches
+perceptron          335 misses / 1k branches
+```
+
+Gshare does learn useful context. It cuts the copy branch from roughly coin-flip
+accuracy to about `37%` misses and the parity branch to about `35%` misses. But
+the same history that makes those contexts visible also makes many more table
+states collide. In the default setting, the perceptron wins because the copy
+branch is almost linearly separable: "repeat the previous branch." Its copy
+miss rate is about `5%`, close to the injected noise. The parity branch remains
+near `47%` misses, because XOR is the classic thing a plain perceptron cannot
+represent cleanly.
+
+Now drag **Decoy branches** to `0`, **Table entries** to `1024`, and **Branch
+noise** to `0%`. The story changes. Gshare becomes the best predictor in the
+lab, and the parity branch drops to about `8%` misses. The predictor did not
+become smarter in an abstract sense. Its representation finally matched the
+trace: a short history table can memorize the relevant local patterns when the
+table is large enough.
+
+Set **History bits** to `0`. The context disappears. Copy and parity collapse
+back toward coin-flip behavior. This is the supervised-learning lesson with
+hardware names:
+
+```text
+features matter,
+capacity matters,
+and capacity without the right feature is mostly decoration
+```
+
+## Two-Bit Counters Are Not Dumb
+
+It is tempting to laugh at a two-bit counter. It has four states. It cannot know
+why a branch is taken. It cannot represent "this branch follows the previous
+branch" or "this branch is taken when the last two outcomes differ."
+
+But biased branches are common, and a two-bit counter has exactly the right
+hysteresis for them. A loop branch that is taken eight times and then not taken
+once should not flip its opinion after one exit. It should miss the exit,
+possibly miss the first re-entry, and keep its bias.
+
+That is a small but important design instinct: stability is useful when the
+world is mostly stable.
+
+The cost is that a bimodal table sees each branch address as mostly one
+thing. If the same branch has different behavior under different recent control
+flow, the table has no place to store those conditional personalities.
+
+Two-level predictors add that place.
+
+## History Is a Feature Map
+
+In a gshare-style predictor, the index is roughly
+
+$$
+\text{index} = h(\text{PC}) \oplus \text{global history}.
+$$
+
+This is not deep magic. It is a feature map plus a hash table.
+
+The branch address says which static branch is being predicted. The global
+history says what just happened nearby in control flow. XORing them is a cheap
+way to spread contexts across the table. McFarling's WRL note framed the point
+as increasing the usefulness of branch history by hashing it with the branch
+address.[^mcfarling]
+
+The lab's copy branch shows the upside. A branch that is marginally random can
+be highly predictable after conditioning on the previous outcome. A model
+without history sees `50/50`. A model with history sees two contexts:
+
+```text
+previous branch taken     -> this branch usually taken
+previous branch not taken -> this branch usually not taken
+```
+
+That is why the "branch working set" matters. A recent workload-characterization
+paper by Vikas, Gratz, and Jimenez defines branch context using branch address
+and history, then studies working-set size and predictability as trace
+properties that correlate with modern predictor miss rates.[^bwset] The lab is
+borrowing the same mental model in miniature: contexts are the examples the
+predictor must remember.
+
+More history can lower entropy. It can also explode the context count.
+
+## Aliasing Is Interference, Not Just Collision
+
+When two contexts map to the same counter, they have to share an opinion.
+
+If both contexts want the same answer, aliasing is harmless or even helpful. If
+one wants taken and the other wants not-taken, the counter becomes a small
+argument that never settles.
+
+This is why a predictor can get worse when you add history under a fixed table
+budget. The feature map becomes more expressive, but the table does not grow.
+You have created more distinguishable contexts than the hardware can store.
+
+In software ML, this looks like a hashing trick with too few buckets. In a CPU
+front end, it looks like mispredictions.
+
+The lab's **Decoy branches** slider exists only to make that pain visible. Add
+decoys and shrink the table. The branch working set grows, the alias load rises,
+and gshare's aggregate miss rate can deteriorate even while it still does a
+better job on the copy and parity branches individually.
+
+The mistake is to ask whether history is good.
+
+The better question is:
+
+```text
+which contexts became separable,
+and which contexts started sharing state?
+```
+
+## Perceptrons Bought Longer Memory
+
+Jimenez and Lin's perceptron predictor is a beautiful architectural idea because
+it changes the storage curve.[^perceptron] A table of pattern counters needs
+many entries as history length grows. A perceptron stores a signed weight per
+history bit. The score is a dot product:
+
+$$
+y = w_0 + \sum_i w_i x_i,
+$$
+
+where each $$x_i$$ is a recent branch outcome encoded as $$+1$$ or $$-1$$. If
+the score is positive, predict taken. If the predictor is wrong, or not confident
+enough, update the weights toward the observed label.
+
+That gives the predictor a long, cheap memory for linear correlations. In the
+lab, "copy the previous branch" is exactly the kind of thing it likes. The
+perceptron assigns a positive weight to the recent outcome and quickly drives
+the copy miss rate toward the injected noise floor.
+
+But the parity branch is the warning label. XOR is not linearly separable in the
+plain feature space. The perceptron can have a long memory and still miss the
+shape of the rule.
+
+This is not a criticism of perceptrons. It is the usual model-class trade:
+
+```text
+long linear memory is powerful,
+but not every short rule is linear
+```
+
+Modern branch predictors do not stop at the four tiny predictors in the lab.
+TAGE-style predictors use multiple partially tagged tables with geometric
+history lengths, choosing longer matching histories when they are useful while
+keeping shorter components for branches that do not need deep context.[^tage]
+Recent predictor families also combine TAGE-like structures with statistical or
+neural correctors.
+
+That evolution is not a rejection of the simple story. It is the simple story
+scaled carefully:
+
+1. different branches need different history lengths;
+2. tags reduce destructive aliasing;
+3. side predictors catch patterns the main representation misses;
+4. every extra feature must still fit a timing and storage budget.
+
+## The Useful Analogy
+
+A branch predictor is a recommendation system for the instruction stream.
+
+The user is the program counter. The recent session is branch history. The item
+is the next path. The label arrives a few cycles later. The model updates online.
+Bad recommendations are not just embarrassing; they waste speculative work and
+energy.
+
+That analogy is imperfect, but it usefully shrinks the distance between hardware
+and machine learning. The CPU front end has been doing adaptive prediction for
+decades. It just does it with tiny tables, hard real-time constraints, and no
+patience for a training epoch.
+
+The lab's main lesson is not that one predictor wins.
+
+It is that the word "predictable" is conditional.
+
+A branch is predictable relative to a context representation, a memory budget,
+an update rule, and a deadline. Change any one of those, and the same trace can
+look obvious, random, or impossible.
+
+That is the part worth carrying back to ordinary ML work. Whenever a model
+looks stupid, ask whether the signal is absent, aliased, linearly inaccessible,
+or merely too far back in history for the model you gave it.
+
+The processor has to answer that question billions of times per second.
+
+---
+
+[^smith]: James E. Smith, "A Study of Branch Prediction Strategies," *ISCA*, 1981. [ACM Digital Library](https://dl.acm.org/doi/10.5555/800052.801871).
+
+[^yeh]: Tse-Yu Yeh and Yale N. Patt, "Two-Level Adaptive Training Branch Prediction," *MICRO*, 1991. [PDF](https://www.inf.pucrs.br/~calazans/graduate/SDAC/saltos.pdf).
+
+[^mcfarling]: Scott McFarling, "Combining Branch Predictors," DEC Western Research Laboratory Technical Note TN-36, 1993. [PDF](https://www.ece.ucdavis.edu/~akella/270W05/mcfarling93combining.pdf).
+
+[^perceptron]: Daniel A. Jimenez and Calvin Lin, "Dynamic Branch Prediction with Perceptrons," *HPCA*, 2001. [PDF](https://www.mslcourses.org/CS6461Reference/Application%20of%20Architecture/hpca01.pdf).
+
+[^tage]: Andre Seznec and Pierre Michaud, "A Case for (Partially) Tagged Geometric History Length Branch Prediction," *Journal of Instruction-Level Parallelism*, 2006. [HAL](https://inria.hal.science/hal-03408381v1).
+
+[^bwset]: FNU Vikas, Paul Gratz, and Daniel Jimenez, "Workload Characterization for Branch Predictability," arXiv, 2025. [arXiv](https://arxiv.org/abs/2512.15827).
