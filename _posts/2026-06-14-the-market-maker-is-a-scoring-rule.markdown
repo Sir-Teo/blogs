@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Market Maker Is a Scoring Rule"
+title: "Market Makers as Scoring Rules"
 description: "Prediction markets and proper scoring rules are the same incentive idea wearing different interfaces. LMSR turns a truthful log score into an always-on market maker with bounded loss."
 date: 2026-06-14 02:57:00 -0400
 categories: quantitative-finance
@@ -375,7 +375,7 @@ The market maker is the quiet part of that mechanism. It defines the price of
 changing public belief. In LMSR, that price is not arbitrary. It is the
 logarithmic scoring rule, turned sideways into liquidity.
 
-## Notes
+## Paper Trail
 
 [^hanson-lmsr]: Robin Hanson, "Logarithmic Market Scoring Rules for Modular Combinatorial Information Aggregation," working paper, 2002; later published in *Journal of Prediction Markets*. [PDF](https://mason.gmu.edu/~rhanson/mktscore.pdf). See also Hanson, "Combinatorial Information Market Design," *Information Systems Frontiers*, 2003. [Springer](https://link.springer.com/article/10.1023/A%3A1022058209073), [PDF](https://mason.gmu.edu/~rhanson/combobet.pdf).
 
