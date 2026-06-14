@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Leases Need Fences"
-description: "Lease expiry is a time-based promise, but stale side effects need an epoch check at the resource. A small simulator shows why clock padding and fencing tokens solve different bugs."
+title: "The Lease Expired; the Write Did Not"
+description: "Lease expiry is a time-based promise, but stale side effects need an epoch check at the resource. Clock padding and fencing tokens solve different bugs."
 date: 2026-06-14 15:44:00 -0400
 categories: software-engineering
 tags: [distributed-systems, leases, fencing-tokens, clocks, chubby, truetime, reliability]
-excerpt: "A lease can tell a coordinator when it is willing to move on. It cannot unsend an old request. For that, the resource needs a monotonically increasing epoch."
+excerpt: "A lease can tell a coordinator when it is willing to move on. It cannot unsend an old request. The resource needs a monotonically increasing epoch."
 ---
 
 The bug report usually arrives with a word that sounds too strong:
@@ -25,7 +25,7 @@ This post is about that late write. It is also about why a lease and a fence
 are different objects, even though people often talk about them in the same
 breath.
 
-## Case File
+## The Late Write in the Log
 
 Imagine a lock service that grants a lease:
 
@@ -58,7 +58,7 @@ it has no way to know that the caller belongs to an old epoch.
 The lock service was correct about its own state. The storage system still
 accepted the wrong operation.
 
-## The Lease Arithmetic
+## Clock Math Only Solves Clock Bugs
 
 First separate the clock problem from the side-effect problem.
 
@@ -105,7 +105,7 @@ time.[^lamport]
 
 But even perfect lease arithmetic does not solve the late-write problem.
 
-## The Small Machine
+## A Simulator With Two Failure Surfaces
 
 The simulator below has two independent failure surfaces.
 
@@ -175,12 +175,12 @@ The old clock is 250 ms slow and the coordinator only waits 150 ms after nominal
 expiry, so there is a 100 ms belief overlap. Increase **Coordinator padding**
 to 300 ms. The overlap disappears.
 
-But the stale overwrite remains.
-
-The old leader paused after its earlier check, resumed, and sent its write at
-3020 ms. The new leader wrote at 2450 ms. Without a fence, the old epoch writes
-last and wins. With a fence, the storage system has already seen token 2, so it
-rejects the late token-1 write.
+But the stale overwrite remains. In the default timing, the old leader paused
+after its earlier check, resumed, and sent its write at 3020 ms. The new leader
+wrote at 2450 ms. With padding raised to 300 ms, the new write moves to 2600 ms,
+but the old write still arrives later at 3020 ms. Without a fence, the old epoch
+writes last and wins. With a fence, the storage system has already seen token 2,
+so it rejects the late token-1 write.
 
 Now lower **Old leader pause** until the sweep turns green. The old write
 arrives before regrant, so this particular race is harmless. In the amber
@@ -191,7 +191,7 @@ epoch's write; that is the classic stale overwrite.
 The important observation is that the padding slider and the fence outcome are
 solving different bugs.
 
-## Why Rechecking Is Not Enough
+## A Last Check Still Has an After
 
 A tempting repair is:
 
@@ -233,7 +233,7 @@ That is the common production safety boundary:
 new epoch effects must not be followed by old epoch effects
 ```
 
-## Chubby's Version Of The Trick
+## Chubby Separates Permission From Proof
 
 Chubby is useful here because it is not a toy lock service. It was designed for
 coarse-grained coordination at Google, with reliability and understandable
@@ -264,7 +264,7 @@ imperfect mitigation for delayed or reordered requests. The adjective is doing
 real work. Delay reduces the risk. It is not the same as an epoch check at the
 resource.
 
-## A Short Proof Sketch
+## The Tiny Proof
 
 Let the lock service issue a strictly increasing token on each acquisition:
 
@@ -300,7 +300,7 @@ The lease alone is not one of those contracts. It is how the system eventually
 moves authority. The token check is how the side-effect target recognizes
 stale authority.
 
-## The Practical Checklist
+## Questions Before You Trust the Lease
 
 When I see a lease used as a lock, I now ask:
 
