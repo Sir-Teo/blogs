@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Every Evaluation Has an Opportunity Cost"
+title: "Evaluation Has Rent"
 description: "Bayesian optimization is not magic optimizer dust. It is a policy for choosing the next expensive experiment under uncertainty, and its failures are as instructive as its wins."
 date: 2026-06-13 05:07:00 -0400
 categories: machine-learning
@@ -325,7 +325,7 @@ The same audit discipline applies outside ML. A materials-science BO run, a
 robotics calibration loop, or a trading-strategy search should preserve the
 policy history. The sequence of evaluations is part of the result.
 
-## The Research Direction I Find Interesting
+## The Research Thread I Still Like
 
 The part that feels underappreciated is not "use a better acquisition function."
 It is **policy accountability**.
@@ -355,7 +355,7 @@ This would make Bayesian optimization feel less like a black-box optimizer and
 more like a scientific instrument. The goal is not to automate curiosity away.
 The goal is to spend curiosity carefully.
 
-## Notes
+## Further Reading
 
 [^ego]: Donald R. Jones, Matthias Schonlau, and William J. Welch, "Efficient
     Global Optimization of Expensive Black-Box Functions," *Journal of Global
