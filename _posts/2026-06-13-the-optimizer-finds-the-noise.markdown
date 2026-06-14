@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Optimizer Finds the Noise"
+title: "Portfolio Optimizers Find the Noise"
 description: "Mean-variance optimization is elegant until the covariance matrix is estimated from too little history. The inverse turns tiny noisy eigenvalues into large portfolio bets."
 date: 2026-06-13 18:38:00 -0400
 categories: quantitative-finance
@@ -304,7 +304,7 @@ and turns it into money.
 So when a portfolio looks beautifully optimized, ask which part is signal and
 which part is the inverse learning the noise by heart.
 
-## Notes
+## The Trail of Papers
 
 [^markowitz]: Harry Markowitz, ["Portfolio Selection"](https://ideas.repec.org/a/bla/jfinan/v7y1952i1p77-91.html), *Journal of Finance*, 1952. DOI: [10.1111/j.1540-6261.1952.tb01525.x](https://doi.org/10.1111/j.1540-6261.1952.tb01525.x).
 
