@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Random Projection Is a Distance Contract"
+title: "Random Projections: A Promise About Distances"
 description: "The Johnson-Lindenstrauss lemma is not a slogan about making data smaller. It is a promise about which distances survive, and which decisions still need margin."
 date: 2026-06-13 19:55:00 -0400
 categories: computer-science
@@ -29,7 +29,7 @@ That is already extraordinary. It is also narrower than the folklore version.
 
 The projection is not a semantic compressor. It is a distance contract.
 
-## The Contract
+## The Exact Bargain
 
 Take $$n$$ points in a high-dimensional Euclidean space. The JL result says,
 roughly, that for $$0 < \epsilon < 1$$, there is a map into
@@ -365,7 +365,7 @@ The last point is the least glamorous and the most practical. The theorem is
 worst-case over a finite set, but constants and tails matter. Measure the error
 distribution on the data geometry you actually serve.
 
-## The Sentence to Keep
+## The Portable Sentence
 
 A random projection does not know what your data means.
 
