@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Test-Time Compute Runs Into Correlation"
-description: "Repeated reasoning samples only buy intelligence when the attempts are diverse, the selector is reliable, and the system knows when not to answer."
+title: "Thirty-Two Tries Can Be One Mistake"
+description: "Repeated reasoning samples buy intelligence only when attempts are diverse, the selector is reliable, and the system knows when not to answer."
 date: 2026-06-13 00:05:00 -0400
 categories: ai-systems
 tags: [test-time-compute, reasoning, llms, statistics, verification, calibration]
-excerpt: "The naive pass@k formula assumes independent attempts and an oracle selector. Real LLM reasoning attempts share mistakes. The useful unit is not samples, but effective independent evidence."
+excerpt: "The naive pass@k formula assumes independent attempts and an oracle selector. Real reasoning attempts share mistakes. The useful unit is independent, selectable evidence."
 ---
 
 The simplest story about test-time compute is intoxicating. If a language model
@@ -47,7 +47,7 @@ This post is not a complaint about inference scaling. I think the direction is
 central. It is a warning about the unit of account. Counting samples is easy.
 Counting effective samples is the hard part.
 
-## The Oracle Curve
+## The Beautiful Lie of pass@k
 
 For code, formal proofs, and some math settings, the best case is unusually
 clean. Generate $$n$$ candidates, run a trustworthy checker, and accept the first
@@ -69,7 +69,7 @@ For unit-tested code, the second question is often easy enough to make the first
 question the main bottleneck. For open-ended reasoning, the second question can
 be the whole game.
 
-## Correlation Eats Samples
+## Same Blind Spot, More Tokens
 
 Language model samples are not independent workers. They are draws from the
 same model, prompted by the same problem, with the same training scars and often
@@ -118,7 +118,7 @@ where $$\rho$$ is an intraclass correlation.[^kish] The formula is not a theorem
 about LLM reasoning, but the warning transfers perfectly: 64 highly correlated
 samples may behave like far fewer independent samples.
 
-## Voting Is Not Verification
+## The Crowd Can Agree on the Trap
 
 Self-consistency works when different correct reasoning paths converge on the
 same answer, while wrong paths scatter. That is a beautiful condition. It is
@@ -147,7 +147,7 @@ This is the same statistical shape as multiple testing. More tries increase
 opportunity. They also increase selection pressure on whatever scoring function
 chooses the final answer.
 
-## A Pocket Experiment
+## A Small Trap Factory
 
 The simulator below generates synthetic reasoning problems. Each problem has a
 latent difficulty, so samples from the same problem are correlated. Wrong
@@ -213,7 +213,7 @@ classic $$1-(1-p)^n$$ intuition is not crazy. When correlation is high, raw
 sample count overstates compute. The model is not trying the problem 64 new
 ways. It is often trying the same family of thoughts 64 times.
 
-## Signals I Would Trust
+## Metrics That Separate Search From Selection
 
 A serious test-time compute evaluation should report more than pass@1 and final
 accuracy.
@@ -237,7 +237,7 @@ answer.[^selective] Test-time compute systems should be evaluated in the same
 spirit. "I do not know" is not a failure if the alternative is a polished wrong
 answer.
 
-## Design Implications
+## Design for Different Mistakes
 
 The engineering prescription is not "sample less." It is more precise.
 
@@ -263,7 +263,7 @@ template, latent skill, and observed wrong-answer basin. If many samples fail in
 the same way, the next unit of compute should probably not be another sample
 from the same distribution.
 
-## Next Experiments
+## Inference Portfolios
 
 The direction I find most promising is inference portfolios.
 
@@ -296,7 +296,7 @@ sampling, and selective prediction. The object is not just an answer. It is a
 set of attempts whose errors are different enough that a selector can learn from
 their disagreement.
 
-## The Practical Memory
+## What Goes on the Dashboard
 
 Test-time compute is real. Repeated sampling, search, self-consistency, and
 verifiers can turn a fixed model into a stronger system.
