@@ -1,42 +1,43 @@
 ---
 layout: post
-title: "Patching Activations Without Fooling Yourself"
-description: "Activation patching is a real causal intervention, but a restored logit is evidence about a contrast, a metric, and a patch site. It is not automatically a circuit."
+title: "The Heatmap Is Not the Circuit"
+description: "Activation patching can be a real causal intervention, but a restored logit is evidence about a contrast, a metric, and a site, not an explanation by itself."
 date: 2026-06-14 13:58:00 -0400
 categories: machine-learning
 tags: [mechanistic-interpretability, activation-patching, causal-tracing, transformers, causal-mediation]
-excerpt: "Activation patching can move a model from a corrupted answer back toward a clean answer. The trap is treating that restoration as the whole explanation."
+excerpt: "A patch can bring the answer back and still leave the mechanism unidentified. The fine print lives in the contrast, the metric, and the thing you chose to overwrite."
 ---
 
-There is a small ritual in mechanistic interpretability that feels almost
-scientific enough to be dangerous.
+There is a little ceremony in mechanistic interpretability that is persuasive
+because it feels like touching the machine.
 
-Run the model on a clean prompt. Cache an activation. Run the model on a
-corrupted prompt. Replace one internal state with the clean one. If the answer
-comes back, color the component red on a heatmap.
+Run a clean prompt. Cache the activations. Damage the prompt. Put one clean
+activation back into the damaged run. If the answer returns, paint that layer,
+head, token, or feature in a hot color.
 
-The result is compelling because it is not merely observational. A probe says
-"this information is present." Attention patterns say "this token attended
-there." A patch changes the computation.
+That picture is compelling for a good reason. It is not just a probe whispering
+that information is present. It is not just an attention map saying one token
+looked at another. A patch actually changes the forward pass.
 
-That is why activation patching matters.
+That is the power of the method.
 
-It is also why it is easy to overread.
+It is also how the method seduces you.
 
 ```text
 a patch is an intervention, not an explanation
 ```
 
-The intervention can be decisive and still answer a narrower question than the
-one we want. It tells us that replacing this activation, in this clean/corrupt
-contrast, under this metric, changes the output in this way. It does not by
-itself prove minimality, rule out redundant paths, identify the right feature
-basis, or show that the patched state is on the distribution the downstream
-network normally sees.
+The intervention can be decisive and still answer a smaller question than the
+one printed in the caption. It says: replacing this activation, in this
+clean/corrupt contrast, under this metric, changes the output by this amount.
+It does not automatically prove minimality, rule out redundant routes, identify
+the right feature basis, or show that the downstream network is seeing a state
+that belongs on its usual distribution.
 
-This post is a toy microscope for that gap.
+This post is about that gap: the narrow experimental claim on one side, the
+tempting circuit story on the other.
 
-## The Three-Run Argument
+## The Three Runs Do Not Tell the Whole Story
 
 The common denoising version of activation patching has three runs:
 
@@ -78,15 +79,15 @@ used causal interventions among several tools to reverse-engineer a 26-head
 circuit in GPT-2 small for indirect object identification, while evaluating the
 explanation with faithfulness, completeness, and minimality criteria.[^ioi]
 
-Those criteria are the part worth lingering on. A colorful patch map is not the
-same thing as a complete circuit explanation. It is evidence one can use while
-building and testing such an explanation.
+Those criteria are the part I would underline. A colorful patch map is not a
+complete circuit explanation. It is a receipt from one intervention, useful
+while building and attacking an explanation.
 
-## A Tiny Patch Lab
+## A Toy Circuit You Can Intervene On
 
 The lab below is a deliberately small residual computation. It has a clean
-input where the correct logit difference is positive and a corrupted input
-where it is negative. Information flows through:
+input where the target logit difference is positive and a corrupted input where
+the same metric turns negative. Information flows through:
 
 - `S`, a source residual state that carries the task variable and a nuisance
   variable;
@@ -145,17 +146,17 @@ parents would normally have produced.
 <script defer src="{{ '/assets/js/activation-patching-lab.js?v=20260614a' | relative_url }}"></script>
 
 Start with the defaults. `M` is the strongest internal node patch, but the
-direct `M->G` path patch is smaller. That is the first warning. Patching the
-whole mediator state restores both the task feature and whatever else happens
-to be bundled in the same activation. The path patch asks a narrower question:
-how much of the behavior comes from this specific contribution into the merge
+direct `M->G` path patch is smaller. That mismatch is the first warning light.
+Patching the whole mediator state restores the task feature plus whatever else
+is packed into the same vector. The path patch asks a narrower question: how
+much of the behavior comes from this particular contribution into the merge
 site?
 
 Now raise **nuisance carry** and **direct shortcut**. The direct/nuisance share
-increases. Some node patches look more impressive because the clean activation
+increases. Some node patches look more heroic because the clean activation
 contains correlated baggage. The patch is not lying. It really changes the
-output. But the interpretation changes from "this component implements the
-task" to "this component contains enough of the clean/corrupt difference to
+output. The interpretation, though, has shifted from "this component implements
+the task" to "this component contains enough of the clean/corrupt difference to
 restore the metric."
 
 Raise **backup path**. The mediator becomes less visually dominant because
@@ -165,12 +166,11 @@ may look mild because the other path compensates; denoising one path in a
 corrupt run may look strong because either route can rescue part of the answer.
 
 Finally raise **saturation**. The logit metric becomes less linear. A patch
-that changes an internal preactivation by a modest amount can produce a
-disproportionate movement in the output, or no visible movement if the merge
-site is saturated. The intervention remains causal, but the metric has become a
-nonlinear lens.
+that changes an internal preactivation by a modest amount can swing the output,
+or disappear completely if the merge site is saturated. The intervention
+remains causal. The readout has become a nonlinear lens.
 
-## What the Patch Actually Claims
+## Write the Claim in Full
 
 A useful patching result has a grammar:
 
@@ -179,7 +179,7 @@ In this prompt pair, replacing activation A at site i from source run s into
 destination run d changes metric m by amount r.
 ```
 
-Every noun matters.
+Do not let the short version eat those nouns. Every one of them matters.
 
 **Prompt pair.** Activation patching is contrastive. It locates machinery
 responsible for the difference between the clean and corrupted inputs. If the
@@ -204,12 +204,12 @@ KL divergence can disagree. A component can restore the chosen answer while
 distorting the rest of the distribution. A full-circuit claim needs a metric
 that matches the behavior being explained.
 
-The patch is not "the explanation." It is an experimental result with a
-well-defined scope.
+The patch is not "the explanation." It is an experimental result with borders.
 
-## Why Whole-Node Patches Can Mislead
+## Whole Vectors Smuggle Baggage
 
-The most intuitive patch is also the most suspicious: replace an entire vector.
+The most intuitive patch is also the one I trust least at face value: replace
+an entire vector.
 
 An activation vector is a bundle. It may contain the task feature, token
 identity, position, language, style, frequency, syntax, cacheable boilerplate,
@@ -221,7 +221,8 @@ There is also a distribution issue. The downstream network was trained on
 activations produced by upstream computation. A patched activation from the
 clean run can be paired with corrupted upstream and side-channel states that
 would not normally co-occur. Sometimes that is exactly the counterfactual one
-wants. Sometimes it is an off-manifold chimera.
+wants. Sometimes it is just an off-manifold state with a confident-looking
+number attached.
 
 Path patching is one response. Instead of asking whether a node matters, it
 tests a hypothesis about an interaction between components. Goldowsky-Dill et
@@ -235,9 +236,9 @@ narrower intervention. It may recover less of the metric, but it answers a more
 specific question.
 
 Specificity is not always better. Sometimes the low-granularity patch is the
-right first probe. The mistake is to stop there and name the heatmap a circuit.
+right scout. The mistake is to stop there and name the heatmap a circuit.
 
-## Circuit Evidence Has Shape
+## Circuit Evidence Needs Shape
 
 The IOI paper is a useful model because it did not merely show patching
 heatmaps. It asked whether the proposed circuit was:
@@ -257,12 +258,12 @@ Causal scrubbing pushes the confirmatory version of this mindset: turn an
 interpretability hypothesis into a set of resampling interventions that should
 preserve behavior, then test whether behavior is actually preserved.[^scrubbing]
 That is the right direction philosophically. Explanations should make
-counterfactual promises.
+counterfactual promises, then let you try to break them.
 
-## The Research Habit I Want
+## Put a Ledger Beside the Heatmap
 
-If I were reading a mechanistic-interpretability result built on patching, I
-would want a small ledger beside every heatmap:
+When I read a mechanistic-interpretability result built on patching, I want a
+small ledger beside every heatmap:
 
 - clean and corrupted prompt distributions;
 - exact patched object: token, layer, head, MLP, residual stream, feature, or
@@ -276,13 +277,13 @@ would want a small ledger beside every heatmap:
 - redundancy checks for backup paths and negative components;
 - faithfulness, completeness, and minimality tests for the proposed circuit.
 
-The ledger sounds fussy, but it is what makes patching scientific rather than
-decorative.
+The ledger sounds fussy only until the same red square supports three different
+stories. Then it starts to look like the experiment.
 
 Activation patching is one of the best tools we have because it touches the
 computation instead of only staring at it. But a good intervention is still a
-question. The answer becomes an explanation only after the question is repeated
-from enough angles that the surviving mechanism has nowhere vague left to hide.
+question. The answer becomes an explanation only after enough angles, ablations,
+and controls have left the surviving mechanism with nowhere vague to hide.
 
 ## Primary Sources
 
