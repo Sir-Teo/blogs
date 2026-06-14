@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Peeking Turns P-Values Into Stopping Rules"
+title: "Peeking Turns p-values Into Stop Buttons"
 description: "The p-value on an A/B dashboard is not the same object after the team checks it every morning and stops when it looks good."
 date: 2026-06-13 04:08:00 -0400
 categories: statistics
@@ -260,7 +260,7 @@ If the test is meant to ship a product change, the stopping rule should be part
 of the product spec. A dashboard that encourages daily monitoring should not
 display fixed-horizon p-values as if no one will use them sequentially.
 
-## What I Would Build
+## What I Would Build Next
 
 The next version of the lab should add two things.
 
@@ -280,7 +280,7 @@ testing. It is a different design problem.
 Peeking does not corrupt an experiment by being curious. It corrupts the
 experiment when curiosity is hidden from the math.
 
-## Notes
+## Sources
 
 [^wald]: Abraham Wald, "Sequential Tests of Statistical Hypotheses," *The Annals of Mathematical Statistics*, 1945. [JSTOR](https://www.jstor.org/stable/2235829).
 
