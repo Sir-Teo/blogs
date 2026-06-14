@@ -63,14 +63,18 @@
 
   function cleanParams(raw) {
     raw = raw || {};
+    var imbalanceRaw = raw.imbalance == null ? DEFAULTS.imbalance : Number(raw.imbalance);
+    var tailRaw = raw.tail == null ? DEFAULTS.tail : Number(raw.tail);
+    if (imbalanceRaw <= 1) imbalanceRaw *= 100;
+    if (tailRaw <= 1) tailRaw *= 100;
     return {
       budget: clamp(Math.round(raw.budget == null ? DEFAULTS.budget : raw.budget), 8, 192),
-      imbalance: clamp(raw.imbalance == null ? DEFAULTS.imbalance : Number(raw.imbalance), 0, 95) / 100,
+      imbalance: clamp(imbalanceRaw, 0, 95) / 100,
       percentile: clamp(raw.percentile == null ? DEFAULTS.percentile : Number(raw.percentile), 50, 99),
       samples: clamp(Math.round(raw.samples == null ? DEFAULTS.samples : raw.samples), 1000, 16000),
       seed: clamp(Math.round(raw.seed == null ? DEFAULTS.seed : raw.seed), 1, 99),
       shards: clamp(Math.round(raw.shards == null ? DEFAULTS.shards : raw.shards), 2, 12),
-      tail: clamp(raw.tail == null ? DEFAULTS.tail : Number(raw.tail), 0, 100) / 100
+      tail: clamp(tailRaw, 0, 100) / 100
     };
   }
 
