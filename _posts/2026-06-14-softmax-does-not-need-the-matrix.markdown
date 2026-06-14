@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Exact Softmax Without the Matrix"
-description: "FlashAttention is not approximate attention. Its core trick is an online softmax invariant: keep the running max, rescale the denominator, and never write the full attention matrix to memory."
+title: "The Matrix Was Never a Requirement"
+description: "FlashAttention is exact attention scheduled differently: keep the running max, rescale the denominator, and avoid writing the full attention matrix to memory."
 date: 2026-06-14 00:23:00 -0400
 categories: ai-systems
 tags: [flashattention, transformers, softmax, gpu-kernels, memory-hierarchy, ai-systems]
-excerpt: "The attention equation invites you to imagine an n by n matrix. The kernel does not have to keep that matrix. Exact attention can be streamed through tiles if the softmax normalizer travels with it."
+excerpt: "The attention equation invites an n by n matrix. The kernel does not have to keep one: exact attention can stream through tiles if the softmax normalizer travels with it."
 ---
 
-The attention equation is too good at being notation.
+The attention equation is a little too persuasive as notation.
 
 $$
 \operatorname{Attention}(Q,K,V)
@@ -36,7 +36,7 @@ This is the heart of FlashAttention.[^flash] It did not win by replacing
 attention with a clever approximation. It won by noticing that the old equation
 was forcing the hardware to keep a giant diary of facts it only needed briefly.
 
-## The Missing State
+## Carry the Normalizer
 
 Start with one query row. Let the scores be
 
@@ -118,7 +118,7 @@ bandwidth memory.
 
 The math did not become sparse. The bookkeeping became local.
 
-## Why Hardware Cares
+## The GPU Cares Where the Matrix Lives
 
 Modern accelerators are strange cities. Arithmetic is cheap if data is already
 near the compute units. Moving data back and forth to high bandwidth memory is
@@ -147,7 +147,7 @@ Some are valuable. Some are approximations. FlashAttention is a different kind
 of improvement: for dense attention, it computes the same result while asking
 the memory system a better question.
 
-## A Small Exact-Attention Lab
+## A Row You Can Stream
 
 The lab below computes one synthetic attention row two ways:
 
@@ -323,7 +323,7 @@ larger maximum and forces the old numerator and denominator to be re-expressed
 under the new max. This is the numerically stable part. We are not summing
 enormous exponentials and hoping.
 
-## What Is Still Quadratic
+## Quadratic Time Did Not Vanish
 
 It is tempting to say "FlashAttention makes attention linear." That sentence is
 usually wrong unless one specifies the resource.
@@ -353,7 +353,7 @@ not remove the need to store keys and values for future autoregressive decoding.
 Paged KV caches, sliding windows, grouped-query attention, and attention sinks
 live in that other bill.
 
-## The Equation Was Not the Implementation
+## Notation Is Not a Schedule
 
 The larger lesson is not only about attention.
 
