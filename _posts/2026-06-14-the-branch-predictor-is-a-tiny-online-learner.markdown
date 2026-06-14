@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Branch Predictor Is a Tiny Online Learner"
+title: "Branch Predictors Learn Online"
 description: "Modern CPUs guess control flow with small adaptive models. Two-bit counters, gshare, and perceptrons expose the same old machine-learning tradeoff: context helps until memory and representation run out."
 date: 2026-06-14 08:40:00 -0400
 categories: computer-science
