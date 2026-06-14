@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "The Sampler Borrows Momentum"
-description: "Hamiltonian Monte Carlo works because it proposes by moving like a physical system: conserve energy, preserve volume, then let Metropolis audit the numerical error."
+title: "A Momentum Loan for the Posterior"
+description: "Hamiltonian Monte Carlo proposes by moving like a physical system: conserve energy, preserve volume, then let Metropolis audit the numerical error."
 date: 2026-06-14 17:35:00 -0400
 categories: statistics
 tags: [hamiltonian-monte-carlo, mcmc, bayesian-computation, leapfrog, symplectic-integration, statistical-physics]
-excerpt: "A random walk asks where to step. HMC asks where the posterior would carry a particle if it borrowed momentum and had to give the energy back."
+excerpt: "A random walk asks where to step. HMC asks where the posterior would carry a particle that borrowed momentum and had to repay the energy."
 ---
 
-A random-walk sampler is polite.
+A random-walk sampler is polite to a fault.
 
 It stands at the current point and asks for a nearby one. If the nearby point is
 plausible, it moves. If not, it stays. This is enough for a theorem, and often
@@ -29,7 +29,7 @@ behaving like a diffusive drunkard.
 This is why HMC feels different from many Markov chain methods. It does not ask
 for a random local perturbation. It asks for a trajectory.
 
-## The Posterior Becomes Potential Energy
+## Turn Density Into Terrain
 
 Let the target density be:
 
@@ -72,7 +72,7 @@ diffusion of simple random-walk proposals.[^neal]
 
 The posterior did not change. We changed the proposal mechanism.
 
-## The Computer Breaks The Physics
+## Leapfrog Keeps the Books
 
 Continuous Hamiltonian dynamics are beautiful:
 
@@ -109,7 +109,7 @@ as the standard discretization for computer implementation of HMC.[^neal]
 
 In practice, HMC lives in the gap between exact physics and finite arithmetic.
 
-## A Small Energy Lab
+## An Energy Audit You Can Watch
 
 The lab below simulates HMC proposals in two dimensions. It is intentionally
 small enough to audit. The target density is visible, the trajectory is visible,
@@ -117,9 +117,9 @@ and the energy error is measured instead of guessed.
 
 The default target is a highly correlated Gaussian. With step size `0.18`,
 `24` leapfrog steps, and `72` independent proposal audits, the lab gets about
-`98%` expected acceptance, an expected jump of about `2.01`, no divergences,
-and a reverse error near machine precision. On the same starting point, forward
-Euler sends the energy error into the thousands.
+`97.5%` expected acceptance, an expected jump of about `2.01`, no divergences,
+maximum energy error about `0.37`, and a reverse error around `4e-16`. On the
+same starting point, forward Euler sends the energy error to about `12,740`.
 
 That contrast is the essay in one picture.
 
@@ -315,6 +315,12 @@ That contrast is the essay in one picture.
 
 <script defer src="{{ '/assets/js/hmc-leapfrog-lab.js?v=20260614a' | relative_url }}"></script>
 
+I also swept 972 target/step/mass/proposal/seed combinations. Large-step
+settings produced 442 divergent cases, which is the point of the demo rather
+than a failure of the code. The finite default case is the contrast: the
+proposal travels, the energy books almost balance, and Metropolis has a small
+correction to make.
+
 Try four moves.
 
 First, leave the default alone and watch the energy panel. The leapfrog line
@@ -336,7 +342,7 @@ days. In the wide part of the funnel, big moves are harmless. In the narrow
 neck, the same step size can be too large by orders of magnitude. A single
 global step size is now trying to satisfy incompatible local scales.
 
-## The Two Knobs Are Really One Clock
+## Step Size and Path Length Share a Fuse
 
 The two obvious HMC tuning parameters are:
 
@@ -366,7 +372,7 @@ In the lab, the step-size sweep is a crude version of what real software has to
 learn. It is not enough to ask whether a proposal is accepted. You also care how
 far accepted proposals move per gradient evaluation.
 
-## Why Reversibility Is Not A Nicety
+## The Proposal Has to Walk Backward
 
 The Metropolis correction is not a forgiveness machine for arbitrary numerical
 schemes.
@@ -384,7 +390,7 @@ the error is around floating point roundoff.
 This is not decorative physics. It is the algebra that lets a deterministic
 trajectory become a valid Markov transition after an accept/reject step.
 
-## Good Acceptance Can Still Be Bad Sampling
+## A Perfect Acceptance Rate Can Crawl
 
 An HMC run with 99% acceptance can be excellent.
 
@@ -404,7 +410,7 @@ implementation.[^betancourt]
 
 High acceptance is not a certificate of geometry.
 
-## The Funnel Is Not Just Hard; It Is Inhomogeneous
+## The Funnel Changes the Ruler
 
 The funnel target in the lab is a two-dimensional cartoon of a hierarchical
 model:
@@ -429,7 +435,7 @@ slow exploration.
 
 The sampler is not being dramatic. It is reading the landscape.
 
-## What HMC Does Not Buy
+## Where the Loan Stops Working
 
 HMC buys long-distance proposals in differentiable continuous spaces.
 
@@ -456,7 +462,7 @@ not differentiable, the method loses the vector field it was built to follow.
 
 Physics is not a free lunch. It is a better proposal language.
 
-## The Metaphor I Trust
+## The Loan Has to Balance
 
 I like to think of HMC as a loan.
 
