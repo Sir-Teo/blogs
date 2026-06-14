@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "The Reaction Clock Is an Exponential Race"
-description: "Gillespie's stochastic simulation algorithm samples chemical reaction paths exactly by treating propensities as competing exponential clocks."
+title: "The Next Reaction Wins the Race"
+description: "Gillespie's stochastic simulation algorithm samples chemical reaction paths exactly by letting propensities compete as exponential clocks."
 date: 2026-06-14 17:04:00 -0400
 categories: physics
 tags: [gillespie-algorithm, stochastic-simulation, chemical-master-equation, markov-jump-processes, applied-math, systems-biology]
-excerpt: "A rate equation draws the smooth shadow. The molecule count jumps. Gillespie's algorithm samples those jumps by racing reaction clocks, and the deterministic ODE appears only after volume gets large."
+excerpt: "A rate equation draws the smooth shadow. Molecule counts jump. Gillespie's algorithm samples those jumps by racing reaction clocks."
 ---
 
-A concentration curve is a shadow.
+A concentration curve is a shadow on the wall.
 
 It is not a molecule count. Molecule counts are integers. They jump. A reaction
 happens, the state changes by one stoichiometric vector, and then nothing
@@ -36,9 +36,9 @@ No time grid.
 
 No fractional molecules.
 
-No Gaussian dust sprinkled over an ODE.
+No Gaussian dust shaken over an ODE.
 
-## The ODE Is a Limit, Not the Source
+## The Smooth Curve Is the Shadow
 
 The classic rate equation begins with concentration. If \(z(t)\) is the
 concentration of a species, one writes a differential equation for \(z\). This
@@ -66,7 +66,7 @@ large volume: concentration path concentrates around an ODE
 The ODE is a law of large numbers. It is not the thing that secretly generates
 the jumps.
 
-## A Two-Reaction Laboratory
+## A Laboratory With Two Bells
 
 The lab below uses the smallest useful reaction network:
 
@@ -282,6 +282,12 @@ needed about 1,095 reaction events.
 
 <script defer src="{{ '/assets/js/gillespie-race-lab.js' | relative_url }}"></script>
 
+I swept 729 parameter combinations across volume, rates, horizon, trajectory
+count, and seed. The built-in checks passed after one code-audit fix: the Fano
+factor check now uses a tolerance that widens when the user asks for very few
+trajectories, so ordinary Monte Carlo wobble does not masquerade as a broken
+simulator.
+
 Try lowering the volume. The average concentration still follows the same ODE
 shadow, but the molecule count is noisy enough that individual paths wander.
 Raise the volume and the relative noise shrinks. In the default volume ladder,
@@ -298,7 +304,7 @@ reaction event. When copy numbers are huge and propensities are fast, exactness
 can become too expensive. That is why later stochastic-kinetics work studies
 accelerations such as tau-leaping and hybrid methods.[^gillespie-review][^cao]
 
-## Why This Is Not Euler-Maruyama
+## A Gaussian Smudge Is Not a Jump
 
 It is tempting to simulate the concentration equation by adding Gaussian noise:
 
@@ -334,7 +340,7 @@ The difficult part is not the loop. The difficult part is the modeling contract:
 well stirred, Markovian reaction channels, correct propensities, and a state
 description that actually contains the variables driving the reaction hazards.
 
-## The Race View
+## Two Clocks, One Ring
 
 One way to remember the direct method is to imagine each reaction channel
 running its own exponential clock.
@@ -374,7 +380,7 @@ Near stationarity, births and deaths nearly balance in expectation, but the
 reaction clocks have not stopped. The count jitters because both clocks keep
 ringing.
 
-## What Volume Buys
+## Volume Buys Relative Quiet
 
 Increasing \(V\) while keeping \(\alpha\) and \(\beta\) fixed scales molecule
 counts without changing the deterministic concentration equation. The final

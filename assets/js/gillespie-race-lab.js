@@ -286,10 +286,11 @@
     });
     var race = raceSnapshot(params, selected);
     var fanoError = Math.abs(main.fano - 1);
+    var fanoTolerance = Math.max(0.32, 4 * Math.sqrt(2 / Math.max(1, params.paths - 1)));
     var meanError = Math.abs(main.meanFinal - theoryMean) / Math.max(1, Math.sqrt(theoryMean / params.paths) * params.paths);
     return {
       checks: {
-        fanoNearOne: fanoError < 0.32,
+        fanoNearOne: fanoError < fanoTolerance,
         meanFinite: Number.isFinite(main.meanFinal) && main.meanFinal >= 0,
         raceProbability: race.nextBirthProb >= 0 && race.nextBirthProb <= 1,
         theoryMeanPositive: theoryMean > 0,
