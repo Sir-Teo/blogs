@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "RoPE Makes Position a Phase"
-description: "Rotary position embeddings do not paste a position vector onto a token. They rotate query and key coordinates so attention sees relative displacement as phase."
+title: "Every Token Gets a Clock Hand"
+description: "Rotary position embeddings do not paste a position vector onto a token. They rotate query and key coordinates so attention reads relative displacement as phase."
 date: 2026-06-14 11:35:00 -0400
 categories: ai-systems
 tags: [rope, rotary-position-embeddings, transformers, attention, long-context, positional-encoding, llms]
-excerpt: "RoPE gives attention a clock: absolute positions become rotations, and query-key dot products become functions of relative phase."
+excerpt: "RoPE gives attention a bank of clocks: absolute positions become rotations, and query-key dot products collapse into relative phase."
 ---
 
-Self-attention is almost too democratic.
+Self-attention begins as an unusually polite meeting.
 
 Give it a set of token vectors and, before positional information is added, it
 does not know which token came first. The sequence is present as memory layout,
@@ -19,18 +19,19 @@ to token embeddings.[^attention] Later architectures tried many variants:
 learned absolute embeddings, relative position biases, linear distance biases,
 and rotary embeddings.
 
-RoPE, the rotary position embedding from RoFormer, is one of the most elegant
-answers because it does not add position as another vector. It turns position
-into phase.[^roformer]
+RoPE, the rotary position embedding from RoFormer, is one of the more elegant
+answers because it does not add position as another vector. It winds each
+query/key plane like a clock hand.[^roformer]
 
 ```text
 not: token + position
 but: rotate query and key by position
 ```
 
-That small change buys a useful identity.
+That small change buys the identity that makes the whole trick feel like a
+magic trick you are allowed to inspect.
 
-## A Two-Dimensional Clock
+## One Plane, One Clock Hand
 
 Take one pair of coordinates, $$(x_0, x_1)$$. A position $$m$$ rotates that pair
 by angle $$m\theta$$:
@@ -66,10 +67,10 @@ phase. This is the core RoPE trick: the attention score can depend explicitly on
 the displacement $$n-m$$ while still using ordinary dot-product attention.
 
 The lab below verifies that identity numerically with random query and key
-vectors. The default relative-identity error is around `1.6e-13`, which is just
-floating-point noise.
+vectors. In the default run, the relative-identity error is `1.57e-13`, which is
+just floating-point noise.
 
-## The Working Surface
+## A Microscope for Phase
 
 The lab uses a simple diagnostic kernel:
 
@@ -253,6 +254,11 @@ interpolated one-token kernel drop:  0.00222
 Interpolation keeps target positions inside the old phase range, but it also
 compresses nearby positions. The clock ticks more slowly everywhere.
 
+I also swept 243 combinations of head dimension, base, train length, target
+length, and seed. The largest relative-identity error I saw was about
+`1.8e-12`, still numerical dust. The diagnostic is not testing a trained model;
+it is checking that the rotation algebra and the displayed knobs agree.
+
 That is the trade:
 
 ```text
@@ -265,7 +271,7 @@ depends on training, finetuning, data, attention heads, retrieval behavior,
 evaluation task, and many implementation details. The lab is narrower: it shows
 what the position map itself is doing.
 
-## Why Long Context Is Not Just a Bigger Number
+## A Longer Window Retunes the Clocks
 
 RoPE helped make position handling feel smooth because it gives every pair of
 coordinates a clean relative phase story. But a frequency ladder is still a
@@ -298,7 +304,7 @@ extrapolation in mind.[^alibi] That inductive bias says something very explicit:
 farther keys should usually be penalized. RoPE says something subtler: relative
 position is a collection of phases.
 
-## The Misleading Mental Model
+## Not a Coordinate Sticker
 
 The bad mental model is:
 
@@ -325,7 +331,7 @@ When we extend context, change the base, interpolate positions, or rescale
 frequencies, we are changing the clock bank. Sometimes that is exactly what we
 want. It should not be mistaken for a harmless metadata edit.
 
-## What I Would Check
+## Before I Trust the Window
 
 Before trusting a RoPE context-extension claim, I would want more than a maximum
 context number.
