@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Kalman Gain Is a Trust Budget"
+title: "Kalman Filtering as a Trust Ledger"
 description: "A Kalman filter is not a smoothing trick. It is a recursive argument about how much to trust a model versus a noisy measurement."
 date: 2026-06-13 17:43:00 -0400
 categories: statistics
@@ -384,7 +384,7 @@ The Kalman filter is powerful because it is explicit. It asks you to write down
 the dynamics, the sensor, and the uncertainty. Then it updates belief with a
 number that says exactly how much trust remains to spend.
 
-## The Feeling of the Algorithm
+## How the Algorithm Feels
 
 A measurement is a rumor from the world.
 
@@ -408,7 +408,7 @@ Smoothing is easy to fake. Trust accounting is harder. The Kalman filter earns
 its place because it makes the accounting recursive, inspectable, and honest
 enough to argue with.
 
-## Notes
+## Further Reading
 
 [^kalman]: R. E. Kalman, ["A New Approach to Linear Filtering and Prediction Problems"](https://courses.cs.duke.edu/compsci527/cps274/fall11/papers/Kalman60.pdf), *Transactions of the ASME--Journal of Basic Engineering*, 1960. [ASME record](https://asmedigitalcollection.asme.org/fluidsengineering/article/82/1/35/397706/A-New-Approach-to-Linear-Filtering-and-Prediction).
 
