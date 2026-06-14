@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Merkle Receipts and the Shape of Trust"
-description: "A Merkle proof does not say trust me. It says this exact item is committed by this exact root, and here are the few hashes needed to check."
+title: "Bring the Receipt, Not the Whole Log"
+description: "A Merkle proof does not say trust me. It says this exact item belongs to this exact committed root, and here are the sibling hashes to check."
 date: 2026-06-13 21:48:00 -0400
 categories: computer-science
 tags: [merkle-trees, transparency-logs, certificate-transparency, cryptography, hashing, authenticated-data-structures, security]
-excerpt: "Merkle trees turn a giant public log into a small receipt. The catch is that inclusion is only one check; real transparency also needs append-only consistency and shared checkpoints."
+excerpt: "Merkle trees let small clients audit huge logs with short receipts. Inclusion is only the first check; transparency also needs consistency and shared checkpoints."
 ---
 
-Most receipts are promises.
+Most receipts are small promises with a logo at the top.
 
 The restaurant promises that this is what you bought. The bank promises that
 this transaction was posted. The package tracker promises that the scan happened
@@ -25,7 +25,7 @@ server's memory. It gives you a path of sibling hashes. If the path recomputes
 the published root, the item is committed by that root. If one bit changes, the
 path breaks.
 
-That sounds like a small data-structure trick. It is not. It is the reason
+That can sound like a small data-structure trick. It is not. It is the reason
 systems like Certificate Transparency can ask the public internet to audit
 millions or billions of entries without making every client store the whole
 log.[^ct]
@@ -38,9 +38,10 @@ append-only:   this newer root extends that older root
 non-equivocal: everyone is being shown the same root
 ```
 
-A Merkle tree helps with all three, but it does not solve all three by itself.
+A Merkle tree gives you sharp tools for all three, but it does not run the
+social machinery by itself.
 
-## The Root Is the Commitment
+## The One Hash Everyone Argues About
 
 A binary Merkle tree hashes leaves first, then hashes pairs of child hashes until
 one root remains. Certificate Transparency specifies domain separation: leaves
@@ -67,7 +68,7 @@ consistent with an earlier view, using logarithmic-size proofs.[^crosby]
 That word, "view", is important. The tree root is not the whole truth. It is a
 checkpoint. Someone still has to remember which checkpoints were published.
 
-## The Receipt Lab
+## Receipt Desk
 
 The lab below uses a toy 64-bit hash so the browser can redraw instantly. Do not
 copy it for security. The structure mirrors real transparency logs: leaves have
@@ -238,7 +239,7 @@ The cure is not a cleverer local Merkle path. The cure is shared checkpoints,
 gossip, monitors, witnesses, or some other mechanism that makes split views
 collide in public.
 
-## Certificate Transparency Is the Canonical Example
+## The Web PKI Version
 
 Certificate Transparency exists because the web PKI has many certificate
 authorities, and a bad or compromised authority can issue a certificate that a
@@ -265,7 +266,7 @@ There is a lovely engineering humility here. The log operator is not assumed to
 be angelic. The data structure is designed so the operator can answer audits
 cheaply, and so contradictory answers leave cryptographic evidence.
 
-## Key Transparency Raises the Stakes
+## When the Directory Lies
 
 The same pattern appears in end-to-end encrypted messaging. A messaging service
 often maintains a directory from users to public keys. If the service silently
@@ -286,7 +287,7 @@ The Merkle root is not magic dust. It is a commitment point in a protocol:
 Without the third piece, a malicious server can show each user a locally
 consistent little world.
 
-## The Receipt Is Smaller Than the Trust
+## What the Receipt Does Not Buy
 
 Merkle proofs are easy to oversell.
 
