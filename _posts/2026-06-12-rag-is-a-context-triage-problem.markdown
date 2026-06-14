@@ -1,27 +1,28 @@
 ---
 layout: post
-title: "RAG Starts With Triage, Not Retrieval"
-description: "Long-context models changed the retrieval question. They did not remove it. The hard part is deciding what evidence deserves scarce attention."
+title: "The Context Window Is a Dispatch Room"
+description: "Long-context models changed retrieval, but they did not remove the dispatch problem: decide what evidence deserves attention, placement, and an answer."
 date: 2026-06-12 19:10:00 -0400
 categories: ai-systems
 tags: [rag, long-context, information-retrieval, llms, ai-systems, evaluation]
-excerpt: "The debate between RAG and long context is framed too often as storage architecture. In practice it is a triage problem: select evidence, place it where the model can use it, and know when to abstain."
+excerpt: "RAG versus long context is the wrong fight. The durable problem is dispatch: admit the right evidence, place it where it can be used, and refuse weak support."
 ---
 
-The lazy version of the retrieval-augmented generation debate sounds like this:
-if context windows keep getting longer, retrieval will become obsolete. Why
-build chunkers, indexes, rerankers, and citation pipelines when the model can
-read the whole corpus?
+The lazy version of the retrieval-augmented generation debate has the clean snap
+of a hallway argument: if context windows keep getting longer, retrieval will
+become obsolete. Why build chunkers, indexes, rerankers, and citation pipelines
+when the model can read the whole corpus?
 
-That question is useful because it is almost right. Long-context models do make
-some retrieval systems look over-engineered. If a task fits comfortably into the
-window, the corpus is small, and the answer requires cross-document reasoning,
-then "put the evidence in the prompt" can be the cleanest system.
+That question is useful because it is almost right, which is the dangerous kind
+of wrong. Long-context models do make some retrieval systems look
+over-engineered. If a task fits comfortably into the window, the corpus is
+small, and the answer requires cross-document reasoning, then "put the evidence
+in the prompt" can be the cleanest system.
 
 But this does not make retrieval disappear. It changes what retrieval is for.
-Retrieval is not just a way to compensate for a small context window. It is a
-control system for attention, freshness, provenance, cost, privacy, and
-abstention. A context window is not memory. It is a scarce working surface.
+Retrieval is not just compensation for a small context window. It is a dispatch
+system for attention, freshness, provenance, cost, privacy, and abstention. A
+context window is not memory. It is a scarce working surface.
 
 <div class="callout">
   <strong>Thesis:</strong> RAG is best understood as context triage. The system
@@ -50,7 +51,7 @@ irrelevant but persuasive passages, stale documents, and answers that sound
 grounded because something was retrieved, not because the right thing was
 retrieved.
 
-## Three Kinds of Memory
+## The Three Memories
 
 Modern language systems mix at least three memories.
 
@@ -93,7 +94,7 @@ The more honest picture is a menu:
   controlled execution;
 - abstain or ask for more information when the evidence is weak.
 
-The architecture is a decision, not a religion.
+The architecture is a dispatch decision, not a religion.
 
 <figure class="research-figure">
 <svg viewBox="0 0 800 330" role="img" aria-labelledby="rag-triage-title rag-triage-desc">
@@ -142,7 +143,7 @@ decide whether retrieved evidence deserves an answer next time.
 </figcaption>
 </figure>
 
-## Context Is Not Uniform
+## The Window Has Geography
 
 Even if the relevant passage is inside the window, the model may not use it
 reliably. "Lost in the Middle" showed that performance can degrade when the
@@ -173,7 +174,7 @@ reranking, and how much distracting text surrounds the answer. The third depends
 on whether the model actually reasons from the evidence rather than treating
 retrieval as a decorative confidence ritual.
 
-## A Browser Trial
+## Dispatch Drill
 
 The simulator below creates a synthetic corpus and many question-answering
 requests. Each request has one answer-bearing document, many irrelevant
@@ -233,11 +234,11 @@ the tradeoff by moving from "find candidates" to "choose evidence." The gated
 policy sometimes has lower answer rate because it refuses more often, but it
 can sharply reduce false support.
 
-That is the shape of a triage problem. The best system is not the one that
+That is the shape of a dispatch problem. The best system is not the one that
 always retrieves the most. It is the one that admits enough evidence, excludes
 enough noise, and knows when the evidence does not justify an answer.
 
-## The Retrieval Contract
+## Answering Requires a Gate
 
 A useful RAG system should make an explicit contract:
 
@@ -268,9 +269,9 @@ corpus.[^hyde]
 
 The common theme is not "add another LLM call." The common theme is selection
 under uncertainty. Retrieval should produce evidence plus a confidence story,
-not just a list of chunks.
+not just a list of chunks handed over like a tray of props.
 
-## The Measurement List
+## Numbers on the Wall
 
 For a serious system, I would track at least eight numbers.
 
@@ -293,7 +294,7 @@ is first in context is not using long context robustly. A retriever that sends
 the right passage but hides it behind twenty near-misses has not completed its
 job.
 
-## Where Long Context Wins
+## When the Whole Document Belongs
 
 Long context is not a straw man. It wins in several real cases.
 
@@ -315,7 +316,7 @@ upstream: which documents enter the window, which versions are current, which
 permissions apply, which sections are duplicated, and which evidence should be
 near the answer prompt.
 
-## The Next Question
+## The Experiment I Still Want
 
 The direction I find most interesting is calibrated context triage.
 
@@ -349,7 +350,7 @@ The experiments I would want next are simple and hard:
 That is how RAG becomes less of a vector-database recipe and more of a reliable
 AI system.
 
-## The Part to Keep
+## Keep the Dispatch Question
 
 Long context asks: how much can the model read?
 
