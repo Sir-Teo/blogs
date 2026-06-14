@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Preference Models Learn the Comparisons We Serve"
+title: "The Loss Never Saw the Missing Pair"
 description: "Preference optimization is not a direct tap into human values. It is a policy update seen through pairwise labels, a reference model, a KL temperature, and the comparison distribution."
 date: 2026-06-13 08:34:00 -0400
 categories: machine-learning
 tags: [preference-optimization, rlhf, dpo, alignment, bradley-terry, policy-optimization, human-feedback]
-excerpt: "DPO makes preference tuning feel almost like ordinary supervised learning. The dangerous part is forgetting what the loss can and cannot see: only the pairs in the data, relative to a reference policy."
+excerpt: "DPO makes preference tuning feel almost like ordinary supervised learning. The dangerous part is forgetting what the loss cannot see: absent pairs, thin coverage, and behavior outside the reference policy's reach."
 ---
 
 The simplest human feedback interface is not a score.
@@ -26,7 +26,7 @@ Preference optimization is powerful because comparison is cheap.
 
 It is dangerous because comparison is local.
 
-## A Pair Is Not a Reward
+## A Pair Is Local Evidence
 
 The Bradley-Terry model is the old statistical grammar behind many modern
 preference systems.[^bradley-terry] Give each item a latent score $$r_i$$. Then
@@ -58,7 +58,7 @@ we have discovered the global reward function
 
 The missing phrase is "among the candidates we showed the labeler."
 
-## The RLHF Shape
+## The Usual RLHF Shape
 
 Christiano, Leike, Brown, Martic, Legg, and Amodei showed that agents could
 learn complex behaviors from human preferences over trajectory segments, rather
@@ -98,7 +98,7 @@ Small $$\beta$$ says: move hard toward high reward.
 Large $$\beta$$ says: do not stray far from what the model already knew how to
 say.
 
-## DPO's Nice Trick
+## DPO Cancels the Reward Model, Not the Data Problem
 
 Direct Preference Optimization noticed that the KL-regularized optimum can be
 rearranged.[^dpo] Ignoring the prompt notation for a moment:
@@ -150,7 +150,7 @@ if the loss is simple, the data problem must also be simple
 
 It is not.
 
-## A Preference Lens Lab
+## A Tiny World of Nine Answers
 
 The lab below is a one-prompt toy universe. There are nine possible answers.
 Each has a hidden true quality. The reference model is cautious, so it tends to
@@ -232,7 +232,7 @@ The estimate is best where there are comparisons. It is weak where the data is
 thin. The point sizes encode coverage because in preference learning, evidence
 is not uniformly spread across the output space.
 
-## Three Levers That Look Like One
+## Three Knobs Hiding Inside "Preference"
 
 Preference tuning often gets described as "optimize for what humans prefer."
 That hides three different levers.
@@ -259,7 +259,7 @@ theoretical angle: practical preference-learning algorithms rely on
 approximations that can be analyzed as special cases of more general pairwise
 objectives, and those approximations have failure modes.[^azar]
 
-## What DPO Did Not Promise
+## What the Loss Did Not Promise
 
 DPO did not promise to solve preference data.
 
@@ -286,7 +286,7 @@ What changes when the trained policy leaves the data distribution?
 The most important failures are often not inside the formula. They are in the
 interface between the formula and the collection process.
 
-## The Useful Mental Model
+## Think Lens, Not Oracle
 
 A preference optimizer is not a value oracle.
 
