@@ -1,18 +1,18 @@
 ---
 layout: post
-title: "When Diffusion Writes the Pattern"
-description: "Reaction-diffusion systems are a small shock to intuition: local mixing, coupled to nonlinear reactions, can turn a nearly uniform field into spots, worms, and fronts."
+title: "The Smoother That Drew Spots"
+description: "Reaction-diffusion systems bend intuition: local mixing plus nonlinear reactions can turn a nearly uniform field into spots, worms, fronts, and decay."
 date: 2026-06-14 10:12:00 -0400
 categories: computer-science
 tags: [reaction-diffusion, turing-patterns, gray-scott, simulation, pattern-formation]
-excerpt: "Diffusion usually means smoothing. In a reaction-diffusion system, smoothing can become the transport mechanism that lets a local chemical instability write a spatial pattern."
+excerpt: "Diffusion usually erases structure. Coupled to reaction, it becomes the transport mechanism that lets a local instability choose a visible pattern."
 ---
 
-Diffusion is supposed to erase structure.
+Diffusion has a reputation to maintain.
 
 Drop ink in water and the boundary softens. Heat a cold room and the gradients
 flatten. Put a Laplacian into a differential equation and it punishes high
-frequency variation. Diffusion is the mathematical smell of smoothing.
+frequency variation. Diffusion is the mathematical scent of smoothing.
 
 So the reaction-diffusion story is a little mischievous:
 
@@ -34,10 +34,11 @@ initially homogeneous state.[^turing] The modern phrase is
 well-mixed perturbations but unsafe against perturbations with certain
 wavelengths.
 
-The idea is bigger than any one animal stripe. It is a mechanism. Local rules,
-spatial transport, and nonlinear feedback can turn sameness into geometry.
+The idea is bigger than any one stripe, spot, or shell. It is a mechanism.
+Local rules, spatial transport, and nonlinear feedback can turn sameness into
+geometry.
 
-## A Toy That Draws Back
+## A Toy That Pushes Back
 
 The lab below uses the Gray-Scott reaction-diffusion system, a two-species
 model popular because it produces a zoo of patterns with only a few parameters.
@@ -66,7 +67,7 @@ both species across the grid, but at different rates.
 
 The browser simulation uses periodic boundaries and an explicit finite
 difference update. It is intentionally small enough to inspect. The point is not
-to make the fastest PDE solver. The point is to see the qualitative regimes:
+to build the fastest PDE solver. The point is to watch the qualitative regimes:
 quiet, spots, crowded texture, and decay.
 
 <style>
@@ -244,7 +245,7 @@ quiet, spots, crowded texture, and decay.
 </div>
 <script defer src="{{ '/assets/js/reaction-diffusion-lab.js?v=20260614a' | relative_url }}"></script>
 
-Try this sequence.
+Try it like a little bench experiment.
 
 First, lower **rollout steps** to watch the pattern before it has had time to
 organize. The trace starts with a finite perturbation and records how contrast
@@ -267,14 +268,14 @@ area** counts cells above a concentration threshold. **Edge energy** responds to
 fine boundaries. **Histogram spread** tells you whether the grid is mostly one
 state or split across many concentration levels.
 
-## Why the Explanation Is Not "Noise"
+## The Seed Is Not the Artist
 
 The initial perturbation matters. Pearson emphasized that many Gray-Scott
 patterns arise in response to finite-amplitude perturbations, not simply from
 infinitesimal linear instability.[^pearson] That does not make the pattern
 random in the casual sense.
 
-Randomness seeds the field. The equations select and amplify.
+Randomness seeds the field. The equations select, amplify, and prune.
 
 This distinction shows up everywhere in simulation work. A random seed is often
 less interesting than the attractor landscape it samples. If many seeds end in
@@ -289,11 +290,11 @@ emergence means it came from nowhere
 ```
 
 No. Emergence here means the visible scale is not written explicitly into the
-local rule. The local rule says diffuse, feed, kill, and react. The spot size,
+local rule. The local rule says diffuse, feed, kill, and react. Spot size,
 spacing, splitting, and decay are consequences of iterating that rule across
 space.
 
-## What This Toy Does Not Prove
+## Do Not Mistake the Grid for Biology
 
 It is tempting to look at the image and say "nature solved stripes this way."
 Sometimes reaction-diffusion is the right mechanistic language. Sometimes it is
@@ -318,9 +319,9 @@ This is why toy physics can be useful for machine learning even when the
 biology is not the target. The toy forces us to ask whether a learned simulator
 has captured the rule or merely interpolated the pictures.
 
-## The Smoothing That Writes
+## The Smoother Becomes a Pen
 
-The good mental picture is not that diffusion creates pattern by opposing
+The good mental picture is not that diffusion creates pattern by betraying
 smoothing. It is that diffusion couples local nonlinear reactors.
 
 Every cell is doing simple chemistry. Diffusion lets neighbors perturb one
