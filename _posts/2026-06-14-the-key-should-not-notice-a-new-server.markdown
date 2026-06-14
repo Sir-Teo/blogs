@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Consistent Hashing Without the Surprise Move"
-description: "Consistent hashing is not mostly about hashing. It is a remapping contract: when the fleet changes, only the keys that must move should move."
+title: "Do Not Reassign the World to Add One Box"
+description: "Consistent hashing is mostly a remapping contract: when the fleet changes, only the keys that genuinely belong on the new owner should move."
 date: 2026-06-14 09:21:00 -0400
 categories: data-systems
 tags: [consistent-hashing, rendezvous-hashing, distributed-caches, load-balancing, data-systems]
-excerpt: "Modulo hashing balances a static fleet and destroys locality when the fleet changes. Consistent hashing keeps most keys home when servers arrive or leave."
+excerpt: "Modulo hashing can balance a static fleet and still destroy locality when the fleet changes. Consistent hashing keeps most keys home when servers arrive or leave."
 ---
 
 The problem with `hash(key) % N` is not that it is unfair.
@@ -37,7 +37,7 @@ ring: score every server for a key and choose the highest score.[^hrw] Later
 systems kept adapting the same idea because membership churn is a systems fact,
 not an edge case.
 
-## Static Balance Is the Wrong Benchmark
+## Fair Today, Forgetful Tomorrow
 
 Modulo hashing is a good static assignment rule. With a decent hash function and
 many keys, each bucket gets roughly the same number.
@@ -62,7 +62,7 @@ have been scattered away from their old homes.
 
 The assignment function became an outage amplifier.
 
-## The Ring Contract
+## The Ring Lets Only Its Neighbors Notice
 
 The classic consistent-hashing picture puts both servers and keys on a circle.
 Hash each server to points on the ring. Hash each key to one point. The key is
@@ -91,7 +91,7 @@ minimal movement and perfect balance are not the same metric
 A ring can be wonderfully stable and still temporarily imbalanced if the arcs
 are uneven. More virtual nodes buy a better balance distribution.
 
-## Rendezvous Without the Ring
+## No Ring, Same Courtesy
 
 Rendezvous hashing removes the ring table. For a key \(k\) and server \(s\),
 compute a score \(h(k,s)\). Assign the key to the server with the highest score.
@@ -116,7 +116,7 @@ in this design space: it maps a key to one of a sequentially numbered set of
 buckets with minimal memory and a tiny algorithm, though it assumes bucket
 numbers are dense and sequential.[^jump]
 
-## A Remapping Lab
+## Add One Server and Watch the Damage
 
 The lab below compares three assignment rules:
 
@@ -320,7 +320,13 @@ more traffic.
 
 <script defer src="{{ '/assets/js/consistent-hashing-lab.js?v=20260614a' | relative_url }}"></script>
 
-## What the Lab Is Actually Checking
+In the default run, modulo hashing moves 92.1% of keys after adding one server,
+but only 7.5% of keys land on that new server. Most of the churn is old servers
+trading keys with one another. The ring moves 8.4% and rendezvous moves 8.2%,
+close to the 7.7% minimal target for growing from 12 to 13 servers. More
+important, every moved key under those two rules goes to the new server.
+
+## The Invariant Is Where the Moved Keys Land
 
 The important invariant is not the exact percentage in one run. It is where the
 moved keys go.
@@ -351,7 +357,7 @@ virtual nodes improves balance but increases ring metadata. Rendezvous hashing
 often has good balance without storing a ring, but direct lookup scores every
 server. There is no free implementation. There is a contract and a cost model.
 
-## Why Hot Keys Complicate the Story
+## A Fair Key Count Can Still Burn
 
 Key-count balance is not traffic balance.
 
@@ -383,7 +389,7 @@ what if one key is too much for one server?
 
 Those are different problems.
 
-## Which Hash Should You Use?
+## Choose the Assignment Contract
 
 The answer depends on the shape of the fleet.
 
@@ -415,7 +421,7 @@ specific pain:
 membership changed, but most keys should not notice
 ```
 
-## The Cache Is a Memory of the Assignment Function
+## The Cache Remembers Yesterday's Function
 
 The reason this topic matters is not that hashes are clever. It is that caches,
 connections, tablets, and shards accumulate history.
