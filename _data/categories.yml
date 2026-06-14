@@ -13,6 +13,10 @@ computer-science:
   name: Computer science
   short: CS
   color: "#D4537E"
+gaming:
+  name: Gaming
+  short: Games
+  color: "#6D8A1F"
 software-engineering:
   name: Software engineering
   short: Eng
