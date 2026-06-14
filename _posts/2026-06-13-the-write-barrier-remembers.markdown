@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Write Barrier Remembers"
+title: "Write Barriers Remember the Dangerous Edge"
 description: "A garbage collector is a graph traversal racing a mutating graph. The write barrier is the little piece of memory that keeps the traversal true."
 date: 2026-06-13 21:55:00 -0400
 categories: software-engineering
