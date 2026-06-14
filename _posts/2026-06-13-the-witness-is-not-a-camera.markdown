@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Witness Is Not a Camera"
+title: "Memory Is Not a Camera"
 description: "Human memory is not a raw recording. It is a reconstruction from noisy traces, gist, priors, cues, and reporting thresholds."
 date: 2026-06-13 07:26:00 -0400
 categories: psychology
@@ -250,7 +250,7 @@ what evidence, prior, cue, and reporting threshold produced this report?
 
 That is less comforting. It is also closer to how remembering works.
 
-## Notes
+## Primary Sources
 
 [^bartlett]: Frederic C. Bartlett, [*Remembering: A Study in Experimental and Social Psychology*](https://www.mpi.nl/publications/item2273030/remembering-study-experimental-and-social-psychology), Cambridge University Press, 1932. The book is also available through [Internet Archive](https://archive.org/details/rememberingstudy00bart).
 
