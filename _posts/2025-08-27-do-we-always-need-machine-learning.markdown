@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Do We Always Need Machine Learning? A Fallback Cache Says No"
+title: "When a Cache Beats a Model"
 description: "A practical pattern for estimating sparse, long-tailed quantities with robust statistics, SQL rollups, partial pooling, and observable fallbacks."
 date: 2025-08-27 10:00:00 -0400
 categories: ai-systems
@@ -203,7 +203,7 @@ same practical instinct behind empirical Bayes and hierarchical modeling:
 separate estimates are noisy, and related groups can borrow strength from one
 another.[^efron-morris], [^gelman]
 
-## A Small Experiment
+## A Lab You Can Poke
 
 The simulator below creates a synthetic surcharge world with carriers, cabins,
 routes, and flights. Training data are sparse and contaminated by occasional
@@ -340,7 +340,7 @@ Approximate quantiles also need testing. They are excellent for large-scale
 systems, but they are still approximations. If a financial close process depends
 on exact cents, separate "fast estimate" and "official accounting" paths.
 
-## The Takeaway
+## What Survives the Toy
 
 The best non-ML baseline is not a weak straw man. It is a serious system:
 normalized keys, robust quantiles, rollup hierarchy, minimum evidence thresholds,
