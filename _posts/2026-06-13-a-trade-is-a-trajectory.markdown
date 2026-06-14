@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Trade Is a Trajectory"
+title: "A Trade in Motion"
 description: "The price in a portfolio model is not the price a large order receives. Execution turns an investment idea into a path through liquidity, volatility, market impact, and information leakage."
 date: 2026-06-13 01:20:00 -0400
 categories: quantitative-finance
@@ -275,7 +275,7 @@ is a system that knows what kind of market it is currently inside.
 That is why a trade is a trajectory. Prediction decides where the portfolio
 should go. Execution decides the path, and the path writes itself into returns.
 
-## Notes
+## Reading Notes
 
 [^perold]: Andre F. Perold, "The Implementation Shortfall: Paper vs. Reality," *Journal of Portfolio Management*, 1988. [Harvard Business School](https://www.hbs.edu/faculty/Pages/item.aspx?num=2083).
 
