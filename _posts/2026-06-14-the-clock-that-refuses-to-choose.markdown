@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "Vector Clocks Refuse to Lie"
-description: "Lamport clocks preserve causal order, but scalar timestamps still force a total order on concurrent events. Vector clocks keep the partial order visible."
+title: "A Clock That Can Say Concurrent"
+description: "Lamport clocks preserve causal order, but scalar timestamps still sort concurrent events. Vector clocks keep the partial order visible instead of inventing certainty."
 date: 2026-06-14 08:42:00 -0400
 categories: computer-science
 tags: [distributed-systems, vector-clocks, lamport-clocks, causality, concurrency, logical-time]
-excerpt: "A distributed timestamp is not a wall clock. It is a claim about causality. Lamport clocks respect happened-before; vector clocks can tell when two events are concurrent."
+excerpt: "A distributed timestamp is a claim about causality, not a wall clock. Vector clocks are useful because they can say two events are unrelated."
 ---
 
-The strange thing about a distributed clock is that it should sometimes refuse
-to choose.
+The strange thing about a distributed clock is that sometimes the honest answer
+is "I will not choose."
 
 Two servers write two values. Neither saw the other write. No message connects
 them. A wall clock may put one before the other. A database may need a tie-break
@@ -19,7 +19,8 @@ anyway. But the system's causal history says something more delicate:
 these events are concurrent
 ```
 
-That is not indecision. It is information.
+That is not indecision. It is information the system should not throw away too
+early.
 
 Lamport's 1978 paper introduced the happened-before relation and showed how
 logical clocks can assign numbers to events so that causality is respected:
@@ -38,9 +39,9 @@ b happened before a
 neither happened before the other
 ```
 
-The third answer is the point.
+The third answer is the whole reason to keep the vector around.
 
-## Happened-Before Is Not Time
+## Lamport Gave Causality a Skeleton
 
 Lamport's relation has three rules.
 
@@ -69,9 +70,10 @@ timestamp 9, the second cannot be caused by the first. But if timestamp 9 is
 less than timestamp 17, that does not prove the first caused the second. They
 may be concurrent.
 
-Scalar time is a compression. It loses the shape of the partial order.
+Scalar time is a compression. It preserves one promise and loses the shape of
+the partial order.
 
-## The Vector Refuses
+## The Vector Keeps the Missing Shape
 
 A vector clock stores one counter per process. On a local event at process
 \(i\), increment component \(i\). On send, attach the vector. On receive, take
@@ -99,14 +101,14 @@ component j says how much of process j's history this event has seen
 
 That sentence is much stronger than "this event has a smaller number."
 
-## A Logical-Clock Lab
+## A Trace With No Global Referee
 
 The lab below simulates a message-passing system. Each event is an internal
 step, a send, or a receive. The generator computes the true happened-before
 relation from local edges and delivered message edges, then compares it with the
 Lamport scalar clock and the vector clock.
 
-The invariant checked by the code is:
+The code checks two invariants:
 
 ```text
 Lamport: happened-before never goes backward
@@ -305,7 +307,7 @@ Vector: vector comparison exactly matches happened-before
 
 <script defer src="{{ '/assets/js/vector-clock-lab.js?v=20260614a' | relative_url }}"></script>
 
-## What the Experiment Shows
+## The Orange Cells Are the Lesson
 
 The pair classifier is the important panel. Green cells are event pairs ordered
 by happened-before. Gray cells are concurrent pairs with equal scalar
@@ -328,9 +330,9 @@ same partial order.
 The frontier panel gives the most concrete reading of a vector. If a selected
 event has vector \([18, 11, 13, 25, 20]\), it means that event's causal past has
 seen 18 events from process 0, 11 from process 1, and so on. It is not a time.
-It is a receipt for history.
+It is a receipt for history, not a date.
 
-## Why This Matters in Storage Systems
+## When Storage Needs Siblings
 
 The most familiar application is versioning under replication.
 
@@ -344,10 +346,10 @@ or are these siblings?
 
 Dynamo used vector clocks to detect divergent object versions and return
 siblings for reconciliation rather than silently choosing a last writer by
-timestamp.[^dynamo] That design has tradeoffs: vector metadata can grow, clients
-must reconcile, and production systems often add pruning heuristics. But the
-semantic distinction is valuable. A causal descendant can replace its ancestor.
-Concurrent siblings need a merge policy.
+timestamp.[^dynamo] That design has tradeoffs: vector metadata can grow,
+clients must reconcile, and production systems often add pruning heuristics.
+But the semantic distinction is valuable. A causal descendant can replace its
+ancestor. Concurrent siblings need a merge policy.
 
 A last-write-wins register collapses that distinction. It chooses a winner even
 when the system does not know a causal winner exists. Sometimes that is exactly
@@ -363,7 +365,7 @@ not:
 we discovered which update came first
 ```
 
-## The Cost of Honesty
+## Honesty Has Metadata
 
 Vector clocks are not free. In the simplest form, a timestamp carries one
 integer per process. That is fine for five processes in a demo. It is awkward
@@ -385,7 +387,7 @@ If overwriting a cache entry is harmless, a scalar timestamp may be enough.
 
 The mistake is pretending these are the same decision.
 
-## Partial Orders Are Product Facts
+## A Partial Order Is a Product Fact
 
 Programmers often want a single log because single logs are easy to read. One
 line before another. One event after another. One winner.
@@ -402,7 +404,8 @@ Vector clocks are beautiful because they preserve the shape of that uncertainty.
 They do not say "I do not know" in a vague way. They say exactly which histories
 are included in an event's past, and therefore which comparisons are justified.
 
-The clock refuses to choose because choosing would be a lie.
+The clock refuses to choose because choosing would be a policy, not an
+observation.
 
 [^lamport]: Leslie Lamport, ["Time, Clocks, and the Ordering of Events in a Distributed System"](https://lamport.azurewebsites.net/pubs/time-clocks.pdf), *Communications of the ACM*, 21(7), 1978.
 
