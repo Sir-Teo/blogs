@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Deadlines Should Ignore Wall Time"
-description: "Wall clocks name calendar instants; monotonic clocks measure elapsed time. Mixing them turns NTP corrections, clock steps, and lease expiry timestamps into production bugs."
+title: "The Stopwatch Is Not the Calendar"
+description: "Wall clocks name calendar instants; monotonic clocks measure elapsed time. Mixing them turns NTP corrections, clock steps, and lease expiries into production bugs."
 date: 2026-06-14 15:03:00 -0400
 categories: software-engineering
 tags: [timekeeping, monotonic-clocks, distributed-systems, timeouts, leases, reliability]
-excerpt: "A timeout is a duration, not a date. If it reads the wall clock, an NTP step can make a healthy request fail early or a dead request linger too long."
+excerpt: "A timeout is a duration, not a date. If it reads the wall clock, a time correction can make a healthy request fail early or a dead request linger too long."
 ---
 
-A timeout is not a timestamp.
+A timeout is not a timestamp. It is a promise about waiting.
 
 That sounds too small to deserve a whole post. It is not. A surprising number
 of reliability bugs begin when a program uses a clock that answers the wrong
@@ -41,9 +41,10 @@ and:
 give this RPC 800 milliseconds to finish
 ```
 
-The first is a date. The second is a stopwatch.
+The first is a date. The second is a stopwatch. Confusing them is how a tidy
+line of code turns into a production incident.
 
-## The Wall Clock Has A Job
+## The Calendar Clock Has a Job
 
 The wall clock is not bad. It is the right instrument for many jobs:
 
@@ -73,7 +74,7 @@ after the intended budget is gone.
 The bug is not that the wall clock is inaccurate. The bug is that a correcting
 clock was asked to be a stopwatch.
 
-## A Deadline Lab
+## A Stopwatch Bug in Four Sliders
 
 The lab below models two timeout policies:
 
@@ -170,7 +171,7 @@ inside its validity window after the coordinator has moved on. Bounded clock
 uncertainty and conservative waiting are not optional decorations in lease
 protocols. They are part of the correctness proof.
 
-## Deadlines Are Durations
+## Use a Stopwatch for Waiting
 
 The reliable pattern for ordinary local waiting is:
 
@@ -203,7 +204,7 @@ use a monotonic clock after converting the deadline into a remaining duration
 under a well-defined clock contract. The absolute timestamp is a coordination
 message; the local timer is still a stopwatch.
 
-## Leases Need A Bound, Not A Wish
+## A Lease Needs an Error Bound
 
 Leases are time-based promises. Gray and Cheriton's classic lease paper proposed
 leases as a way to provide efficient cache consistency in distributed systems;
@@ -235,7 +236,7 @@ it is an interval with an error budget
 A single timestamp can be useful for logs. A lease or serial order needs the
 uncertainty model that makes the timestamp meaningful.
 
-## A Small Checklist
+## Clock Questions Before Code
 
 For production code, I would want each clock use to answer one explicit
 question:
