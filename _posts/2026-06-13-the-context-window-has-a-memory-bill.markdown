@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Context Window Has a Memory Bill"
+title: "The Context Window Sends a Memory Bill"
 description: "Long-context inference is not only about attention math. Every live token leaves key and value vectors in GPU memory, and the serving system has to pay that bill one request at a time."
 date: 2026-06-13 05:44:00 -0400
 categories: machine-learning
@@ -343,7 +343,7 @@ prefill latency. It could mean decode throughput. It could mean maximum
 resident batch size. It could mean quality after truncation. These are different
 metrics with different bottlenecks.
 
-## The Research Direction
+## The Next Question
 
 The part I find most interesting is **cache policy as model behavior**.
 
@@ -377,7 +377,7 @@ tail failures by token age and document role
 That would make the cache visible as part of the model. Because in deployment,
 it is.
 
-## Notes
+## Source Notes
 
 [^attention]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
     Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin,
