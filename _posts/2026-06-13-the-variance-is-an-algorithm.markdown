@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Variance Has an Algorithmic Shape"
-description: "Variance looks like a formula, but in finite precision arithmetic the formula you choose can decide whether the answer is accurate, noisy, or impossible."
+title: "The Formula Lied to the Computer"
+description: "Variance looks like a formula, but in finite precision arithmetic the algorithm you choose can decide whether the answer is accurate, noisy, or impossible."
 date: 2026-06-13 20:02:00 -0400
 categories: computer-science
 tags: [floating-point, numerical-stability, variance, welford, algorithms, software-engineering]
-excerpt: "The expression E[x^2] - E[x]^2 is mathematically correct and computationally dangerous. A variance estimate is not just a statistic. It is an algorithm."
+excerpt: "The expression E[x^2] - E[x]^2 is mathematically correct and computationally dangerous. A variance estimate has an arithmetic path."
 ---
 
 The variance has an innocent face:
@@ -27,7 +27,7 @@ one-quintillion-scale summaries agree to many digits.
 
 That is not statistics anymore. That is numerical analysis.
 
-## The Formula Is Not the Computation
+## Same Algebra, Different Machine
 
 The textbook one-pass formula for sample variance often appears as:
 
@@ -53,7 +53,7 @@ nearby quantities is where that approximation often becomes visible.
 Variance is a perfect little demonstration because the desired answer is a
 small difference between large summaries.
 
-## A Small Failure Bench
+## A Failure Bench for One Tiny Statistic
 
 The lab below generates a deterministic dataset with a controllable baseline,
 spread, order, and precision model. It compares five algorithms:
@@ -244,7 +244,7 @@ This gives two separate diagnoses:
 
 Those failures need different fixes.
 
-## Welford's Small State
+## Welford Carries a Small State
 
 B. P. Welford's 1962 note gives an online way to update the corrected sum of
 squares without storing the whole sample.[^welford] For a new observation
@@ -268,7 +268,7 @@ Welford is not magic. It still uses floating-point arithmetic. It can still be
 affected by input order and by precision loss in the stored observations. But it
 is solving a better numerical problem.
 
-## Two Passes Are Often Fine
+## A Second Pass Is Not a Defeat
 
 There is a cultural bias toward one pass, especially in data systems. One pass
 sounds efficient. Sometimes it is necessary: streaming telemetry, online
@@ -290,7 +290,7 @@ one pass is a constraint, not a virtue
 When the storage and latency budget allow a second pass, spending it can buy a
 lot of numerical stability.
 
-## Parallel Variance Has Its Own Shape
+## Parallel Variance Needs a Merge Story
 
 Welford's state also has a merge operation. If shard $$A$$ has $$n_a$$,
 $$\bar{x}_a$$, and $$M_{2,a}$$, and shard $$B$$ has $$n_b$$, $$\bar{x}_b$$, and
@@ -313,7 +313,7 @@ case.[^higham]
 The lab's pairwise line is deliberately boring when things go well. Boring is
 good. A variance reduction should not be dramatic.
 
-## A Production Checklist
+## What I Check Before Trusting Variance
 
 If a metric, feature store, backtest, or training pipeline computes variances, I
 would want to know:
@@ -333,7 +333,7 @@ may keep a dashboard alive, but it can also hide the exact bug you needed to
 learn from. Negative variance is not a statistical event. It is a numerical
 smoke alarm.
 
-## The Line I Would Keep
+## The Line Worth Keeping
 
 Variance is not just a formula. It is a reduction algorithm.
 
@@ -341,6 +341,8 @@ The same mathematical statistic can be computed by a fragile cancellation, a
 stable online update, a shifted pass, or a parallel merge tree. The answer you
 get is partly a property of the data and partly a property of the arithmetic
 path you chose.
+
+## Source Notes
 
 [^goldberg]: David Goldberg, ["What Every Computer Scientist Should Know About Floating-Point Arithmetic"](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html), *ACM Computing Surveys*, 23(1), 1991. DOI: [10.1145/103162.103163](https://dl.acm.org/doi/10.1145/103162.103163).
 
