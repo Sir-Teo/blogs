@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Kalman Filtering as a Trust Ledger"
+title: "How Far Should a Noisy Sensor Move You?"
 description: "A Kalman filter is not a smoothing trick. It is a recursive argument about how much to trust a model versus a noisy measurement."
 date: 2026-06-13 17:43:00 -0400
 categories: statistics
 tags: [kalman-filter, state-space-models, time-series, signal-extraction, control, quantitative-finance]
-excerpt: "The state is hidden, the sensor is noisy, and the model is only partly trusted. The Kalman gain is the number that says how much a new measurement is allowed to move belief."
+excerpt: "The state is hidden, the sensor is noisy, and the model is only partly trusted. The Kalman gain says how much a new measurement is allowed to move belief."
 ---
 
 A noisy line on a chart invites a familiar sin:
@@ -40,7 +40,7 @@ That number is not a tuning flourish. It is the trust budget implied by two
 uncertainties: how uncertain the prediction is, and how noisy the measurement
 is.
 
-## The Smallest State-Space Model
+## The Smallest State That Can Hide
 
 Use the one-dimensional local-level model:
 
@@ -123,7 +123,7 @@ filter as a predict-correct cycle.[^welch] That recursion is the engineering
 miracle: the filter does not need to keep all past measurements around. The
 current posterior is the sufficient summary under the linear-Gaussian model.
 
-## A Kalman Filter Lab
+## Let the Sensor Argue With the Model
 
 The lab below simulates a hidden random-walk state, noisy measurements, a jump,
 optional missing observations, and a filter that may or may not be correctly
@@ -226,7 +226,7 @@ bug in the code. It is an identifiability problem. To separate state from sensor
 bias, the model needs more information: another sensor, calibration data, a
 strong prior, or a state equation that makes the bias implausible.
 
-## The Innovation Is the Audit Trail
+## The Surprise Is the Audit Trail
 
 The filtered state is the glamorous line. The innovation is the audit trail.
 
@@ -273,7 +273,7 @@ do not judge a filter only by how calm its estimate looks
 judge the surprises it leaves behind
 ```
 
-## Filtering, Smoothing, and Backtests
+## Do Not Let Tomorrow Smooth Today
 
 A filter estimates the current state using data available up to now:
 
@@ -301,7 +301,7 @@ execution assumptions match the decision being tested.
 The filter gives you a posterior at time $$t$$. It does not forgive using a
 posterior that was computed with time $$t+1$$ data.
 
-## The Matrix Version Is the Same Story
+## The Matrix Version Tells the Same Story
 
 The general linear state-space model is:
 
@@ -341,7 +341,7 @@ spend trust according to uncertainty
 carry the posterior forward
 ```
 
-## Failure Modes Worth Respecting
+## Ways the Trust Accounting Breaks
 
 The Gaussian assumption is not decoration. Heavy-tailed measurement errors,
 outliers, censored observations, and adversarial sensors can make the ordinary
@@ -365,7 +365,7 @@ Finally, the posterior variance is model variance. It is not a universal
 uncertainty certificate. If the model omits important risks, the band can be
 narrow and wrong.
 
-## A Run Sheet for Using One
+## Questions Before It Runs Live
 
 Before I trust a Kalman filter in a real system, I want to know:
 
@@ -384,7 +384,7 @@ The Kalman filter is powerful because it is explicit. It asks you to write down
 the dynamics, the sensor, and the uncertainty. Then it updates belief with a
 number that says exactly how much trust remains to spend.
 
-## How the Algorithm Feels
+## What It Feels Like
 
 A measurement is a rumor from the world.
 
