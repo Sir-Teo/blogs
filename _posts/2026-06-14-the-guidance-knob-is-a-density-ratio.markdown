@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Guidance Knob Is a Density Ratio"
+title: "Guidance Scales as Density-Ratio Controls"
 description: "Classifier-free guidance is not magic prompt obedience. In the score idealization, it is an extrapolated density-ratio field, which explains both the extra fidelity and the loss of diversity."
 date: 2026-06-14 09:54:00 -0400
 categories: machine-learning
