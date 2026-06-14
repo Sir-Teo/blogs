@@ -142,7 +142,7 @@
     var sharpness = params.certainty / 100;
     var temperature = 1.65 - 1.25 * sharpness;
     var match = params.match / 100;
-    var seed = params.seed * 1000003 + Math.round(params.certainty) * 271 + Math.round(params.match) * 911;
+    var seed = params.seed * 1000003 + Math.round(params.certainty) * 271;
     var target = [];
     var draft = [];
     var state;
