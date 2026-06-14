@@ -10,6 +10,12 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
+  <div class="searchbar">
+    <svg class="searchbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <input type="search" class="searchbar__input" id="postsearch" placeholder="Search notes…" aria-label="Search notes" autocomplete="off" spellcheck="false">
+    <span class="searchbar__kbd" aria-hidden="true">/</span>
+  </div>
+
   <div class="chipbar" role="group" aria-label="Filter posts by topic">
     <button type="button" class="chip is-active" data-filter="all" aria-pressed="true">All<span class="chip__count">{{ site.posts.size }}</span></button>
     {%- for cat in site.data.categories -%}
@@ -26,13 +32,14 @@ layout: default
     {%- for post in site.posts -%}
     {%- assign slug = post.categories.first -%}
     {%- assign meta = site.data.categories[slug] -%}
-    <li class="postlist__item" data-category="{{ slug }}">
+    {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+    {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }}{% endif %}{%- endcapture -%}
+    <li class="postlist__item" data-category="{{ slug }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
       <a class="postlist__link" href="{{ post.url | relative_url }}">
         {%- if meta -%}
         <span class="postlist__cat"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}</span>
         {%- endif -%}
         <span class="postlist__title">{{ post.title | escape }}</span>
-        {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
         {%- if desc and desc != "" -%}
         <span class="postlist__desc">{{ desc | truncate: 150 | escape }}</span>
         {%- endif -%}
@@ -40,6 +47,6 @@ layout: default
     </li>
     {%- endfor -%}
   </ul>
-  <p class="postlist__empty" hidden>No notes under this topic yet.</p>
+  <p class="postlist__empty" hidden>No notes match your search.</p>
   {%- endif -%}
 </div>

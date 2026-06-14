@@ -270,6 +270,74 @@ strong {
   max-width: 48ch;
 }
 
+.searchbar {
+  position: relative;
+  margin: 0 0 1rem;
+}
+
+.searchbar__icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchbar__input {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  padding: 0.62rem 2.6rem 0.62rem 2.3rem;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchbar__input::placeholder {
+  color: var(--muted);
+}
+
+.searchbar__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.searchbar__kbd {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  border: 1px solid var(--faint);
+  border-radius: 4px;
+  padding: 0.04rem 0.36rem;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.searchbar__input:focus ~ .searchbar__kbd,
+.searchbar.has-query .searchbar__kbd {
+  opacity: 0;
+}
+
+@media (max-width: 540px) {
+  .searchbar__kbd {
+    display: none;
+  }
+  .searchbar__input {
+    padding-right: 0.9rem;
+  }
+}
+
 .chipbar {
   display: flex;
   flex-wrap: wrap;
@@ -581,6 +649,53 @@ strong {
   padding: 0;
   font-size: inherit;
   color: inherit;
+}
+
+/* Copy-to-clipboard button injected over each code block. */
+.codeblock {
+  position: relative;
+}
+
+.code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--faint);
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.codeblock:hover .code-copy,
+.code-copy:focus-visible {
+  opacity: 1;
+}
+
+.code-copy:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.code-copy.is-copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Touch devices have no hover — keep the button discoverable. */
+@media (hover: none) {
+  .code-copy {
+    opacity: 0.65;
+  }
 }
 
 /* Minima's Rouge syntax palette is tuned for light backgrounds — several
@@ -1224,6 +1339,174 @@ mjx-container {
   color: var(--accent);
 }
 
+/* ---------- Related posts ---------- */
+
+.related {
+  margin: 3rem 0 0;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--faint);
+}
+
+.related__h {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.85rem;
+}
+
+.related__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.related__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.related__link:hover {
+  color: var(--accent);
+}
+
+.related__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+  position: relative;
+  top: 0.05em;
+}
+
+/* ---------- Back to top ---------- */
+
+.to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(0.5rem);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease,
+    color 0.15s ease, border-color 0.15s ease;
+}
+
+.to-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.to-top:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.to-top svg {
+  display: block;
+}
+
+/* ---------- Cross-document view transitions ---------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  .reading-progress,
+  .site-nav,
+  .theme-toggle,
+  .post-toc,
+  .to-top,
+  .searchbar,
+  .chipbar,
+  .code-copy,
+  .skip-link,
+  .post-nav,
+  .related,
+  [class$="-lab__controls"] {
+    display: none !important;
+  }
+
+  :root {
+    --bg: #ffffff;
+    --text: #000000;
+    --muted: #444444;
+    --faint: #cccccc;
+    --accent: #000000;
+    color-scheme: light;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .wrapper {
+    max-width: none;
+    padding: 0;
+  }
+
+  .page-content {
+    padding: 0;
+  }
+
+  a {
+    color: #000;
+  }
+
+  /* Surface the destination of content links when on paper. */
+  .post-content a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.82em;
+    color: #555;
+    word-break: break-all;
+  }
+
+  pre,
+  blockquote,
+  table,
+  .research-figure,
+  [class$="-lab"] {
+    page-break-inside: avoid;
+  }
+
+  .site-footer {
+    border: 0;
+  }
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 540px) {
@@ -1233,15 +1516,6 @@ mjx-container {
 
   .post-title {
     font-size: 1.65rem;
-  }
-
-  .postlist__link {
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .postlist__date {
-    font-size: 0.78rem;
   }
 
   .post-nav {

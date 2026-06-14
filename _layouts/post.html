@@ -33,6 +33,36 @@ layout: default
   </ul>
   {%- endif -%}
 
+  {%- comment -%}
+    Related posts: gather other posts that share a tag, in tag order then
+    recency, de-duplicated, capped at 5. Built at compile time.
+  {%- endcomment -%}
+  {%- assign rel_seen = "|" -%}
+  {%- assign rel_n = 0 -%}
+  {%- capture related_items -%}
+  {%- for tag in page.tags -%}
+    {%- assign tagposts = site.tags[tag] -%}
+    {%- if tagposts -%}
+      {%- for p in tagposts -%}
+        {%- assign rel_key = "|" | append: p.url | append: "|" -%}
+        {%- unless p.url == page.url or rel_seen contains rel_key or rel_n >= 5 -%}
+          {%- assign rel_seen = rel_seen | append: p.url | append: "|" -%}
+          {%- assign rel_n = rel_n | plus: 1 -%}
+          {%- assign p_slug = p.categories.first -%}
+          {%- assign p_cat = site.data.categories[p_slug] -%}
+          <li><a class="related__link" href="{{ p.url | relative_url }}">{% if p_cat %}<span class="related__dot" style="background: {{ p_cat.color }}"></span>{% endif %}<span>{{ p.title | escape }}</span></a></li>
+        {%- endunless -%}
+      {%- endfor -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- endcapture -%}
+  {%- if related_items contains "related__link" -%}
+  <section class="related" aria-label="Related notes">
+    <h2 class="related__h">Related notes</h2>
+    <ul class="related__list">{{ related_items }}</ul>
+  </section>
+  {%- endif -%}
+
   {%- comment -%} In Jekyll, page.previous is the older post and page.next is the newer one. {%- endcomment -%}
   <nav class="post-nav">
     {%- if page.previous -%}

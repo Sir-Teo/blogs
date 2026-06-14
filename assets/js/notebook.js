@@ -137,41 +137,143 @@
     });
   }
 
-  /* ---------- Home topic filter ---------- */
+  /* ---------- Home topic filter + search ---------- */
   var chipbar = document.querySelector('.chipbar');
   if (chipbar) {
     var chips = Array.prototype.slice.call(chipbar.querySelectorAll('.chip'));
     var items = Array.prototype.slice.call(document.querySelectorAll('.postlist__item'));
     var empty = document.querySelector('.postlist__empty');
+    var searchbox = document.getElementById('postsearch');
+    var searchWrap = searchbox ? searchbox.closest('.searchbar') : null;
+    var activeCat = 'all';
+    var terms = [];
 
-    function applyFilter(filter) {
+    function apply() {
       var shown = 0;
       items.forEach(function (li) {
-        var match = filter === 'all' || li.getAttribute('data-category') === filter;
+        var catMatch = activeCat === 'all' || li.getAttribute('data-category') === activeCat;
+        var textMatch = true;
+        if (terms.length) {
+          var blob = li.getAttribute('data-search') || '';
+          textMatch = terms.every(function (t) { return blob.indexOf(t) !== -1; });
+        }
+        var match = catMatch && textMatch;
         li.hidden = !match;
         if (match) shown++;
       });
       if (empty) empty.hidden = shown !== 0;
+    }
+
+    function setCategory(filter) {
+      activeCat = filter;
       chips.forEach(function (c) {
         var on = c.getAttribute('data-filter') === filter;
         c.classList.toggle('is-active', on);
         c.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
+      apply();
     }
 
     chipbar.addEventListener('click', function (e) {
       var chip = e.target.closest('.chip');
       if (!chip) return;
       var f = chip.getAttribute('data-filter');
-      applyFilter(f);
+      setCategory(f);
       if (history.replaceState) {
         history.replaceState(null, '', f === 'all' ? location.pathname + location.search : '#' + f);
       }
     });
 
+    if (searchbox) {
+      searchbox.addEventListener('input', function () {
+        var q = searchbox.value.trim().toLowerCase();
+        terms = q ? q.split(/\s+/) : [];
+        if (searchWrap) searchWrap.classList.toggle('has-query', q.length > 0);
+        apply();
+      });
+      searchbox.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && searchbox.value) {
+          searchbox.value = '';
+          terms = [];
+          if (searchWrap) searchWrap.classList.remove('has-query');
+          apply();
+        }
+      });
+      // Press "/" anywhere to jump to search.
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+        var el = document.activeElement;
+        var tag = el ? el.tagName : '';
+        if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tag))) return;
+        e.preventDefault();
+        searchbox.focus();
+      });
+    }
+
     var hash = (location.hash || '').slice(1);
     if (hash && chips.some(function (c) { return c.getAttribute('data-filter') === hash; })) {
-      applyFilter(hash);
+      setCategory(hash);
     }
   }
+
+  /* ---------- Copy buttons on code blocks ---------- */
+  var codeBlocks = Array.prototype.slice.call(document.querySelectorAll('.post-content pre'));
+  if (codeBlocks.length && navigator.clipboard) {
+    codeBlocks.forEach(function (pre) {
+      var wrap = document.createElement('div');
+      wrap.className = 'codeblock';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy code to clipboard');
+      wrap.appendChild(btn);
+
+      var resetTimer;
+      btn.addEventListener('click', function () {
+        var code = pre.querySelector('code') || pre;
+        navigator.clipboard.writeText(code.innerText).then(function () {
+          btn.textContent = 'Copied';
+          btn.classList.add('is-copied');
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () {
+            btn.textContent = 'Copy';
+            btn.classList.remove('is-copied');
+          }, 1600);
+        }).catch(function () {
+          btn.textContent = 'Failed';
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+        });
+      });
+    });
+  }
+
+  /* ---------- Back to top ---------- */
+  var toTop = document.createElement('button');
+  toTop.type = 'button';
+  toTop.className = 'to-top';
+  toTop.setAttribute('aria-label', 'Back to top');
+  toTop.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>';
+  document.body.appendChild(toTop);
+
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(function () {
+      toTop.classList.toggle('is-visible', window.scrollY > 600);
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  toTop.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+  });
 })();
