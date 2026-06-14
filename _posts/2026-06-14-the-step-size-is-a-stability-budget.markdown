@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Step Size Is a Stability Budget"
+title: "Learning Rates Spend Stability"
 description: "A learning rate is not just speed. It is a numerical stability promise about the sharpest direction the optimizer can survive."
 date: 2026-06-14 13:27:00 -0400
 categories: machine-learning
