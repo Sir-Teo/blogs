@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Volatility Targeting as Feedback Control"
+title: "The Risk Dial Has a Delay"
 description: "Scaling exposure by estimated volatility is not a free Sharpe-ratio machine. It is a lagged control loop with estimator error, leverage caps, turnover, and crash dynamics."
 date: 2026-06-13 03:44:00 -0400
 categories: quantitative-finance
 tags: [volatility-targeting, quantitative-finance, risk-management, control, garch, portfolio-construction]
-excerpt: "Volatility targeting is often described as risk management. Mechanically, it is a feedback controller: estimate risk, set leverage, pay turnover, and hope the estimate arrives before the regime changes."
+excerpt: "Volatility targeting estimates risk, sets leverage, pays turnover, and hopes the sensor moves before the regime does."
 ---
 
 Volatility targeting has the appealing smell of common sense.
@@ -51,7 +51,7 @@ strategy. The point is to make the control loop visible.
 
 This is not investment advice.
 
-## Why the Rule Can Work
+## Why the Dial Sometimes Helps
 
 Volatility is predictable in a way returns usually are not. Engle's ARCH model
 and Bollerslev's GARCH model made that empirical fact mathematically central:
@@ -81,7 +81,7 @@ exactly the control interpretation. The rule helps when the sensor measures a
 real state, the actuator changes risk before the bad state pays out, and the
 asset does not fully compensate investors for bearing that state.
 
-## The Control Loop
+## The Controller on the Bench
 
 The controller below observes only past returns. It estimates volatility with an
 EWMA:
@@ -177,7 +177,7 @@ it also means the target volatility may be unreachable when the asset is calm.
 The portfolio is no longer a pure volatility target. It is a capped controller
 with a target it can only sometimes hit.
 
-## The Estimator Is a Position
+## The Sensor Is a Position
 
 Most discussions treat the volatility estimator as plumbing. It is not. It is a
 position.
@@ -208,7 +208,7 @@ does not. During calm periods, estimated volatility can drift down and leverage
 can drift up. If the next regime change is a jump rather than a gradual
 transition, the controller's first observation of the new state is also a loss.
 
-## Why Sharpe Can Improve Without Alpha
+## Sharpe Can Improve Without Magic
 
 Volatility targeting can improve Sharpe even if it does not forecast returns
 directly.
@@ -242,7 +242,7 @@ The last item matters because many volatility estimators are reactive. They are
 excellent at explaining why yesterday was risky. A controller needs to decide
 what to own tomorrow.
 
-## The Dangerous Comfort of Smooth Risk
+## Smooth Risk Can Hide a Crowd
 
 Volatility targeting can make a strategy look civilized. The realized volatility
 line becomes flatter. The drawdowns may become smaller. Monthly risk reports
@@ -276,7 +276,7 @@ $$
 That is less elegant than $$\sigma^\*/\hat{\sigma}$$. It is closer to the
 portfolio.
 
-## Signals I Would Keep
+## Signals I Would Watch
 
 If I had to run a volatility-targeted strategy, I would not start by watching
 realized volatility alone. That is the easiest metric to flatter.
@@ -309,7 +309,7 @@ $$
 
 The system around it is not.
 
-## Where This Came From
+## Source Notes
 
 [^engle]: Robert F. Engle, "Autoregressive Conditional Heteroscedasticity with Estimates of the Variance of United Kingdom Inflation," *Econometrica*, 1982. [JSTOR](https://www.jstor.org/stable/1912773).
 
