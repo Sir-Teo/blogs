@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Deleting a Point, Rewriting a Counterfactual"
-description: "Machine unlearning is not the act of deleting a row. It is the demand that a deployed model behave as if the row had never been in the training set."
+title: "The Delete Button Owes a Counterfactual"
+description: "Machine unlearning is not just deleting a row. It is the demand that a deployed model behave as if that row had never entered training."
 date: 2026-06-14 09:30:00 -0400
 categories: machine-learning
 tags: [machine-unlearning, privacy, influence-functions, data-deletion, logistic-regression, machine-learning]
-excerpt: "The hard part of machine unlearning is not removing data from storage. It is producing the counterfactual model: the one you would have trained if the data had never arrived."
+excerpt: "The hard part of machine unlearning is not removing data from storage. It is producing evidence about the model you would have trained without that example."
 ---
 
-A delete button is easy to draw.
+A delete button is easy to draw. The promise behind it is not.
 
 The hard part is deciding what it means.
 
@@ -38,7 +38,7 @@ problem.[^cao] Ginart, Guan, Valiant, and Zou later framed data deletion in ML
 as the problem of efficiently deleting individual data points from trained
 models when full retraining is too expensive.[^ginart]
 
-The exact counterfactual is simple to say:
+The exact counterfactual is simple to say and expensive to earn:
 
 $$
 \theta_{-i}
@@ -54,9 +54,10 @@ $$
 Train without example $$i$$. Compare the result to the deployed model. That is
 the gold standard in the small convex lab below.
 
-Real unlearning work asks when we can avoid paying for that full retrain.
+Real unlearning work asks when we can avoid paying for that full retrain without
+silently changing the promise.
 
-## A Small Deletion Lab
+## A Tiny Counterfactual You Can See
 
 The lab uses two-dimensional logistic regression because the exact
 counterfactual can be computed. One red point is marked for deletion. The gray
@@ -268,7 +269,7 @@ separable logistic regression can make the exact target ill-conditioned. That is
 not a UI detail; it is part of the unlearning problem. If the training objective
 does not define a stable model, the deletion counterfactual is itself unstable.
 
-## Influence Is Not Unlearning
+## Influence Is a Guess, Not a Receipt
 
 Influence functions are useful because they answer a nearby question:
 
@@ -307,7 +308,7 @@ Influence is evidence about a deletion.
 
 It is not the deletion guarantee.
 
-## What Would Count as Forgetting?
+## What Kind of Forgetting Are We Promising?
 
 There are several levels of ambition.
 
@@ -347,7 +348,7 @@ which unlearning contract are we satisfying,
 and what evidence proves it?
 ```
 
-## The Audit Trail I Would Want
+## The Receipt I Would Ask For
 
 For a real unlearning system, I would want deletion requests to produce a small
 technical receipt.
@@ -372,9 +373,10 @@ generator, benchmark split, or retrieval index.
 
 The delete button is asking the system to reason about lineage.
 
-## Forgetting Is a Systems Property
+## Forgetting Has to Be Designed In
 
-The comforting fantasy is that unlearning can be bolted on after training.
+The comforting fantasy is that unlearning can be bolted on after training, like
+a new endpoint.
 
 Sometimes it can, for simple models and narrow contracts.
 
@@ -398,7 +400,7 @@ what model are you claiming this is?
 ```
 
 If the answer is "the model that would have existed without that data," then the
-delete button has become a scientific claim.
+delete button has become a scientific claim, not just a product control.
 
 It deserves a measurement.
 
