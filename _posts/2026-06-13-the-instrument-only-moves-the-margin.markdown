@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Instruments Move the Margin"
+title: "Ask Who the Instrument Moved"
 description: "Instrumental variables do not recover the effect for everyone. Under strong assumptions, they recover the effect for people whose treatment was moved by the instrument."
 date: 2026-06-13 19:25:00 -0400
 categories: statistics
 tags: [instrumental-variables, causal-inference, econometrics, late, weak-instruments, experimentation]
-excerpt: "An instrument is not a substitute treatment. It is a randomized nudge, and the ratio it identifies belongs to the people who were nudged."
+excerpt: "An instrument is not a substitute treatment. It is a randomized nudge, and the ratio it identifies belongs to the people who were actually nudged."
 ---
 
 An instrument is not a proxy.
@@ -38,7 +38,7 @@ quotient is the causal claim.
 
 Every term in that sentence can fail.
 
-## The Margin
+## The People Who Actually Move
 
 Imagine a randomized email encouraging people to use a tutoring service. Some
 people use tutoring whether or not they receive the email. Some never use it.
@@ -68,9 +68,11 @@ That is both powerful and humbling:
 the instrument estimates the effect on the moved margin
 ```
 
-The margin may be exactly the group you care about. Or not.
+The margin may be exactly the group you care about.
 
-## A Synthetic Encouragement Trial
+Or not.
+
+## A Little Encouragement Machine
 
 The lab below creates an encouragement design. The hidden population has
 always-takers, never-takers, compliers, and optional defiers. Treatment effects
@@ -161,7 +163,7 @@ of treatment.
 
 The sliders are intentionally separate because the assumptions are separate.
 
-## The Four Promises
+## Four Promises, Four Failure Modes
 
 A valid instrument needs at least four promises.
 
@@ -193,7 +195,7 @@ randomly move treatment for one margin, and do not move the outcome any other wa
 
 That is a much sharper object.
 
-## Weak Instruments Are Ratio Trouble
+## Small Denominators Get Weird
 
 Weak instruments are easy to describe and hard to forgive.
 
@@ -218,7 +220,7 @@ Large samples help, but not as much as people wish if the first stage is tiny or
 the instrument is even slightly invalid. A million observations do not turn a
 nearly irrelevant encouragement into a strong experiment.
 
-## Why IV Estimates Often Look Bigger
+## Why the Estimate Can Look Big
 
 Instrumental-variable estimates can be larger than ordinary least squares
 estimates without either estimate being "wrong" in the same sense.
@@ -240,7 +242,7 @@ This is not a defect. It is the price of credible identification.
 If a policy will operate through a similar margin, the local effect may be exactly
 what you need. If the policy will target a different population, it may not be.
 
-## Reading an IV Paper
+## Questions I Ask Before Believing IV
 
 When I read an instrumental-variable design, I want the paper to answer:
 
@@ -258,7 +260,7 @@ When I read an instrumental-variable design, I want the paper to answer:
 The most revealing question is "who moved?" If the author cannot describe the
 compliers, the estimate has no face.
 
-## The Bit to Remember
+## The Bit I Keep
 
 Instrumental variables are not causal alchemy. They are accounting for a
 particular randomized push.
