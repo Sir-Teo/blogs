@@ -1,17 +1,17 @@
 ---
 layout: post
-title: "Benchmarks Need Psychometrics"
-description: "AI benchmarks do not just score models. They define a measuring instrument with a range, reliability, blind spots, and failure modes."
+title: "A Leaderboard Is a Blunt Instrument"
+description: "AI benchmarks do not just score models. They build measuring instruments with ranges, reliability limits, blind spots, and exposure risks."
 date: 2026-06-13 00:45:00 -0400
 categories: ai-systems
 tags: [benchmarks, evaluation, psychometrics, item-response-theory, llms]
-excerpt: "When every top model gets nearly the same score, the benchmark may not be proving equality. It may have stopped measuring in the region where the models now live."
+excerpt: "When top models crowd near the same score, the benchmark may not be proving equality. The instrument may have stopped measuring where the models now live."
 ---
 
 The most common AI evaluation picture is a leaderboard: model names down the
 left, scores across the right, winners at the top.
 
-That picture is convenient. It is also a little too comforting. A benchmark is
+That picture is convenient. It is also a little too smooth. A benchmark is
 not a scoreboard in the abstract. It is a measuring instrument. It has items,
 difficulty, discrimination, coverage, reliability, contamination risk, and a
 range where it is informative. When the best systems crowd together near the
@@ -37,7 +37,7 @@ breadth, task diversity, multi-metric reporting, human preference collection,
 and transparency.[^mmlu], [^bigbench], [^helm], [^judge], [^arena] The point is
 that better instruments deserve better interpretation.
 
-## Accuracy Weights Items as If They Were Equal
+## Accuracy Pretends Items Weigh the Same
 
 The raw score on a multiple-choice benchmark is usually
 
@@ -67,7 +67,7 @@ simulator below uses a 25% chance floor to mimic four-option questions.
 This is the key difference between a score and a measurement model. The score
 says what happened. The measurement model asks where the evidence came from.
 
-## Benchmarks Have a Measurement Range
+## Every Instrument Has a Range
 
 MMLU was introduced to measure broad multitask academic and professional
 knowledge across 57 tasks.[^mmlu] BIG-bench was designed as a broad collection
@@ -86,7 +86,7 @@ This is familiar in human testing. A test made only of elementary arithmetic is
 not a good instrument for ranking graduate mathematicians. The issue is not that
 the questions are "bad." They are simply aimed at the wrong ability range.
 
-## Contamination Is Not Just Cheating
+## Exposure Is Part of the Score
 
 Data contamination turns a benchmark from a test of generalization into a mixed
 test of ability and exposure. Deng et al. study contamination in modern LLM
@@ -102,7 +102,7 @@ Item response theory helps with difficulty and discrimination. It does not, by
 itself, make a contaminated item clean. Psychometrics gives us a language for
 instrument quality, not a ritual that purifies bad data.
 
-## Preference Tests Are Measurement Too
+## Arena Is Still Measurement
 
 Pairwise preference platforms such as Chatbot Arena move away from static
 ground-truth questions toward live user prompts and comparative judgments. The
@@ -119,7 +119,7 @@ population of users?
 
 The answer cannot be compressed into one global rank without losing something.
 
-## A Lab You Can Poke
+## Item Bank Simulator
 
 The simulator below creates four synthetic language models and a benchmark item
 bank. Each item has a difficulty and discrimination. One non-frontier model can
@@ -186,7 +186,7 @@ The most useful benchmark is not the one with the highest average difficulty.
 It is the one with enough reliable, discriminating items around the ability
 range where decisions are being made.
 
-## What I Would Report
+## Benchmark Report Card
 
 A serious model evaluation should report more than a headline score:
 
@@ -201,7 +201,7 @@ A serious model evaluation should report more than a headline score:
 The last point is easy to skip and hard to fake. A benchmark cannot measure
 everything. It should say what kind of evidence it is designed to create.
 
-## What I Would Try After This
+## Adaptive Evaluation, Not Forever Exams
 
 The next generation of AI evaluation should look less like a static exam and
 more like an adaptive measurement system.
