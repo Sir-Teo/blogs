@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Pattern Remembers Its Border"
+title: "KMP Keeps the Border"
 description: "KMP string search is linear because a mismatch does not erase the whole match. The failure table remembers which prefix is also a suffix."
 date: 2026-06-14 14:44:00 -0400
 categories: computer-science
