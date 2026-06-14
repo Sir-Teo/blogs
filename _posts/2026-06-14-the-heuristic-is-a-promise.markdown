@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Heuristics Make Promises"
-description: "A* is not fast because it is clever in a vague way. It is fast because the heuristic makes a mathematical promise about the remaining path cost. Break the promise and speed becomes a bet."
+title: "A* Trusts a Promise, Not a Hunch"
+description: "A* is fast when its heuristic makes a mathematical promise about the remaining path cost. Break that promise and the speedup becomes an explicit bet."
 date: 2026-06-14 09:18:00 -0400
 categories: computer-science
 tags: [a-star, dijkstra, pathfinding, heuristic-search, algorithms, games]
-excerpt: "A* turns a shortest-path search into a bargain: trust the cost so far, add a lower bound for the cost left, and expand only what the promise permits."
+excerpt: "A* turns shortest-path search into a bargain: trust the cost already paid, add a lower bound for the cost left, and expand only what the promise permits."
 ---
 
 A pathfinding heuristic is not a hunch.
@@ -31,7 +31,7 @@ That is the whole post.
 
 The rest is just making the promise visible.
 
-## Dijkstra Has No Opinion
+## Dijkstra Refuses to Guess
 
 Dijkstra's shortest-path algorithm is a beautiful refusal to guess.[^dijkstra]
 It expands the unsettled node with the smallest known cost from the start. If
@@ -74,7 +74,7 @@ expensive. They cannot make it cheaper than walking the coordinate difference.
 
 That is why Manhattan distance is not merely intuitive. It is admissible.
 
-## The Promise Has Two Versions
+## Two Ways for h to Tell the Truth
 
 Two related words matter.
 
@@ -113,7 +113,7 @@ Pearl's broader treatment is still worth reading because it frames heuristics
 as explicit information about a problem, not as magic attached to a search
 loop.[^pearl]
 
-## A Small Search Bench
+## Make the Promise Turn Red
 
 The lab below runs a real graph search on a deterministic four-neighbor grid.
 It computes a Dijkstra baseline for the optimal path, runs A* with the selected
@@ -332,6 +332,12 @@ The maps are small on purpose:
 
 Try four moves.
 
+The default starts slightly over the proof line on purpose. With Manhattan
+distance weighted at **1.20**, the swamp map still returns the optimal cost
+39.0, but it expands only 109 cells instead of Dijkstra's 706 and the audit
+shows a maximum overstatement of 8.6. The answer is fine here. The proof is no
+longer doing the work.
+
 First, set **Heuristic weight** to `0.00`. This is Dijkstra. The heuristic
 audit is green because $$h=0$$ never overstates anything, but the search does
 not know where the goal is.
@@ -351,7 +357,7 @@ It is useful as a cartoon of a learned or hand-tuned heuristic that has a local
 bias. The search may still succeed, but the audit shows where the promise is no
 longer a theorem.
 
-## Why Games Often Break the Promise On Purpose
+## Games Sometimes Buy the Lie On Purpose
 
 In a game, "optimal" is not always the product requirement.
 
@@ -383,7 +389,7 @@ solutions on small instances.
 
 The lab's red panel is the small-instance audit.
 
-## The Heuristic Is Part of the Specification
+## The Heuristic Belongs in the Spec
 
 It is tempting to think of a heuristic as a performance detail.
 
@@ -407,7 +413,7 @@ This is why the implementation details matter:
 
 None of these are aesthetic choices. They are proof obligations.
 
-## A Useful Mental Model
+## The Bill So Far and the Bill Ahead
 
 Think of Dijkstra as expanding a circle of known cost from the start.
 
