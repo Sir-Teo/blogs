@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Superposition Buys Space With Sparsity"
-description: "Why neural networks may store more features than dimensions, why sparse autoencoders help, and why reconstruction error is not the same thing as understanding."
+title: "The Model Overbooks Its Feature Space"
+description: "Neural networks may store more features than dimensions. Sparsity makes that bargain possible, and interference sends the bill."
 date: 2026-06-13 02:47:00 -0400
 categories: machine-learning
 tags: [mechanistic-interpretability, sparse-autoencoders, superposition, dictionary-learning, representation-learning]
-excerpt: "Superposition is not just a weird interpretability story. It is a budget: sparse features can share dimensions, but they pay in interference, false positives, and feature recovery ambiguity."
+excerpt: "Superposition is not just an interpretability oddity. It is an overbooking strategy: sparse features share dimensions, then pay in interference and recovery ambiguity."
 ---
 
 The cleanest interpretability fantasy is that every neuron has a name.
@@ -35,7 +35,7 @@ Claude, GPT-4, Pythia, or anything else. It is a controlled sparse dictionary
 experiment in the browser. The reason to build a toy is that toys can tell the
 truth without looking impressive.
 
-## The Bargain
+## The Overbooked Room
 
 Suppose an activation vector $$x \in \mathbb{R}^d$$ is built from a sparse set
 of latent features:
@@ -86,7 +86,7 @@ Which sparse set of directions best explains this activation?
 That is a different kind of object. It is not a labeled axis. It is an inverse
 problem.
 
-## A Tiny Recovery Lab
+## A Browser Toy With Too Many Features
 
 The lab below makes an overcomplete dictionary, samples sparse feature vectors,
 constructs activations, and then tries to recover the active features with a
@@ -172,7 +172,7 @@ That tradeoff is the point. In an overcomplete representation, understanding is
 not just finding directions. It is proving that the directions can be recovered
 under the distribution and decision rule you care about.
 
-## Why Sparse Autoencoders Enter the Story
+## SAEs Are Microscopes, Not Labels
 
 Sparse autoencoders try to learn a dictionary like this from real model
 activations. Given an activation $$x$$, the encoder maps it to a sparse latent
@@ -212,7 +212,7 @@ neuron" to "train a decomposition, then validate the decomposition."
 
 That second clause carries most of the scientific weight.
 
-## Reconstruction Is Not Understanding
+## Pretty Reconstruction Can Mislead
 
 The lab's reconstruction loss is useful, but it is intentionally not the only
 metric. A decoder can reconstruct a vector while assigning credit to the wrong
@@ -241,7 +241,7 @@ high precision + low recall = clean labels with missing machinery
 
 A serious interpretability claim needs more than one line on this ledger.
 
-## The Canonical-Feature Temptation
+## The Periodic Table Temptation
 
 There is a very tempting endpoint story:
 
@@ -270,7 +270,7 @@ resolution limits, artifacts, sample preparation, and a trained human deciding
 what the image means. Sparse autoencoders may become microscopes for activation
 space. That makes their artifacts more important, not less.
 
-## A Useful Next Experiment
+## Benchmarks With Teeth
 
 The next experiments I would trust most are not bigger by default. They are more
 diagnostic.
