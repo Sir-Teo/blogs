@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Small Model Is Allowed to Be Wrong"
+title: "Small Draft Models May Be Wrong"
 description: "Speculative decoding is exact because the draft model is only a proposal distribution. The verifier keeps the overlap and samples the missing target mass when the draft fails."
 date: 2026-06-14 07:24:00 -0400
 categories: ai-systems
