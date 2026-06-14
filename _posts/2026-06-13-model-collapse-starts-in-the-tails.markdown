@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Model Collapse Starts in the Tails"
+title: "Model Collapse Begins in the Tails"
 description: "Recursive training on generated data is dangerous not because synthetic data is always bad, but because sampling, filtering, and reuse quietly erase rare modes."
 date: 2026-06-13 04:33:00 -0400
 categories: machine-learning
@@ -273,7 +273,7 @@ enough by themselves and calls for broader provenance standards.[^provenance]
 That caveat is important. Provenance is not a silver bullet. But without it,
 synthetic-data mixture control becomes guesswork.
 
-## What I Would Monitor
+## Signals I Would Keep
 
 A serious training-data pipeline should treat collapse as an operational risk.
 The dashboard should not only count tokens or images. It should track support.
@@ -300,7 +300,7 @@ stratified, consented, documented, actively refreshed reference set. The point i
 to preserve a measurement relationship with the world, especially where the
 world is rare.
 
-## The Research Direction
+## A Thread Worth Pulling
 
 The research direction I want is collapse-aware data accounting.
 
@@ -330,7 +330,7 @@ is recursion.
 Model collapse starts as tail amnesia. If we wait for gibberish, the important
 loss already happened.
 
-## Notes
+## Where This Came From
 
 [^shumailov]: Ilia Shumailov, Zakhar Shumaylov, Yiren Zhao, Yarin Gal, Nicolas Papernot, Ross Anderson, "AI models collapse when trained on recursively generated data," *Nature*, 2024. [Nature](https://www.nature.com/articles/s41586-024-07566-y). Earlier version: "The Curse of Recursion: Training on Generated Data Makes Models Forget," 2023. [arXiv](https://arxiv.org/abs/2305.17493).
 
