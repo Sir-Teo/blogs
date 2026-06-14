@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Fold Has a Memory"
+title: "Cross-Validation With a Memory"
 description: "Random cross-validation can leak through time even when every feature is legal. The culprit is often the label interval, not an obviously forbidden future column."
 date: 2026-06-13 23:06:00 -0400
 categories: quantitative-finance
@@ -431,7 +431,7 @@ can quietly become an index of local history. The model does not need to know
 that it is cheating. It only needs a feature representation in which nearby
 events are close.
 
-## The Research Direction
+## The Unfinished Part
 
 I would like backtesting libraries to treat label intervals as first-class
 objects. Not optional metadata. Not comments in a notebook. Objects.
@@ -459,7 +459,7 @@ the folds share label intervals, the rigor is decorative.
 A fold has a memory. The validation job is to decide how much of that memory
 must be erased before the score deserves to be believed.
 
-## Notes
+## Reading Notes
 
 [^afml]: Marcos Lopez de Prado, *Advances in Financial Machine Learning*, Wiley, 2018. The table of contents includes chapters on labeling, overlapping outcomes, sample uniqueness, and "Why K-Fold CV Fails in Finance" with "Purged K-Fold CV," purging, and embargo. [PhilPapers entry](https://philpapers.org/rec/LPEAIF), [Wiley](https://www.wiley.com/en-us/Advances%2Bin%2BFinancial%2BMachine%2BLearning-p-9781119482086).
 
