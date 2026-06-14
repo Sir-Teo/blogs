@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Coupling Is a Soft Matching"
+title: "Sinkhorn Turns Matching Soft"
 description: "Entropic optimal transport turns a hard matching problem into matrix scaling. Sinkhorn's algorithm is just row and column normalization, but the fixed point is a transport plan."
 date: 2026-06-14 10:03:00 -0400
 categories: machine-learning
