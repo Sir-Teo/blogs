@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "MoE Routing Is a Queueing Problem"
+title: "MoE Routing Meets the Queue"
 description: "Sparse mixture-of-experts models promise more parameters for nearly fixed token compute. The hidden contract is a router that allocates scarce expert capacity without collapse."
 date: 2026-06-13 02:24:00 -0400
 categories: ai-systems
@@ -319,7 +319,7 @@ learning, online matching, queueing, scheduling, and distributed systems. The
 router is a small policy living inside a giant model. It deserves the same
 seriousness we give the model weights.
 
-## The Takeaway
+## The Part to Keep
 
 Mixture-of-experts is not just a way to stuff more parameters into a model. It
 is a conditional-computation system with an allocator in the middle.
