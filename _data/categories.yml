@@ -17,6 +17,10 @@ gaming:
   name: Gaming
   short: Games
   color: "#6D8A1F"
+physics:
+  name: Physics
+  short: Physics
+  color: "#6F7C12"
 software-engineering:
   name: Software engineering
   short: Eng
