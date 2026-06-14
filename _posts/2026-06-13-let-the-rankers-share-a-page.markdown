@@ -384,7 +384,7 @@ other direction: interleaving is powerful enough to be worth operational
 complexity, but the raw measurement needs translation before it becomes a
 launch decision.[^amazon]
 
-## The Research Direction
+## Next Experiments
 
 The evaluation stack I want for ranking systems has three layers:
 
@@ -414,7 +414,7 @@ Let the rankers share a page when the question is ranking preference.
 
 Then make them face the whole product when the question is shipping.
 
-## Notes
+## Further Reading
 
 [^joachims-2002]: Thorsten Joachims, "Optimizing Search Engines using Clickthrough Data," *KDD*, 2002. [PDF](https://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf), [ACM](https://dl.acm.org/doi/10.1145/775047.775067).
 
