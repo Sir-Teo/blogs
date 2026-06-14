@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "The Context Window Sends a Memory Bill"
-description: "Long-context inference is not only about attention math. Every live token leaves key and value vectors in GPU memory, and the serving system has to pay that bill one request at a time."
+title: "The Context Window Has Rent Due"
+description: "Long-context inference is not only attention math. Every live token leaves key and value vectors in GPU memory, and the serving stack pays that rent request by request."
 date: 2026-06-13 05:44:00 -0400
 categories: machine-learning
 tags: [kv-cache, llm-inference, long-context, attention, serving-systems, transformers]
-excerpt: "A context window is not just a number in a model card. During decoding, it becomes a live memory object: keys and values for every retained token, every layer, every request."
+excerpt: "A context window is not just a model-card number. During decoding, it becomes live memory: keys and values for every retained token, every layer, every request."
 ---
 
-The context window is usually sold as a length.
+The context window is usually sold like shelf space.
 
 8k. 32k. 128k. A million tokens. The number sounds like a reading capacity:
 how much text the model can see.
@@ -26,10 +26,10 @@ operating systems.
 The short version:
 
 ```text
-long context is a memory allocation problem pretending to be a prompt feature
+long context is a memory allocation problem wearing a prompt-feature badge
 ```
 
-## The Hidden State in Attention
+## Attention Leaves Furniture Behind
 
 Scaled dot-product attention is usually written as
 
@@ -84,7 +84,7 @@ often bottlenecked by repeatedly loading keys and values from memory.[^mqa]
 Ainslie et al. later framed grouped-query attention as an intermediate point
 between full multi-head attention and MQA.[^gqa]
 
-This is the first important lesson:
+This is the first lesson I want taped to the monitor:
 
 ```text
 KV heads are serving-system parameters, not just architecture trivia
@@ -93,7 +93,7 @@ KV heads are serving-system parameters, not just architecture trivia
 They change the live memory footprint and the bandwidth read on every generated
 token.
 
-## A Small KV Cache Ledger
+## Slide the Bill Around
 
 The lab below is deliberately an accounting model, not a benchmark. It uses the
 formula above, then adds three serving-system details:
@@ -199,7 +199,7 @@ bill jumps because the number of KV heads changed.
 </div>
 <script src="{{ '/assets/js/kv-cache-lab.js?v=20260613a' | relative_url }}"></script>
 
-The four panels are different views of the same bill.
+The four panels are the same bill with the paper folded four different ways.
 
 **Memory bill.** Model weights are the fixed rent. KV cache is the growing
 working set. Page slack is memory paid to the allocator because blocks are
@@ -222,7 +222,7 @@ engines have more work than this, but they cannot read fewer old keys and
 values unless they reduce the retained context, reduce KV heads, compress KV,
 or change the attention pattern.
 
-## Paging Is Not Just an Implementation Detail
+## Prompts Start Looking Like Pages
 
 The old mental model is:
 
@@ -254,7 +254,7 @@ scheduling can refill the batch as sequences finish.[^orca] Paged KV memory and
 iteration-level scheduling fit together because the serving engine is managing
 a changing population of live sequences, not a static batch.
 
-## FlashAttention Helps, But It Is a Different Bill
+## FlashAttention Pays a Different Invoice
 
 FlashAttention is one of the most important attention-system papers because it
 made IO awareness central. It avoids materializing the full attention matrix
@@ -276,7 +276,7 @@ persistent KV cache memory
 The first can often be streamed or tiled away. The second is state that must
 remain available for future decode steps.
 
-## Sliding Windows Move the Bill
+## Sliding Windows Throw Away History
 
 A sliding window is the most direct way to cap KV cache. Keep only the most
 recent $$W$$ tokens. Then the per-request cache stops growing after $$W$$.
@@ -304,10 +304,11 @@ which old states are worth paying to keep?
 ```
 
 That question is statistical, architectural, and product-specific. A chat app
-with a stable system prompt, a code assistant reading a repository, and a
-retrieval system with repeated boilerplate have different memory shapes.
+with a stable system prompt, a code assistant crawling through imports, and a
+retrieval system repeating the same legal boilerplate do not have the same
+memory shape.
 
-## What I Would Log in Production
+## The Ledger I Would Actually Want
 
 If I were responsible for a long-context serving stack, I would want the KV
 cache to emit an audit log. Not just GPU utilization. A real cache ledger:
@@ -343,7 +344,7 @@ prefill latency. It could mean decode throughput. It could mean maximum
 resident batch size. It could mean quality after truncation. These are different
 metrics with different bottlenecks.
 
-## The Next Question
+## The Interesting Part Is Policy
 
 The part I find most interesting is **cache policy as model behavior**.
 
@@ -363,7 +364,7 @@ that shares boilerplate prefixes may get more throughput, but a prefix bug can
 now affect many requests at once. A KV quantizer can make average perplexity
 look fine while damaging rare long-range dependencies.
 
-I would like to see more evaluation reports shaped like this:
+I would rather read evaluation reports shaped like this:
 
 ```text
 quality versus retained KV bytes
