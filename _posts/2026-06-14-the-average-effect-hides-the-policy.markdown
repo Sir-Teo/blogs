@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Average Effect Hides the Policy"
+title: "Average Effects Are Not Policies"
 description: "A treatment can be bad on average and still worth targeting. CATE and uplift models ask who changes because of treatment, not who already looked good."
 date: 2026-06-14 14:33:00 -0400
 categories: machine-learning
