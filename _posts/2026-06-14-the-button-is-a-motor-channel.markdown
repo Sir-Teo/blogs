@@ -1,19 +1,19 @@
 ---
 layout: post
-title: "Buttons Are Motor Channels"
-description: "Fitts' law treats pointing as information transmission: distance and target width set a motor difficulty, and throughput only makes sense when speed and accuracy are measured together."
+title: "A Button Is a Promise to a Hand"
+description: "Fitts' law treats pointing as information transmission: distance, width, time pressure, and endpoint scatter decide whether a target is actually usable."
 date: 2026-06-14 16:07:00 -0400
 categories: psychology
 tags: [fitts-law, hci, motor-control, speed-accuracy, interface-design, throughput]
-excerpt: "A target is not just pixels. It is a tolerance interval in a noisy motor channel. Make it smaller, farther, or demand it faster, and the user pays with time, misses, or both."
+excerpt: "A target is not just pixels. It is a tolerance interval for a noisy hand. Make it smaller, farther, or more urgent, and the user pays with time, misses, or both."
 ---
 
-The pixel is not the unit of interface design.
+The pixel is a tempting unit of interface design, and also a trap.
 
 The unit is the movement: where the hand starts, where it must land, how much
 error the interface tolerates, and how much time the user feels allowed to
 spend. A tiny close button is not merely a tiny rectangle. It is a demand for
-precision made under time pressure.
+precision, made under time pressure, by a body that is not a plotter.
 
 That is why Fitts' law has survived.
 
@@ -22,7 +22,7 @@ time. It is a speed-accuracy bargain. Distance matters. Target width matters.
 Endpoint variability matters. The elegant part is that those ingredients can be
 turned into bits.
 
-## The Motor Channel
+## Fitts Measured the Hand as a Channel
 
 Paul Fitts' 1954 paper framed the human motor system using information theory.
 The experiment was wonderfully physical: people tapped between metal target
@@ -45,19 +45,19 @@ English, and Burr used target acquisition tasks to evaluate a mouse, joystick,
 step keys, and text keys for CRT text selection, with the mouse fastest in
 their study.[^card]
 
-The formula has the right qualitative smell:
+The formula has the right practical smell:
 
 - move twice as far, and the task gets harder;
 - make the target twice as wide, and the task gets easier;
 - the change is logarithmic, so the first few pixels of tolerance matter more
   than the hundredth.
 
-This is not a law of pixels. It is a law of tolerance.
+This is not a law of pixels. It is a law of tolerated error.
 
-## The Trap In A Pretty Button
+## The Rectangle Is Not the Target
 
 Design tools make target size look exact. A button is 24 px wide. An icon is 18
-px. A menu item has 8 px padding. These facts are real but incomplete.
+px. A menu item has 8 px padding. These facts are real, and still incomplete.
 
 The user does not generate a perfect point at the target center. The endpoint is
 a distribution. If that distribution is narrow relative to the target, the click
@@ -73,10 +73,10 @@ The same physical target can also mean different things in different contexts:
 - a cursor crossing a high-DPI display;
 - a user rushing because a popup is about to disappear.
 
-The target is not just the rectangle. It is the rectangle plus the motor noise
-around the user's endpoint.
+The target is not just the rectangle. It is the rectangle plus the endpoint
+cloud the user brings to it.
 
-## A Pointing Lab
+## Make the Target Cheap or Expensive
 
 The lab below is a deterministic toy. It simulates a one-dimensional pointing
 task with endpoint scatter. It reports both nominal difficulty, based on the
@@ -157,7 +157,7 @@ effective width instead of only measuring "time to click."
 Finally raise **Motor variability**. The designed button did not change. The
 effective target changed anyway.
 
-## Corners, Edges, And Infinite Targets
+## Edges Cheat, Usefully
 
 Fitts' law also explains one of the oldest UI tricks: screen edges are special.
 
@@ -173,7 +173,7 @@ the finger hides the target and adds occlusion. On a mobile interface, the
 thumb's comfortable reach region changes the amplitude before the user even
 starts moving.
 
-The design lesson is not "make every button huge." It is:
+The design lesson is not "make every button huge." It is more selective:
 
 ```text
 spend target width where mistakes are costly, frequent, or rushed
@@ -182,7 +182,7 @@ spend target width where mistakes are costly, frequent, or rushed
 Delete buttons, close buttons, destructive actions, tiny resize handles, and
 transient menus do not have the same motor budget as leisurely navigation.
 
-## Throughput Is Not Speed
+## Fast Only Counts If You Land
 
 The strongest part of the HCI standardization work is its refusal to let speed
 pretend to be the whole outcome. Soukoreff and MacKenzie argue for throughput
@@ -202,9 +202,9 @@ This is familiar outside HCI:
 - a recommender that maximizes clicks and burns trust;
 - an API that is low latency until retries enter the picture.
 
-Speed without error accounting is a partial measurement.
+Speed without error accounting is an unfinished measurement.
 
-## The Design Review I Want
+## The Review I Would Rather Have
 
 For a serious interface, I would rather see a small motor budget table than a
 debate about whether a button "looks balanced."
@@ -219,11 +219,9 @@ debate about whether a button "looks balanced."
 - Are we measuring miss corrections, undo events, hover hesitation, and repeat
   attempts?
 
-Fitts' law does not answer all of those questions. It gives them a spine.
+Fitts' law does not answer all of those questions. It keeps them honest.
 
-The button is not a rectangle.
-
-It is a contract with a noisy hand.
+The button is not a rectangle. It is a promise to a noisy hand.
 
 [^fitts]: Paul M. Fitts, ["The Information Capacity of the Human Motor System in Controlling the Amplitude of Movement"](https://www.lri.fr/~mbl/ENS/FONDIHM/2013/papers/Fitts-JEP54.pdf), *Journal of Experimental Psychology*, 1954.
 
