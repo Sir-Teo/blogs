@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Regex Is a Program"
+title: "Regex Backtracking Runs a Program"
 description: "A regular expression is not just a pattern. Depending on the engine, it can be a linear automaton or an exponential search program."
 date: 2026-06-13 23:52:00 -0400
 categories: software-engineering
@@ -341,7 +341,7 @@ the examples. I ask:
 The near-miss is the important case. A regex that matches quickly may still fail
 slowly.
 
-## Research direction
+## What I Would Try After This
 
 I would like regex tooling to report an operational type, not only a syntax
 highlight.
@@ -364,7 +364,7 @@ regex engines and their defenses.
 
 A regex is a tiny program. It deserves a profiler.
 
-## Notes
+## Paper Trail
 
 [^thompson]: Ken Thompson, "Programming Techniques: Regular expression search algorithm," *Communications of the ACM*, 1968. [ACM](https://dl.acm.org/doi/10.1145/363347.363387), [CACM](https://cacm.acm.org/research/programming-techniques-regular-expression-search-algorithm/).
 
