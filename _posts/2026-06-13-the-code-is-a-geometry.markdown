@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Code Is a Geometry"
+title: "Hamming Codes Draw Cubes"
 description: "Error correction is not a spell that makes bits reliable. It is a geometric bargain: spend redundancy to move valid messages farther apart."
 date: 2026-06-13 20:08:00 -0400
 categories: computer-science
@@ -291,7 +291,7 @@ The most dangerous metric is "corrected errors." A high correction count can
 mean the code is doing its job. It can also mean the channel is drifting toward
 a regime where two-error patterns become common and silent miscorrection is next.
 
-## The Sentence to Keep
+## The Short Version
 
 An error-correcting code is a packing of messages in a noisy space.
 
