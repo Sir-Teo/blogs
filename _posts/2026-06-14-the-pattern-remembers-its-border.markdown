@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "KMP Keeps the Border"
-description: "KMP string search is linear because a mismatch does not erase the whole match. The failure table remembers which prefix is also a suffix."
+title: "The Search That Refuses to Reread"
+description: "KMP string search is linear because a mismatch leaves evidence behind. The failure table remembers which prefix is also a suffix."
 date: 2026-06-14 14:44:00 -0400
 categories: computer-science
 tags: [kmp, string-matching, algorithms, automata, failure-functions, computer-science]
-excerpt: "A mismatch in string search is not a reason to restart. If the matched prefix has a border, the pattern already knows where to stand next."
+excerpt: "A mismatch is not a clean slate. If the matched prefix has a border, the pattern already knows where the next attempt begins."
 ---
 
 There is a little humiliation in naive string search.
@@ -19,12 +19,12 @@ for shift in 0..n-m:
   compare P[0], P[1], ... against T[shift], T[shift+1], ...
 ```
 
-It is also forgetful. It can read the same text characters again and again as if
-the failed comparison told it nothing.
+It is also a little rude to the text. It asks the same characters to testify
+again and again as if the failed comparison told it nothing.
 
 Knuth, Morris, and Pratt's string-matching algorithm, published in 1977, is a
 cure for that forgetfulness.[^kmp] The idea is not to be clever about the text.
-The idea is to remember something about the pattern.
+The idea is to make the pattern remember itself.
 
 That remembered thing is called a **border**.
 
@@ -123,7 +123,7 @@ The text index only moves forward. A single text character can trigger a short
 chain of fallbacks, but those fallbacks are paid for by earlier increases of
 `q`. This is the amortized argument behind the linear bound.
 
-## A Border Lab
+## Make the Mismatch Pay Rent
 
 The lab below compares ordinary left-to-right alignment with KMP. The default
 case is intentionally unfair to the naive algorithm: a pattern like `aaaaaaaab`
@@ -131,10 +131,11 @@ searched inside a long run of `a`s. Every alignment almost succeeds and then
 fails on the last character.
 
 Change the text family and plant matches to see a different story. On log-like
-text there is less self-overlap, so the gap narrows. On overlapping patterns,
-the failure links do visible work. The two matchers should always report the
-same match positions; the experiment is only about how much comparison work
-each algorithm spends to get there.
+text there is less self-overlap, so the gap narrows and KMP can even spend a
+few extra comparisons for its guarantee. On overlapping patterns, the failure
+links do visible work. The two matchers should always report the same match
+positions; the experiment is only about how much comparison work each algorithm
+spends to get there.
 
 <div class="kmp-lab" data-kmp-lab>
   <div class="kmp-lab__controls">
@@ -187,7 +188,22 @@ each algorithm spends to get there.
 
 <script src="{{ '/assets/js/kmp-border-lab.js' | relative_url }}"></script>
 
-## What The Table Is Really Storing
+For the default run, the lab builds the pattern `aaaaaaaaab`, whose prefix table
+is:
+
+```text
+0 1 2 3 4 5 6 7 8 0
+```
+
+On a 220-character run of `a`s with no planted matches, the naive scan spends
+`2,110` comparisons. KMP spends `431`, takes `211` fallback jumps, and reports
+the same empty match list. I also swept 144 combinations of scenario, planting,
+text length, and pattern length; every case agreed on match positions. In 12 of
+those cases, mostly log-like low-overlap text, KMP spent more raw comparisons
+than the naive scan. That is not a contradiction. KMP buys a streaming
+worst-case guarantee, not a universal comparison discount.
+
+## The Table Is a Tiny Automaton
 
 The prefix table can feel like a bag of magic numbers until you read it as a
 compressed automaton.
@@ -227,7 +243,7 @@ That streaming property is why KMP still feels modern. You can search a file,
 a socket, a decompressed stream, or a log tail without buffering the whole text
 or rewinding the input. The state is just `q` plus the pattern table.
 
-## Borders, Periods, And Why Worst Cases Exist
+## Worst Cases Have Rhythm
 
 The unpleasant naive case is not random. It is periodic.
 
@@ -249,7 +265,7 @@ It may fall again, but each fall shortens the remembered prefix. The state is
 monotone in an amortized sense: it can climb at most once per consumed character
 and can only fall as much as it previously climbed.
 
-This makes KMP a good example of a general algorithmic move:
+That makes KMP a good example of a general algorithmic move:
 
 ```text
 replace repeated external work with internal state that summarizes it
@@ -258,7 +274,7 @@ replace repeated external work with internal state that summarizes it
 The summary is not approximate. It is exact because borders are exactly the
 parts of the proof that remain true after a mismatch.
 
-## The Old Neighborhood
+## Neighbors From the Same Decade
 
 KMP arrived in a crowded and productive era for string matching. Aho and
 Corasick published their multiple-keyword algorithm in 1975.[^aho] It builds a
@@ -290,7 +306,7 @@ So the lesson is not "handwrite KMP everywhere." The lesson is more durable:
 the shape of the pattern can be precomputed into a small piece of memory, and
 that memory changes the operational meaning of a mismatch.
 
-## A Research Direction I Like
+## The Planner I Want
 
 Here is the part that still feels alive to me.
 
