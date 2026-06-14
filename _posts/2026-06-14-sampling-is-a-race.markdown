@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Sampling Is a Race"
+title: "Sampling by Racing the Noise"
 description: "The Gumbel-max trick says a categorical draw can be made by adding one random key to every log weight and taking the maximum. The same keys, sorted, sample without replacement."
 date: 2026-06-14 11:48:00 -0400
 categories: machine-learning
