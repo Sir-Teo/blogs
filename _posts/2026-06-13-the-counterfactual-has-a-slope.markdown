@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Counterfactual Has a Slope"
+title: "Counterfactual Slopes and Parallel Trends"
 description: "Difference-in-differences is not just before-minus-after. It is a claim about the untreated trend that the treated units would have followed."
 date: 2026-06-13 09:38:00 -0400
 categories: statistics
@@ -253,7 +253,7 @@ When it is not, the algebra is still simple.
 
 It is just answering the wrong counterfactual.
 
-## Notes
+## References
 
 [^card-krueger]: David Card and Alan B. Krueger, ["Minimum Wages and Employment: A Case Study of the Fast-Food Industry in New Jersey and Pennsylvania"](https://davidcard.berkeley.edu/papers/njmin-aer.pdf), *American Economic Review*, 1994. NBER working paper page: [w4509](https://www.nber.org/papers/w4509).
 
