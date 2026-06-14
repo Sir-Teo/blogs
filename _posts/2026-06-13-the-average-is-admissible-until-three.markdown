@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Average Is Admissible Until Dimension Three"
+title: "Why the Average Gets Weird After Dimension Two"
 description: "Stein's paradox says the coordinatewise sample mean can be beaten, uniformly, once you estimate three or more normal means at the same time."
 date: 2026-06-13 22:28:00 -0400
 categories: statistics
@@ -339,7 +339,7 @@ as decision-theoretic optimality under aggregate loss
 
 That sentence applies far beyond normal means.
 
-## The Research Direction I Want
+## The Unfinished Part
 
 The modern version of Stein's question is not whether shrinkage exists. We know
 it does. The harder question is where the pooling boundary belongs.
