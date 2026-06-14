@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Button Is A Motor Channel"
+title: "Buttons Are Motor Channels"
 description: "Fitts' law treats pointing as information transmission: distance and target width set a motor difficulty, and throughput only makes sense when speed and accuracy are measured together."
 date: 2026-06-14 16:07:00 -0400
 categories: psychology
