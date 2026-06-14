@@ -1,19 +1,19 @@
 ---
 layout: post
-title: "Hawkes Processes Hear Aftershocks"
-description: "A Hawkes process is a point-process model where events do not merely arrive; they temporarily make more events likely. The average rate can look normal while the clock remembers."
+title: "The Pager Starts Drumming"
+description: "A Hawkes process notices when an event is also fuel for the next event. The mean rate can look harmless while the clock is carrying aftershocks."
 date: 2026-06-14 11:27:00 -0400
 categories: quantitative-finance
 tags: [hawkes-processes, point-processes, market-microstructure, stochastic-processes, clustering, statistics]
-excerpt: "Two event streams can have the same average rate and very different risk. A Hawkes process puts the missing state in the intensity."
+excerpt: "Two event streams can report the same average rate and still live in different worlds. Hawkes processes put the missing state in the intensity."
 ---
 
-The average rate is a calm statistic.
+The average rate speaks in a calm voice.
 
 It says: 180 trades per minute, 40 incidents per day, 3 failures per rack-hour,
 12 alerts per shift.
 
-Then the pager starts behaving like a drum.
+Then the pager starts drumming on the desk.
 
 The problem is not only that the rate increased. The problem is that one event
 changed the odds of the next event. The clock acquired memory.
@@ -22,10 +22,10 @@ That is the Hawkes-process move:
 
 ```text
 an event is not only an observation
-it is also a temporary input to the future intensity
+it is also a shove to the future intensity
 ```
 
-## The Diagnostic Mistake
+## When Averages Stay Calm
 
 Suppose two event streams have the same long-run average rate.
 
@@ -70,10 +70,10 @@ stationary process needs $$n < 1$$. As $$n$$ approaches one, the process gets
 near critical; clusters can become large and slow to die.
 
 Hawkes' 1971 papers introduced self-exciting and mutually exciting point
-processes in exactly this spirit: events can make future events more likely, and
-multiple event streams can excite each other.[^hawkes]
+processes in exactly this spirit: events can make future events more likely,
+and multiple streams can excite each other.[^hawkes]
 
-## The Lab: Same Mean, Different Clock
+## Two Clocks With the Same Average
 
 The lab below simulates a univariate exponential Hawkes process using Ogata's
 thinning method.[^ogata] It compares the path to a Poisson process with the same
@@ -257,19 +257,20 @@ Poisson gap CV:       1.05
 
 The Fano factor is variance divided by mean for equal-width bin counts. A
 Poisson process has Fano factor one in the ideal model. Finite samples wiggle,
-but a Fano factor around five is not a wiggle. It is the signature of bursts.
+but a Fano factor around five is not a wiggle. It is the chart saying: this
+stream clumps.
 
 Move **Branching ratio** down to `0%`. The Hawkes process collapses toward a
 Poisson process with rate $$\mu$$. Move it toward `90%` or `95%`. The average
-rate rises as $$\mu/(1-n)$$, but the more important visual change is that event
-clusters dominate the time line.
+rate rises as $$\mu/(1-n)$$, but the more important visual change is physical:
+event clusters take over the time line.
 
 Move **Decay beta**. Higher decay means excitation burns off quickly: sharper,
 shorter bursts. Lower decay means memory persists. Two models can have the same
 branching ratio but different burst shapes because $$\alpha=n\beta$$ and
 $$\beta$$ decide how concentrated the offspring risk is in time.
 
-## Why Finance Likes This Model
+## Why Markets Keep Coming Back to Hawkes
 
 High-frequency finance is made of event times: trades, quote changes, order
 submissions, cancellations, price moves, and cross-asset responses. The natural
@@ -284,8 +285,8 @@ how fast did that effect decay?
 Bacry, Mastromatteo, and Muzy review how Hawkes processes entered market
 microstructure: volatility at transaction time scales, market stability,
 contagion, systemic risk, execution, and order-book dynamics.[^bacry] The
-appeal is straightforward. A multivariate Hawkes model turns a cloud of event
-timestamps into a matrix of excitation kernels.
+appeal is straightforward. A multivariate Hawkes model turns a cloud of
+event timestamps into a matrix of excitation kernels.
 
 That does not make the model safe by default.
 
@@ -298,9 +299,10 @@ Self-excitation can mean several things:
 5. timestamping or batching artifacts;
 6. an omitted covariate that changes the baseline rate.
 
-A Hawkes fit names dependence in event time. It does not prove the causal story.
+A Hawkes fit names dependence in event time. It does not prove the causal
+story.
 
-## The Time-Change Sanity Check
+## Make the Clock Confess
 
 For a correctly specified point-process model, the integrated intensity between
 successive events,
@@ -321,10 +323,10 @@ time-rescaled gaps under the **true generating model**. It is not an estimator
 benchmark. It is there to emphasize that a point-process model is testable on
 the clock, not only on the total count.
 
-If you fit a Hawkes model to real data, the residual check is where many pretty
-stories get less pretty.
+If you fit a Hawkes model to real data, this is where many pretty stories get
+less pretty.
 
-## The Branching Ratio Is Not a Vibe
+## Do Not Worship the Branching Ratio
 
 The branching ratio is often the headline because it has a seductive
 interpretation: the expected fraction of events that are endogenous is roughly
@@ -338,7 +340,7 @@ are intraday seasonality effects, if one latent news process is omitted, or if
 several agents react to the same external signal, the fitted branching ratio can
 absorb structure that is not literal contagion.
 
-This is why I like the lab's more boring language:
+This is why I like the lab's plainer language:
 
 ```text
 branching ratio controls how much event risk is recycled into the future
@@ -347,7 +349,7 @@ branching ratio controls how much event risk is recycled into the future
 That is a model statement. It is useful without pretending to be causal by
 itself.
 
-## Evidence I Would Save
+## Receipts I Would Keep
 
 For any production event stream where bursts matter, I would not stop at rate
 charts. I would log and monitor:
@@ -362,7 +364,8 @@ charts. I would log and monitor:
 7. out-of-sample burst prediction, not only in-sample likelihood.
 
 Hawkes processes are useful because they move the hidden state into the open.
-The intensity is not a constant. It is a live object that history keeps pushing.
+The intensity is not a constant. It is a live object that history keeps
+pushing.
 
 The average rate answers:
 
