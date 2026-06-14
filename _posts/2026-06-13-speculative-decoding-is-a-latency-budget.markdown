@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Speculative Decoding Has a Ledger"
+title: "Draft Tokens Have to Earn Their Keep"
 description: "Speculative decoding is often sold as free speed. The real question is whether accepted draft tokens repay the draft model, verifier overhead, and scheduler tax."
 date: 2026-06-13 01:50:00 -0400
 categories: ai-systems
 tags: [llm-inference, speculative-decoding, latency, serving-systems, transformers]
-excerpt: "The useful unit is not tokens proposed. It is accepted tokens per expensive verifier call, priced against the draft and scheduling overhead."
+excerpt: "The useful unit is not tokens proposed. It is accepted tokens per expensive verifier call, priced against draft work and scheduler overhead."
 ---
 
 An autoregressive language model has a very plain bottleneck: to emit 100
@@ -31,7 +31,7 @@ distribution within hardware numerics.[^chen]
 
 The mechanism is beautiful. The production decision is a budget.
 
-## The ledger
+## The Tokens Have to Pay Rent
 
 Suppose a draft proposes $$m$$ tokens and each proposed token is independently
 accepted with probability $$p$$. That independence assumption is fake, but it is
@@ -119,7 +119,7 @@ and verifier overhead eat the benefit. Read it vertically. Acceptance quality is
 not a cosmetic metric; it decides whether speculation is acceleration or
 expensive theater. The purple outline is the current slider setting.
 
-## Why the average can lie
+## The Mean Hides the Queue
 
 The expectation above hides two production facts.
 
@@ -149,7 +149,7 @@ A good benchmark therefore needs at least two views:
 
 The first can look wonderful while the second quietly gets worse.
 
-## Exactness is a contract, not a slogan
+## Exactness Is the Contract
 
 The strongest version of speculative decoding is not "the draft is probably
 right." It is "the final samples follow the same distribution as the target
@@ -174,7 +174,7 @@ path, the same tokenizer.[^hf]
 The right mental model is not "free speed." It is "a contract whose assumptions
 must survive the serving stack."
 
-## Branching the future
+## Buying Futures in Batches
 
 Once the basic idea exists, there are several ways to spend the budget.
 
