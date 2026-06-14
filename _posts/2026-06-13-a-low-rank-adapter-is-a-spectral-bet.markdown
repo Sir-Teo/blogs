@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Low-Rank Fine-Tuning, Spectral Hunches"
-description: "LoRA is not magic compression. It is a hypothesis that the task-specific weight update mostly lives in a small number of directions."
+title: "LoRA Bets on the Missing Directions"
+description: "LoRA is not magic compression. It freezes the base model and asks whether the task-specific update mostly lives in a small spectral neighborhood."
 date: 2026-06-13 20:39:00 -0400
 categories: machine-learning
 tags: [lora, adapters, fine-tuning, low-rank-adaptation, parameter-efficient-fine-tuning, llms]
-excerpt: "A LoRA adapter freezes the base model and learns a low-rank update. The rank is not a harmless knob: it is a bias-variance tradeoff over the spectrum of the task update."
+excerpt: "A LoRA adapter is small because it makes a claim: the useful task update has only a few important directions. Rank is where that claim succeeds or breaks."
 ---
 
-Fine-tuning used to mean moving the whole model.
+Fine-tuning used to mean moving the whole model, every large matrix included.
 
 For a model with billions of parameters, that sentence becomes expensive in
 three different ways. Training stores optimizer state. Deployment stores a copy
@@ -22,11 +22,11 @@ module.
 LoRA is the most famous version of this idea.[^lora]
 
 It is also easy to describe too casually. "Low-rank" is not a vibes word. It is
-a bet about the shape of the update.
+a bet about which directions the task actually needs.
 
-A low-rank adapter is a spectral bet.
+The adapter is small because it is allowed to miss most directions.
 
-## The Frozen Base
+## The Part That Does Not Move
 
 Take one pretrained weight matrix $$W_0 \in \mathbb{R}^{d_\text{out} \times
 d_\text{in}}$$. Full fine-tuning learns a dense update $$\Delta W$$, so inference
@@ -75,7 +75,7 @@ LoRA can only move a weight matrix in a low-rank subspace
 
 That constraint is the source of both the savings and the failure modes.
 
-## Why This Can Work
+## Why the Bet Sometimes Lands
 
 A full dense update has many coordinates, but the useful task motion may not
 need all of them.
@@ -102,9 +102,9 @@ If the useful $$\Delta W$$ has a steep singular spectrum, a small $$r$$ can
 capture most of the energy. If the task needs many independent directions, a
 small $$r$$ becomes a bottleneck.
 
-This is not only compression. It is regularization.
+This is not only compression. It is regularization with a spectral accent.
 
-## A Tiny Rank Bench
+## Rank Bench With Noise
 
 The lab below is not a language model. It is a controlled spectral toy.
 
@@ -260,7 +260,7 @@ That is the adapter story in miniature:
 rank is capacity, placement is inductive bias, data decides how much capacity is safe
 ```
 
-## Placement Matters
+## Where You Spend Rank
 
 LoRA is usually not applied to every possible matrix. The paper studies which
 Transformer weight matrices to adapt under a fixed parameter budget and finds
@@ -287,7 +287,7 @@ more rank where it appears useful.[^adalora]
 The moral is not "always use AdaLoRA." The moral is that rank is a scarce
 resource, and layers do not all spend it equally well.
 
-## Quantization Is a Different Lever
+## A Different Memory Problem
 
 QLoRA often appears in the same conversation, but it solves a different memory
 problem.[^qlora]
@@ -309,7 +309,7 @@ rank is too small, quantizing the base more cleverly will not give the adapter
 missing directions. If training does not fit in memory, increasing rank may make
 the modeling problem easier but the systems problem worse.
 
-## Where Low Rank Fails
+## When the Spectrum Refuses
 
 Low rank fails when the needed motion is not low rank, or when the low-rank
 subspace is placed where the model cannot express the needed change.
@@ -328,7 +328,7 @@ overfit-proof. A small adapter can memorize if the task is small enough and the
 evaluation is leaky enough. Low rank changes the path to overfitting; it does
 not abolish it.
 
-## A Deployment Checklist
+## Adapter Review Notes
 
 Before treating LoRA as a solved recipe, I would want a ledger:
 
@@ -348,7 +348,7 @@ The most dangerous rank is the one chosen because it is popular in a config
 file. Rank should be audited the way hidden size, context length, and retrieval
 depth are audited: as a capacity and systems tradeoff.
 
-## The Short Version
+## The Bet
 
 LoRA is not free fine-tuning.
 
