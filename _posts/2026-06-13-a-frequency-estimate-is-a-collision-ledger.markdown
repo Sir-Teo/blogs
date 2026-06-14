@@ -1,32 +1,33 @@
 ---
 layout: post
-title: "Count-Min Sketches Keep a Collision Diary"
-description: "The Count-Min Sketch is not a tiny dictionary. It is a promise that every overcount came from collision mass you can budget."
+title: "A Sketch That Overcounts on Purpose"
+description: "Count-Min is not a tiny dictionary. It is a deliberate one-sided bargain: lose identities, keep upper bounds, and budget the collision mass."
 date: 2026-06-13 20:30:00 -0400
 categories: computer-science
 tags: [count-min-sketch, heavy-hitters, streaming-algorithms, probabilistic-data-structures, frequency-estimation, data-systems]
-excerpt: "A Count-Min Sketch estimates item frequencies in a stream with small memory. Its estimates are one-sided: never too low, sometimes too high, and the excess is exactly the cost of shared buckets."
+excerpt: "Count-Min estimates stream frequencies by sharing buckets. The useful trick is not avoiding collisions; it is making every error an overcount with a budget."
 ---
 
-Exact counting is easy until the set of keys refuses to fit in memory.
+Exact counting feels innocent until the keyspace refuses to fit in memory.
 
-Then a frequency table becomes a choice. Keep every key and pay the memory
-bill, or compress the stream and accept a contract weaker than exactness.
+Then a frequency table becomes a negotiation. Keep every key and pay the memory
+bill, or compress the stream and accept a contract weaker than exactness but
+stronger than a shrug.
 
 The Count-Min Sketch is one of the cleanest contracts in streaming algorithms:
 for nonnegative updates, the estimate of a key is never below its true count,
 and with enough rows and columns the overcount is bounded with high
 probability.[^cms]
 
-That sentence is easy to say too quickly.
+That sentence is dangerously easy to say too quickly.
 
 The sketch is not a small dictionary. It does not remember which keys exist. It
 does not make collisions disappear. It keeps several hashed counter arrays and
 asks whether at least one row was lucky enough to avoid too much collision mass.
 
-A frequency estimate is a collision ledger.
+A frequency estimate becomes a receipt for shared buckets.
 
-## The Exact Bargain
+## The Contract in Counters
 
 Create a table with $$d$$ rows and $$w$$ columns. Each row has its own hash
 function. When item $$x$$ appears with positive increment $$c$$, add $$c$$ to
@@ -67,7 +68,7 @@ That is the bargain:
 memory buys a collision budget, not exact identities
 ```
 
-## A Small Collision Bench
+## Collision Bench
 
 The lab below builds a deterministic Zipf-like stream, sketches it, and then
 queries every key so the errors are visible. Real systems often do not get to
@@ -221,7 +222,7 @@ The one-sided nature is visible in the plot: estimates sit above truth, never
 below it. That property is useful when false negatives are more expensive than
 false positives.
 
-## Heavy Hitters Need Candidates
+## Counts Are Not Names
 
 There are two related tasks that are easy to blur:
 
@@ -246,13 +247,14 @@ became a practical counter-based method for frequent and top-$$k$$ elements in
 streams.[^spacesaving] Those algorithms store candidate identities. Count-Min
 stores compressed evidence about counts.
 
-That difference matters.
+That difference is not bookkeeping. It is the boundary between estimating a
+known account and discovering which accounts deserve attention.
 
 If your question is "how many times did this account appear?", Count-Min is a
 natural fit. If your question is "which accounts are the largest?", Count-Min
 needs help remembering candidate names.
 
-## The Error Is Structured
+## The Shape of the Overcount
 
 A Count-Min estimate can be written as
 
@@ -289,7 +291,7 @@ One-sided overcount is excellent for conservative filters. It is awkward for
 billing. It is useful for candidate generation. It is dangerous when a
 thresholded estimate becomes an irreversible enforcement action.
 
-## Turnstile Streams Change the Game
+## When Deletions Enter
 
 The Count-Min story above assumes nonnegative updates: events arrive and counts
 increase.
@@ -317,7 +319,7 @@ collisions can cancel, inflate, or deflate
 
 The same table shape does not imply the same promise.
 
-## A Systems Checklist
+## Before Shipping the Sketch
 
 Before using Count-Min in a real service, I would want a ledger:
 
@@ -337,7 +339,7 @@ The reset/windowing line is important. Count-Min is a memory-saving structure,
 not a forgetting policy. If you want recent frequency rather than all-time
 frequency, the time model has to be designed explicitly.
 
-## The Portable Sentence
+## The Line I Would Remember
 
 The Count-Min Sketch does not remove keys from memory for free.
 
