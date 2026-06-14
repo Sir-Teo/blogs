@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "PageRank Is a Random Walk With a Boundary"
+title: "PageRank at the Boundary"
 description: "PageRank is not a popularity spell. It is the stationary distribution of a damped random walk, and the teleport vector is where the model's politics enter."
 date: 2026-06-13 20:18:00 -0400
 categories: computer-science
@@ -327,7 +327,7 @@ walk begins near a user.
 
 Same equation. Different world.
 
-## The Sentence to Keep
+## The Bit to Remember
 
 PageRank is not the wisdom of the web.
 
