@@ -1,15 +1,14 @@
 ---
 layout: post
-title: "Zero-Knowledge Proofs Need a Simulator"
-description: "A zero-knowledge proof is not a magic blackout curtain. In a Sigma protocol, the clean test is stranger: fake transcripts can look real, but two real-looking answers to one challenge fork reveal the witness."
+title: "One Transcript Can Be Fake"
+description: "A zero-knowledge proof is not a magic blackout curtain. In a Sigma protocol, a fake transcript can look real, while two forked answers reveal the witness."
 date: 2026-06-14 08:58:00 -0400
 categories: computer-science
 tags: [zero-knowledge, schnorr-protocol, sigma-protocols, cryptography, fiat-shamir, proofs-of-knowledge]
-excerpt: "The Schnorr identification protocol is a tiny machine with three personalities: honest proofs verify, simulated proofs reveal no witness, and forked proofs extract the secret."
+excerpt: "Schnorr identification is a tiny machine with three moods: honest proofs verify, simulated proofs reveal no witness, and forked proofs extract the secret."
 ---
 
-Zero-knowledge is one of those phrases that sounds more mystical than the
-object itself.
+Zero-knowledge is one of those phrases that arrives wearing stage fog.
 
 It is not secrecy by vibes. It is not a promise that "nothing is visible." The
 verifier sees messages. The verifier checks equations. The verifier is
@@ -33,9 +32,10 @@ The smallest useful microscope for this idea is Schnorr's identification
 protocol.[^schnorr] It proves knowledge of a discrete logarithm. In modern
 language, it is a Sigma protocol: commit, challenge, respond.
 
-Three messages. Three properties. A surprising amount of cryptography.
+Three messages. Three properties. A surprising amount of cryptography packed
+into something you can still do on a napkin.
 
-## The Statement
+## The Claim on the Table
 
 Work in a cyclic group of prime order $$q$$ with generator $$g$$. The prover
 knows a secret
@@ -80,7 +80,7 @@ An honest prover passes.
 
 But zero-knowledge is not the same as passing.
 
-## The Fake That Matters
+## The Fake Transcript Is the Point
 
 Here is the strange move. Suppose someone wants a transcript for a chosen
 challenge $$c$$ but does not know $$x$$.
@@ -119,7 +119,7 @@ especially clean.[^sigma]
 
 The next section is a toy lab for those three bullets.
 
-## A Tiny Schnorr Courtroom
+## Put Schnorr on the Stand
 
 The lab uses a very small prime-order subgroup:
 
@@ -314,6 +314,19 @@ The panels show four things:
 </div>
 <script defer src="{{ '/assets/js/schnorr-zk-lab.js?v=20260614a' | relative_url }}"></script>
 
+In the default run, the toy group has `p = 1019`, `q = 509`, and `g = 4`; I
+checked that `g` has order `509`. With `x = 137`, the public key is `y = 465`.
+The honest transcript uses `t = 504`, `c = 5`, and `z = 299`, and it accepts.
+The simulator, without using `x`, builds an accepting transcript with `t = 929`
+and `z = 376`. The fork panel changes the challenge to `7`, gets `z = 64`, and
+extracts `137` back out.
+
+The default cheating experiment reports a one-round success rate of `12.13%`
+against the `12.50%` theory for an eight-value challenge space. I also swept 576
+parameter combinations across secrets, nonces, challenge sizes, challenges, and
+repetition counts; every honest transcript, simulated transcript, forked
+transcript, and extracted witness checked out.
+
 Try these moves.
 
 First, change **Secret x**. The public key changes. The honest transcript still
@@ -334,7 +347,7 @@ Fourth, move **Challenge c** beyond the current challenge space. The lab reduces
 it into range. This is mundane UI plumbing, but it echoes a real implementation
 requirement: challenge domains must be specified exactly.
 
-## The Extractor Is the Other Half
+## Two Futures Break Open the Secret
 
 The simulator explains why the transcript does not leak the witness.
 
@@ -377,9 +390,10 @@ This is also why the simulator is not a cheating prover. The simulator can
 create a transcript for a challenge it already knows. In the live protocol, the
 prover sends $$t$$ before seeing $$c$$. The order of messages matters.
 
-The proof is a little trapdoor in time.
+The proof is a little trapdoor in time: harmless when you see one future,
+revealing when you see two.
 
-## Fiat-Shamir Changes the Source of the Challenge
+## The Challenge Becomes a Hash
 
 Interactive identification is useful, but signatures and many proof systems
 need a non-interactive transcript. Fiat and Shamir's classic heuristic replaces
@@ -404,7 +418,7 @@ unless a collision happens inside the tiny toy challenge space.
 
 Fiat-Shamir did not remove the challenge. It made the challenge reproducible.
 
-## What Zero-Knowledge Is Not Saying
+## What the Word Does Not Promise
 
 Zero-knowledge does not say:
 
@@ -439,7 +453,7 @@ two forked transcripts can extract
 A transcript is harmless enough to fake. A prover that can survive the wrong
 future is carrying something real.
 
-## Why This Tiny Protocol Still Matters
+## Why This Toy Still Has Teeth
 
 Modern zero-knowledge systems can look nothing like this little three-message
 exchange. They involve polynomial commitments, arithmetization, low-degree
