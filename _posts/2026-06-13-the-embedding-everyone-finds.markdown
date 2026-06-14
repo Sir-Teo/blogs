@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Embedding Everyone Finds"
+title: "Everyone Finds the Same Embedding"
 description: "Nearest-neighbor retrieval can fail because one vector becomes everybody's neighbor. Hubness is not a vague curse of dimensionality; it is a measurable graph pathology."
 date: 2026-06-13 01:38:00 -0400
 categories: ai-systems
@@ -79,7 +79,7 @@ often candidate neighbors are close to many mapped vectors.[^dinu]
 The practical moral is plain: nearest-neighbor retrieval is a graph, not only a
 metric call.
 
-## The lab
+## A Hands-On Pass
 
 The simulator below creates a synthetic embedding database and a batch of
 queries. Vectors live in a high-dimensional cone: they have random semantic
@@ -185,7 +185,7 @@ aggregate metrics prettier.
 Nearest neighbors sound local. In high dimensions, they can become political:
 some points get too much attention. The only way to notice is to count.
 
-## Notes
+## Reading Notes
 
 [^beyer]: Kevin S. Beyer, Jonathan Goldstein, Raghu Ramakrishnan, and Uri Shaft, "When Is Nearest Neighbor Meaningful?" ICDT 1999. [PDF](https://research.cs.wisc.edu/techreports/1998/TR1377.pdf).
 
