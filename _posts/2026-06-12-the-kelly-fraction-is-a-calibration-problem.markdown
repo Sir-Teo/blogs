@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Kelly Fraction Is a Calibration Problem"
+title: "Kelly Needs Humility in the Odds"
 description: "Why growth-optimal betting is less about bravery and more about calibrated probabilities, model risk, and drawdown-aware sizing."
 date: 2026-06-12 15:30:00 -0400
 categories: quantitative-finance
@@ -178,7 +178,7 @@ fraction $$\lambda$$ should not be chosen by vibes. It should reflect calibratio
 error, non-stationarity, dependence between bets, liquidity, tail loss, and the
 drawdown a human or institution can actually survive.
 
-## A Small Experiment
+## A Browser Trial
 
 The live experiment below creates binary opportunities with a real but noisy
 edge. A synthetic model ranks those opportunities, then becomes overconfident by
@@ -239,7 +239,7 @@ terminal wealth is less than one cent per starting dollar. The exact numbers are
 toy numbers, but the shape of the failure is real: an overconfident model can
 turn a positive ranking signal into a fragile sizing rule.
 
-## What I Would Monitor
+## What I Would Watch
 
 A serious Kelly-like system needs more than a backtest equity curve. I would
 ship it with at least seven diagnostics.
@@ -289,7 +289,7 @@ many still bet in ways that left large amounts of value on the table, and a
 substantial fraction went broke.[^haghani] Bet sizing is not intuitive even when
 the rules are known. It is much harder when the probabilities come from a model.
 
-## The Takeaway
+## The Practical Memory
 
 The Kelly criterion is a sharp instrument. It tells us that edge, odds, and
 capital growth are linked by a clean mathematical rule. But sharp instruments
