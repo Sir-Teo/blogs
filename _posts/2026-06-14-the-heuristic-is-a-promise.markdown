@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Heuristic Is a Promise"
+title: "Heuristics Make Promises"
 description: "A* is not fast because it is clever in a vague way. It is fast because the heuristic makes a mathematical promise about the remaining path cost. Break the promise and speed becomes a bet."
 date: 2026-06-14 09:18:00 -0400
 categories: computer-science
