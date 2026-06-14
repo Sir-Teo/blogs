@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Four Bits, One Outlier Tax"
+title: "One Outlier Can Spend the Whole Scale"
 description: "Quantizing a language model is not just rounding weights. A few large activation channels can spend the whole numerical budget for everyone else."
 date: 2026-06-13 01:56:00 -0400
 categories: ai-systems
 tags: [quantization, llm-inference, numerical-analysis, compression, hardware]
-excerpt: "Low-bit inference works when the quantizer spends its finite codes on the numbers that matter. Outliers make that budget political."
+excerpt: "Low-bit inference works when the quantizer spends its finite codes on the numbers that matter. Outliers can make that budget political."
 ---
 
 There is a version of quantization that sounds like storage engineering:
@@ -38,7 +38,7 @@ the resolution budget for its neighbors.
 
 This is the outlier tax.
 
-## A tiny matrix with one expensive habit
+## A Tiny Matrix With an Expensive Habit
 
 The lab below builds a small matrix product $$Y = XW$$. The activation matrix
 $$X$$ has a few high-magnitude channels, mimicking the outlier features observed
@@ -108,7 +108,7 @@ That is the central trick. You do not always need to make the model smaller by
 treating every number equally. You need to spend precision where the product is
 sensitive.
 
-## What the papers are really saying
+## What the Quantization Papers Are Buying
 
 LLM.int8() is a useful historical marker because it made the outlier story hard
 to ignore. Dettmers, Lewis, Belkada, and Zettlemoyer showed that transformer
@@ -155,7 +155,7 @@ QLoRA:       train adapters through a frozen low-bit base
 The shared insight is that uniform precision is wasteful when sensitivity is not
 uniform.
 
-## The production mistake
+## The Production Mistake
 
 The most common mistake is to ask only: "Can I load the model?"
 
@@ -182,7 +182,7 @@ That last hardware point is not a footnote. A 4-bit checkpoint that lacks a fast
 kernel can be a smaller model that runs disappointingly slowly. A quantization
 format is a numerical method plus a memory layout plus a kernel contract.
 
-## Next Experiments
+## Report the Error Budget
 
 I would like quantization reports to look less like "we used int4" and more like
 an error budget:
