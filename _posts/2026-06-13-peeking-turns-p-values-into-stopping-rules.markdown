@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Peeking Turns p-values Into Stop Buttons"
-description: "The p-value on an A/B dashboard is not the same object after the team checks it every morning and stops when it looks good."
+title: "The Dashboard Changed the Experiment"
+description: "A fixed-horizon p-value is a different object once the team checks it every morning and ships the first good-looking day."
 date: 2026-06-13 04:08:00 -0400
 categories: statistics
 tags: [ab-testing, sequential-testing, p-values, experimentation, statistics, psychology]
-excerpt: "Optional stopping is not a moral failure. It is a change in the experiment. Once a team can stop when the graph looks good, the stopping rule becomes part of the statistical procedure."
+excerpt: "Optional stopping is not a character flaw. It is a different experiment. Once the team can stop when the graph looks good, the stopping rule belongs in the math."
 ---
 
 Here is the smallest product ritual that breaks a lot of experiments.
@@ -36,7 +36,7 @@ like knowledge.
 
 This post is about that little change of object.
 
-## The Experiment Has a Boundary
+## The Stop Button Is Part of the Test
 
 A fixed-sample test has a terminal decision:
 
@@ -71,7 +71,7 @@ repeatedly
 
 Peeking is only a bug when the analysis pretends it did not happen.
 
-## A Small Dashboard Trial
+## Dashboard in a Box
 
 The lab below simulates binary A/B tests. Control has conversion rate $$p_A$$.
 Treatment has conversion rate $$p_B = p_A + \Delta$$. At each look, the lab runs
@@ -160,7 +160,7 @@ effect got lucky. The shipped lift is often larger than the true lift. This is
 the same selection problem that makes early backtests look beautiful: the
 winner was selected partly for noise.
 
-## Optional Stopping Is Not a Vibe
+## Peeking Is Math, Not Morality
 
 The word "peeking" makes the problem sound psychological. Psychology matters,
 but the statistical issue is mechanical.
@@ -202,7 +202,7 @@ act sequentially, analyze as fixed horizon
 
 That is the bug.
 
-## The Product Version of Researcher Degrees of Freedom
+## The Product Garden of Forking Paths
 
 Simmons, Nelson, and Simonsohn showed how undisclosed flexibility in data
 collection, analysis, and reporting can make false-positive findings much more
@@ -237,7 +237,7 @@ the p-value is only interpretable together with the path that produced it
 A result with $$p=0.04$$ after one planned look is not the same evidence as
 $$p=0.04$$ after twenty unreported looks and three metric changes.
 
-## A Practical Ledger
+## The Audit Trail I Want
 
 Before trusting an experiment dashboard, I want the following fields in the
 experiment record:
@@ -260,7 +260,7 @@ If the test is meant to ship a product change, the stopping rule should be part
 of the product spec. A dashboard that encourages daily monitoring should not
 display fixed-horizon p-values as if no one will use them sequentially.
 
-## What I Would Build Next
+## Add the Product Costs
 
 The next version of the lab should add two things.
 
