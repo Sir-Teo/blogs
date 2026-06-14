@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Spreads Price Inventory Risk"
-description: "A bid-ask spread is not one cost. It is a compact price for immediacy, adverse selection, inventory risk, and the mechanics of running a market."
+title: "The Midpoint Is a Truce"
+description: "A bid-ask spread is not one cost. It prices immediacy, adverse selection, inventory risk, and the mechanics of keeping a market open."
 date: 2026-06-13 10:12:00 -0400
 categories: quantitative-finance
 tags: [market-microstructure, bid-ask-spread, adverse-selection, liquidity, inventory-risk, quantitative-finance]
-excerpt: "The midpoint feels like the price and the spread feels like friction. In a microstructure model, the spread is a premium charged by someone who must trade before knowing why you are trading."
+excerpt: "The midpoint feels like the price and the spread feels like friction. The dealer sees something rougher: an insurance premium for trading before knowing why you arrived."
 ---
 
 The midpoint has a dangerous charisma.
@@ -28,14 +28,14 @@ retail order arrives because someone tapped buy. Sometimes the answer is not
 boring. The trader knows something, or predicts something, or is connected to a
 larger flow that will move the price after the market maker fills the order.
 
-The spread is the little object where those possibilities get priced.
+The spread is the small object where those possibilities get priced.
 
 <div class="callout">
   <strong>Microstructure rule:</strong> the spread is not outside the price
   process. It is one of the ways the price process learns who wanted immediacy.
 </div>
 
-## A Dealer Who Must Guess
+## The Dealer Quotes Before Knowing Why
 
 The cleanest starting point is the Glosten-Milgrom model.[^glosten] There is a
 risky asset with unknown value $$V$$. Some traders know more about $$V$$ than
@@ -103,7 +103,7 @@ accurate information, or a larger value jump all widen the quote. The dealer is
 not being greedy in the model. The dealer is refusing to sell insurance at a
 price that ignores the accident rate.
 
-## Inventory Has a Shadow Price
+## Inventory Leans on the Quote
 
 Adverse selection is only one reason the spread exists. A market maker also
 accumulates inventory.
@@ -133,7 +133,7 @@ is a compressed summary of who is willing to warehouse risk, how much adverse
 selection they expect, how quickly inventory can be recycled, and how expensive
 it is to keep the trading machine running.
 
-## A Small Spread Laboratory
+## A Tiny Dealer on the Bench
 
 The lab below is a deliberately small dealer model. It is not a full limit-order
 book and not a trading system. It has one market maker, binary information,
@@ -208,7 +208,7 @@ fill. Inventory can help or hurt depending on the sequence. Market making is not
 "collecting the spread" in the same way an insurer is not "collecting premiums"
 without underwriting risk.
 
-## The Bounce You Can See Without Quotes
+## The Bounce Leaves Fingerprints
 
 Richard Roll noticed a beautiful fingerprint.[^roll] Suppose the efficient
 price is a random walk, trades occur at either bid or ask, and the spread is
@@ -253,7 +253,7 @@ sensitive to trade size and assumptions about how orders relate to trades.[^huan
 The word "component" sounds physical, as if the spread were a sandwich to be
 peeled apart. In real data, the layers are inferred through a model.
 
-## What the Midpoint Hides
+## What Midpoint Backtests Miss
 
 A backtest often assumes fills at midpoint plus a fixed spread cost. That is a
 reasonable first penalty for slow, small, liquid trades. It becomes dangerous
@@ -282,7 +282,7 @@ the strategy trades. A model that pays the same spread when alpha is quiet and
 when alpha is screaming is assuming away adverse selection precisely when it
 matters most.
 
-## The Unfinished Part
+## The Next Messy Experiment
 
 The next useful blog-sized experiment would take public trade-and-quote data and
 try to reproduce a decomposition like this at small scale:
@@ -311,7 +311,7 @@ looking like a price. It starts looking like a truce.
 The spread is the premium paid to trade now, before the market knows whether now
 was a harmless convenience or the beginning of a repricing.
 
-## References
+## Source Notes
 
 [^glosten]: Lawrence R. Glosten and Paul R. Milgrom, ["Bid, ask and transaction prices in a specialist market with heterogeneously informed traders"](https://econpapers.repec.org/article/eeejfinec/v_3a14_3ay_3a1985_3ai_3a1_3ap_3a71-100.htm), *Journal of Financial Economics*, 1985. See also the [Columbia Business School record](https://business.columbia.edu/faculty/research/bid-ask-and-transaction-prices-specialist-market-heterogeneously-informed-traders).
 
