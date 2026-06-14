@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Rare Targets Rewrite the Search"
-description: "Low-prevalence visual search is not just ordinary perception with fewer positives. Rarity changes item criteria, quitting thresholds, and the kind of mistakes people make."
+title: "The Rare Target Teaches You to Quit"
+description: "Low-prevalence visual search is not ordinary perception with fewer positives. Rarity changes item criteria, quitting thresholds, and mistakes."
 date: 2026-06-14 00:36:00 -0400
 categories: psychology
 tags: [visual-search, prevalence-effect, attention, signal-detection, decision-criteria, psychology]
-excerpt: "When targets are rare, misses can rise even if the observer knows the target and receives feedback. The target did not only become unlikely. The observer learned a different stopping policy."
+excerpt: "When targets are rare, misses can rise even with feedback and unlimited viewing time. The target became unlikely, and the observer learned a cheaper way to say no."
 ---
 
 The dangerous search is not always the hard one.
@@ -16,9 +16,9 @@ brief flash, not a subliminal trick, not a memory test.
 
 And still, when the target becomes rare, people miss it.
 
-This is the part that feels unfair. Rarity sounds like a fact about the world,
-not a fact about perception. If a target is present, it is present. Why should
-its base rate change whether the eye finds it?
+This is the unfair part. Rarity sounds like a fact about the world, not a fact
+about perception. If a target is present, it is present. Why should its base
+rate change whether the eye finds it?
 
 Because visual search is not only perception. It is a policy.
 
@@ -31,7 +31,7 @@ decisions.
 the rare target changes the observer
 ```
 
-## The Target Is Not Alone
+## Seeing Is Only One Part
 
 Visual search begins with an odd asymmetry. A feature target can pop out: the
 one red item among green items, the one vertical bar among horizontal bars. A
@@ -67,9 +67,9 @@ rejections.
 Visual search adds a second criterion. Besides the criterion for saying "this
 item is a target", there is a criterion for saying "I am done looking".
 
-That second criterion is where rarity becomes especially strange.
+That second criterion is where rarity gets under the skin of the task.
 
-## The Experiment That Should Make Screeners Nervous
+## The Baggage-Screening Result
 
 Wolfe, Horowitz, and Kenner tested an artificial baggage-screening task in which
 observers searched for tools among overlapping, semi-transparent objects on
@@ -102,9 +102,9 @@ Later work made the effect look stubborn. Low target prevalence remained a
 source of search errors under variants that tried to make rare targets more
 available or more salient.[^stubborn] Not every intervention fails, and not
 every task has the same effect size, but the baseline lesson is hard to ignore:
-the base rate is part of the task.
+the base rate is part of the task, not a footnote under it.
 
-## Two Ways to Miss the Same Target
+## Missed After Looking, Missed Before Looking
 
 There are two separable routes to a miss.
 
@@ -139,9 +139,9 @@ control system that "no" is usually correct. The search can become fast, fluent,
 and wrong on precisely the trials that matter.
 
 This is not a contradiction. It is two criteria adapting to the same
-environment.
+environment, one at the item and one at the exit.
 
-## A Rare-Target Search Lab
+## A Toy Screener With Two Thresholds
 
 The toy lab below has a display of noisy items. One target may be present.
 Every item receives an evidence value. The target, when present, has a higher
@@ -322,7 +322,7 @@ important one. Rings mark the items inspected before response or quitting. A
 target can sit in the display and remain uninspected. This is not a failure of
 the retina. It is a failure of the stopping rule.
 
-## "Just Say No" Is a Model
+## No Is an Action
 
 Chun and Wolfe asked a deceptively practical question: how are searches
 terminated when there is no target present?[^chun-wolfe] A literal serial model
@@ -349,7 +349,7 @@ This is why "try harder" is not a theory of rare-target misses. The observer may
 already be trying. The problem is that effort is being allocated under a policy
 whose feedback is dominated by negative cases.
 
-## The Base Rate Is Training Data
+## The Base Rate Trains the Operator
 
 A low-prevalence task is an imbalanced dataset with a human in the loop.
 
@@ -376,7 +376,7 @@ That is the hidden cost of rare events. They do not merely appear less often.
 They provide less frequent corrective feedback for the very policy that must
 catch them.
 
-## What Helps, and What Probably Does Not
+## Fix the Policy, Not Just the Poster
 
 The naive fix is to add more positives. Training with enriched target prevalence
 can help people see more examples and calibrate what targets look like. But it
@@ -403,9 +403,9 @@ in another it is expensive, harmful, or politically unacceptable. A miss can be
 trivial or catastrophic.
 
 The point is not "always lower the threshold". The point is that the threshold
-exists.
+exists, and the system has been teaching it.
 
-## The Hard Part Is the Negative Case
+## The Negative Case Costs Search
 
 A target-present response has a natural endpoint. You found something.
 
