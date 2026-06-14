@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "RAG Is a Context Triage Problem"
+title: "RAG Starts With Triage, Not Retrieval"
 description: "Long-context models changed the retrieval question. They did not remove it. The hard part is deciding what evidence deserves scarce attention."
 date: 2026-06-12 19:10:00 -0400
 categories: ai-systems
@@ -173,7 +173,7 @@ reranking, and how much distracting text surrounds the answer. The third depends
 on whether the model actually reasons from the evidence rather than treating
 retrieval as a decorative confidence ritual.
 
-## A Small Experiment
+## A Browser Trial
 
 The simulator below creates a synthetic corpus and many question-answering
 requests. Each request has one answer-bearing document, many irrelevant
@@ -270,7 +270,7 @@ The common theme is not "add another LLM call." The common theme is selection
 under uncertainty. Retrieval should produce evidence plus a confidence story,
 not just a list of chunks.
 
-## What I Would Measure
+## The Measurement List
 
 For a serious system, I would track at least eight numbers.
 
@@ -315,7 +315,7 @@ upstream: which documents enter the window, which versions are current, which
 permissions apply, which sections are duplicated, and which evidence should be
 near the answer prompt.
 
-## A Research Direction
+## The Next Question
 
 The direction I find most interesting is calibrated context triage.
 
@@ -349,7 +349,7 @@ The experiments I would want next are simple and hard:
 That is how RAG becomes less of a vector-database recipe and more of a reliable
 AI system.
 
-## The Takeaway
+## The Part to Keep
 
 Long context asks: how much can the model read?
 
