@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Survival Curves, With the Missingness Left In"
-description: "Kaplan-Meier curves do not magically solve missing follow-up. They encode an assumption about censored futures, and that assumption can be the result."
+title: "The People Who Leave the Curve"
+description: "Kaplan-Meier curves do not magically solve missing follow-up. They keep censored futures in the accounting and expose the assumption doing the work."
 date: 2026-06-13 18:48:00 -0400
 categories: statistics
 tags: [survival-analysis, censoring, kaplan-meier, hazards, missing-data, churn, statistics]
-excerpt: "Time-to-event analysis is not just about events. It is about the people whose futures leave the dataset before the event happens."
+excerpt: "Survival analysis is about events, but also about the people, loans, devices, and accounts whose futures disappear before the endpoint arrives."
 ---
 
 A survival curve looks like a calm object.
@@ -21,8 +21,8 @@ subscription churn, user retention, unemployment spells, fraud investigations,
 and machine-learning monitoring. How long until death, failure, default,
 cancellation, reactivation, relapse, conversion, or escalation?
 
-But a survival curve is not only a curve of events. It is a contract about
-missing futures.
+But the calm line has a backstage. A survival curve is not only a curve of
+events. It is a record of which futures stayed visible long enough to count.
 
 Some people have the event. Some reach the end of follow-up. Some disappear
 before either happens. They move, unsubscribe, stop logging in, leave the study,
@@ -30,10 +30,10 @@ change insurers, switch devices, become unobservable, or simply have not been
 watched long enough.
 
 Those missing futures are called censoring. The hard question is not whether
-censoring exists. It always exists. The hard question is whether the censored
-people are exchangeable with the people who remained under observation.
+censoring exists. It always exists. The hard question is whether the people who
+left the curve are exchangeable with the people who remained under observation.
 
-## The Product-Limit Trick
+## The Denominator Ledger
 
 Kaplan and Meier's 1958 estimator is one of the great small machines in
 statistics.[^kaplan-meier] At each observed event time $$t_j$$, let:
@@ -131,7 +131,7 @@ censoring is not deletion
 censoring is a claim about the unobserved continuation
 ```
 
-## At Risk Means Actually at Risk
+## At Risk Is a Promise
 
 The phrase "at risk" is doing real work.
 
@@ -149,7 +149,7 @@ denominator being spent. Events remove people because the endpoint happened.
 Censoring removes people because the endpoint became unobservable. Those are not
 the same scientific fact, even if both remove rows from later denominators.
 
-## Hazard Is Not Probability
+## A Rate, Not a Fate
 
 Survival analysis also talks in hazards. Informally, the hazard is the
 instantaneous event rate among those still at risk:
@@ -182,7 +182,7 @@ on the covariates and history included in the analysis. If the reason someone
 vanished is unmeasured and related to their future event time, the model is
 estimating through a hole.
 
-## The Hazard Ratio Is a Strange Creature
+## The Strange Little Ratio
 
 The hazard ratio is useful, but it is easy to over-read.
 
@@ -217,7 +217,7 @@ how many customer-months did this cohort keep before tau?
 That is not always the only estimand you need. But it is hard to confuse with a
 conditional instantaneous rate.
 
-## Missingness Can Be the Product
+## When Disappearing Is the Product
 
 Survival analysis was born in life testing and medical follow-up, but the same
 trap appears in software and finance.
@@ -241,7 +241,7 @@ informative censoring. It makes the missing-data contract explicit.
 
 That is already a major improvement.
 
-## Competing Events Are Not Ordinary Censoring
+## Death Is Not Dropout
 
 Another common mistake is treating a competing event as if it were ordinary
 censoring.
@@ -266,7 +266,7 @@ after this event, can the endpoint still happen in the same system?
 
 If no, do not casually call it loss to follow-up.
 
-## A Run Sheet for Time-to-Event Reports
+## Survival Report Intake
 
 Before I trust a survival, retention, failure, or default curve, I want to know:
 
