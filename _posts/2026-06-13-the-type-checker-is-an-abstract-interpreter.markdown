@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Type Checker Is an Abstract Interpreter"
+title: "Type Checking, Seen as Abstract Execution"
 description: "Static analysis works by running the program in a smaller universe: types, signs, intervals, shapes, effects, or any other abstraction that is cheap enough to compute and sound enough to trust."
 date: 2026-06-13 22:40:00 -0400
 categories: software-engineering
@@ -378,7 +378,7 @@ and warns. A relational domain could prove it. This is the core experience of
 static-analysis engineering: when the warning is spurious, do not merely silence
 the warning. Ask what relation the abstraction forgot.
 
-## The Research Direction I Want
+## The Next Question I Care About
 
 Most teams experience static analysis as a list of warnings. That hides the
 interesting object: a proof economy.
