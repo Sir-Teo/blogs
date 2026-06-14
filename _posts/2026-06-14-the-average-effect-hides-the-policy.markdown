@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Average Effects Are Not Policies"
-description: "A treatment can be bad on average and still worth targeting. CATE and uplift models ask who changes because of treatment, not who already looked good."
+title: "Do Not Spend the Budget on the Already Good"
+description: "A treatment can be bad on average and still worth targeting. CATE and uplift models ask who changes because of treatment, not who would have done well anyway."
 date: 2026-06-14 14:33:00 -0400
 categories: machine-learning
 tags: [causal-inference, heterogeneous-treatment-effects, uplift-modeling, policy-learning, cate, machine-learning]
-excerpt: "The average treatment effect answers whether to treat everyone. A policy needs a different object: who changes enough because of treatment to justify the cost?"
+excerpt: "The average treatment effect answers whether to treat everyone. A policy needs the scarce-action question: who changes enough to justify the cost?"
 ---
 
-The average treatment effect is a blunt instrument.
+The average treatment effect is a blunt instrument with many honorable uses.
 
 Sometimes blunt is exactly right. If a drug helps nearly everyone, if a safety
 fix has negligible cost, or if a product change is shipped globally, the average
@@ -23,7 +23,7 @@ not: should everyone get the treatment?
 but: who should get the treatment?
 ```
 
-That is a different estimand.
+That is a different estimand, and it has a budget attached.
 
 The dangerous shortcut is to build a response model. Predict who will buy after
 receiving a coupon. Predict who will survive after receiving the intervention.
@@ -33,7 +33,7 @@ treat the top scores.
 That can target the wrong people. High response under treatment may simply mean
 "they were going to do well anyway." Uplift is the increment, not the level.
 
-## The Missing Counterfactual
+## The Missing Twin Outcome
 
 Write the two potential outcomes as \(Y(1)\) and \(Y(0)\). The conditional
 average treatment effect is
@@ -81,7 +81,7 @@ effects are not observed unit by unit, so ordinary prediction validation does
 not directly apply.[^athey-imbens] You see \(Y(1)\) or \(Y(0)\), never both for
 the same unit.
 
-## A Small Uplift Lab
+## A Budgeted Targeting Lab
 
 The lab below creates a synthetic randomized experiment. The true individual
 effects are known to the simulator but hidden from the learners. One region is
@@ -179,7 +179,7 @@ experiment never created a comparison.
 The source is intentionally inspectable:
 [`assets/js/uplift-policy-lab.js`]({{ '/assets/js/uplift-policy-lab.js' | relative_url }}).
 
-## Why the R-Learner Residualizes
+## Why the R-Learner Subtracts the Obvious
 
 The lab's "R" score is a small residualized learner inspired by Nie and Wager's
 R-learner.[^rlearner] The core equation is the partially linear form
@@ -214,7 +214,7 @@ S-learners, T-learners, X-learners, R-learners, causal forests, and doubly
 robust variants are all ways of borrowing prediction tools while remembering
 that the target is a contrast.
 
-## Forests, Honesty, and the Ground-Truth Problem
+## The Ground Truth Is Missing
 
 Causal trees and forests grew partly because heterogeneous effects need
 adaptive neighborhoods. A global linear interaction model may miss the few
@@ -234,7 +234,7 @@ estimator should be evaluated as a causal estimator and as a policy component.
 Ordinary predictive accuracy is not enough, because the individual treatment
 effect is not observed.
 
-## Policy Learning Is a Second Step
+## A Score Is Not Yet an Action Rule
 
 Estimating \(\tau(x)\) is not the same as choosing a deployable policy.
 
@@ -263,7 +263,7 @@ discount, the policy should include margin. If it is a notification, it should
 include fatigue. If it is a human review, it should include reviewer capacity.
 If it is a model fallback, it should include latency and compute.
 
-## The Audit I Would Want
+## The Report I Would Ask For
 
 Before trusting an uplift model, I would want a report that includes:
 
@@ -286,7 +286,7 @@ regions, future data cannot tell whether those regions changed. Personalization
 systems need an exploration budget not because exploration is fashionable, but
 because causal knowledge decays when comparisons disappear.
 
-## The Direction
+## Build the Loop, Not Just the Score
 
 The research direction I find most useful is not "better CATE score" in the
 abstract. It is policy-aware causal infrastructure:
