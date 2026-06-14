@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Cache Policy as a Bet on Reuse"
-description: "A cache replacement policy is not a housekeeping rule. It is an online prediction about which object will be useful before memory runs out."
+title: "Every Eviction Is a Prediction"
+description: "A cache replacement policy is not housekeeping. It is an online prediction about which object will be useful before memory runs out."
 date: 2026-06-13 19:43:00 -0400
 categories: computer-science
 tags: [caching, cache-replacement, systems, lru, working-set, performance]
@@ -25,7 +25,7 @@ which object will be reused soon enough to justify keeping it?
 
 Cache replacement is prediction under memory pressure.
 
-## The Oracle
+## The Future Is the Perfect Policy
 
 Belady's 1966 study of virtual-storage replacement algorithms gave the clean
 reference point: evict the page whose next use is farthest in the future.[^belady]
@@ -42,7 +42,7 @@ the misses are mostly capacity or cold-start reality.
 
 Every practical policy is a way to approximate next use from the past.
 
-## Recency Is a Guess
+## Recency Is a Story About Tomorrow
 
 Least recently used replacement says:
 
@@ -67,7 +67,7 @@ ends, the cache is full of objects that will never be used again.
 
 The cache did not run out of memory. It believed the wrong story about recency.
 
-## A Small Cache War
+## A Tiny Cache War
 
 The lab below generates a trace with a hot working set and occasional one-hit
 scans. It compares four policies:
@@ -264,7 +264,7 @@ That is the whole game:
 recency adapts quickly, frequency forgets slowly
 ```
 
-## Admission Is Not Eviction
+## Admission Is Its Own Decision
 
 Many cache discussions jump straight to eviction: if the cache is full, which
 resident object should leave?
@@ -287,7 +287,7 @@ This is why a cache is two systems:
 LRU has an implicit admission policy: admit everything. Scan-resistant caches
 often separate the two.
 
-## Miss-Ratio Curves Are Better Than Vibes
+## Miss-Ratio Curves Beat Vibes
 
 The cache-size slider in the lab changes hit rates, but a single size is not the
 whole story. Mattson, Gecsei, Slutz, and Traiger's storage-hierarchy paper gave
@@ -311,7 +311,7 @@ you whether misses are mostly:
 Those categories imply different actions. "Increase cache size" is sensible for
 medium-distance reuse. It does not fix a stream of cold one-hit scan objects.
 
-## Adaptivity Has a Cost
+## Regret Has a Ghost List
 
 ARC, the Adaptive Replacement Cache of Megiddo and Modha, was designed to
 balance recency and frequency without manual tuning.[^arc] It keeps track of
@@ -335,7 +335,7 @@ requests if the wrong objects are protected.
 This is why production cache design is not a leaderboard of replacement
 algorithms. It is a workload diagnosis.
 
-## A Cache Run Sheet
+## Before You Change the Cache
 
 Before changing a cache policy, I want a trace-backed ledger:
 
@@ -353,7 +353,7 @@ Before changing a cache policy, I want a trace-backed ledger:
 The most useful metric is often "evicted and reused soon." That is regret in the
 language of a cache. Belady would not have made that eviction.
 
-## The Short Version
+## The Sentence to Keep
 
 An eviction is a prediction. An admission is a prediction too.
 
@@ -370,7 +370,7 @@ do not ask whether the cache is big enough until you know what it keeps
 
 The cache is not a drawer. It is a memory policy.
 
-## Works Cited
+## Sources
 
 [^belady]: Laszlo A. Belady, ["A Study of Replacement Algorithms for a Virtual-Storage Computer"](https://users.informatik.uni-halle.de/~hinnebur/Lehre/Web_DBIIb/uebung3_belady_opt_buffer.pdf), *IBM Systems Journal*, 1966.
 
