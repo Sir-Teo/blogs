@@ -1,28 +1,28 @@
 ---
 layout: post
-title: "Certifying With Random Noise"
-description: "Randomized smoothing turns a classifier into a Gaussian vote. If the vote gap is large enough, the prediction comes with a certified L2 ball."
+title: "The Ball Comes From the Vote Gap"
+description: "Randomized smoothing turns a classifier into a Gaussian vote. When the top class wins by enough, the prediction earns a certified L2 ball."
 date: 2026-06-14 12:10:00 -0400
 categories: machine-learning
 tags: [randomized-smoothing, adversarial-robustness, certified-robustness, gaussian-noise, adversarial-examples, machine-learning]
-excerpt: "A smoothed classifier is not robust because noise is magic. It is robust when the probability gap between the top classes is large enough to survive every perturbation inside an L2 ball."
+excerpt: "Noise does not make a classifier robust by magic. It gives us a probability gap, and sometimes that gap is large enough to draw a certified L2 ball."
 ---
 
-Adversarial robustness is usually told as a fight.
+Adversarial robustness is usually narrated as a fight scene.
 
 The attacker chooses a small perturbation. The model changes its mind. The
 defender patches the training procedure. The attacker adapts.
 
-Randomized smoothing changes the tone of the story. It does not ask whether an
-attack has been found. It asks for a certificate:
+Randomized smoothing changes the tone. It does not ask whether today's attack
+has been found. It asks for a certificate:
 
 ```text
 inside this ball, the prediction cannot change
 ```
 
-That is a different kind of claim. It is local, probabilistic, and geometric.
-It does not say the classifier is globally safe. It does not say the base model
-is wise. It says that, around one input, a particular Gaussian vote has enough
+That is a different kind of claim: local, probabilistic, and geometric. It does
+not say the classifier is globally safe. It does not say the base model is wise.
+It says that, around one input, a particular Gaussian vote has enough
 probability margin to certify an $$\ell_2$$ radius.
 
 The object being certified is not the original classifier $$f$$. It is the
@@ -40,9 +40,9 @@ $$
 Run the base classifier on many noisy copies of the same input. Count the votes.
 If class $$A$$ wins by enough, the smoothed classifier predicts $$A$$.
 
-The remarkable part is that the vote gap can become a radius.
+The surprising part is that a vote gap can become a radius.
 
-## The Formula
+## The Radius Hides in a Gaussian Tail
 
 Suppose the top class has probability $$p_A$$ under Gaussian noise, and the
 runner-up has probability $$p_B$$. Cohen, Rosenfeld, and Kolter proved a tight
@@ -75,7 +75,7 @@ mass, halfspaces are the worst case for losing mass under a shift. If class
 $$A$$ owns enough probability mass at $$x$$, then no perturbation smaller than
 the radius can make some other class overtake it.
 
-That is the core shape:
+That is the shape to keep in your head:
 
 ```text
 large noisy vote gap -> certified L2 ball
@@ -88,7 +88,7 @@ bound for the top-class vote before converting the vote to a radius. That is
 still a toy certificate, but it avoids pretending that 768 noisy votes are an
 oracle.
 
-## A Small Smoothing Lab
+## A Noisy Polling Booth
 
 The base classifier in the lab is deliberately ugly: a two-dimensional decision
 boundary with high-frequency wiggles. The smoothed classifier votes by adding
@@ -300,7 +300,7 @@ noise removes small brittle features
 noise also asks the classifier to be right under corrupted inputs
 ```
 
-## What the Certificate Is Not
+## Read the Certificate Literally
 
 The first adversarial-example papers made the vulnerability feel almost
 paradoxical: imperceptible perturbations could flip the prediction of high
@@ -309,7 +309,8 @@ that high-dimensional linear behavior is enough to explain much of the
 phenomenon and introduced the fast gradient sign method as a simple attack
 construction.[^goodfellow]
 
-Randomized smoothing does not make that history go away. It changes the claim.
+Randomized smoothing does not make that history go away. It changes the noun in
+the claim.
 
 It does not certify the base classifier $$f$$. The base classifier in the lab
 still has tiny folds. The certificate belongs to $$g$$, the classifier that
@@ -328,7 +329,7 @@ procedure samples the base classifier many times and uses statistical confidence
 bounds for class probabilities.[^cohen] The theorem needs probabilities; code
 gets counts.
 
-## Why This Scaled
+## Why the Trick Scaled
 
 PixelDP had already drawn a connection between randomized mechanisms,
 differential privacy, and adversarial robustness certificates.[^pixeldp] The
@@ -355,7 +356,7 @@ pressure exists in images, embeddings, sensor vectors, and tabular models:
 to certify a region, the noisy vote must dominate throughout the region
 ```
 
-## The Useful Mental Model
+## The Polling-Place Picture
 
 I find randomized smoothing easiest to remember as a polling place.
 
