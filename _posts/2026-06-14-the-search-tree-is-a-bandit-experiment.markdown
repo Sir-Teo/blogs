@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "MCTS: A Bandit in the Branches"
+title: "The Tree Spends Experiments"
 description: "Monte Carlo Tree Search is not just lookahead. It is an adaptive sampling rule: spend simulations where uncertainty and upside are still worth paying for."
 date: 2026-06-14 02:11:00 -0400
 categories: ai-systems
 tags: [monte-carlo-tree-search, bandits, reinforcement-learning, game-ai, alphago, planning]
-excerpt: "MCTS turns game-tree search into a statistical allocation problem. The confidence bonus is the engine: it decides which branch deserves another experiment."
+excerpt: "MCTS turns game-tree search into a budget problem. The confidence bonus is the engine: it decides which branch deserves another experiment."
 ---
 
-The phrase "tree search" makes the algorithm sound like a spelunker.
+The phrase "tree search" makes the algorithm sound like it is carrying a lamp.
 
 Start at the root. Walk into the tree. Look deeper. Come back with the best
 move.
@@ -30,7 +30,7 @@ measurement that could have been spent somewhere else.
 
 The tree is a lab notebook.
 
-## The Bandit Inside the Tree
+## Every Node Runs a Tiny Experiment
 
 The classical multi-armed bandit problem is brutally small. There are \(K\)
 arms. Pull an arm, receive a noisy reward, update your estimate, and decide what
@@ -69,7 +69,7 @@ exploit it but do not pretend uncertainty is gone.
 
 That is the core move. MCTS is tree search with an accounting system for doubt.
 
-## Why Random Rollouts Were Not the Whole Story
+## Rollouts Are Measurements, Not Oracles
 
 Early Monte Carlo game programs could estimate a position by averaging many
 random continuations. That sounds reckless until you remember the alternative:
@@ -108,7 +108,7 @@ use the prior
 but keep the right to doubt it
 ```
 
-## A Tiny Search Lab
+## A Toy Tree With Bad Temptations
 
 The lab below runs a deterministic toy MCTS experiment in the browser. It is not
 a full game engine. It is a small adversarial tree built to expose the allocation
@@ -306,6 +306,14 @@ simple regret of the move that would be played by visit count.
 </div>
 <script defer src="{{ '/assets/js/mcts-confidence-lab.js?v=20260614a' | relative_url }}"></script>
 
+In the default refutation-trap run, UCT spends 172 of 260 visits on **Solid
+squeeze**, identifies it as the true best move, and ends with zero simple
+regret. In a policy-prior-bait run with PUCT prior strength raised to `3.00`,
+the search spends 138 visits on **Popular move** and recommends it even though
+**Ugly resource** has the better true value; the regret is `0.17`. I swept 1,458
+scenario/selector/budget/noise/seed combinations, and every run preserved visit
+accounting and finite regret.
+
 Try the failure modes.
 
 Switch to **Policy prior bait**, select **PUCT**, and raise prior strength. The
@@ -328,7 +336,7 @@ This is the practical personality of MCTS. It is opportunistic, but not purely
 greedy. It believes its measurements, but only in proportion to how many it has
 bought.
 
-## What the Neural Network Changes
+## The Policy Prior Moves the Budget
 
 AlphaGo-style systems changed two measurements in the loop.
 
@@ -352,7 +360,7 @@ That is why "the model plus search" is the wrong decomposition. In these
 systems, search is part of the model's behavior, and the model is part of the
 search policy.
 
-## The Useful Lie in the Tree
+## Every Partial Tree Is a Useful Lie
 
 Every partial search tree is a lie. It says the explored continuations are
 important and the unexplored continuations are less important. The question is
