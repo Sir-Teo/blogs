@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Spread Is an Insurance Premium"
+title: "Spreads Price Inventory Risk"
 description: "A bid-ask spread is not one cost. It is a compact price for immediacy, adverse selection, inventory risk, and the mechanics of running a market."
 date: 2026-06-13 10:12:00 -0400
 categories: quantitative-finance
@@ -282,7 +282,7 @@ the strategy trades. A model that pays the same spread when alpha is quiet and
 when alpha is screaming is assuming away adverse selection precisely when it
 matters most.
 
-## A Research Direction
+## The Unfinished Part
 
 The next useful blog-sized experiment would take public trade-and-quote data and
 try to reproduce a decomposition like this at small scale:
@@ -311,7 +311,7 @@ looking like a price. It starts looking like a truce.
 The spread is the premium paid to trade now, before the market knows whether now
 was a harmless convenience or the beginning of a repricing.
 
-## Notes
+## References
 
 [^glosten]: Lawrence R. Glosten and Paul R. Milgrom, ["Bid, ask and transaction prices in a specialist market with heterogeneously informed traders"](https://econpapers.repec.org/article/eeejfinec/v_3a14_3ay_3a1985_3ai_3a1_3ap_3a71-100.htm), *Journal of Financial Economics*, 1985. See also the [Columbia Business School record](https://business.columbia.edu/faculty/research/bid-ask-and-transaction-prices-specialist-market-heterogeneously-informed-traders).
 
