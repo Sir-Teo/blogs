@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Type Checking, Seen as Abstract Execution"
-description: "Static analysis works by running the program in a smaller universe: types, signs, intervals, shapes, effects, or any other abstraction that is cheap enough to compute and sound enough to trust."
+title: "The Blurry Interpreter in Your Compiler"
+description: "Static analysis runs the program in a smaller universe: types, signs, intervals, shapes, effects, or any abstraction cheap enough to compute and sound enough to trust."
 date: 2026-06-13 22:40:00 -0400
 categories: software-engineering
 tags: [static-analysis, abstract-interpretation, type-systems, compilers, intervals, software-engineering]
-excerpt: "A type checker is not an oracle bolted onto a compiler. It is one point in a larger design space: execute the program over approximate values, compute a fixed point, and report only what the abstraction can justify."
+excerpt: "A type checker is not an oracle bolted onto a compiler. It executes the program over approximate values and reports only what that blur can justify."
 ---
 
 A type checker is an interpreter with bad eyesight.
@@ -46,7 +46,7 @@ The answer is never free. If the abstract universe is too small, the analyzer is
 fast and vague. If it is too rich, it may be slow, memory-hungry, or unable to
 converge. Static analysis is the art of choosing what to forget.
 
-## The Lattice Habit
+## Learn to Think in Lattices
 
 Kildall's 1973 paper on global program optimization already has the shape of
 modern dataflow analysis: represent program flow as a graph, attach facts to
@@ -98,7 +98,7 @@ where the denominator becomes zero. If the analyzer is not sure, it must warn.
 This is why a sound analyzer can be annoying. It is allowed to cry wolf; it is
 not allowed to miss the wolf.
 
-## The Fixed Point Is the Program
+## Loops Make You Pay the Fixed-Point Bill
 
 Loops are where the metaphor stops being cute and starts earning rent.
 
@@ -163,7 +163,7 @@ widening/narrowing strategies.[^astree]
 The beautiful engineering lesson is that precision is not one knob. It is a
 portfolio.
 
-## A Tiny Abstract Interpreter
+## A Blurry Interpreter You Can Poke
 
 The lab below runs four little programs without running them concretely. It
 interprets them over one of three abstract universes:
@@ -378,7 +378,7 @@ and warns. A relational domain could prove it. This is the core experience of
 static-analysis engineering: when the warning is spurious, do not merely silence
 the warning. Ask what relation the abstraction forgot.
 
-## The Next Question I Care About
+## The Proof Ledger I Want
 
 Most teams experience static analysis as a list of warnings. That hides the
 interesting object: a proof economy.
@@ -409,6 +409,8 @@ the ladder.
 The most valuable analyzers will not be the ones with the loudest warning list.
 They will be the ones that can explain, with engineering honesty, exactly what
 they forgot.
+
+## Source Notes
 
 [^kildall]: Gary A. Kildall, "A Unified Approach to Global Program Optimization," *Proceedings of the 1st ACM Symposium on Principles of Programming Languages*, 1973. [ACM](https://dl.acm.org/doi/10.1145/512927.512945), [PDF copy](https://haoxintu.github.io/files/1-A%20Unified%20Approach%20to%20Global%20Program%20Optimization.pdf).
 
