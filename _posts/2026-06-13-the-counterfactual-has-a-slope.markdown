@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Counterfactual Slopes and Parallel Trends"
-description: "Difference-in-differences is not just before-minus-after. It is a claim about the untreated trend that the treated units would have followed."
+title: "The Control Group Holds a Ghost Slope"
+description: "Difference-in-differences is not before-minus-after. It is a wager that the control group carries the untreated trend the treated units never got to reveal."
 date: 2026-06-13 09:38:00 -0400
 categories: statistics
 tags: [difference-in-differences, causal-inference, econometrics, panel-data, natural-experiments, policy-evaluation]
-excerpt: "DiD works when the control group carries the missing slope of the treated group. The algebra is simple; the counterfactual claim is doing the work."
+excerpt: "DiD works when the control group can stand in for the treated group's missing slope. The algebra is small; the counterfactual claim is the load-bearing beam."
 ---
 
-The cleanest causal graph is often impossible to draw.
+Difference-in-differences always has an empty chair.
 
 One state raises the minimum wage. One city changes a policing rule. One app
 rolls out a feature. One exchange changes a fee. One team adopts a new workflow.
@@ -23,7 +23,7 @@ Difference-in-differences answers with a control trend.
 
 That is both the beauty and the trap.
 
-## The Four Numbers
+## Four Cells, One Missing Line
 
 In the two-period, two-group version, there is a treated group $$T$$, a control
 group $$C$$, a pre period $$0$$, and a post period $$1$$. The estimator is:
@@ -58,7 +58,7 @@ employment after the policy relative to a plausible no-policy change.
 
 The design lives or dies on that plausibility.
 
-## A Parallel-Trends Lab
+## Bend the Missing Line
 
 The lab below has a treated group and a control group. The purple dashed line is
 the treated group's unobserved no-treatment path. You get to change the slope
@@ -134,7 +134,7 @@ firms, schools, or markets may react before the official treatment date. In an
 event-study plot, this can look like a pretrend. In the design, it means the
 "pre" period is partly treated.
 
-## Pretrends Are Diagnostics, Not Identification
+## A Flat Pretrend Is Not a Warranty
 
 It is common to plot event-study coefficients and look for flat pretrends:
 
@@ -156,9 +156,10 @@ this framing explicit: modern work is largely about relaxing and diagnosing
 pieces of the canonical setup, including multiple periods, staggered timing,
 parallel-trends violations, and inference.[^roth]
 
-A pretrend plot is a conversation with the assumption. It is not the assumption.
+A pretrend plot is a conversation with the assumption. It is not the assumption
+walking into court with identification papers.
 
-## Inference Has Its Own Trap
+## The Standard Error Can Lie Too
 
 Even if the identifying assumption is right, uncertainty can be wrong.
 
@@ -181,7 +182,7 @@ If the policy turns on at the state level, individual observations inside the
 state do not create independent policy shocks. They create more precise
 measurement of the same shock.
 
-## Staggered Timing Is Not Just More Data
+## Staggered Timing Changes the Cast
 
 The bottom-right panel of the lab adds an early-treated cohort, a late-treated
 cohort, and a never-treated group. The TWFE coefficient comes from residualizing
@@ -215,7 +216,8 @@ effects are heterogeneous.[^sun-abraham] de Chaisemartin and D'Haultfoeuille
 made the weight problem even sharper: two-way fixed-effect estimators can put
 negative weights on some group-time treatment effects under heterogeneity.[^dcdh]
 
-The vocabulary changes across papers. The practical warning is stable:
+The vocabulary changes across papers. The practical warning keeps the same
+accent:
 
 ```text
 staggered adoption turns "the DiD estimate" into a weighting problem
@@ -225,7 +227,7 @@ If the effect grows over time, differs by cohort, or the already-treated units
 are used as controls, the regression coefficient may not be the average effect
 you thought you were estimating.
 
-## A Design Checklist
+## What I Want on the Table
 
 Before I trust a DiD claim, I want to see:
 
@@ -240,7 +242,7 @@ Before I trust a DiD claim, I want to see:
   than a reflexive TWFE coefficient;
 - a story for why the control group carries the treated group's missing slope.
 
-The last line is the whole thing.
+That last line is the whole thing.
 
 Difference-in-differences is not a formula that turns observational data into
 causality. It is a research design that says: the control group tells us how the
