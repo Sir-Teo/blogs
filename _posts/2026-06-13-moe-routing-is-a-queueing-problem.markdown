@@ -1,17 +1,17 @@
 ---
 layout: post
-title: "MoE Routing Meets the Queue"
-description: "Sparse mixture-of-experts models promise more parameters for nearly fixed token compute. The hidden contract is a router that allocates scarce expert capacity without collapse."
+title: "Every Expert Has a Line Outside"
+description: "Sparse mixture-of-experts models promise cheap active compute, but the router is really allocating scarce expert capacity under bursty demand."
 date: 2026-06-13 02:24:00 -0400
 categories: ai-systems
 tags: [mixture-of-experts, routing, transformers, queueing, load-balancing, inference]
-excerpt: "A mixture-of-experts layer is not just a bag of specialists. It is a small allocation market inside every forward pass: tokens arrive, experts have finite buffers, and the router decides who gets served."
+excerpt: "A mixture-of-experts layer is not just a bag of specialists. It is a little dispatch desk inside the forward pass: tokens arrive, experts fill up, and the router decides who gets served."
 ---
 
-The clean story of mixture-of-experts is almost irresistible. Keep the dense
+The sales pitch for mixture-of-experts is beautifully simple. Keep the dense
 model's per-token compute roughly fixed, replace some feed-forward blocks with
 many expert blocks, and route each token through only one or two of them. The
-model has many more parameters than it activates on a given token. In the best
+model owns far more parameters than it spends on a given token. In the best
 case, this buys capacity without paying dense-model cost.
 
 That story is true enough to matter. Sparse-gated MoE layers made conditional
@@ -39,9 +39,10 @@ communication, stragglers, expert replication, or a scheduler problem. Either
 way, load balance is not a cosmetic auxiliary loss. It is part of the
 conditional-computation contract.
 
-The router is where the sparse model becomes a system.
+The router is where the sparse model becomes a system. When I read an MoE
+result now, I look for the line outside the expert, not just the expert.
 
-## The Layer Under the Slogan
+## The Expert Is Also a Queue
 
 In a dense transformer feed-forward block, every token uses the same parameters.
 In a sparse MoE block, each token $$x$$ is sent to a small subset of experts:
@@ -88,7 +89,7 @@ expert, pads cold experts, or provisions more capacity than the average case
 requires. The overloaded expert becomes the small bottleneck that disproves the
 big scaling slogan.
 
-## Two Ways to Be Wrong
+## Two Ways the Router Lies
 
 MoE routing has two objectives that are friendly in the abstract and hostile in
 the details.
@@ -114,7 +115,7 @@ That flip is conceptually important. It reveals that "balanced experts" and
 "every token gets its preferred expert" are different constraints. You can
 guarantee one and still have work to do on the other.
 
-## A Small Routing Ledger
+## The Dispatch Ledger
 
 The simulator below is deliberately not a neural network. It is the accounting
 ledger inside one MoE layer:
@@ -213,7 +214,7 @@ $$
 Dense models avoid this specific tradeoff by paying every expert for every
 token. Sparse models make the tradeoff explicit.
 
-## Why Load Balance Is Not Enough
+## Flat Utilization Can Still Be Bad
 
 It is tempting to log only expert utilization. A flat utilization chart feels
 like health. But a router can be balanced and bad.
@@ -250,7 +251,7 @@ work.[^deepspeed] ST-MoE is a reminder from the training side that router
 stability and transfer behavior are not automatic side effects of adding
 experts.[^stmoe]
 
-## The Odd Incentive of Capacity Factor
+## Capacity Factor Is a Cheat Code and a Bill
 
 The capacity factor $$\alpha$$ is a nice parameter because it makes the tradeoff
 visible. It is also dangerous because it can hide bad routing.
@@ -272,7 +273,7 @@ A serious MoE report should show the capacity curve, not just one selected
 point. The curve says whether the router is naturally balanced, whether it needs
 slack, and which token families pay for the efficiency claim.
 
-## What I Would Build Next
+## Make the Router Queue-Aware
 
 The research direction I find interesting is queue-aware routing as online
 control. Instead of treating the router as a local classifier over experts,
@@ -319,7 +320,7 @@ learning, online matching, queueing, scheduling, and distributed systems. The
 router is a small policy living inside a giant model. It deserves the same
 seriousness we give the model weights.
 
-## The Part to Keep
+## The Sentence I Would Keep
 
 Mixture-of-experts is not just a way to stuff more parameters into a model. It
 is a conditional-computation system with an allocator in the middle.
