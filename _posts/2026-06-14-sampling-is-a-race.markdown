@@ -1,20 +1,20 @@
 ---
 layout: post
-title: "Sampling by Racing the Noise"
-description: "The Gumbel-max trick says a categorical draw can be made by adding one random key to every log weight and taking the maximum. The same keys, sorted, sample without replacement."
+title: "Give Every Candidate a Clock"
+description: "The Gumbel-max trick turns a categorical draw into a race: add one random key to every log weight, take the winner, or sort the same keys for sampling without replacement."
 date: 2026-06-14 11:48:00 -0400
 categories: machine-learning
 tags: [gumbel-max, sampling, plackett-luce, stochastic-beam-search, categorical-distribution, machine-learning, probability]
-excerpt: "A categorical sample can be read as a race between exponential clocks. Sort the same random clocks, and top-k becomes exact weighted sampling without replacement."
+excerpt: "A categorical sample can be read as a race between exponential clocks. Keep sorting those clocks and top-k becomes exact weighted sampling without replacement."
 ---
 
-I used to think of categorical sampling as a little accounting routine.
+I used to think of categorical sampling as bookkeeping.
 
 Normalize weights. Draw a uniform random number. Walk along the cumulative sum
 until the mass crosses it.
 
-That implementation is fine. It is also the least interesting mental model.
-There is another one:
+That implementation is fine. It is also the dullest mental model. There is
+another one:
 
 ```text
 give every candidate a private clock;
@@ -60,7 +60,7 @@ sampling, stochastic beam search. The interesting part is not that it saves a
 few lines of sampling code. The interesting part is that it lets "sample" and
 "search" share the same object: a noisy score table.
 
-## The Choice Rule Hiding in the Noise
+## Softmax as a Race
 
 Suppose a language model gives unnormalized logits $$\phi_i$$ for the next token.
 After temperature, the categorical law is
@@ -121,7 +121,7 @@ key_i = phi_i + G_i
 The key with the largest value and the clock with the smallest value name the
 same item.
 
-## Sorting Once Is Not Sampling With Replacement
+## Do Not Stop at the First Bell
 
 The next move is the part that makes the identity feel larger than a categorical
 sampler.
@@ -349,7 +349,7 @@ The point is not that Monte Carlo error is zero. It is that the errors shrink
 around the exact categorical and Plackett-Luce laws, and the clock/key ordering
 is algebraically identical for every trial.
 
-## The Name Collision With "Top-k Sampling"
+## Top-k, Unfortunately, Means Two Things
 
 There is an annoying naming trap here.
 
@@ -381,7 +381,7 @@ ordinary categorical sampling is enough. If you need a diverse list of candidate
 continuations without duplicates, repeatedly sampling with replacement is a
 noisy way to buy diversity. Gumbel-top-k is a cleaner primitive.
 
-## Why Search People Care
+## Why Search Code Likes This
 
 Beam search is deterministic: keep the best partial sequences under the model.
 Sampling is stochastic: roll the model forward according to its probabilities.
@@ -408,7 +408,7 @@ useful engineering pattern because search code can exploit structure, pruning,
 bounds, and batching, while the perturbation gives the result a sampling
 interpretation.
 
-## Where the Trick Does Not Magically Help
+## The Trick Still Has a Boundary
 
 Gumbel-max is exact when the candidates you perturb are exactly the domain you
 want to sample from. If you only perturb local factors in a structured model,
@@ -429,7 +429,7 @@ logits, avoid taking logs of exact zero, and remember that a Gumbel perturbation
 has a heavy right tail. That tail is the whole point. Occasionally a low-weight
 candidate receives a very large positive shock and wins.
 
-## The Useful Picture
+## The Picture I Keep
 
 I like the race picture because it makes several facts feel like one fact.
 
