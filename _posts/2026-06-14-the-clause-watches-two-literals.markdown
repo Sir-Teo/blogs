@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Watched Literals Keep SAT Solvers Awake"
-description: "Modern SAT solvers are fast partly because most clauses are asleep most of the time. Two watched literals turn unit propagation into a lazy memory-traffic problem."
+title: "Let the Clause Sleep"
+description: "Modern SAT solvers are fast partly because most clauses stay dormant. Two watched literals turn unit propagation into a lazy alarm system for memory traffic."
 date: 2026-06-14 08:03:00 -0400
 categories: computer-science
 tags: [sat-solvers, dpll, cdcl, watched-literals, algorithms, boolean-satisfiability]
-excerpt: "A SAT solver does not need to inspect every clause after every assignment. If each clause watches two literals, it wakes up only when one of its alarms is falsified."
+excerpt: "A SAT solver does not need to inspect every clause after every assignment. If each clause watches two literals, it wakes only when one of its alarms is falsified."
 ---
 
-Most clauses in a SAT solver are boring most of the time.
+Most clauses in a SAT solver deserve to be ignored most of the time.
 
 That is not a philosophical statement. It is an implementation opportunity.
 
@@ -34,9 +34,9 @@ be found. The Chaff paper put the engineering point bluntly: BCP dominates SAT
 runtime on many instances, so the propagation engine is the heart of the
 solver.[^chaff]
 
-The trick is to let clauses sleep.
+The trick is to let clauses sleep until there is real news.
 
-## The Old Search Loop
+## Before Learning, There Is Propagation
 
 The Davis-Putnam-Logemann-Loveland procedure gave the classic backtracking
 shape for propositional satisfiability: simplify by unit clauses and pure
@@ -79,7 +79,7 @@ least two are still not false.
 
 That certificate is two watched literals.
 
-## The Two-Literal Alarm
+## The Clause Sets Two Alarms
 
 For every clause, pick two literals to watch. Maintain this invariant:
 
@@ -107,7 +107,7 @@ It maintains a cheap alarm system.
 This is why watched literals are so effective. A clause with ten literals can
 ignore the first several falsifications if they are not watched. If a watched
 literal is falsified, the clause often pays a short scan to find a replacement
-and then sleeps again.
+and then goes back to sleep.
 
 The second half of the trick is backtracking. Chaff emphasized that watched
 literals do not need to be repaired when variables are unassigned.[^chaff] A
@@ -115,7 +115,7 @@ watch that was valid before backtracking remains safe after backtracking because
 unassigning variables can only make literals less false. That turns undoing a
 decision level into stack popping, not clause surgery.
 
-## A Watched-Literal Lab
+## Two Engines, Same Trail
 
 The lab below generates a planted CNF formula: random clauses plus a chain of
 binary implications. It runs two propagation engines on the same decisions:
@@ -329,13 +329,13 @@ conflicts, both engines detect a conflict.
 
 <script defer src="{{ '/assets/js/watched-literals-lab.js?v=20260614a' | relative_url }}"></script>
 
-## What the Lab Is Measuring
+## What the Bars Count
 
 The lab is not solving SAT end-to-end. There is no VSIDS heap, learned-clause
 database, restart policy, or first-UIP conflict analysis. It isolates the
 propagation kernel.
 
-That isolation is deliberate. In a CDCL solver, the glamorous thing is conflict
+That isolation is deliberate. In a CDCL solver, the famous trick is conflict
 learning: turn a contradiction into a clause that prevents repeating the same
 mistake. But conflict learning only pays off if the engine can cheaply run the
 boring loop:
@@ -374,7 +374,7 @@ That last caveat is important. Watched literals are not a theorem that every
 micro-count is lower on every input. They are an engineering data structure that
 usually removes irrelevant memory traffic from the solver's hottest loop.
 
-## Why Backtracking Does Not Break the Trick
+## Backtracking Makes the Trick Better
 
 The watch invariant is asymmetric in time.
 
@@ -385,16 +385,16 @@ more dangerous.
 
 So there is no work to do.
 
-That is the small miracle. The solver can pop assignments off the trail without
+That is the small gift. The solver can pop assignments off the trail without
 walking through all affected clauses and repairing their counters. The watched
 positions may be arbitrary, but they remain sound. They are not a summary of the
 current clause state. They are a lazily maintained alarm.
 
 This is why the data structure feels almost too simple after you see it. A
-clause does not need to know how close it is to death. It only needs two
-witnesses that it is not dead yet.
+clause does not need to know exactly how close it is to failure. It only needs
+two witnesses that it is not there yet.
 
-## The Larger Solver Around It
+## Around the Alarm System
 
 Watched literals are one piece of a larger design.
 
@@ -405,7 +405,7 @@ MiniSat compressed the design into a solver that became a reference point for
 researchers and implementers.[^minisat]
 
 The through-line is not that SAT became easy. SAT remains NP-complete. The
-through-line is that solver performance came from a stack of very concrete
+through-line is that solver performance came from a stack of concrete
 representational decisions:
 
 - store implications on a trail;
@@ -420,7 +420,7 @@ by itself. It makes each node of the search tree cheaper to process.
 That distinction is easy to miss. A heuristic changes where the solver walks. A
 watch list changes how much it pays for each step.
 
-## A Pattern Beyond SAT
+## Weak Witnesses Are a Design Pattern
 
 The broader software lesson is useful outside Boolean formulas:
 
