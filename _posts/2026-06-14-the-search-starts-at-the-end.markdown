@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Search From the Last Column"
+title: "The Last Column Knows Where to Search"
 description: "The FM-index turns the Burrows-Wheeler transform into a searchable compressed index: exact matching becomes a right-to-left interval-narrowing game."
 date: 2026-06-14 16:34:00 -0400
 categories: computer-science
 tags: [fm-index, burrows-wheeler-transform, suffix-array, string-search, bioinformatics, compression]
-excerpt: "A suffix array sorts every possible future of a string. The Burrows-Wheeler transform stores the character just before each future. The FM-index makes that enough to search backward."
+excerpt: "A suffix array sorts every possible future of a string. The Burrows-Wheeler transform stores the character just before each future. That is enough to search backward."
 ---
 
-The fastest way to search a string can be to start at the end of the query.
+The fastest way to search a string may be to enter through the back door.
 
 That sounds like a trick until you see the data structure. The FM-index keeps a
 compressed view of a text, then answers an exact-match query by reading the
@@ -24,7 +24,7 @@ It asks the index:
 which suffixes could still begin with the pattern I have reconstructed so far?
 ```
 
-## Suffixes Are Futures
+## Every Suffix Is a Future
 
 Take a text ending with a unique sentinel:
 
@@ -62,7 +62,7 @@ So far, this is an index, not a compression story.
 
 The compression story begins with a column.
 
-## The Last Column
+## The Character Before the Future
 
 For each sorted suffix row, write the character that appears immediately before
 that suffix in the original cyclic text. For `banana$`, the last column is:
@@ -100,7 +100,7 @@ last column to jump to the new interval. This is called backward search.
 
 The text is present, but hidden behind ranks.
 
-## The Backward Search Lab
+## Search by Shrinking a Crowd
 
 The lab below builds a suffix array, BWT string, `C` table, and sampled
 occurrence checkpoints for a tiny corpus. It verifies three things internally:
@@ -301,6 +301,13 @@ between checkpoints.
 
 <script defer src="{{ '/assets/js/fm-index-lab.js' | relative_url }}"></script>
 
+For the default genome, the lab builds BWT
+`ACCTTTCAGGGGAAATCTA$ATTTGAAAA`, finds `GATTACA` at positions `0`, `7`, and
+`21`, and scans 15 cells between occurrence checkpoints while using 45 sampled
+counter cells instead of 150 full `Occ` cells. I swept 64 sample/pattern/stride
+cases; every FM-index result matched a naive scan and every BWT round-trip
+returned the original text.
+
 Try `banana` with pattern `ana`. The final interval has two suffix-array rows,
 which map to positions 1 and 3. Try `mississippi` with `issi`; the same
 interval logic finds positions 1 and 4. Try a pattern that is absent. The
@@ -314,7 +321,7 @@ positions do not change. The cost accounting changes.
 That is the FM-index bargain in miniature: store enough rank information to
 search without scanning the text, but sample it enough to keep space low.
 
-## Compression Became An Index
+## Compression Smuggled In an Index
 
 Ferragina and Manzini called their structure "opportunistic" because its space
 falls with the empirical compressibility of the text while still supporting
@@ -346,7 +353,7 @@ But the quiet central move is already visible in the lab:
 rank in the last column tells you where to jump in the first column
 ```
 
-## Why Backward?
+## Backward Because the State Is an Interval
 
 Backward search feels odd only if you imagine the text as the thing being read.
 The FM-index is not reading the text. It is maintaining an interval of sorted
@@ -368,7 +375,7 @@ That rank preservation is the little hinge.
 Once you see it, the BWT stops being just a compression transform. It becomes a
 coordinate system for moving through suffix-array rows.
 
-## The Larger Lesson
+## Representation Chooses the Question
 
 There is a pattern here that shows up all over systems:
 
