@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "CUPED Is a Pre-Experiment Time Machine"
+title: "CUPED: Borrowing Signal From Yesterday"
 description: "Variance reduction in A/B tests works when the covariate comes from before treatment. Move that line, and precision turns into bias."
 date: 2026-06-13 17:52:00 -0400
 categories: statistics
@@ -341,7 +341,7 @@ smaller standard error. That is what makes the mistake dangerous.
 
 Precision is only useful after validity.
 
-## Notes
+## Where This Came From
 
 [^cuped]: Alex Deng, Ya Xu, Ron Kohavi, and Toby Walker, ["Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data"](https://exp-platform.com/Documents/2013-02-CUPED-ImprovingSensitivityOfControlledExperiments.pdf), *WSDM*, 2013. [ACM record](https://dl.acm.org/doi/10.1145/2433396.2433413).
 
