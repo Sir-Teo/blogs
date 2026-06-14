@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Reliability Diagrams Need Rulers"
-description: "Probability calibration is not accuracy with decimals. Reliability diagrams, ECE, and Brier decompositions are measurement instruments, and each has a resolution limit."
+title: "Do Not Trust a Naked ECE"
+description: "Calibration plots are measuring instruments. Change the ruler, the bins, or the slice, and the confidence story can change with it."
 date: 2026-06-13 18:18:00 -0400
 categories: machine-learning
 tags: [calibration, reliability-diagram, expected-calibration-error, brier-score, evaluation, uncertainty]
-excerpt: "A probability forecast is a promise about long-run frequencies. The hard part is that every diagnostic of that promise has its own binning, sampling, and subgroup choices."
+excerpt: "A probability forecast is a promise about long-run frequencies, but every audit of that promise arrives with bin widths, slices, and sample noise."
 ---
 
-A probability is not a mood.
+A probability is not a mood, although plenty of dashboards treat it like one.
 
 When a model says 0.8, it is making a frequency claim:
 
@@ -22,17 +22,18 @@ cases well while systematically overpricing every probability. Another model can
 be calibrated by always predicting the base rate and still be useless for
 ranking.
 
-Calibration is the discipline of asking whether the numbers mean what they say.
+Calibration is the discipline of asking whether the numbers mean what they
+claim to mean.
 
 The catch is that calibration is not directly observed. We never get infinitely
 many copies of exactly the same 0.73 forecast under exactly the same conditions.
 We group forecasts into bins, smooth them, score them, slice them by subgroup,
 and hope the diagnostic we drew is close to the property we care about.
 
-The reliability diagram has a bin width. That small fact is where many confident
-calibration claims start to wobble.
+The reliability diagram has a bin width. That tiny measuring choice is where
+many confident calibration claims start to wobble.
 
-## The Promise
+## What 0.8 Is Allowed to Mean
 
 For a binary event $$Y\in\{0,1\}$$ and a forecast $$P\in[0,1]$$, perfect
 calibration means:
@@ -61,7 +62,7 @@ screening, abstention, tool-use gates, human handoff, or position sizing.
 If 0.8 means "pretty high" rather than "80 percent," downstream systems will
 eventually charge interest.
 
-## A Calibration Lab
+## A Small Calibration Bench
 
 The lab below simulates a binary classifier. There is a true latent probability,
 a model score, a calibration split used to fit one temperature parameter, and an
@@ -162,7 +163,7 @@ scale. It cannot repair every local pathology. If a subgroup is overpredicted
 and another is underpredicted, one global temperature may make the average plot
 look calmer while the local plots remain sick.
 
-## ECE Is an Estimate, Not a Property
+## ECE Moves When the Ruler Moves
 
 Expected calibration error is often written as:
 
@@ -201,9 +202,9 @@ population truth.[^metrics-calibration]
 
 The right habit is to show the curve, the histogram or point sizes, the sample
 size, the binning scheme, and subgroup slices. A single ECE number without those
-details is a screenshot of a ruler with the tick marks cropped out.
+details is a ruler with the tick marks cropped out.
 
-## The Brier Score Knows More Than Calibration
+## Brier Keeps Three Ledgers
 
 Brier's original probability score is the mean squared error of probability
 forecasts:[^brier]
@@ -245,7 +246,7 @@ both reliability and total Brier score under the default overconfidence setting.
 But do not promote this into a universal theorem. A calibration method is a
 post-processing model. It can overfit, underfit, or improve the wrong slice.
 
-## Global Calibration Can Be a Mask
+## The Average Can Wear a Mask
 
 The subgroup panel is there because global calibration can average away local
 harm.
@@ -272,7 +273,7 @@ This is the same reason calibration monitoring should be sliced by deployment
 regime, language, device, geography, market condition, data source, label delay,
 and any subgroup where error has asymmetric cost.
 
-## Calibration Is Not the Decision Rule
+## Probabilities Still Need a Policy
 
 A calibrated probability still needs a utility function.
 
@@ -297,7 +298,7 @@ Mixing them creates confusion. Accuracy can improve while calibration worsens.
 Calibration can improve while utility falls under a bad threshold. Utility can
 look good in aggregate while a subgroup is systematically mispriced.
 
-## A Run Sheet for Calibration Claims
+## Questions for a Calibration Report
 
 Before I trust a probability-calibration report, I want to know:
 
@@ -321,7 +322,7 @@ contract with future frequencies, and every contract needs an audit trail:
 sample size, slices, scores, bin widths, and the downstream decisions that will
 spend the numbers.
 
-## Primary Sources
+## Source Notes
 
 [^dawid]: A. Philip Dawid, ["The Well-Calibrated Bayesian"](https://doi.org/10.1080/01621459.1982.10477856), *Journal of the American Statistical Association*, 1982.
 
