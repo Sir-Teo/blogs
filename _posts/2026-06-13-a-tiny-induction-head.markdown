@@ -192,7 +192,7 @@ keep the phenomenon visible while adding reality.
 Small machines are good teachers. They do not explain everything. They explain
 one thing without hiding behind scale.
 
-## Notes
+## Where This Came From
 
 [^vaswani]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, "Attention Is All You Need," NeurIPS 2017. [arXiv](https://arxiv.org/abs/1706.03762).
 
