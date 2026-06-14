@@ -21,7 +21,7 @@
     fast: 210,
     coupling: 22,
     epsilon: 4,
-    angle: 78,
+    angle: 80,
     seed: 23
   };
 
@@ -336,8 +336,17 @@
     if (subtitle) {
       ctx.fillStyle = COLORS.muted;
       ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-      ctx.fillText(subtitle, rect.x + 14, rect.y + 42);
+      ctx.fillText(fitText(ctx, subtitle, rect.w - 28), rect.x + 14, rect.y + 42);
     }
+  }
+
+  function fitText(ctx, text, maxWidth) {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    var trimmed = text;
+    while (trimmed.length > 4 && ctx.measureText(trimmed + "...").width > maxWidth) {
+      trimmed = trimmed.slice(0, -1);
+    }
+    return trimmed.trim() + "...";
   }
 
   function heatColor(value, threshold) {
@@ -387,11 +396,11 @@
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
     ctx.fillText("Re z", plot.x + plot.w - 30, plot.y + plot.h + 24);
     ctx.fillText("0", sx(0) + 4, plot.y + plot.h + 24);
-    ctx.fillText("eps contour right edge", plot.x + 10, rect.y + rect.h - 13);
+    ctx.fillText(plot.w < 320 ? "eps edge" : "eps contour right edge", plot.x + 10, rect.y + rect.h - 13);
   }
 
   function drawTransient(ctx, rect, result) {
-    panel(ctx, rect, "Transient growth", "stable eigenvalues, temporary norm growth");
+    panel(ctx, rect, "Transient growth", "stable spectrum, finite-time growth");
     var plot = { x: rect.x + 48, y: rect.y + 58, w: rect.w - 68, h: rect.h - 94 };
     var rows = result.transient.rows;
     var maxY = Math.max(1.05, result.transient.peak.norm * 1.12);
@@ -424,9 +433,9 @@
     ctx.stroke();
     ctx.fillStyle = COLORS.growth;
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillText("operator norm", plot.x, rect.y + 48);
+    ctx.fillText("operator norm", plot.x, rect.y + 54);
     ctx.fillStyle = COLORS.perturb;
-    ctx.fillText("chosen vector", plot.x + 98, rect.y + 48);
+    ctx.fillText("chosen vector", plot.x + 98, rect.y + 54);
     ctx.fillStyle = COLORS.muted;
     ctx.fillText("0", plot.x - 18, plot.y + plot.h + 4);
     ctx.fillText(fixed(maxY, 1), plot.x - 32, plot.y + 4);
@@ -468,7 +477,7 @@
   }
 
   function drawVector(ctx, rect, result) {
-    panel(ctx, rect, "Mode geometry", "nonorthogonal eigenvectors make cancellation expensive");
+    panel(ctx, rect, "Mode geometry", "near-parallel eigenvectors hide energy");
     var cx = rect.x + rect.w * 0.5;
     var cy = rect.y + rect.h * 0.55;
     var radius = Math.min(rect.w, rect.h) * 0.28;
@@ -488,13 +497,20 @@
       ctx.lineTo(cx + radius * v.x, cy - radius * v.y);
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(cx + radius * v.x, cy - radius * v.y, 4, 0, Math.PI * 2);
+      var endX = cx + radius * v.x;
+      var endY = cy - radius * v.y;
+      ctx.arc(endX, endY, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-      ctx.fillText(label, cx + radius * v.x + 8, cy - radius * v.y + offset);
+      var labelWidth = ctx.measureText(label).width;
+      var labelX = endX + 8;
+      if (labelX + labelWidth > rect.x + rect.w - 8) labelX = endX - labelWidth - 8;
+      labelX = clamp(labelX, rect.x + 8, rect.x + rect.w - labelWidth - 8);
+      var labelY = clamp(endY + offset, rect.y + 58, rect.y + rect.h - 20);
+      ctx.fillText(label, labelX, labelY);
     }
-    arrow({ x: 1, y: 0 }, COLORS.stable, "fast eigenvector", 4);
-    arrow(v2, COLORS.growth, "slow eigenvector", -4);
+    arrow({ x: 1, y: 0 }, COLORS.stable, "fast eigenvector", 16);
+    arrow(v2, COLORS.growth, "slow eigenvector", -12);
     var chosen = result.params.angle * Math.PI / 180;
     arrow({ x: Math.cos(chosen), y: Math.sin(chosen) }, COLORS.perturb, "chosen initial", 14);
     ctx.fillStyle = COLORS.text;
