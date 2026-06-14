@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Aggregate Is Not a Referee"
+title: "Stop Asking the Aggregate to Referee"
 description: "Simpson's paradox is not an arithmetic prank. It is what happens when a mixture is asked to answer a causal question it was not designed to answer."
 date: 2026-06-13 19:36:00 -0400
 categories: statistics
@@ -249,7 +249,7 @@ Before trusting an aggregate binary-outcome comparison, I want to know:
 The last item is the important one. Statistics does not decide whether the
 aggregate or the strata are "right" in the abstract. The decision does.
 
-## The Sentence to Keep
+## The Portable Sentence
 
 Simpson's paradox is not a magic trick. It is a warning label on mixtures.
 
@@ -266,7 +266,7 @@ before asking what the average says, ask what population it averages over
 
 That is where the paradox usually goes to rest.
 
-## Notes
+## Works Cited
 
 [^simpson]: Edward H. Simpson, ["The Interpretation of Interaction in Contingency Tables"](https://math.bme.hu/~marib/bsmeur/simpson.pdf), *Journal of the Royal Statistical Society, Series B*, 1951. DOI page: [Wiley](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1951.tb00088.x).
 
