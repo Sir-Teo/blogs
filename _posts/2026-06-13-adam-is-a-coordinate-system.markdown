@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Adam Is a Coordinate System"
+title: "Adam's Coordinate Trick"
 description: "Adam is not just SGD with momentum. It keeps a per-coordinate memory of gradient scale, then changes the units of the update."
 date: 2026-06-13 21:23:00 -0400
 categories: machine-learning
