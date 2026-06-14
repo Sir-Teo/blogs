@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Arrow Has to Survive Conditioning"
+title: "Arrows That Survive Conditioning"
 description: "Granger causality is a statement about incremental forecasting. It becomes a causal clue only after the right past variables, lag order, and measurement process survive scrutiny."
 date: 2026-06-14 12:00:00 -0400
 categories: statistics
