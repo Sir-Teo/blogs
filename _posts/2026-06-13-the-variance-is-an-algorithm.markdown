@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Variance Is an Algorithm"
+title: "Variance Has an Algorithmic Shape"
 description: "Variance looks like a formula, but in finite precision arithmetic the formula you choose can decide whether the answer is accurate, noisy, or impossible."
 date: 2026-06-13 20:02:00 -0400
 categories: computer-science
@@ -333,7 +333,7 @@ may keep a dashboard alive, but it can also hide the exact bug you needed to
 learn from. Negative variance is not a statistical event. It is a numerical
 smoke alarm.
 
-## The Sentence to Keep
+## The Line I Would Keep
 
 Variance is not just a formula. It is a reduction algorithm.
 
