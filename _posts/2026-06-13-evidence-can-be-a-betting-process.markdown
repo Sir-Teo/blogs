@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Evidence Can Be a Betting Process"
+title: "Evidence as a Betting Process"
 description: "E-values and e-processes turn sequential evidence into a nonnegative martingale, so looking repeatedly becomes part of the design instead of a hidden loophole."
 date: 2026-06-13 21:15:00 -0400
 categories: statistics
