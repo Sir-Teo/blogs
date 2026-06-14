@@ -1,16 +1,16 @@
 ---
 layout: post
-title: "Model Collapse Begins in the Tails"
-description: "Recursive training on generated data is dangerous not because synthetic data is always bad, but because sampling, filtering, and reuse quietly erase rare modes."
+title: "The Model Forgets the Weird Stuff First"
+description: "Recursive training can look healthy in the average case while sampling, filtering, and reuse quietly sand away rare modes."
 date: 2026-06-13 04:33:00 -0400
 categories: machine-learning
 tags: [model-collapse, synthetic-data, generative-models, data-provenance, long-tails, ai-safety]
-excerpt: "The first sign of model collapse is not gibberish. It is tail amnesia: rare cases, minority styles, strange facts, and low-frequency modes disappear while the average sample still looks fine."
+excerpt: "Model collapse does not have to begin as nonsense. It can begin as tail amnesia: fewer rare cases, fewer odd styles, fewer low-frequency facts, all hidden behind fluent average samples."
 ---
 
-The scary version of model collapse is easy to imagine: future models train on
-AI-generated sludge, errors compound, and the whole web turns into a blurry copy
-of a copy.
+The cartoon version of model collapse is easy to picture: future models train
+on AI-generated sludge, errors compound, and the whole web becomes a blurry copy
+of a copy. It is dramatic. It is also too late.
 
 The subtler version is more useful.
 
@@ -32,7 +32,7 @@ language models.[^tinystories] Phi-1 used filtered web data plus synthetic
 The danger is not synthetic data in general. The danger is recursive synthetic
 data without lineage, mixture control, and tail audits.
 
-## The Feedback Loop
+## The Loop That Looks Clean
 
 Suppose the world has a true data distribution $$p^\*(x)$$. A model trained on
 samples from that world learns an approximation $$p_0(x)$$. It generates data.
@@ -81,7 +81,7 @@ fresh real data, quality or diversity degrades across generations.[^mad]
 
 The word "collapse" sounds sudden. The mechanism is usually gradual.
 
-## A Tiny Recursive Sampler
+## A Small Machine for Tail Amnesia
 
 The lab below is deliberately small. The "world" is an 18-mode distribution:
 six common modes and twelve rare modes. Each generation trains a new empirical
@@ -172,7 +172,7 @@ $$
 
 If the curation pipeline prices only precision, recall quietly pays.
 
-## Why the Tail Goes First
+## Rare Things Lose Twice
 
 Rare modes are fragile because every step sees fewer of them.
 
@@ -204,7 +204,7 @@ degrade. A human evaluator may prefer the cleaner synthetic sample. A
 deduplication filter may remove messy real artifacts while leaving polished
 model style intact. The loss is not evenly distributed.
 
-## Synthetic Data Is a Tool, Not a Food Chain
+## Use Synthetic Data Like a Tool, Not a Food Chain
 
 There is a lazy anti-synthetic-data argument that should be avoided:
 
@@ -240,7 +240,7 @@ with a fixed CLIP training recipe, better data curation produced better
 downstream results.[^datacomp] Model-collapse risk is a negative version of the
 same lesson. Dataset composition is an algorithm.
 
-## Provenance Is a Statistical Variable
+## Provenance Belongs in the Dataset, Not the Appendix
 
 The word provenance often sounds legal or archival. In this context it is also a
 statistical feature.
@@ -273,7 +273,7 @@ enough by themselves and calls for broader provenance standards.[^provenance]
 That caveat is important. Provenance is not a silver bullet. But without it,
 synthetic-data mixture control becomes guesswork.
 
-## Signals I Would Keep
+## What I Would Put on the Dashboard
 
 A serious training-data pipeline should treat collapse as an operational risk.
 The dashboard should not only count tokens or images. It should track support.
@@ -300,7 +300,7 @@ stratified, consented, documented, actively refreshed reference set. The point i
 to preserve a measurement relationship with the world, especially where the
 world is rare.
 
-## A Thread Worth Pulling
+## The Research Problem Under the Mess
 
 The research direction I want is collapse-aware data accounting.
 
