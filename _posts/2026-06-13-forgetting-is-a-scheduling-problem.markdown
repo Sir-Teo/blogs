@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Forgetting Is a Scheduling Problem"
+title: "Scheduling Memory Before It Fades"
 description: "Spaced repetition is not a productivity spell. It is a queueing and control problem over memories whose recall probabilities decay at different rates."
 date: 2026-06-13 22:50:00 -0400
 categories: psychology
@@ -317,7 +317,7 @@ Switch **Highlight** to `Massed`. Its early recall looks fine because it spends
 reviews immediately. The final exam-day recall is the warning: practice that is
 optimized for today's fluency can be badly scheduled for future access.
 
-## What I Would Build
+## What I Would Build Next
 
 The next useful learning system would not expose a single "due" date. It would
 expose a memory budget:
