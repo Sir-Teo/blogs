@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tape Runs Backward"
+title: "Backprop Runs the Tape Backward"
 description: "Reverse-mode automatic differentiation is not numerical differencing and not symbolic algebra. It is a transposed execution of the program, and the tape is the memory bill."
 date: 2026-06-14 04:51:00 -0400
 categories: machine-learning
@@ -393,7 +393,7 @@ programming runs on the tape, the transpose, and the memory system.
 Once you see that, backpropagation feels less like a miracle and more like a
 beautifully disciplined accounting trick.
 
-## Notes
+## The Trail of Papers
 
 [^baydin]: Atilim Gunes Baydin, Barak A. Pearlmutter, Alexey Andreyevich Radul, and Jeffrey Mark Siskind, "Automatic Differentiation in Machine Learning: a Survey," *Journal of Machine Learning Research*, 2018. [JMLR](https://jmlr.org/papers/v18/17-468.html), [PDF](https://www.jmlr.org/papers/volume18/17-468/17-468.pdf), [arXiv](https://arxiv.org/abs/1502.05767).
 
