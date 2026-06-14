@@ -477,7 +477,7 @@
 
   function metric(label, value, tone) {
     var klass = "transposition-lab__metric";
-    if (tone) klass += " transposition-lab__metric--" + tone;
+    if (tone) klass = "transposition-lab__metric--" + tone + " " + klass;
     return '<div class="' + klass + '"><span>' + label + "</span><strong>" + value + "</strong></div>";
   }
 
