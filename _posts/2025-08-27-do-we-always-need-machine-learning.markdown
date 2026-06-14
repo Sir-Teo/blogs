@@ -1,30 +1,33 @@
 ---
 layout: post
-title: "When a Cache Beats a Model"
-description: "A practical pattern for estimating sparse, long-tailed quantities with robust statistics, SQL rollups, partial pooling, and observable fallbacks."
+title: "The 3 AM Cache That Outruns a Model"
+description: "A production pattern for sparse, long-tailed estimates: robust rollups, partial pooling, observable fallback levels, and the discipline to ask for ML last."
 date: 2025-08-27 10:00:00 -0400
 categories: ai-systems
 tags: [machine-learning, statistics, data-systems, sql, robust-statistics]
-excerpt: "Sometimes the best production model is not a model at all. It is a statistically disciplined fallback: robust medians, rollups, shrinkage, and monitoring."
+excerpt: "When a pricing system needs a defensible answer during an outage, the best first model may be a humble cache with medians, rollups, shrinkage, and receipts."
 ---
 
-The most useful question in applied machine learning is often not "Which model
-should we train?" It is "What decision needs to survive bad data?"
+The pager does not care that a neural network would be elegant.
 
-Imagine a pricing service goes dark during close. The business does not need a
-heroic neural network at 3 AM. It needs a number that is defensible, available,
-and honest about its uncertainty. If the source system normally returns a
-specific surcharge for a specific carrier, cabin, route, date, and flight, a
-backup system should first ask for the most specific historical evidence it can
-trust. If that evidence is too sparse, it should gracefully climb to a broader
-reference class.
+Imagine a pricing service going dark during close. Someone still has to quote a
+number. Not the perfect number. Not the number a future research plan might have
+produced. A number that is available, defensible, and honest about how much
+evidence is underneath it.
+
+That is a different problem from "train a model." If the source system normally
+returns a surcharge for a carrier, cabin, route, date, and flight, the backup
+path should first ask for the most specific historical evidence it can trust. If
+that cell is too thin, it should step down to a broader reference class with its
+eyes open.
 
 This post uses airline YQ-style surcharges as a motivating example, but the
-pattern is much more general. It applies to any segmented quantity where the
-data are sparse, long-tailed, and operationally important: refund rates,
+pattern is more general than travel. It applies to any segmented quantity where
+the data are sparse, long-tailed, and operationally important: refund rates,
 fulfillment costs, fraud review time, cloud spend, conversion delay, or support
-load. The surprising part is that a large fraction of the value comes from
-statistics and systems design, not from a predictive model.
+load. The awkwardly useful lesson is that a large fraction of the intelligence
+comes from statistics and systems design before a predictive model enters the
+room.
 
 <div class="callout">
   <strong>Thesis:</strong> when the failure mode is sparse lookup under
@@ -33,7 +36,7 @@ statistics and systems design, not from a predictive model.
   behavior.
 </div>
 
-## The Shape of the Problem
+## First, Survive the Row
 
 A naive cache says: group by the fields we care about, take the average, and
 join back at prediction time. That fails quickly.
@@ -59,12 +62,12 @@ The third failure is staleness. Old data are not wrong in the same way noisy
 data are wrong. They may describe a different world. A good fallback cache has
 to say what time window it represents and how often it is rebuilt.
 
-The resulting design goal is modest but hard:
+The resulting design goal sounds modest and then eats an afternoon:
 
 > Always return the most specific estimate that passes a statistical quality
 > check, while making the chosen fallback level observable.
 
-## The Fallback Cache
+## The Ladder
 
 Think of the cache as a hierarchy of reference classes. At the top is a narrow
 cell: same carrier, same cabin, same route, same flight. Below it are broader
@@ -166,7 +169,7 @@ Second, make `cache_level` a first-class output. A fallback cache that only
 returns a number is hard to debug. A fallback cache that returns both the number
 and the level that served it can be monitored, audited, and tuned.
 
-## The Statistical Contract
+## A Contract the Cache Can Keep
 
 The lookup contract is:
 
@@ -203,7 +206,7 @@ same practical instinct behind empirical Bayes and hierarchical modeling:
 separate estimates are noisy, and related groups can borrow strength from one
 another.[^efron-morris], [^gelman]
 
-## A Lab You Can Poke
+## The Lab: Make the Data Worse
 
 The simulator below creates a synthetic surcharge world with carriers, cabins,
 routes, and flights. Training data are sparse and contaminated by occasional
@@ -254,7 +257,7 @@ The lesson is that the baseline is strong and legible. If a learned model cannot
 beat this under a fair time split, with comparable latency and better monitoring,
 then the model is probably solving a problem we do not yet have.
 
-## Lookup SQL
+## Serving Path, Boring on Purpose
 
 At serving time, the simplest implementation is a cascade of left joins. The
 first non-null estimate wins:
@@ -305,7 +308,7 @@ FROM yq_fallback_cache_ready
 WHERE lookup_key = :normalized_lookup_key;
 ```
 
-## Observability Is Part of the Model
+## The Dashboard Is Part of the Algorithm
 
 The cache is only trustworthy if you can see how it behaves. I would ship it
 with four dashboard panels:
@@ -324,7 +327,7 @@ fallback hierarchy is stable but systematically biased for known feature
 interactions, a model may help. If error is mostly from missing recent data, a
 model may only make the failure less obvious.
 
-## Where This Pattern Breaks
+## Where the Cache Loses
 
 This is not an argument against machine learning. It is an argument against
 using it before the baseline has a spine.
@@ -340,7 +343,7 @@ Approximate quantiles also need testing. They are excellent for large-scale
 systems, but they are still approximations. If a financial close process depends
 on exact cents, separate "fast estimate" and "official accounting" paths.
 
-## What Survives the Toy
+## Ask the Model Question Last
 
 The best non-ML baseline is not a weak straw man. It is a serious system:
 normalized keys, robust quantiles, rollup hierarchy, minimum evidence thresholds,
@@ -353,7 +356,8 @@ honestly:
 > that improvement worth the operational surface area?
 
 Sometimes the answer is yes. But a surprising amount of intelligence comes from
-knowing when a smaller, more inspectable idea is enough.
+knowing when a smaller, more inspectable idea is enough, especially at 3 AM when
+the system owes people an answer.
 
 ## References
 
