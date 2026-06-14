@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "SHAP Needs a Background World"
-description: "SHAP values are not pure feature truth. They are Shapley values for a particular missing-feature game."
+title: "SHAP Bars Need a Chosen World"
+description: "SHAP values are not pure feature truth. They are Shapley values for a particular missing-feature game, background population, and prediction scale."
 date: 2026-06-13 20:51:00 -0400
 categories: machine-learning
 tags: [shap, shapley-values, feature-attribution, interpretability, explainable-ai, conditional-expectations]
-excerpt: "A feature attribution is not just a property of the model and the row. It also depends on what the explainer means by a missing feature."
+excerpt: "A feature attribution is not just a property of the model and the row. It also depends on what world the explainer samples when a feature goes missing."
 ---
 
-The most dangerous SHAP plot is the one that looks obvious.
+The most dangerous SHAP plot is the one that looks self-evident.
 
 A bar points right. A bar points left. The bars add up to the prediction. The
 picture seems to say: here are the reasons.
@@ -24,7 +24,7 @@ what does it mean for a feature to be missing?
 
 That decision can be more important than the model.
 
-## The Game Hiding Under the Plot
+## The Plot Is Running a Game
 
 Shapley introduced a value for cooperative games: if a group of players can
 create value together, how should the total be divided among them?[^shapley]
@@ -76,9 +76,9 @@ reasonable way to turn a model, a row, and a dataset into a game. Sundararajan
 and Najmi make this point sharply: many operationalizations of Shapley values
 exist for model explanation, and they can disagree.[^many-shapley]
 
-The word "missing" is doing too much work.
+The word "missing" is carrying more furniture than it lets on.
 
-## Two Ways To Remove a Feature
+## Two Ways to Pretend a Column Is Gone
 
 Suppose the model uses features $$X_1$$ and $$X_2$$, and the row being explained
 is $$x=(x_1,x_2)$$. Two common games are:
@@ -122,7 +122,7 @@ a feature can receive conditional attribution even if the model never reads it
 
 That sounds like a bug until you name the game.
 
-## The Smallest Example That Bites
+## The Two-Feature Trap
 
 Let the background distribution be bivariate normal:
 
@@ -171,7 +171,7 @@ $$
 
 The model did not read $$x_2$$. The conditional explainer did.
 
-That sentence is the whole post.
+That sentence is the loose floorboard in the whole post.
 
 <style>
   .shap-lab {
@@ -320,7 +320,7 @@ $$\mathbb{E}[X_1X_2]=\rho$$. This is a quiet but important detail: the backgroun
 distribution does not only affect missing-feature coalitions. It can also change
 the reference point from which every bar is measured.
 
-## The Background Is a Policy Choice
+## The Background Is Policy, Not Wallpaper
 
 People often talk about "the SHAP value" as if it is attached to the row:
 
@@ -362,7 +362,7 @@ responsible?"
 Those are four different questions. A single bar chart should not be expected to
 answer all of them.
 
-## When Conditional Credit Is Useful
+## Sometimes Proxy Credit Is the Point
 
 It is tempting to declare conditional SHAP guilty because it can credit unused
 features. That is too quick.
@@ -391,9 +391,10 @@ sensitivity question:
 what happens if this input is set while the others are not updated to match it?
 ```
 
-Both questions can be useful. The error is to read one as the other.
+Both questions can be useful. The error is to read one as the other and then
+act surprised when the bars do not agree.
 
-## A Checklist Before Trusting the Bars
+## Questions Before the Bars Get a Voice
 
 Before using feature attribution as evidence, ask:
 
@@ -411,7 +412,7 @@ Before using feature attribution as evidence, ask:
 If the answer to any of these is "I do not know," the attribution is not yet an
 explanation. It is a rendering of unexplained assumptions.
 
-## The Moral
+## Accounting Is Not Meaning
 
 The satisfying part of SHAP is the accounting. The bars add up. The baseline
 plus the attributions equals the prediction.
