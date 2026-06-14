@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "A Trade in Motion"
-description: "The price in a portfolio model is not the price a large order receives. Execution turns an investment idea into a path through liquidity, volatility, market impact, and information leakage."
+title: "The Trade Starts After the Decision"
+description: "A portfolio model has a decision price. The desk has a path through liquidity, volatility, impact, patience, and information leakage."
 date: 2026-06-13 01:20:00 -0400
 categories: quantitative-finance
 tags: [optimal-execution, market-impact, quantitative-finance, control, microstructure]
-excerpt: "The paper portfolio owns a decision price. The real portfolio owns the path by which the order becomes a position."
+excerpt: "The paper portfolio can sell at the decision price. The real portfolio has to release child orders into a market that remembers the path."
 ---
 
 At 9:42 a portfolio manager decides to sell.
@@ -17,7 +17,7 @@ price $$S_0$$, update the book, move on.
 
 The market does not honor that fiction.
 
-The desk now owns a path: how much to release, when to release it, where to
+The desk now owns the part the backtest left blank: how much to release, when to
 route it, how aggressively to cross the spread, how much residual inventory to
 carry, and how much information to reveal. The realized portfolio will not be
 marked at the decision price. It will be marked at the prices created by that
@@ -33,7 +33,7 @@ executed.
   the curve drawn through market liquidity to reach the target portfolio.
 </div>
 
-## Arrival
+## The Arrival Price Is a Witness
 
 For a buy order, a stripped-down shortfall calculation is
 
@@ -60,7 +60,7 @@ model.[^bertsimas] Almgren and Chriss added the mean-variance geometry that many
 execution discussions still orbit: some schedules minimize expected cost; some
 minimize uncertainty; the useful object is the frontier between them.[^almgren]
 
-## Footprint, Weather, Patience
+## Footprint, Weather, Nerves
 
 There are three forces in the simple version of the problem.
 
@@ -97,7 +97,7 @@ minimizes expected footprint may maximize exposure to price movement. A schedule
 that minimizes risk may pay too much impact. Execution is the art of choosing
 which regret you prefer.
 
-## The Book Has Memory
+## The Book Remembers You
 
 The simple model treats each child order as if it pays a local cost and then
 walks away. Real books remember.
@@ -121,7 +121,7 @@ behavior.[^maitrier] The lesson is not that one universal formula solves
 execution. The lesson is that impact has mechanical structure, and the structure
 has to be estimated rather than hand-waved.
 
-## The No-Free-Churn Test
+## Round Trips Should Bleed
 
 An execution model should fail loudly if it allows profitable round trips.
 
@@ -144,7 +144,7 @@ $$
 
 If that inequality fails, do not tune the policy. Fix the world model.
 
-## Desk Simulator
+## A Small Execution Desk
 
 The lab below solves a discrete liquidation problem. It is deliberately small:
 one asset, uniform time buckets, quadratic temporary impact, inventory risk, and
@@ -242,7 +242,7 @@ VWAP is useful as a benchmark because it is legible. It is not sacred. In the
 frontier view it is simply another point, often reasonable, sometimes dominated,
 and always conditional on the market state the model assumes.
 
-## Run Sheet
+## The Blotter I Would Want
 
 If I were reviewing a real execution system, I would want the post-trade file to
 look like an experiment log, not a screenshot of a fill summary.
@@ -259,7 +259,7 @@ The point is not bureaucracy. It is identifiability. Without this log, the desk
 cannot tell whether a bad fill came from bad alpha, bad urgency, bad venue
 selection, bad impact calibration, slow book resilience, or simple bad luck.
 
-## Open Questions
+## The Desk I Still Want
 
 The execution research program I trust would combine learning with constraints.
 It would let policies adapt to order-book state, but it would not let them
