@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Rollback Netcode Is Speculative Execution"
+title: "Rollback Netcode Speculates for a Living"
 description: "Rollback netcode does not make packets faster. It moves online games from waiting to speculating: predict the missing input, run the frame now, and repair the timeline when reality arrives."
 date: 2026-06-14 00:46:00 -0400
 categories: gaming
