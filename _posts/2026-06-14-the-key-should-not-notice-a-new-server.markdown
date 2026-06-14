@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Key Should Not Notice a New Server"
+title: "Consistent Hashing Without the Surprise Move"
 description: "Consistent hashing is not mostly about hashing. It is a remapping contract: when the fleet changes, only the keys that must move should move."
 date: 2026-06-14 09:21:00 -0400
 categories: data-systems

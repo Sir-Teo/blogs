@@ -21,6 +21,10 @@ physics:
   name: Physics
   short: Physics
   color: "#6F7C12"
+data-systems:
+  name: Data systems
+  short: Data
+  color: "#2F7D7E"
 software-engineering:
   name: Software engineering
   short: Eng
