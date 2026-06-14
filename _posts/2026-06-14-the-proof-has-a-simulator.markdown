@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Proof Has a Simulator"
+title: "Zero-Knowledge Proofs Need a Simulator"
 description: "A zero-knowledge proof is not a magic blackout curtain. In a Sigma protocol, the clean test is stranger: fake transcripts can look real, but two real-looking answers to one challenge fork reveal the witness."
 date: 2026-06-14 08:58:00 -0400
 categories: computer-science
