@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Clock That Refuses to Choose"
+title: "Vector Clocks Refuse to Lie"
 description: "Lamport clocks preserve causal order, but scalar timestamps still force a total order on concurrent events. Vector clocks keep the partial order visible."
 date: 2026-06-14 08:42:00 -0400
 categories: computer-science
