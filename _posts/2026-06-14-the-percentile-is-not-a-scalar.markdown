@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Percentile Is Not a Scalar"
+title: "Percentiles Need Their Population"
 description: "A p95 is a rank statement about a population, not a mergeable number. Averaging shard percentiles can be wildly wrong; sketches work because they preserve rank information."
 date: 2026-06-14 05:58:00 -0400
 categories: data-systems
@@ -361,7 +361,7 @@ The global p95 is not hiding inside the local p95s.
 
 It is hiding inside the ranks they threw away.
 
-## Notes
+## Reading Notes
 
 [^gk]: Michael Greenwald and Sanjeev Khanna, "Space-Efficient Online Computation of Quantile Summaries," *SIGMOD*, 2001. [ACM](https://dl.acm.org/doi/10.1145/376284.375670), [PDF](https://infolab.stanford.edu/~datar/courses/cs361a/papers/quantiles.pdf).
 
