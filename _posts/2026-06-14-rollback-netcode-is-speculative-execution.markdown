@@ -1,18 +1,18 @@
 ---
 layout: post
-title: "Rollback Netcode Speculates for a Living"
-description: "Rollback netcode does not make packets faster. It moves online games from waiting to speculating: predict the missing input, run the frame now, and repair the timeline when reality arrives."
+title: "The Game Guesses the Past"
+description: "Rollback netcode does not make packets faster. It lets online games run now, predict missing input, and repair the timeline when reality arrives."
 date: 2026-06-14 00:46:00 -0400
 categories: gaming
 tags: [rollback-netcode, game-networking, latency-compensation, deterministic-simulation, multiplayer, software-engineering]
-excerpt: "The network still has latency. Rollback changes what latency feels like: local input stays sharp, and the cost is paid later as prediction error, re-simulation, and occasional visual correction."
+excerpt: "The network still has latency. Rollback changes where the cost lands: local input stays sharp, and the debt is paid later with prediction error and re-simulation."
 ---
 
 The packet is still late.
 
 That is the first thing to keep honest. Rollback netcode does not make fiber
-shorter, routers kinder, Wi-Fi cleaner, or the other player closer. The speed of
-light remains rude. The network still delivers remote input after the local
+shorter, routers kinder, Wi-Fi cleaner, or the other player closer. The speed
+of light remains rude. The network still delivers remote input after the local
 frame wanted to use it.
 
 What changes is the question the game asks.
@@ -33,9 +33,9 @@ That is speculative execution. The game predicts a missing input, advances the
 simulation, renders the result, and keeps enough history to repair itself when
 the real input arrives.
 
-The latency did not disappear. It changed form.
+The latency did not disappear. It changed costume.
 
-## Waiting Is Correct
+## Waiting Has a Beautiful Proof
 
 The most conservative multiplayer protocol is beautiful in the way a theorem is
 beautiful. If every machine runs the same deterministic simulation, then the
@@ -69,9 +69,9 @@ block, parry, throw tech, jump cancel, or one-frame link depends on muscle
 memory. Adding five to eight frames of delay can change the game the player
 learned offline.
 
-So the protocol needs to sin.
+So the protocol needs to commit a useful sin.
 
-## Prediction Is a Controlled Sin
+## Prediction Makes a Useful Lie
 
 Client-side prediction is older than the current rollback discourse. In
 Bernier's Half-Life paper, the client sends commands to the server but also
@@ -90,7 +90,7 @@ view time before testing the shot.[^gambetta] Bernier describes this as stepping
 back in server time so the command is evaluated against the state the player
 actually saw.[^bernier]
 
-These systems are not lies. They are negotiated illusions.
+These systems are not cheats. They are negotiated illusions.
 
 Rollback netcode applies the same philosophical move to deterministic
 peer-to-peer games. GGPO's public explanation is wonderfully direct: in a fully
@@ -150,7 +150,7 @@ frames inside one render frame.
 The protocol has not removed latency. It has converted some of it into
 prediction risk.
 
-## A Rollback Lab
+## A Four-Second Time Machine
 
 The lab below simulates four seconds of a tiny deterministic two-player game.
 Only the remote player's one-dimensional input is uncertain. The local client
@@ -341,7 +341,7 @@ budget becomes fragile. A rollback of six frames means six deterministic updates
 must fit into the current frame, often alongside the normal update, rendering
 prep, audio, input, and scripting.
 
-## The Hard Part Is Not the Network
+## The Engine Must Remember Perfectly
 
 The network code is hard. The game code may be harder.
 
@@ -376,7 +376,7 @@ netcode is a serialization format with opinions about time
 
 The serious version is that rollback makes temporal correctness observable.
 
-## Fairness Is Not One Thing
+## Fairness Has Several Clocks
 
 Latency compensation often trades one player's truth against another's.
 
@@ -409,7 +409,7 @@ Different genres choose differently:
 
 The correct protocol is the one whose artifacts fit the game.
 
-## Local Lag and Timewarp
+## Old Names for the Same Bargain
 
 Rollback did not appear from nowhere. Distributed simulation has long had the
 same shape: delay local execution to reduce inconsistencies, or execute now and
@@ -432,7 +432,7 @@ Rollback netcode lives on that frontier.
 It becomes attractive when the cost of waiting is worse than the cost of being
 wrong briefly.
 
-## Why It Works So Well for Fighting Games
+## Why Fighting Games Love It
 
 Fighting games are unusually friendly to rollback for several reasons.
 
@@ -468,7 +468,7 @@ interactive systems need a latency budget and a correction budget
 
 Rollback is one particularly elegant way to spend them.
 
-## The Design Rule
+## Spend the Latency Budget on Purpose
 
 When an online game feels bad, players say "lag". That word hides several
 different failures:
