@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Reward Shaping Is a Gauge Choice"
+title: "Reward Shaping, Gauge Freedom Included"
 description: "Potential-based reward shaping can make reinforcement learning easier without changing the task. Arbitrary shaping can quietly create a new game."
 date: 2026-06-13 22:10:00 -0400
 categories: machine-learning
