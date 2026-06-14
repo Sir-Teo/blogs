@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "CRDTs Are Their Merge Functions"
+title: "The Merge Function Is the Product"
 description: "CRDTs are not a trick for avoiding distributed systems. They are a way of making merge algebra explicit: what grows, what can be forgotten, and what must be coordinated."
 date: 2026-06-13 06:54:00 -0400
 categories: computer-science
 tags: [distributed-systems, crdts, eventual-consistency, semilattices, local-first-software, databases]
-excerpt: "A collaborative app is not defined only by its UI or storage layer. It is defined by its merge function. If the merge is commutative, associative, and idempotent, replicas can disagree temporarily without becoming different systems."
+excerpt: "A collaborative app is not defined only by its UI or storage layer. It is defined by its merge function. When the merge is commutative, associative, and idempotent, replicas can disagree temporarily without becoming different systems."
 ---
 
 Two people edit the same object while offline.
@@ -27,7 +27,7 @@ function is already the distributed-system protocol.
 
 That sounds abstract until it fails. Then it becomes very concrete.
 
-## The Three Laws
+## Three Laws for Surviving Disorder
 
 For a state-based CRDT, replica states live in a join-semilattice. There is a
 partial order $$\leq$$ that means "has at least as much information as," and a
@@ -67,7 +67,7 @@ conflict handlers, give data types sufficient algebraic conditions for strong
 eventual consistency.[^shapiro] The algebra does not remove product semantics.
 It forces them into the open.
 
-## A Bad Merge Is a Product Decision
+## A Bad Merge Becomes Product Semantics
 
 Try the lab below with **Naive add/remove**. The scenario starts with both
 replicas seeing the same item. During a partition, replica A deletes it while
@@ -143,7 +143,7 @@ meaning. A remove erases the adds it has observed, not the adds that happen
 concurrently somewhere else. This is the small idea that makes add/remove sets
 usable under concurrency.
 
-## Delete Is Not the Opposite of Add
+## Delete Needs Evidence
 
 A naive set stores only membership:
 
@@ -204,7 +204,7 @@ from the network and resurrect the value. Garbage collection is possible, but
 it requires knowing a causal stability frontier, not merely wishing metadata
 away.
 
-## Monotonicity Is the Larger Pattern
+## Monotonicity Is the Escape Hatch
 
 CRDTs are one family inside a bigger idea: coordination is often a tax paid for
 non-monotonicity.
@@ -236,7 +236,7 @@ growing fact as a set, programs can use richer monotone types: counters,
 thresholds, maps, and other semilattice-valued objects. This is the bridge from
 CRDTs as data structures to CRDTs as a programming discipline.
 
-## The Boundary Is Semantic, Not Fashionable
+## CRDTs Move the Boundary, Not the Problem
 
 CRDTs are sometimes sold as if they make consistency problems disappear. They
 do not. They move the problem from runtime coordination into type design.
@@ -263,7 +263,7 @@ partitions.[^hat] The interesting work is to identify which guarantees your
 application actually needs and where coordination is intrinsic rather than
 incidental.
 
-## A Design Review for Merge
+## Review the Merge Before the Mockup
 
 When I look at collaborative or offline-capable software, I now want a merge
 design review before I want a UI mockup.
