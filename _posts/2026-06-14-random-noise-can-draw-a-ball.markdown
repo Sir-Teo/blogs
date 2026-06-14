@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Random Noise Can Draw a Ball"
+title: "Certifying With Random Noise"
 description: "Randomized smoothing turns a classifier into a Gaussian vote. If the vote gap is large enough, the prediction comes with a certified L2 ball."
 date: 2026-06-14 12:10:00 -0400
 categories: machine-learning
