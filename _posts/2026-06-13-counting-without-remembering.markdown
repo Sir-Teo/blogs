@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Counting Without Remembering"
-description: "HyperLogLog is the strange bargain behind many large-scale distinct counts: forget almost every identity, keep a few maxima, and still estimate the number of unique things."
+title: "The Count That Forgets Names"
+description: "HyperLogLog is the strange bargain behind large-scale distinct counts: forget identities, keep rare hash patterns, and still estimate how many unique things passed by."
 date: 2026-06-13 07:58:00 -0400
 categories: computer-science
 tags: [hyperloglog, streaming-algorithms, cardinality-estimation, sketches, probabilistic-data-structures, databases]
-excerpt: "A set answers distinct-count questions by remembering every identity. HyperLogLog answers by remembering only the rarest hash patterns. That loss of memory is exactly what makes the system useful."
+excerpt: "A set answers by remembering every identity. HyperLogLog answers by keeping only the rarest hash patterns, and that loss of memory is the useful part."
 ---
 
 A dashboard asks a harmless question:
@@ -24,7 +24,7 @@ compressed statistical accident of their hashes. The result is not exact, but it
 is mergeable, streaming, and small enough to live inside systems where exact
 sets would be operational furniture.
 
-That answer is HyperLogLog.
+That answer is HyperLogLog, a counter with almost no guest list.
 
 It is a beautiful algorithm because it makes a very sharp bargain:
 
@@ -32,7 +32,7 @@ It is a beautiful algorithm because it makes a very sharp bargain:
 forget the identities, remember the surprise
 ```
 
-## The First Trick Is Extremes
+## Rare Zeros Do the Talking
 
 Hash each identity into a string of random-looking bits. If the hash begins with
 one zero before its first one, that is common. Two leading zeros are less common.
@@ -56,9 +56,9 @@ cardinality in one pass with small memory.[^flajolet-martin] Morris's earlier
 approximate counter was not a distinct counter, but it had the same spirit:
 store a logarithmic trace of a large count rather than the count itself.[^morris]
 
-HyperLogLog adds the second trick.
+HyperLogLog adds a second trick: do not trust one tall tale.
 
-## The Second Trick Is Many Small Extremes
+## Many Buckets, Many Rumors
 
 LogLog already split the stream into many sub-estimators and averaged their
 signals.[^loglog] HyperLogLog keeps that bucketed intuition and changes how the
@@ -112,7 +112,7 @@ HyperLogLog++.[^hll-practice]
 
 The algorithm is not magic. It is a carefully tuned extreme-value instrument.
 
-## A Distinct-Counting Lab
+## A Counter With No Guest List
 
 The lab below uses a compact 32-bit hash for browser speed. That is fine for the
 toy ranges here. Production systems usually use larger hashes and more careful
@@ -208,7 +208,7 @@ This is why HLL is such a natural systems primitive. It does not merely fit in
 memory. It composes. A database partition, a browser client, a data center, and
 a batch job can each carry a small sketch; the union is another small sketch.
 
-## What the Bitmap Teaches
+## What Empty Bits Teach
 
 A bitmap counter is the simpler cousin. Hash each distinct key into one of
 $$B$$ bits. Let $$V$$ be the number of empty bits. Then:
@@ -234,7 +234,7 @@ the right sketch depends on which statistic will remain informative
 after the data becomes too large to remember
 ```
 
-## The Three Quiet Assumptions
+## Three Unquiet Assumptions
 
 The first assumption is identity. "Distinct users" sounds easy until one person
 has three devices, one bot has ten thousand cookies, and privacy policy changes
@@ -253,7 +253,7 @@ If you put it inside an A/B test, a billing system, a risk report, or an alert,
 the estimator variance becomes part of the next calculation. The sketch made
 one number cheap. It did not make uncertainty disappear.
 
-## A Small Operational Checklist
+## Before Trusting the Number
 
 Before trusting an approximate distinct count, I want to know:
 
@@ -270,7 +270,7 @@ The privacy line matters. A sketch is not a list of user IDs, which is good. But
 "not a list" is not the same as "safe under all joins, salts, and side
 information." Treat it as reduced data, not purified data.
 
-## How the Algorithm Feels
+## The Shape It Leaves Behind
 
 Exact counting remembers every witness.
 
