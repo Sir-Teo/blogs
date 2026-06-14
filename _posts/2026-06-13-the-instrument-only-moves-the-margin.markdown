@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Instrument Only Moves the Margin"
+title: "Instruments Move the Margin"
 description: "Instrumental variables do not recover the effect for everyone. Under strong assumptions, they recover the effect for people whose treatment was moved by the instrument."
 date: 2026-06-13 19:25:00 -0400
 categories: statistics
@@ -258,7 +258,7 @@ When I read an instrumental-variable design, I want the paper to answer:
 The most revealing question is "who moved?" If the author cannot describe the
 compliers, the estimate has no face.
 
-## The Sentence to Keep
+## The Bit to Remember
 
 Instrumental variables are not causal alchemy. They are accounting for a
 particular randomized push.
@@ -277,7 +277,7 @@ which people did the instrument actually move?
 
 That is where the causal effect lives.
 
-## Notes
+## Primary Sources
 
 [^imbens-angrist]: Guido W. Imbens and Joshua D. Angrist, ["Identification and Estimation of Local Average Treatment Effects"](https://eclass.uoa.gr/modules/document/file.php/ECON261/Randomized%20evaluation%20papers/Imbens%20%26%20Angrist%20-%20LATE.pdf), *Econometrica*, 1994. DOI: [10.2307/2951620](https://doi.org/10.2307/2951620).
 
