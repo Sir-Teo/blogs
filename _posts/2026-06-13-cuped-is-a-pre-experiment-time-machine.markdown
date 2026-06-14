@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "CUPED: Borrowing Signal From Yesterday"
-description: "Variance reduction in A/B tests works when the covariate comes from before treatment. Move that line, and precision turns into bias."
+title: "Yesterday Can Tighten an A/B Test"
+description: "CUPED borrows pre-period signal to reduce variance. Move the timing line past treatment, and precision quietly turns into bias."
 date: 2026-06-13 17:52:00 -0400
 categories: statistics
 tags: [cuped, ab-testing, variance-reduction, regression-adjustment, experimentation, causal-inference]
-excerpt: "CUPED makes an experiment more sensitive by subtracting predictable pre-treatment variation. The trick is powerful because randomization protects the covariate balance; it is dangerous when the covariate can be moved by treatment."
+excerpt: "CUPED subtracts predictable pre-treatment variation. The power comes from yesterday; the danger starts when the covariate can be moved by the experiment."
 ---
 
 An A/B test has two ways to become more decisive.
@@ -36,10 +36,10 @@ treatment, randomization protects it. If the covariate was affected by treatment
 the adjustment can quietly subtract part of the effect you were trying to
 measure.
 
-Variance reduction is not free power. It is lawful time travel: you may use the
-past, not the future you caused.
+Variance reduction is not free power. It is lawful time travel: yesterday is
+available evidence, tomorrow is evidence you may have contaminated.
 
-## The Control-Variate Trick
+## The Legal Time Machine
 
 Let $$Y_i$$ be the experiment-period outcome for user $$i$$ and $$X_i$$ be a
 pre-experiment covariate. Think of $$X_i$$ as last week's value of the same
@@ -98,7 +98,7 @@ variance reductions in Bing experiments.[^cuped]
 This is why CUPED feels almost unfair when it works. The experiment gets credit
 for a week of information collected before the experiment existed.
 
-## A CUPED Lab
+## Pre-Period Lab
 
 The lab below simulates repeated randomized experiments. Users have a
 pre-period covariate, an experiment-period outcome, and a true treatment lift.
@@ -187,7 +187,7 @@ $$
 If $$X_\mathrm{bad}$$ is affected by treatment, then
 $$E[\hat{\Delta}_{X_\mathrm{bad}}]\neq 0$$. That is bias, not sensitivity.
 
-## What CUPED Is Really Estimating
+## The Estimand Did Not Move
 
 The adjusted outcome can make CUPED look like it changes the metric. It does
 not have to. The estimand is still the average treatment effect on $$Y$$. CUPED
@@ -222,7 +222,7 @@ keep the estimand fixed,
 audit the covariate timing
 ```
 
-## The Timing Boundary
+## The Line Treatment Must Not Cross
 
 CUPED works because the covariate is not moved by treatment.
 
@@ -253,7 +253,7 @@ A post-treatment variable can be wonderfully predictive precisely because it is
 on the causal path. Adjusting for it is then not variance reduction. It is
 effect deletion.
 
-## A Smaller Experiment Is Not Always a Better Experiment
+## Faster Is Not Always Better
 
 The seductive interpretation of variance reduction is:
 
@@ -275,7 +275,7 @@ equal" carries a lot:
 CUPED buys precision on the adjusted metric. It does not certify that the
 experiment has run long enough to answer every product question.
 
-## Implementation Details That Matter
+## The Boring Parts That Decide It
 
 The coefficient $$\theta$$ should be estimated in a way that does not use
 treatment assignment to search for a favorable result. Estimating it from pooled
@@ -302,7 +302,7 @@ Finally, CUPED does not fix peeking. A variance-reduced p-value is still a
 p-value. If the experiment is monitored continuously and stopped when the
 adjusted metric crosses a threshold, sequential inference issues remain.
 
-## A Run Sheet for CUPED
+## CUPED Intake
 
 Before I would trust a CUPED analysis, I would want to know:
 
@@ -321,7 +321,7 @@ The checklist is boring on purpose. Most CUPED failures are not algebra
 failures. They are timing failures, identity failures, and interpretation
 failures.
 
-## The Feeling of the Estimator
+## Borrowed Memory
 
 Randomization gives the experiment its moral authority.
 
