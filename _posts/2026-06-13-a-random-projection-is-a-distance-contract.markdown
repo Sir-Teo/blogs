@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Random Projections: A Promise About Distances"
-description: "The Johnson-Lindenstrauss lemma is not a slogan about making data smaller. It is a promise about which distances survive, and which decisions still need margin."
+title: "The Projection Keeps Distances, Not Meaning"
+description: "The Johnson-Lindenstrauss lemma is not a slogan about making data smaller. It is a promise about finite geometry, with margins left for the application to defend."
 date: 2026-06-13 19:55:00 -0400
 categories: computer-science
 tags: [random-projection, johnson-lindenstrauss, dimension-reduction, nearest-neighbors, numerical-linear-algebra, ml-systems]
-excerpt: "A projection does not understand your data. It preserves a finite geometry with high probability. Whether that is enough depends on the margins of the decisions you make afterward."
+excerpt: "Random projection can preserve pairwise distances with high probability. It still does not know which decisions are fragile, semantic, or nearly tied."
 ---
 
 Here is a dangerous sentence:
@@ -25,11 +25,13 @@ The Johnson-Lindenstrauss lemma gives a much cleaner promise. It does not say
 into surprisingly few dimensions can preserve all pairwise Euclidean distances
 up to a controlled multiplicative distortion.[^jl]
 
-That is already extraordinary. It is also narrower than the folklore version.
+That is already extraordinary. It is also much narrower than the folklore
+version people casually repeat in design docs.
 
-The projection is not a semantic compressor. It is a distance contract.
+The projection is not a semantic compressor. It is a promise about a finite
+geometry.
 
-## The Exact Bargain
+## What the Promise Actually Says
 
 Take $$n$$ points in a high-dimensional Euclidean space. The JL result says,
 roughly, that for $$0 < \epsilon < 1$$, there is a map into
@@ -62,7 +64,7 @@ JL preserves the geometry of a finite cloud. It does not preserve every vector
 in the original space. It does not preserve labels by magic. It does not promise
 that the nearest neighbor is unchanged when two candidates were nearly tied.
 
-## PCA Is a Different Promise
+## PCA Is Answering Another Question
 
 Principal components and random projections are easy to confuse because both
 produce a lower-dimensional representation. They optimize different things.
@@ -95,7 +97,7 @@ I probably did not move any pair too much.
 
 Those are different contracts.
 
-## A Projection Bench
+## Distortion Bench
 
 The lab below generates a finite cloud in a high-dimensional ambient space,
 projects it with one of three random matrix families, and audits what survives.
@@ -263,7 +265,7 @@ a little worse at very small $$k$$, but much cheaper to apply to sparse feature
 vectors. That trade-off is why database-friendly and sparse JL transforms
 matter in systems work.[^achlioptas]
 
-## Margins Are the Missing Variable
+## The Decision Margin Is the Catch
 
 Suppose a retrieval system uses nearest neighbors. JL-style reasoning can tell
 you that every distance is approximately preserved. It does not directly tell
@@ -290,7 +292,7 @@ $$1 \pm \epsilon$$ helps if the clustering objective is stable under that
 perturbation. It does not rescue a dataset whose clusters were already
 ambiguous.
 
-## The Matrix Does Not Need to Be Gaussian
+## Gaussian Is Not the Point
 
 The cleanest proof often starts with a Gaussian random matrix, but production
 systems care about memory traffic, sparsity, and integer-friendly operations.
@@ -316,7 +318,7 @@ The mathematical contract stays pairwise distance preservation. The engineering
 problem is how to honor it with acceptable CPU, memory bandwidth, parallelism,
 and implementation complexity.
 
-## From Point Clouds to Linear Algebra
+## When the Invariant Is a Subspace
 
 There is a stronger-looking cousin of this idea in randomized numerical linear
 algebra: subspace embeddings.
@@ -343,7 +345,7 @@ For least squares, it is residual norm over a subspace. For cosine retrieval, it
 is angular geometry after normalization. For interpretability, random projection
 may preserve the wrong thing entirely.
 
-## A Checklist Before Projecting
+## Projection Review
 
 Before using a random projection in a real pipeline, I would want answers to
 these questions:
@@ -365,7 +367,7 @@ The last point is the least glamorous and the most practical. The theorem is
 worst-case over a finite set, but constants and tails matter. Measure the error
 distribution on the data geometry you actually serve.
 
-## The Portable Sentence
+## The Sentence to Keep
 
 A random projection does not know what your data means.
 
