@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Test-Time Compute Is a Correlation Problem"
+title: "Test-Time Compute Runs Into Correlation"
 description: "Repeated reasoning samples only buy intelligence when the attempts are diverse, the selector is reliable, and the system knows when not to answer."
 date: 2026-06-13 00:05:00 -0400
 categories: ai-systems
@@ -147,7 +147,7 @@ This is the same statistical shape as multiple testing. More tries increase
 opportunity. They also increase selection pressure on whatever scoring function
 chooses the final answer.
 
-## A Small Experiment
+## A Pocket Experiment
 
 The simulator below generates synthetic reasoning problems. Each problem has a
 latent difficulty, so samples from the same problem are correlated. Wrong
@@ -213,7 +213,7 @@ classic $$1-(1-p)^n$$ intuition is not crazy. When correlation is high, raw
 sample count overstates compute. The model is not trying the problem 64 new
 ways. It is often trying the same family of thoughts 64 times.
 
-## What I Would Measure
+## Signals I Would Trust
 
 A serious test-time compute evaluation should report more than pass@1 and final
 accuracy.
@@ -263,7 +263,7 @@ template, latent skill, and observed wrong-answer basin. If many samples fail in
 the same way, the next unit of compute should probably not be another sample
 from the same distribution.
 
-## The Research Direction
+## Next Experiments
 
 The direction I find most promising is inference portfolios.
 
@@ -296,7 +296,7 @@ sampling, and selective prediction. The object is not just an answer. It is a
 set of attempts whose errors are different enough that a selector can learn from
 their disagreement.
 
-## The Takeaway
+## The Practical Memory
 
 Test-time compute is real. Repeated sampling, search, self-consistency, and
 verifiers can turn a fixed model into a stronger system.
