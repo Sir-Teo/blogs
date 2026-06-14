@@ -1,19 +1,19 @@
 ---
 layout: post
-title: "Kelly Needs Humility in the Odds"
-description: "Why growth-optimal betting is less about bravery and more about calibrated probabilities, model risk, and drawdown-aware sizing."
+title: "The Bet Size Comes After Trust"
+description: "Kelly sizing is a clean formula with an unforgiving dependency: calibrated probabilities, executable odds, and a drawdown budget that survives contact with reality."
 date: 2026-06-12 15:30:00 -0400
 categories: quantitative-finance
 tags: [kelly-criterion, calibration, quantitative-finance, statistics, machine-learning, risk]
-excerpt: "The Kelly criterion is often introduced as a formula for how much to bet. In real ML and trading systems, the hard part is not the algebra. It is whether the probability is calibrated enough to deserve leverage."
+excerpt: "Kelly looks like a formula for bravery. In practice it is a trust audit: if the probability is miscalibrated, the elegant fraction becomes leverage on a mistake."
 ---
 
-The Kelly criterion is usually taught as a beautiful little answer to a
-gambling question. If a bet pays even money and wins with probability $$p$$, bet
-$$2p - 1$$ of your bankroll. If $$p = 0.60$$, the full Kelly fraction is 20%.
+The Kelly criterion has the suspicious charm of something that fits on a napkin.
+If a bet pays even money and wins with probability $$p$$, bet $$2p - 1$$ of your
+bankroll. If $$p = 0.60$$, the full Kelly fraction is 20%.
 
 That answer is correct for the toy problem. It is also where many real systems
-start to become dangerous.
+quietly walk onto a wet floor.
 
 In a production betting, trading, or allocation system, the hard part is rarely
 typing the formula. The hard part is deciding whether the probability that goes
@@ -33,9 +33,9 @@ This is not investment advice. The examples below are deliberately simplified:
 independent binary bets, even-money payouts, no transaction costs, no market
 impact, and no liquidity constraints. The simplification is useful because it
 isolates the core failure mode: overconfident probabilities create oversized
-positions.
+positions with very clean arithmetic.
 
-## The Formula Is the Easy Part
+## The Napkin Formula
 
 For a binary bet that wins $$b$$ units per unit wagered and loses the stake when
 wrong, the expected log-growth from betting fraction $$f$$ is
@@ -68,9 +68,9 @@ and you leave asymptotic growth on the table. Bet more and you lower growth,
 increase drawdowns, and can eventually turn a positive edge into negative
 geometric growth.
 
-But the word "know" is doing almost all of the work.
+But the word "know" is doing almost all of the work, and it is not a small word.
 
-## Calibration Is Not Accuracy
+## A Good Ranker Can Still Mis-Size
 
 A classifier can be accurate and still useless for sizing. Suppose a model ranks
 opportunities well: its top bucket wins more often than its middle bucket, and
@@ -178,7 +178,7 @@ fraction $$\lambda$$ should not be chosen by vibes. It should reflect calibratio
 error, non-stationarity, dependence between bets, liquidity, tail loss, and the
 drawdown a human or institution can actually survive.
 
-## A Browser Trial
+## A Betting Desk in Miniature
 
 The live experiment below creates binary opportunities with a real but noisy
 edge. A synthetic model ranks those opportunities, then becomes overconfident by
@@ -239,7 +239,7 @@ terminal wealth is less than one cent per starting dollar. The exact numbers are
 toy numbers, but the shape of the failure is real: an overconfident model can
 turn a positive ranking signal into a fragile sizing rule.
 
-## What I Would Watch
+## The Risk Board
 
 A serious Kelly-like system needs more than a backtest equity curve. I would
 ship it with at least seven diagnostics.
@@ -267,7 +267,7 @@ binning are all reasonable candidates depending on sample size and model
 shape.[^platt], [^naeini] The method matters less than the discipline: probability
 forecasts must be audited as probabilities.
 
-## Where the Toy Model Breaks
+## The Toy Has No Market
 
 Real markets are not a sequence of independent even-money bets. Odds move,
 liquidity disappears, constraints bind, taxes matter, and a strategy's own
@@ -289,7 +289,7 @@ many still bet in ways that left large amounts of value on the table, and a
 substantial fraction went broke.[^haghani] Bet sizing is not intuitive even when
 the rules are known. It is much harder when the probabilities come from a model.
 
-## The Practical Memory
+## What I Would Keep on the Desk
 
 The Kelly criterion is a sharp instrument. It tells us that edge, odds, and
 capital growth are linked by a clean mathematical rule. But sharp instruments
