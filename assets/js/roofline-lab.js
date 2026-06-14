@@ -360,16 +360,32 @@
     ctx.lineTo(sx(result.ridge), plot.y + plot.h);
     ctx.stroke();
     ctx.setLineDash([]);
+    var labelOffsets = {
+      triad: 13,
+      dot: -6,
+      spmv: 10,
+      stencil: -10,
+      gemm: -13,
+      attention: 11
+    };
     result.rows.forEach(function (row) {
       var selected = row.id === result.selected.id;
+      var px = sx(row.intensity);
+      var py = sy(row.boundTf);
       ctx.fillStyle = selected ? COLORS.selected : COLORS.point;
       ctx.globalAlpha = selected ? 1 : 0.7;
       ctx.beginPath();
-      ctx.arc(sx(row.intensity), sy(row.boundTf), selected ? 5 : 3.5, 0, Math.PI * 2);
+      ctx.arc(px, py, selected ? 5 : 3.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.font = selected ? "700 12px system-ui, sans-serif" : "11px system-ui, sans-serif";
-      ctx.fillText(row.short, sx(row.intensity) + 7, sy(row.boundTf) - 5);
+      var label = row.short;
+      var labelW = ctx.measureText(label).width;
+      var labelX = px + 7;
+      if (labelX + labelW > plot.x + plot.w - 4) labelX = px - labelW - 7;
+      labelX = clamp(labelX, plot.x + 2, plot.x + plot.w - labelW - 2);
+      var labelY = clamp(py + (labelOffsets[row.id] || -5), plot.y + 14, plot.y + plot.h - 8);
+      ctx.fillText(label, labelX, labelY);
     });
     ctx.fillStyle = COLORS.muted;
     ctx.font = "12px system-ui, sans-serif";
@@ -380,15 +396,16 @@
 
   function drawTimes(ctx, rect, result) {
     panel(ctx, rect, "One trillion FLOPs", "runtime is the slower of compute time and memory time");
-    var plot = { x: rect.x + 22, y: rect.y + 76, w: rect.w - 44, h: rect.h - 112 };
+    var plot = { x: rect.x + 22, y: rect.y + 76, w: rect.w - 44, h: rect.h - 88 };
     var maxTime = Math.max(result.workload.computeSeconds, result.workload.memorySeconds) * 1.2;
     var bars = [
       { label: "compute clock", value: result.workload.computeSeconds, color: COLORS.compute },
       { label: "memory clock", value: result.workload.memorySeconds, color: COLORS.memory },
       { label: "roof runtime", value: result.workload.seconds, color: COLORS.selected }
     ];
+    var rowGap = Math.min(55, Math.max(44, plot.h / 3));
     bars.forEach(function (bar, i) {
-      var y = plot.y + i * 55;
+      var y = plot.y + i * rowGap;
       var w = plot.w * bar.value / maxTime;
       ctx.fillStyle = COLORS.panel;
       ctx.fillRect(plot.x, y, plot.w, 24);
@@ -401,12 +418,6 @@
       ctx.font = "12px system-ui, sans-serif";
       ctx.fillText(formatNumber(bar.value * 1000, 2) + " ms", plot.x + Math.min(plot.w - 70, w + 8), y + 17);
     });
-    ctx.fillStyle = COLORS.text;
-    ctx.font = "700 13px system-ui, sans-serif";
-    ctx.fillText(result.selected.name, plot.x, rect.y + rect.h - 24);
-    ctx.fillStyle = COLORS.muted;
-    ctx.font = "12px system-ui, sans-serif";
-    ctx.fillText(fitText(ctx, result.selected.note, plot.w), plot.x, rect.y + rect.h - 8);
   }
 
   function drawLedger(ctx, rect, result) {
@@ -436,7 +447,7 @@
     ctx.fillText("intensity = " + formatNumber(row.intensity, 2) + " flop/B", plot.x, rect.y + rect.h - 35);
     ctx.fillStyle = COLORS.muted;
     ctx.font = "12px system-ui, sans-serif";
-    ctx.fillText("A point moves right when useful work reuses already-moved bytes.", plot.x, rect.y + rect.h - 14);
+    ctx.fillText(fitText(ctx, "A point moves right when useful work reuses already-moved bytes.", plot.w), plot.x, rect.y + rect.h - 14);
   }
 
   function drawWhatIf(ctx, rect, result) {
@@ -448,6 +459,10 @@
       { label: "double peak", value: result.whatIf.doublePeakTf, color: COLORS.compute },
       { label: "both", value: result.whatIf.bothTf, color: COLORS.amber }
     ];
+    if (plot.w < 300) {
+      bars[1].label = "bytes/2";
+      bars[2].label = "peak x2";
+    }
     var max = Math.max.apply(null, bars.map(function (bar) { return bar.value; })) * 1.12;
     var gap = 10;
     var bw = (plot.w - gap * (bars.length - 1)) / bars.length;
