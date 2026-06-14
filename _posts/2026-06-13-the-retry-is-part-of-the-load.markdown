@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Retries Count as Load"
-description: "Retries are not free resilience. Under overload, they can become a traffic generator pointed at the component already failing."
+title: "The Second Try Is Still Traffic"
+description: "A retry is not free resilience. Under overload, it can become a traffic generator aimed at the component already failing."
 date: 2026-06-13 11:34:00 -0400
 categories: computer-science
 tags: [distributed-systems, reliability, retries, timeouts, backoff, tail-latency, software-engineering]
-excerpt: "A retry policy is a load-shaping policy. If it is designed as local optimism, it can turn a small latency spike into a cascading failure."
+excerpt: "The extra attempt enters the same queues, uses the same workers, and often asks the same unhealthy dependency to do more work."
 ---
 
-The first retry feels innocent.
+The first retry feels innocent, almost polite.
 
 A request times out. Maybe the packet was lost. Maybe one replica was slow.
 Maybe the connection pool handed us a bad socket. The client tries again, and
@@ -34,7 +34,7 @@ The retry is part of the load.
   loop.
 </div>
 
-## Tail Latency Is Contagious
+## The Tail Spreads Through Fanout
 
 Dean and Barroso's "The Tail at Scale" is the classic warning that large
 distributed services are built from many small chances of slowness.[^tail] If a
@@ -67,7 +67,7 @@ is this retry sampling independent spare capacity,
 or is it adding work to the queue that caused the timeout?
 ```
 
-## Timeouts Are Not Failure Detectors
+## A Timeout Is Not a Death Certificate
 
 A timeout is a deadline chosen by the caller. It is not proof that the callee
 failed.
@@ -104,7 +104,7 @@ That is the mental flip:
 under overload, a retry is not recovery work; it is competing work
 ```
 
-## A Small Retry Laboratory
+## Put the Retry in the Queue
 
 The lab below simulates a client calling a service with a fixed worker pool.
 Original requests arrive at a chosen offered load. Each attempt enters a queue,
@@ -188,7 +188,7 @@ but work amplification falls. Raise the budget again while the system is
 overloaded. Success may not improve. That is the bitter lesson: retry budgets
 are not bureaucracy. They are circuit breakers for client optimism.
 
-## Layered Retries Multiply
+## Retries Multiply in the Walls
 
 The worst retry policies hide in stacks.
 
@@ -224,7 +224,7 @@ and the callee has capacity to absorb the retry
 
 Miss any of the three and the retry is a gamble.
 
-## Backoff Is Not a Cure for Overload
+## Backoff Moves Work; It Does Not Delete It
 
 Backoff is useful when failures are brief, correlated clients need to desynchronize,
 or a resource can recover if callers stop arriving all at once. It is not magic.
@@ -253,7 +253,7 @@ A healthy retry design asks:
 The last line is easy to miss. A timeout without cancellation is often just a
 fork bomb with better logging.
 
-## Hedging, Retries, and Shame
+## Duplicate Work Has No Moral Category
 
 Hedged requests sometimes get dismissed as wasteful, while retries get treated
 as prudent. That moral distinction is not technical. Both are duplicate work
@@ -279,7 +279,7 @@ local metric while ignoring selection effects. The requests that retry are not a
 random sample. They are exactly the ones that encountered slowness, failure, or
 congestion. Their second attempt enters a world conditioned on trouble.
 
-## The Run Sheet
+## What I Want on the Run Sheet
 
 For a production service, I would want retry behavior in the same run sheet as
 capacity and latency:
@@ -298,7 +298,7 @@ capacity and latency:
 The goal is not to ban retries. That would be theatrical and wrong. The goal is
 to make retries visible as load. Once they are visible, they can be budgeted.
 
-## Where I Would Push Next
+## The Audit I Want Next
 
 The experiment I would like to run next is a retry topology audit.
 
@@ -325,7 +325,7 @@ dependency slows down.
 Retries are one of the most human parts of distributed systems. They encode
 hope. The machine needs that hope bounded, jittered, idempotent, and measured.
 
-## Citations and Loose Ends
+## Source Notes
 
 [^tail]: Jeffrey Dean and Luiz Andre Barroso, ["The Tail at Scale"](https://cacm.acm.org/research/the-tail-at-scale/), *Communications of the ACM*, 2013. See also the [Google Research record](https://research.google/pubs/the-tail-at-scale/).
 
