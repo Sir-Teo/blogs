@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Crash Lives in the Copula"
+title: "Copulas Hide the Crash Corner"
 description: "A portfolio can have the same one-name loss distribution and the same broad rank association, yet a different joint crash probability. The missing object is the copula."
 date: 2026-06-14 10:47:00 -0400
 categories: quantitative-finance
