@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Judge Models Come With Seat Assignments"
+title: "The Leaderboard Has a Seating Chart"
 description: "LLM-as-judge evaluation is not just a model call. It is a measurement protocol with position effects, verbosity effects, calibration choices, and sampling uncertainty."
 date: 2026-06-13 09:06:00 -0400
 categories: machine-learning
 tags: [llm-evaluation, llm-as-judge, benchmarks, measurement, bias, leaderboards, model-evaluation]
-excerpt: "A judge model can be useful and biased at the same time. The question is not whether to use it, but whether the evaluation protocol measures the model or the seat it was given."
+excerpt: "A judge model can be useful and biased at the same time. The question is whether the protocol measured the model, the answer length, or the seat it was given."
 ---
 
 An LLM judge looks like a shortcut.
@@ -31,7 +31,7 @@ A leaderboard can measure ability.
 
 It can also measure seat order.
 
-## The Good News
+## The Shortcut Is Real
 
 The good news is real.
 
@@ -56,7 +56,7 @@ preferences for many tasks, it becomes an evaluation microscope.
 
 But microscopes have optics.
 
-## Pairwise Evaluation Is a Statistical Instrument
+## A Pairwise Vote Is an Instrument
 
 In the clean version, there is a prompt $$x$$ and two answers $$a$$ and $$b$$.
 The latent human preference is:
@@ -104,7 +104,7 @@ The moral is:
 treat judge outputs as measurements, not ground truth
 ```
 
-## A Judge-Protocol Lab
+## A Seating-Chart Lab
 
 The toy lab below has six fictional models. Each has hidden task ability,
 average answer length, and style. A synthetic "human" compares answers using
@@ -189,7 +189,7 @@ nothing else changes. It does not guarantee that one finite leaderboard is
 stable, and it does not tell you which examples were decided by nuisance
 signals.
 
-## Why Agreement Is Not Enough
+## Agreement Can Hide the Frontier
 
 Suppose an LLM judge agrees with humans 80 percent of the time. That can be
 excellent. It can also hide the exact question a model developer cares about.
@@ -216,7 +216,7 @@ The lesson is not that subjective evaluation is bad. Many important properties
 are subjective: helpfulness, clarity, appropriateness, taste, conversational
 flow. The lesson is that subjective evaluation needs controls.
 
-## A Short Audit Checklist
+## Before the Leaderboard Gets a Crown
 
 Before trusting an LLM-judge leaderboard, I want to know:
 
@@ -238,7 +238,7 @@ Use product telemetry when real users are the only relevant distribution.
 
 No single evaluator deserves sovereignty.
 
-## The Measurement Mindset
+## Stop Anthropomorphizing the Meter
 
 The phrase "LLM-as-a-judge" is a little too person-shaped. It encourages us to
 ask whether the judge is wise, fair, or smart.
