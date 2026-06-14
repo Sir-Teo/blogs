@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Vector Search Builds a Road Network"
-description: "HNSW-style vector search works because the index is navigable. Local edges give accuracy, long edges give reach, and the search beam is the fuel budget."
+title: "Nearest Neighbor Search Needs Roads"
+description: "HNSW-style vector search works because the index is navigable. Local edges give precision, long edges give reach, and the search beam is the fuel budget."
 date: 2026-06-13 23:28:00 -0400
 categories: ai-systems
 tags: [vector-search, hnsw, approximate-nearest-neighbors, graph-algorithms, retrieval, ai-systems]
-excerpt: "A vector database is not just a pile of embeddings plus a distance function. The fast part is a graph that has to be easy to drive through."
+excerpt: "A vector database is not just embeddings plus a distance function. The fast part is a graph that has to give good directions under a finite fuel budget."
 ---
 
 A vector database looks like a simple promise:
@@ -35,7 +35,7 @@ Local roads get you precise once you are in the right neighborhood. Highways
 move you between neighborhoods. A hierarchy is one way to build highways, but
 not the only way a graph can become navigable.
 
-## A graph, not a table
+## A Table Cannot Give Directions
 
 Hierarchical Navigable Small World graphs, introduced by Malkov and Yashunin,
 are built for approximate nearest-neighbor search in general metric spaces.[^hnsw]
@@ -70,7 +70,7 @@ have tiny diameter and still be hard to navigate if no one knows which local
 choice gets them closer to the target. Vector indexes have the same problem in
 geometric clothing.
 
-## The Small Machine
+## A Toy Map for Vector Search
 
 The simulator below builds a two-dimensional synthetic embedding corpus with
 several clusters. It then compares four search policies:
@@ -279,7 +279,7 @@ each expanded node also fans out to more neighbors. In real HNSW deployments,
 larger `M` usually means more memory, slower construction, and better high-recall
 search. The same trade appears here, only in miniature.
 
-## The important failure is not distance
+## The Failure Is Often Routing
 
 The local graph has accurate local geometry. If search starts inside the right
 cluster, it often finds the right point. Its failure is routing.
@@ -305,7 +305,7 @@ point.[^annbench] A vector index is not "fast" or "accurate" in isolation. It is
 fast at some recall, on some data distribution, with some memory budget, under
 some query workload.
 
-## The hierarchy may not be the whole story
+## Maybe the Highways Are Hubs
 
 The standard HNSW intuition says the upper layers are express lanes. That is
 true in the algorithmic design. But recent work asks a mischievous question:
@@ -342,7 +342,7 @@ at high `efSearch`, you have a routing-budget problem. If recall is bad even at
 high `efSearch`, you probably have a graph-construction, metric, filtering, or
 embedding problem. Those are different incidents.
 
-## What I Would Try After This
+## Profile Traffic, Not Just Destinations
 
 I want vector-index monitoring to become more like profiling a program.
 
@@ -371,7 +371,7 @@ then:
 That would turn HNSW tuning from folklore into something closer to systems
 science. The index is a road network. So profile traffic, not just destinations.
 
-## Sources
+## Source Notes
 
 [^hnsw]: Yu. A. Malkov and D. A. Yashunin, "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs," arXiv, 2016; later in *IEEE TPAMI*. [arXiv](https://arxiv.org/abs/1603.09320).
 
