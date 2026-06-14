@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Write Barriers Remember the Dangerous Edge"
-description: "A garbage collector is a graph traversal racing a mutating graph. The write barrier is the little piece of memory that keeps the traversal true."
+title: "The Store That Saved a Live Object"
+description: "A garbage collector is a graph traversal racing a mutating graph. The write barrier is the small memory of a store that keeps the traversal true."
 date: 2026-06-13 21:55:00 -0400
 categories: software-engineering
 tags: [garbage-collection, write-barriers, runtime-systems, memory-management, tri-color-marking, software-engineering]
-excerpt: "Incremental garbage collection is not just mark-sweep in smaller slices. Once the program mutates the heap while the collector is tracing it, correctness becomes an invariant about colors."
+excerpt: "Incremental garbage collection is not mark-sweep in smaller slices. Once the heap mutates mid-trace, correctness becomes an invariant about colors."
 ---
 
 Garbage collection sounds like housekeeping.
@@ -33,7 +33,7 @@ Not for performance, at least not first.
 A write barrier remembers the mutation that would otherwise make the collector's
 proof false.
 
-## The Mark-Sweep Story
+## First, the Easy Story
 
 The classic tracing abstraction has two phases:
 
@@ -66,7 +66,7 @@ That is the right emotional posture for garbage collection.
 
 It is a graph algorithm with a hostile scheduler.
 
-## Colors Are a Proof State
+## Colors Are the Collector's Proof Notes
 
 Tri-color marking is the clean mental model:
 
@@ -92,7 +92,7 @@ Do not let black objects hide white reachable objects.
 Write barriers maintain that invariant when the mutator stores pointers during
 collection.
 
-## A Small Heap Race
+## A Tiny Heap Race
 
 The lab below uses a fixed object graph. The collector begins by scanning root
 object `A`, making it black. Then the mutator gets a turn.
@@ -257,7 +257,7 @@ no longer reachable by the end, but they are kept as floating garbage. That is
 not a correctness bug. It is the price of a conservative snapshot. The next
 collection can reclaim them.
 
-## A Barrier Is a Contract
+## The Barrier's Contract
 
 There are several families of write barriers. Wilson's survey describes
 snapshot-at-beginning barriers, incremental-update barriers, read barriers, and
@@ -280,7 +280,7 @@ The write barrier is small because it runs on ordinary pointer writes. But it is
 semantically large. Remove it, or make it conditional in the wrong way, and the
 collector can become unsound.
 
-## Pauses Are Not the Only Story
+## Short Pauses Need Memory
 
 Baker's real-time list-processing collector was motivated by bounded operations:
 ordinary list operations should not suddenly take time proportional to the heap
@@ -308,6 +308,8 @@ An incremental or concurrent collector lets mutation continue, and then pays
 for memory of the mutations.
 
 That memory is the write barrier.
+
+## Source Notes
 
 [^dijkstra]: Edsger W. Dijkstra, Leslie Lamport, A. J. Martin, C. S. Scholten, and E. F. M. Steffens, ["On-the-Fly Garbage Collection: An Exercise in Cooperation"](https://lamport.azurewebsites.net/pubs/garbage.pdf), *Communications of the ACM*, 1978.
 
