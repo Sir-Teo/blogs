@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Equality Saturation Refuses to Pick a Winner"
+title: "Keep the Rewrite Around Until the End"
 description: "Equality saturation turns compiler optimization from a brittle sequence of rewrites into a search over equivalent programs."
 date: 2026-06-13 22:16:00 -0400
 categories: computer-science
 tags: [e-graphs, equality-saturation, compilers, term-rewriting, program-optimization, programming-languages]
-excerpt: "A greedy rewrite pass has to commit. An equality-saturation optimizer keeps the old program, the new program, and the alternatives they unlock, then extracts the cheapest expression at the end."
+excerpt: "A greedy rewrite pass has to commit. Equality saturation keeps the old program, the new program, and the alternatives they unlock, then extracts the cheapest expression at the end."
 ---
 
 The easiest compiler bug to understand is a wrong rewrite.
@@ -50,7 +50,7 @@ needed.
 
 Equality saturation attacks the problem by refusing to choose too early.
 
-## Rewrites Are Equations With a Cursor
+## Rewrites Become Equations Again
 
 Term rewriting is an old and powerful idea: find a subterm matching the left
 side of a rule, replace it with the right side, repeat.[^dershowitz] In a
@@ -96,7 +96,7 @@ next rewrite can match either one.
 Only at the end does an extraction procedure choose the cheapest expression
 according to a cost model.
 
-## The Data Structure Under the Trick
+## The Data Structure That Holds the Maybe
 
 The production version of this idea uses e-graphs.
 
@@ -133,7 +133,7 @@ choose a representative
 That separation is why equality saturation feels so different from ordinary
 rewrite passes. It turns optimization into search without constant regret.
 
-## A Tiny Saturation Lab
+## A Tiny Saturation Bench
 
 The lab below is deliberately small.
 
@@ -320,7 +320,7 @@ This is important. Equality saturation is not a claim that greedy rewriting is
 always bad. Greedy rewriting is often excellent. The claim is narrower: when
 rewrite order matters, committing early is a source of missed opportunities.
 
-## What Gets Hard
+## Where the Toy Lab Cheats
 
 The lab cheats in three ways.
 
@@ -343,7 +343,7 @@ Equality saturation does not remove cost modeling.
 
 It gives the cost model more choices.
 
-## Why This Feels Like Search
+## The Search Is Made of Theorems
 
 There are two ways to view a rewrite rule:
 
@@ -371,7 +371,7 @@ Ask it to be true.
 
 Profitability belongs at extraction time.
 
-## The Broader Pattern
+## The Pattern Beyond Compilers
 
 This idea shows up wherever we are tempted to optimize by taking irreversible
 local steps.
