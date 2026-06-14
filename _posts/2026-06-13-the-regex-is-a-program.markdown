@@ -1,27 +1,28 @@
 ---
 layout: post
-title: "Regex Backtracking Runs a Program"
-description: "A regular expression is not just a pattern. Depending on the engine, it can be a linear automaton or an exponential search program."
+title: "The Pattern That Hid a Search Tree"
+description: "A regex can look like a declarative shape while the engine underneath is doing a depth-first search through guesses."
 date: 2026-06-13 23:52:00 -0400
 categories: software-engineering
 tags: [regular-expressions, automata, redos, performance, security, software-engineering]
-excerpt: "Catastrophic backtracking is not a mysterious regex curse. It is a search tree hiding behind a pattern that looks innocent."
+excerpt: "Catastrophic backtracking is not a curse in punctuation form. It is a tiny search program that wakes up on the near-miss."
 ---
 
-A regular expression looks declarative.
+A regular expression often looks like a label on a jar.
 
 ```text
 match this shape of text
 ```
 
-But a regex engine is executable machinery. Two engines can accept the same
-language and have radically different failure behavior. One walks a finite
-automaton. Another performs a depth-first search through choices. Most of the
-time both feel instant. Then someone sends a string that nearly matches.
+That is the friendly reading. Under the lid, a regex engine is executable
+machinery. Two engines can accept the same language and have radically different
+failure behavior. One walks a finite automaton. Another performs a depth-first
+search through choices. Most of the time both feel instant. Then someone sends
+a string that almost matches.
 
-The difference becomes production.
+That small implementation detail becomes production.
 
-The small villain in this post is:
+The specimen on the bench is:
 
 ```text
 ^(a+)+b$
@@ -35,15 +36,16 @@ It recognizes the same simple language as:
 
 One or more `a` characters, followed by a `b`.
 
-The two patterns are extensionally equivalent for this toy alphabet. They do
-not have the same operational meaning in a backtracking engine. The first
-pattern asks the engine to decide how the run of `a`s should be split across
-the inner `a+` and the outer `+`. If the final `b` is missing, every split is
-wrong, and the engine may have to prove that by trying them.
+The two patterns are extensionally equivalent for this toy alphabet: they
+describe the same set of strings. They do not have the same operational meaning
+in a backtracking engine. The first pattern asks the engine to decide how the
+run of `a`s should be split across the inner `a+` and the outer `+`. If the
+final `b` is missing, every split is wrong, and the engine may have to prove
+that by trying them.
 
 That is the whole bug: a regular expression can hide a combinatorial search.
 
-## The old good idea
+## Ken Thompson Already Took the Shortcut
 
 Ken Thompson's 1968 regular-expression algorithm compiled a regular expression
 into an automaton-like program and simulated possible states together.[^thompson]
@@ -72,7 +74,7 @@ automata simulation asks "which states are possible now?"
 
 The second question is much harder to trick into exponential wandering.
 
-## A failure string is a proof obligation
+## A Near-Miss Is the Expensive Case
 
 Catastrophic backtracking is usually loudest when the input almost matches.
 
@@ -82,8 +84,9 @@ For `^(a+)+b$`, the string:
 aaaaaaaaaaaaaaaaaa
 ```
 
-has no final `b`. A human sees the failure immediately. A naive backtracking
-engine cannot skip the proof. Maybe the first `a+` consumed too many `a`s.
+has no final `b`. A human sees the missing character immediately. A naive
+backtracking engine cannot skip the proof. Maybe the first `a+` consumed too
+many `a`s.
 Maybe the outer repetition should have split them differently:
 
 ```text
@@ -104,7 +107,7 @@ surveys of ReDoS research emphasize the same engineering gap: regex engines,
 their defenses, and their language features vary enough that analysis must be
 grounded in real implementations, not only textbook models.[^sok]
 
-## A backtracking lab
+## Watch the Search Tree Wake Up
 
 The lab below models full-string matching of `^(a+)+b$`. It compares three
 execution stories:
@@ -282,7 +285,7 @@ structure is visible.
 </div>
 <script defer src="{{ '/assets/js/regex-backtracking-lab.js' | relative_url }}"></script>
 
-Try two toggles.
+Two toggles tell the story.
 
 First, switch `Input suffix` to `Has final b`. The backtracking engine succeeds
 quickly because its greedy first guess works: one big `a+`, then `b`.
@@ -295,7 +298,7 @@ stays almost flat because it keeps possible states alive together.
 The rewrite `^a+b$` also stays linear. The cheapest fix is often not a smarter
 engine; it is removing the ambiguous nested quantifier.
 
-## Why engines still backtrack
+## Why Backtracking Survived
 
 If Thompson-style simulation is so good, why do backtracking engines exist?
 
@@ -323,10 +326,10 @@ know what engine will execute it,
 and never run untrusted text through an uncapped exponential search.
 ```
 
-## A review checklist
+## What I Check in Code Review
 
 When I review a regex in production code, I do not only ask whether it matches
-the examples. I ask:
+the happy examples. I ask:
 
 - Does it have nested quantifiers over overlapping languages?
 - Does it have ambiguous alternation such as `(a|aa)+` before a required suffix?
@@ -338,10 +341,10 @@ the examples. I ask:
   clearer?
 - Does the test suite include near-miss failures, not only successful matches?
 
-The near-miss is the important case. A regex that matches quickly may still fail
-slowly.
+The near-miss is the case that earns its own test. A regex that matches quickly
+may still fail slowly.
 
-## What I Would Try After This
+## The Tooling I Want
 
 I would like regex tooling to report an operational type, not only a syntax
 highlight.
@@ -364,7 +367,7 @@ regex engines and their defenses.
 
 A regex is a tiny program. It deserves a profiler.
 
-## Paper Trail
+## Source Notes
 
 [^thompson]: Ken Thompson, "Programming Techniques: Regular expression search algorithm," *Communications of the ACM*, 1968. [ACM](https://dl.acm.org/doi/10.1145/363347.363387), [CACM](https://cacm.acm.org/research/programming-techniques-regular-expression-search-algorithm/).
 
