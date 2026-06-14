@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Log Is a Sorting Debt"
+title: "LSM Trees Pay Sorting Debt Later"
 description: "An LSM tree makes writes cheap by turning random updates into sorted runs. Compaction is where the debt comes due: write amplification, read amplification, and space amplification are the same bargain seen from three angles."
 date: 2026-06-14 09:08:00 -0400
 categories: software-engineering
