@@ -117,6 +117,26 @@
     }
   }
 
+  /* ---------- Heading anchors ---------- */
+  if (article) {
+    var anchorables = Array.prototype.slice.call(article.querySelectorAll('h2, h3'));
+    var anchorSeen = {};
+    anchorables.forEach(function (h) {
+      if (!h.id) {
+        var base = (h.textContent || 'section').toLowerCase()
+          .replace(/[^\w]+/g, '-').replace(/^-+|-+$/g, '') || 'section';
+        if (anchorSeen[base]) { base = base + '-' + (++anchorSeen[base]); } else { anchorSeen[base] = 1; }
+        h.id = base;
+      }
+      var a = document.createElement('a');
+      a.className = 'heading-anchor';
+      a.href = '#' + h.id;
+      a.setAttribute('aria-label', 'Permalink to this section');
+      a.textContent = '#';
+      h.insertBefore(a, h.firstChild);
+    });
+  }
+
   /* ---------- Home topic filter ---------- */
   var chipbar = document.querySelector('.chipbar');
   if (chipbar) {

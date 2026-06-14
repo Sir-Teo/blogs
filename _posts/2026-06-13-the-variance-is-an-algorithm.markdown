@@ -10,9 +10,9 @@ excerpt: "The expression E[x^2] - E[x]^2 is mathematically correct and computati
 
 The variance has an innocent face:
 
-\[
+$$
 \operatorname{Var}(X) = E[X^2] - E[X]^2.
-\]
+$$
 
 That identity is true. It is also a trap.
 
@@ -21,7 +21,7 @@ subtract two enormous nearly equal numbers and keep the tiny residue. The
 residue is the variance. The leading digits are mostly the baseline.
 
 If the data are around one billion and the standard deviation is around one,
-then \(x^2\) lives around \(10^{18}\), while the variance lives around \(10^0\).
+then $$x^2$$ lives around $$10^{18}$$, while the variance lives around $$10^0$$.
 The computation is trying to recover a one-unit answer after making two
 one-quintillion-scale summaries agree to many digits.
 
@@ -31,16 +31,16 @@ That is not statistics anymore. That is numerical analysis.
 
 The textbook one-pass formula for sample variance often appears as:
 
-\[
+$$
 s^2 =
 \frac{\sum_i x_i^2 - (\sum_i x_i)^2/n}{n-1}.
-\]
+$$
 
 Mathematically, this is the same variance as
 
-\[
+$$
 \frac{1}{n-1}\sum_i (x_i-\bar{x})^2.
-\]
+$$
 
 Computationally, they are different machines.
 
@@ -58,7 +58,7 @@ small difference between large summaries.
 The lab below generates a deterministic dataset with a controllable baseline,
 spread, order, and precision model. It compares five algorithms:
 
-- **textbook**, the one-pass \(\sum x_i^2 - (\sum x_i)^2/n\) formula;
+- **textbook**, the one-pass $$\sum x_i^2 - (\sum x_i)^2/n$$ formula;
 - **two pass**, compute the mean, then sum squared deviations;
 - **shifted**, subtract the first value before applying the one-pass identity;
 - **Welford**, update mean and corrected sum of squares online;
@@ -211,8 +211,8 @@ algorithm can recover them.
 
 At the default setting, the stored variance is about one. The textbook formula
 can return a large negative number. That is not because variance became
-negative. It is because the computation formed two summaries near \(10^{21}\)
-and asked their difference to carry a value near \(10^3\), the corrected sum of
+negative. It is because the computation formed two summaries near $$10^{21}$$
+and asked their difference to carry a value near $$10^3$$, the corrected sum of
 squares.
 
 The cancellation ratio in the lab is a crude warning light:
@@ -225,7 +225,7 @@ When that ratio is enormous, the textbook formula is gambling that the leading
 digits of both large summaries were accumulated with compatible errors. They
 usually were not.
 
-Now lower **Baseline** to \(10^2\). The textbook formula recovers. The data did
+Now lower **Baseline** to $$10^2$$. The textbook formula recovers. The data did
 not become more statistically friendly; the arithmetic did. The two large terms
 are no longer so large relative to the variance.
 
@@ -248,7 +248,7 @@ Those failures need different fixes.
 
 B. P. Welford's 1962 note gives an online way to update the corrected sum of
 squares without storing the whole sample.[^welford] For a new observation
-\(x_n\), maintain \(n\), the running mean, and \(M_2\), the sum of squared
+$$x_n$$, maintain $$n$$, the running mean, and $$M_2$$, the sum of squared
 deviations from the current mean:
 
 ```text
@@ -258,10 +258,10 @@ delta2 = x - mean
 M2    += delta * delta2
 ```
 
-The sample variance is \(M_2/(n-1)\).
+The sample variance is $$M_2/(n-1)$$.
 
 The important move is that the algorithm works with deviations from a moving
-center. It does not accumulate \(\sum x_i^2\) and \((\sum x_i)^2/n\) as giant
+center. It does not accumulate $$\sum x_i^2$$ and $$(\sum x_i)^2/n$$ as giant
 neighbors and then hope their subtraction is kind.
 
 Welford is not magic. It still uses floating-point arithmetic. It can still be
@@ -278,7 +278,7 @@ But if the data fit in memory and the variance does not need to be updated
 online, a careful two-pass method is a strong default: first compute the mean,
 then compute deviations from that mean. Chan, Golub, and LeVeque's analysis and
 recommendations explicitly favor corrected two-pass computation in that regime,
-with pairwise summation worth considering when \(n\) is large and accuracy
+with pairwise summation worth considering when $$n$$ is large and accuracy
 matters.[^chan]
 
 This is a useful software-engineering rule:
@@ -292,15 +292,15 @@ lot of numerical stability.
 
 ## Parallel Variance Has Its Own Shape
 
-Welford's state also has a merge operation. If shard \(A\) has \(n_a\),
-\(\bar{x}_a\), and \(M_{2,a}\), and shard \(B\) has \(n_b\), \(\bar{x}_b\), and
-\(M_{2,b}\), then the combined corrected sum is:
+Welford's state also has a merge operation. If shard $$A$$ has $$n_a$$,
+$$\bar{x}_a$$, and $$M_{2,a}$$, and shard $$B$$ has $$n_b$$, $$\bar{x}_b$$, and
+$$M_{2,b}$$, then the combined corrected sum is:
 
-\[
+$$
 M_2 =
 M_{2,a} + M_{2,b} +
 (\bar{x}_b-\bar{x}_a)^2 \frac{n_a n_b}{n_a+n_b}.
-\]
+$$
 
 This is the Chan-Golub-LeVeque pairwise structure.[^chan] It is not merely a
 convenience for distributed systems. It changes the error story. Tree-shaped
@@ -318,7 +318,7 @@ good. A variance reduction should not be dramatic.
 If a metric, feature store, backtest, or training pipeline computes variances, I
 would want to know:
 
-- Is any code using \(E[x^2] - E[x]^2\) directly?
+- Is any code using $$E[x^2] - E[x]^2$$ directly?
 - Are inputs centered, shifted, or standardized before variance-like summaries?
 - Is the computation one-pass because it must be, or because it was convenient?
 - Are reductions deterministic across shards and thread counts?

@@ -425,6 +425,7 @@ strong {
   line-height: 1.18;
   letter-spacing: -0.015em;
   margin: 0 0 0.6rem;
+  color: var(--text);
 }
 
 .post-meta {
@@ -467,6 +468,21 @@ strong {
   font-size: 1.02rem;
   font-weight: 600;
   color: var(--muted);
+}
+
+/* Minima hardcodes h1..h6 to #111, which disappears in dark mode.
+   Re-anchor every heading to the theme's text colour (h4 and .topics__h
+   keep their muted colour, set above/below). */
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content h5,
+.post-content h6,
+.page .post-title,
+.post-list-heading,
+.topics__group-title,
+.notfound__code {
+  color: var(--text);
 }
 
 .post-content a {
@@ -538,6 +554,7 @@ strong {
 .post-content code {
   font-family: var(--font-mono);
   font-size: 0.85em;
+  color: var(--text);
   background: var(--code-bg);
   border-radius: 4px;
   padding: 0.12em 0.34em;
@@ -556,12 +573,99 @@ strong {
   overflow-x: auto;
   font-size: 0.85rem;
   line-height: 1.6;
+  color: var(--text);
 }
 
 .post-content pre code {
   background: none;
   padding: 0;
   font-size: inherit;
+  color: inherit;
+}
+
+/* Minima's Rouge syntax palette is tuned for light backgrounds — several
+   tokens (identifiers at #111, dark blues/reds) vanish on a dark surface.
+   In dark mode fall back to a clean, always-legible rendering: text colour
+   for code, muted comments, accent keywords. Light mode keeps minima's
+   palette untouched. */
+:root[data-theme="dark"] .highlight,
+:root[data-theme="dark"] .highlight :not(.c):not(.c1):not(.cm):not(.cs):not(.cp):not(.cd):not(.k):not(.kc):not(.kd):not(.kn):not(.kp):not(.kr):not(.kt):not(.s):not(.s1):not(.s2):not(.sb):not(.sc):not(.sd):not(.se):not(.sh):not(.si):not(.sx):not(.sr):not(.ss):not(.dl) {
+  color: var(--text);
+  background: none;
+}
+:root[data-theme="dark"] .highlight .c,
+:root[data-theme="dark"] .highlight .c1,
+:root[data-theme="dark"] .highlight .cm,
+:root[data-theme="dark"] .highlight .cs,
+:root[data-theme="dark"] .highlight .cp,
+:root[data-theme="dark"] .highlight .cd {
+  color: var(--muted);
+  font-style: italic;
+}
+:root[data-theme="dark"] .highlight .k,
+:root[data-theme="dark"] .highlight .kc,
+:root[data-theme="dark"] .highlight .kd,
+:root[data-theme="dark"] .highlight .kn,
+:root[data-theme="dark"] .highlight .kp,
+:root[data-theme="dark"] .highlight .kr,
+:root[data-theme="dark"] .highlight .kt {
+  color: var(--accent);
+}
+:root[data-theme="dark"] .highlight .s,
+:root[data-theme="dark"] .highlight .s1,
+:root[data-theme="dark"] .highlight .s2,
+:root[data-theme="dark"] .highlight .sb,
+:root[data-theme="dark"] .highlight .sc,
+:root[data-theme="dark"] .highlight .sd,
+:root[data-theme="dark"] .highlight .se,
+:root[data-theme="dark"] .highlight .sh,
+:root[data-theme="dark"] .highlight .si,
+:root[data-theme="dark"] .highlight .sx,
+:root[data-theme="dark"] .highlight .sr,
+:root[data-theme="dark"] .highlight .ss,
+:root[data-theme="dark"] .highlight .dl {
+  color: #9ecb8a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .highlight,
+  :root:not([data-theme]) .highlight :not(.c):not(.c1):not(.cm):not(.cs):not(.cp):not(.cd):not(.k):not(.kc):not(.kd):not(.kn):not(.kp):not(.kr):not(.kt):not(.s):not(.s1):not(.s2):not(.sb):not(.sc):not(.sd):not(.se):not(.sh):not(.si):not(.sx):not(.sr):not(.ss):not(.dl) {
+    color: var(--text);
+    background: none;
+  }
+  :root:not([data-theme]) .highlight .c,
+  :root:not([data-theme]) .highlight .c1,
+  :root:not([data-theme]) .highlight .cm,
+  :root:not([data-theme]) .highlight .cs,
+  :root:not([data-theme]) .highlight .cp,
+  :root:not([data-theme]) .highlight .cd {
+    color: var(--muted);
+    font-style: italic;
+  }
+  :root:not([data-theme]) .highlight .k,
+  :root:not([data-theme]) .highlight .kc,
+  :root:not([data-theme]) .highlight .kd,
+  :root:not([data-theme]) .highlight .kn,
+  :root:not([data-theme]) .highlight .kp,
+  :root:not([data-theme]) .highlight .kr,
+  :root:not([data-theme]) .highlight .kt {
+    color: var(--accent);
+  }
+  :root:not([data-theme]) .highlight .s,
+  :root:not([data-theme]) .highlight .s1,
+  :root:not([data-theme]) .highlight .s2,
+  :root:not([data-theme]) .highlight .sb,
+  :root:not([data-theme]) .highlight .sc,
+  :root:not([data-theme]) .highlight .sd,
+  :root:not([data-theme]) .highlight .se,
+  :root:not([data-theme]) .highlight .sh,
+  :root:not([data-theme]) .highlight .si,
+  :root:not([data-theme]) .highlight .sx,
+  :root:not([data-theme]) .highlight .sr,
+  :root:not([data-theme]) .highlight .ss,
+  :root:not([data-theme]) .highlight .dl {
+    color: #9ecba8;
+  }
 }
 
 /* ---------- Table of contents ---------- */
@@ -781,6 +885,46 @@ a[role="doc-noteref"] {
   text-decoration: none;
   font-size: 0.8em;
   padding: 0 0.12em;
+}
+
+/* ---------- Heading anchors ---------- */
+
+.post-content h2,
+.post-content h3 {
+  position: relative;
+}
+
+.heading-anchor {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  width: 1.4rem;
+  margin-right: 0.1rem;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  color: var(--muted);
+  text-decoration: none;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.heading-anchor:hover {
+  color: var(--accent);
+}
+
+.post-content h2:hover .heading-anchor,
+.post-content h3:hover .heading-anchor,
+.heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* On narrow screens there is no room in the left margin, so the anchor
+   would overlap the heading text — hide it and rely on the TOC instead. */
+@media (max-width: 820px) {
+  .heading-anchor {
+    display: none;
+  }
 }
 
 /* ---------- Math ---------- */

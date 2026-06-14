@@ -24,8 +24,8 @@ PageRank is a random walk with a boundary.
 
 ## Stationary Attention
 
-Take a directed graph. Page \(i\) links to page \(j\). A random walker on page
-\(i\) chooses one of \(i\)'s outgoing links and moves there.
+Take a directed graph. Page $$i$$ links to page $$j$$. A random walker on page
+$$i$$ chooses one of $$i$$'s outgoing links and moves there.
 
 If every page had at least one outgoing link, and if the graph were one giant
 well-mixed component, we could try to rank pages by the stationary distribution
@@ -38,14 +38,14 @@ Some parts of the graph cannot be reached from others. A plain random walk can
 get trapped, fail to have a unique stationary distribution, or assign rank based
 on accidents of graph topology rather than useful search behavior.
 
-The PageRank fix is to damp the walk.[^pagerank] With probability \(\alpha\),
-follow a link. With probability \(1-\alpha\), teleport according to a
-distribution \(v\). If \(P\) is the row-stochastic link transition matrix, with
-dangling rows replaced by \(v\), the rank vector satisfies
+The PageRank fix is to damp the walk.[^pagerank] With probability $$\alpha$$,
+follow a link. With probability $$1-\alpha$$, teleport according to a
+distribution $$v$$. If $$P$$ is the row-stochastic link transition matrix, with
+dangling rows replaced by $$v$$, the rank vector satisfies
 
-\[
+$$
 r = \alpha P^\top r + (1-\alpha)v.
-\]
+$$
 
 That equation is the whole animal.
 
@@ -55,7 +55,7 @@ careful survey of the matrix issues: stochasticity, dangling nodes, uniqueness,
 power iteration, sensitivity, and convergence.[^langville]
 
 The key practical move is that the damped chain has a place to restart. If
-\(0 < \alpha < 1\) and \(v\) gives positive mass to every page, the chain is
+$$0 < \alpha < 1$$ and $$v$$ gives positive mass to every page, the chain is
 irreducible and aperiodic. Power iteration converges to one stationary vector
 rather than asking the raw graph to behave better than it does.
 
@@ -72,7 +72,7 @@ is a clean default, but it is not neutral in every application. A medical search
 engine, a code-search engine, and a personal bookmark graph do not have the same
 outside world.
 
-Change \(v\), and you change what kind of authority can receive attention
+Change $$v$$, and you change what kind of authority can receive attention
 without first earning it through links.
 
 That observation leads directly to personalized and topic-sensitive PageRank.
@@ -81,20 +81,20 @@ biased toward different representative topics, then combined them at query time
 to make importance more topic-aware.[^topic] In modern language, the teleport
 vector is a prior over where a walk should restart.
 
-\(\alpha\) also matters. If teleportation happens with probability
-\(1-\alpha\), then the expected number of consecutive link-following steps
+$$\alpha$$ also matters. If teleportation happens with probability
+$$1-\alpha$$, then the expected number of consecutive link-following steps
 before a teleport is
 
-\[
+$$
 \frac{\alpha}{1-\alpha}.
-\]
+$$
 
-At \(\alpha=0.85\), that is about 5.7 links. At \(\alpha=0.50\), it is one
+At $$\alpha=0.85$$, that is about 5.7 links. At $$\alpha=0.50$$, it is one
 link. The famous damping factor is therefore not a magic constant. It is a
 statement about how sticky the link graph should be.
 
-High \(\alpha\) trusts graph structure more and converges more slowly. Low
-\(\alpha\) trusts the boundary more and makes link farms less powerful. Both
+High $$\alpha$$ trusts graph structure more and converges more slowly. Low
+$$\alpha$$ trusts the boundary more and makes link farms less powerful. Both
 are defensible. Neither is free.
 
 ## A Small Flow Lab
@@ -104,7 +104,7 @@ four-page spam farm. The farm recycles rank internally. Paid links inject rank
 from the ordinary web into the farm. Leak edges let rank escape back out.
 
 The calculation is exact power iteration on the displayed graph. Dangling pages
-redistribute their mass according to the same teleport vector \(v\).
+redistribute their mass according to the same teleport vector $$v$$.
 
 <style>
   .pagerank-lab {
@@ -310,7 +310,7 @@ Before shipping a PageRank-like score, I would want a ledger:
 - How are dangling nodes handled?
 - What is the teleport vector, and who decided it?
 - Is the score global, topic-sensitive, personalized, or query-dependent?
-- What value of \(\alpha\) is used, and what walk length does it imply?
+- What value of $$\alpha$$ is used, and what walk length does it imply?
 - How many power iterations are run, and what residual is acceptable?
 - Are ranks stable under plausible graph updates?
 - Can adversaries create edges, identities, or reciprocal clusters?
@@ -320,9 +320,9 @@ The most important line is the teleport vector. It is easy to hide it under the
 word "damping." Do not. The restart distribution is where external judgment
 enters the graph.
 
-Uniform \(v\) says every page is equally eligible for exogenous attention.
-Topic-sensitive \(v\) says attention restarts near a subject. Trust-biased
-\(v\) says attention starts from reviewed sources. Personalized \(v\) says the
+Uniform $$v$$ says every page is equally eligible for exogenous attention.
+Topic-sensitive $$v$$ says attention restarts near a subject. Trust-biased
+$$v$$ says attention starts from reviewed sources. Personalized $$v$$ says the
 walk begins near a user.
 
 Same equation. Different world.

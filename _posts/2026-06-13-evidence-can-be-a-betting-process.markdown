@@ -29,15 +29,15 @@ An e-process is a process.
 
 ## Evidence as Capital
 
-An e-value is a nonnegative random variable \(E\) such that, under every
+An e-value is a nonnegative random variable $$E$$ such that, under every
 distribution in the null hypothesis,
 
 $$
 \mathbb{E}_0[E] \le 1.
 $$
 
-Large values are evidence against the null. If \(E \ge 20\), you can reject at
-level \(0.05\), because Markov's inequality gives
+Large values are evidence against the null. If $$E \ge 20$$, you can reject at
+level $$0.05$$, because Markov's inequality gives
 
 $$
 P_0(E \ge 1/\alpha) \le \alpha.
@@ -46,7 +46,7 @@ $$
 That is the one-shot story.
 
 The sequential story replaces one random variable with a nonnegative process
-\((E_t)_{t \ge 0}\) that starts at one and behaves like a supermartingale under
+$$(E_t)_{t \ge 0}$$ that starts at one and behaves like a supermartingale under
 the null:
 
 $$
@@ -71,17 +71,17 @@ very rich, the null has some explaining to do.
 
 ## The Coin Game
 
-Suppose we observe binary outcomes \(X_t \in \{0,1\}\). The null hypothesis is
-that the success probability is \(1/2\). Before seeing \(X_t\), choose a bet size
-\(\lambda_t \in [-2,2]\), possibly based on the past. Define the one-step
+Suppose we observe binary outcomes $$X_t \in \{0,1\}$$. The null hypothesis is
+that the success probability is $$1/2$$. Before seeing $$X_t$$, choose a bet size
+$$\lambda_t \in [-2,2]$$, possibly based on the past. Define the one-step
 multiplier
 
 $$
 F_t = 1 + \lambda_t(X_t - 1/2).
 $$
 
-When \(X_t=1\), the multiplier is \(1+\lambda_t/2\). When \(X_t=0\), it is
-\(1-\lambda_t/2\). The range restriction keeps the multiplier nonnegative.
+When $$X_t=1$$, the multiplier is $$1+\lambda_t/2$$. When $$X_t=0$$, it is
+$$1-\lambda_t/2$$. The range restriction keeps the multiplier nonnegative.
 
 Under the null,
 
@@ -238,7 +238,7 @@ stopping and a fixed-horizon statistic used as an always-on alarm.
 </div>
 <script defer src="{{ '/assets/js/eprocess-betting-lab.js?v=20260613a' | relative_url }}"></script>
 
-At the default setting, \(\alpha=0.05\), so the e-boundary is \(1/\alpha=20\).
+At the default setting, $$\alpha=0.05$$, so the e-boundary is $$1/\alpha=20$$.
 The deterministic null audit gives:
 
 ```text
@@ -268,7 +268,7 @@ the naive repeated p-value alarm accumulates false chances. The exact
 deterministic percentages wiggle because the lab uses a finite set of simulated
 paths, but the structural difference is the point.
 
-Move **Alpha**. The e-boundary changes from \(20\) at 5% to \(100\) at 1%.
+Move **Alpha**. The e-boundary changes from $$20$$ at 5% to $$100$$ at 1%.
 Evidence has a price: stronger error control requires a larger bankroll
 multiple before stopping.
 
@@ -292,8 +292,8 @@ $$
 P_0(p_T \le \alpha) \le \alpha
 $$
 
-at a pre-specified time \(T\). If you look at \(p_t\) at many times and stop when
-one looks good, the event is no longer \(p_T \le \alpha\). It is
+at a pre-specified time $$T$$. If you look at $$p_t$$ at many times and stop when
+one looks good, the event is no longer $$p_T \le \alpha$$. It is
 
 $$
 \min_{t \le T} p_t \le \alpha.

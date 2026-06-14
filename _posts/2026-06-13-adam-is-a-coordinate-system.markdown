@@ -77,8 +77,8 @@ $$
 f(x,y)=\frac{1}{2}(r x^2 + y^2).
 $$
 
-The \(x\) direction is sharp. The \(y\) direction is flat. The curvature ratio
-\(r\) is the condition number of this little diagonal problem.
+The $$x$$ direction is sharp. The $$y$$ direction is flat. The curvature ratio
+$$r$$ is the condition number of this little diagonal problem.
 
 SGD uses a stable learning rate capped by the sharp coordinate:
 
@@ -87,7 +87,7 @@ $$
 $$
 
 That makes the sharp coordinate safe, but it makes the flat coordinate crawl.
-Adam uses the same base step \(\alpha\), but divides each coordinate by its
+Adam uses the same base step $$\alpha$$, but divides each coordinate by its
 running second moment. On this diagonal toy, that is almost exactly the missing
 unit conversion.
 
@@ -227,7 +227,7 @@ license to ignore the learning rate; it changes which learning rate mistakes are
 likely.
 
 Raise **Adam beta2**. The second-moment estimate changes more slowly. A large
-\(\beta_2\) can make the unit system smoother, but less responsive to a changing
+$$\beta_2$$ can make the unit system smoother, but less responsive to a changing
 gradient scale.
 
 Raise **Gradient noise**. The denominator starts measuring noise as well as
@@ -236,9 +236,9 @@ implicit bias: coordinates with noisy gradients get smaller steps.
 
 ## AdamW Is About What Gets Divided
 
-The lab also compares Adam with coupled \(L_2\) regularization to AdamW.
+The lab also compares Adam with coupled $$L_2$$ regularization to AdamW.
 
-In plain SGD, adding \(L_2\) regularization to the gradient and applying weight
+In plain SGD, adding $$L_2$$ regularization to the gradient and applying weight
 decay are essentially the same operation up to the learning rate. In an adaptive
 method, they are not.
 
@@ -261,7 +261,7 @@ At the default setting it is about 78x.
 
 AdamW, proposed by Loshchilov and Hutter, decouples weight decay from the
 adaptive gradient step.[^adamw] Instead of hiding decay inside the gradient that
-Adam divides by \(\sqrt{\hat v_t}\), it applies a direct multiplicative shrink:
+Adam divides by $$\sqrt{\hat v_t}$$, it applies a direct multiplicative shrink:
 
 $$
 \theta \leftarrow (1-\alpha \lambda)\theta
@@ -307,9 +307,9 @@ When Adam is the default, I would still ask:
    familiar?
 2. Does the task benefit from fast optimization, or does final generalization
    matter more than early training loss?
-3. Is weight decay implemented as coupled \(L_2\), AdamW-style decoupled decay,
+3. Is weight decay implemented as coupled $$L_2$$, AdamW-style decoupled decay,
    or something else?
-4. Are learning rate, \(\beta_2\), and epsilon logged with the same seriousness
+4. Are learning rate, $$\beta_2$$, and epsilon logged with the same seriousness
    as model architecture?
 5. Do the coordinates with large second moments correspond to noise, curvature,
    rare features, or genuinely important directions?

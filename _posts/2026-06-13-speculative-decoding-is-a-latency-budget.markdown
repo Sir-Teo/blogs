@@ -33,8 +33,8 @@ The mechanism is beautiful. The production decision is a budget.
 
 ## The ledger
 
-Suppose a draft proposes \(m\) tokens and each proposed token is independently
-accepted with probability \(p\). That independence assumption is fake, but it is
+Suppose a draft proposes $$m$$ tokens and each proposed token is independently
+accepted with probability $$p$$. That independence assumption is fake, but it is
 useful enough for a first instrument. The expected number of accepted draft
 tokens before the first rejection is
 
@@ -44,7 +44,7 @@ $$
 
 The verifier usually contributes one committed token even when the draft fails:
 either the correction at the first rejected position, or the extra token after
-all \(m\) drafts are accepted. So a simple expected token yield per verifier call
+all $$m$$ drafts are accepted. So a simple expected token yield per verifier call
 is
 
 $$
@@ -53,7 +53,7 @@ $$
 $$
 
 This is the core line in the ledger. It says why "draft 8 tokens" is not the
-same claim as "get 8 tokens." With \(p = 0.7\) and \(m = 8\), the expected
+same claim as "get 8 tokens." With $$p = 0.7$$ and $$m = 8$$, the expected
 accepted draft length is about 2.2 tokens, not 5.6. Most of the tail is wishful
 thinking.
 

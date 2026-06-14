@@ -23,7 +23,7 @@ error moved, and which numbers were allowed to keep precision.
 Quantization is not merely compression. It is a negotiation over a finite set of
 codes.
 
-For a symmetric \(b\)-bit integer quantizer, choose a scale \(s\), map a real
+For a symmetric $$b$$-bit integer quantizer, choose a scale $$s$$, map a real
 number to an integer grid, then dequantize it:
 
 $$
@@ -40,8 +40,8 @@ This is the outlier tax.
 
 ## A tiny matrix with one expensive habit
 
-The lab below builds a small matrix product \(Y = XW\). The activation matrix
-\(X\) has a few high-magnitude channels, mimicking the outlier features observed
+The lab below builds a small matrix product $$Y = XW$$. The activation matrix
+$$X$$ has a few high-magnitude channels, mimicking the outlier features observed
 in large transformer inference. We then quantize activations and weights, run the
 matrix product again, and measure the output error.
 

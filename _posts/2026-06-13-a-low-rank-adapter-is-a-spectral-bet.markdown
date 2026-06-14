@@ -28,41 +28,41 @@ A low-rank adapter is a spectral bet.
 
 ## The Frozen Base
 
-Take one pretrained weight matrix \(W_0 \in \mathbb{R}^{d_\text{out} \times
-d_\text{in}}\). Full fine-tuning learns a dense update \(\Delta W\), so inference
+Take one pretrained weight matrix $$W_0 \in \mathbb{R}^{d_\text{out} \times
+d_\text{in}}$$. Full fine-tuning learns a dense update $$\Delta W$$, so inference
 uses
 
-\[
+$$
 W = W_0 + \Delta W.
-\]
+$$
 
-LoRA freezes \(W_0\) and parameterizes the update as a product of two skinny
+LoRA freezes $$W_0$$ and parameterizes the update as a product of two skinny
 matrices:
 
-\[
+$$
 \Delta W = B A,\quad B \in \mathbb{R}^{d_\text{out} \times r},\quad
 A \in \mathbb{R}^{r \times d_\text{in}}.
-\]
+$$
 
-Often there is a scaling factor, written as \(\alpha/r\), but the representable
-update is still rank at most \(r\). The trainable parameter count for this one
+Often there is a scaling factor, written as $$\alpha/r$$, but the representable
+update is still rank at most $$r$$. The trainable parameter count for this one
 matrix is
 
-\[
+$$
 r(d_\text{out} + d_\text{in})
-\]
+$$
 
 instead of
 
-\[
+$$
 d_\text{out}d_\text{in}.
-\]
+$$
 
-For a square \(4096 \times 4096\) matrix and rank \(r=8\), that is 65,536
+For a square $$4096 \times 4096$$ matrix and rank $$r=8$$, that is 65,536
 trainable adapter parameters versus 16,777,216 full parameters: about 0.39% for
 that matrix.
 
-After training, \(BA\) can be merged into \(W_0\), so LoRA does not need to add a
+After training, $$BA$$ can be merged into $$W_0$$, so LoRA does not need to add a
 separate bottleneck module to the inference graph. That is one of the practical
 differences between LoRA and the earlier adapter-module family, which inserted
 small trainable networks between layers while freezing the base model.[^adapters]
@@ -98,9 +98,9 @@ The LoRA paper also investigated rank deficiency in learned adaptation updates,
 arguing that low-rank structure helps explain why small ranks can work in large
 language models.[^lora]
 
-If the useful \(\Delta W\) has a steep singular spectrum, a small \(r\) can
+If the useful $$\Delta W$$ has a steep singular spectrum, a small $$r$$ can
 capture most of the energy. If the task needs many independent directions, a
-small \(r\) becomes a bottleneck.
+small $$r$$ becomes a bottleneck.
 
 This is not only compression. It is regularization.
 
@@ -109,7 +109,7 @@ This is not only compression. It is regularization.
 The lab below is not a language model. It is a controlled spectral toy.
 
 It creates a clean task update with a chosen rank, adds noisy gradient-like
-directions, and asks what a rank-\(r\) adapter would keep if it followed the
+directions, and asks what a rank-$$r$$ adapter would keep if it followed the
 largest observed singular directions. The clean error measures distance to the
 true task update. The train error measures distance to the noisy observed
 update.

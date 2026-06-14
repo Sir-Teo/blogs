@@ -28,38 +28,38 @@ A frequency estimate is a collision ledger.
 
 ## The Contract
 
-Create a table with \(d\) rows and \(w\) columns. Each row has its own hash
-function. When item \(x\) appears with positive increment \(c\), add \(c\) to
+Create a table with $$d$$ rows and $$w$$ columns. Each row has its own hash
+function. When item $$x$$ appears with positive increment $$c$$, add $$c$$ to
 one bucket in every row:
 
-\[
+$$
 C_{i,h_i(x)} \leftarrow C_{i,h_i(x)} + c.
-\]
+$$
 
-To estimate the frequency of \(x\), read the \(d\) buckets touched by \(x\) and
+To estimate the frequency of $$x$$, read the $$d$$ buckets touched by $$x$$ and
 take the minimum:
 
-\[
+$$
 \hat f(x) = \min_i C_{i,h_i(x)}.
-\]
+$$
 
-Every bucket contains the true count of \(x\) plus counts from other keys that
-collided with \(x\) in that row. For positive streams, collision mass can only
+Every bucket contains the true count of $$x$$ plus counts from other keys that
+collided with $$x$$ in that row. For positive streams, collision mass can only
 add. Therefore
 
-\[
+$$
 \hat f(x) \ge f(x).
-\]
+$$
 
 The minimum is the escape hatch. If one row had fewer harmful collisions than
 the others, the min chooses that row.
 
-With width \(w=\lceil e/\epsilon\rceil\) and depth
-\(d=\lceil \ln(1/\delta)\rceil\), the classic Count-Min guarantee says the
-point-query estimate is at most \(f(x)+\epsilon \|f\|_1\) with probability at
-least \(1-\delta\), under the usual hash-independence assumptions.[^cms]
+With width $$w=\lceil e/\epsilon\rceil$$ and depth
+$$d=\lceil \ln(1/\delta)\rceil$$, the classic Count-Min guarantee says the
+point-query estimate is at most $$f(x)+\epsilon \|f\|_1$$ with probability at
+least $$1-\delta$$, under the usual hash-independence assumptions.[^cms]
 
-The table has \(wd\) counters.
+The table has $$wd$$ counters.
 
 That is the bargain:
 
@@ -242,7 +242,7 @@ or a known query set.
 
 Misra and Gries gave an older deterministic streaming algorithm for finding
 frequent elements with a bounded number of counters.[^misra] Space-Saving later
-became a practical counter-based method for frequent and top-\(k\) elements in
+became a practical counter-based method for frequent and top-$$k$$ elements in
 streams.[^spacesaving] Those algorithms store candidate identities. Count-Min
 stores compressed evidence about counts.
 
@@ -256,9 +256,9 @@ needs help remembering candidate names.
 
 A Count-Min estimate can be written as
 
-\[
+$$
 \hat f(x) = f(x) + \min_i \sum_{y \ne x: h_i(y)=h_i(x)} f(y).
-\]
+$$
 
 The error is the smallest collision load across the rows.
 
@@ -323,8 +323,8 @@ Before using Count-Min in a real service, I would want a ledger:
 
 - Is the stream positive-only?
 - What is the acceptable false-positive cost from overestimation?
-- What total mass \(\|f\|_1\) defines the error scale?
-- What \(w,d\) correspond to the desired \(\epsilon,\delta\)?
+- What total mass $$\|f\|_1$$ defines the error scale?
+- What $$w,d$$ correspond to the desired $$\epsilon,\delta$$?
 - Are hash seeds fixed, versioned, and shared across shards for merging?
 - Is there a candidate-key source for heavy-hitter enumeration?
 - Are estimates used as upper bounds, approximate features, or final counts?

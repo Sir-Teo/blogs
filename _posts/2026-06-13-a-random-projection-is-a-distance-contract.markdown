@@ -31,15 +31,15 @@ The projection is not a semantic compressor. It is a distance contract.
 
 ## The Contract
 
-Take \(n\) points in a high-dimensional Euclidean space. The JL result says,
-roughly, that for \(0 < \epsilon < 1\), there is a map into
+Take $$n$$ points in a high-dimensional Euclidean space. The JL result says,
+roughly, that for $$0 < \epsilon < 1$$, there is a map into
 
-\[
+$$
 k = O(\epsilon^{-2}\log n)
-\]
+$$
 
 dimensions such that every pairwise distance is preserved within a
-\(1 \pm \epsilon\) factor.
+$$1 \pm \epsilon$$ factor.
 
 The remarkable part is what is missing from the bound: the original ambient
 dimension. Going from 10,000 dimensions to a few hundred can be reasonable if
@@ -259,7 +259,7 @@ Now the projection is not the main problem; the original geometry itself has
 weak decision margins.
 
 Switch to **sparse signs**. The result is usually in the same family, sometimes
-a little worse at very small \(k\), but much cheaper to apply to sparse feature
+a little worse at very small $$k$$, but much cheaper to apply to sparse feature
 vectors. That trade-off is why database-friendly and sparse JL transforms
 matter in systems work.[^achlioptas]
 
@@ -269,11 +269,11 @@ Suppose a retrieval system uses nearest neighbors. JL-style reasoning can tell
 you that every distance is approximately preserved. It does not directly tell
 you that the top result is unchanged.
 
-For a query \(q\), let \(a\) be the nearest point and \(b\) the runner-up. If
+For a query $$q$$, let $$a$$ be the nearest point and $$b$$ the runner-up. If
 
-\[
+$$
 \|q-a\|_2 \ll \|q-b\|_2,
-\]
+$$
 
 the decision has margin. A moderate projection error probably will not change
 the answer. If the two distances are nearly equal, the decision is unstable even
@@ -286,7 +286,7 @@ projection preserves geometry approximately; your decision layer still needs to
 know what approximation it can tolerate.
 
 The same issue appears in clustering. Preserving all pairwise distances within
-\(1 \pm \epsilon\) helps if the clustering objective is stable under that
+$$1 \pm \epsilon$$ helps if the clustering objective is stable under that
 perturbation. It does not rescue a dataset whose clusters were already
 ambiguous.
 
@@ -296,7 +296,7 @@ The cleanest proof often starts with a Gaussian random matrix, but production
 systems care about memory traffic, sparsity, and integer-friendly operations.
 
 Achlioptas showed that one can use much simpler random matrices with entries
-from \(\{-1,0,+1\}\), including sparse constructions that are especially
+from $$\{-1,0,+1\}$$, including sparse constructions that are especially
 appealing in database environments.[^achlioptas] The intuition is that exact
 rotational symmetry is not the only way to get concentration. What the proof
 needs is enough independence and tail control for projected lengths.
@@ -324,12 +324,12 @@ algebra: subspace embeddings.
 Instead of preserving distances among a finite list of points, a subspace
 embedding preserves norms for every vector in a particular low-dimensional
 subspace. This is the right shape for least-squares regression because the
-quantity you care about is \(\|Ax-b\|_2\) over many possible \(x\)'s, not only
+quantity you care about is $$\|Ax-b\|_2$$ over many possible $$x$$'s, not only
 over a fixed list of observed rows.
 
 Clarkson and Woodruff's input-sparsity-time work is part of that lineage:
-construct a sparse sketching matrix \(S\) so that \(SA\) keeps enough geometry
-of \(A\)'s column space to solve regression and low-rank approximation much
+construct a sparse sketching matrix $$S$$ so that $$SA$$ keeps enough geometry
+of $$A$$'s column space to solve regression and low-rank approximation much
 faster on large sparse inputs.[^clarkson]
 
 This is one of the deep morals of random projection:

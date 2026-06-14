@@ -28,11 +28,11 @@ The code is a geometry.
 
 ## The Cube
 
-An \(n\)-bit word is a vertex of an \(n\)-dimensional cube. Two words are close
+An $$n$$-bit word is a vertex of an $$n$$-dimensional cube. Two words are close
 if they differ in few positions. That distance is now called Hamming distance.
 
 Hamming's 1950 paper explicitly uses this geometric model, identifying binary
-sequences with vertices of a unit \(n\)-dimensional cube.[^hamming] A code is a
+sequences with vertices of a unit $$n$$-dimensional cube.[^hamming] A code is a
 selected subset of those vertices. The minimum distance of the code is the
 smallest distance between any two selected vertices.
 
@@ -46,7 +46,7 @@ single-error correction. It does not buy arbitrary miracles.
 
 ## Hamming(7,4)
 
-The \((7,4)\) Hamming code stores four data bits in seven transmitted bits.
+The $$(7,4)$$ Hamming code stores four data bits in seven transmitted bits.
 Positions 1, 2, and 4 are parity checks. Positions 3, 5, 6, and 7 carry data.
 
 The parity checks are arranged so that every bit position has a unique binary
@@ -66,9 +66,9 @@ This is a beautiful little trick. The syndrome is not merely a flag saying
 
 The price is rate:
 
-\[
+$$
 \text{rate} = \frac{4}{7}.
-\]
+$$
 
 Four information bits consume seven channel uses. The code is less efficient
 than raw transmission on a perfect channel and far more reliable on a moderately
@@ -77,7 +77,7 @@ noisy one.
 ## A Small Channel Bench
 
 The lab below compares four schemes on a binary symmetric channel, where every
-transmitted bit independently flips with probability \(p\).
+transmitted bit independently flips with probability $$p$$.
 
 - **raw** sends the four payload bits directly;
 - **Hamming(7,4)** corrects one flipped bit in the seven-bit block;
@@ -201,7 +201,7 @@ the Hamming syndrome directly.
 </div>
 <script defer src="{{ '/assets/js/hamming-code-lab.js?v=20260613a' | relative_url }}"></script>
 
-At \(p=3\%\), raw four-bit transmission has about an 11.5% block error rate:
+At $$p=3\%$$, raw four-bit transmission has about an 11.5% block error rate:
 one or more payload bits flipped. Hamming(7,4) is much better because all
 single-bit errors in the seven-bit block are corrected. Its wrong-accepted rate
 is about 1.7%, mostly from two or more flips.
@@ -213,7 +213,7 @@ transport protocols, "I know this block is bad" can be much safer than a quiet
 wrong answer.
 
 Repeat-3 does well at low bit error rates, but it spends twelve transmitted bits
-to send four payload bits. Its rate is \(1/3\), versus \(4/7\) for Hamming.
+to send four payload bits. Its rate is $$1/3$$, versus $$4/7$$ for Hamming.
 Reliability is never free. The question is which reliability you bought per
 channel use.
 
@@ -233,7 +233,7 @@ detection says "this is not a codeword"
 correction says "this is probably that codeword"
 ```
 
-The unextended \((7,4)\) Hamming code corrects every one-bit error, but two-bit
+The unextended $$(7,4)$$ Hamming code corrects every one-bit error, but two-bit
 errors can masquerade as one-bit errors. The decoder flips a third bit and may
 deliver the wrong payload.
 

@@ -35,7 +35,7 @@ SHAP imported that idea into model explanations.[^shap] The "players" are
 features. The "value" is a prediction, or usually the difference between a
 prediction and a baseline.
 
-For a set of known features \(S\), define a coalition value
+For a set of known features $$S$$, define a coalition value
 
 $$
 v(S) = \text{what the model predicts when the features in } S \text{ are fixed.}
@@ -60,9 +60,9 @@ $$
 f(x_1, x_2) = v(\varnothing) + \phi_1 + \phi_2.
 $$
 
-That identity is real. The catch is hidden inside \(v(S)\).
+That identity is real. The catch is hidden inside $$v(S)$$.
 
-If \(S=\{1\}\), feature 1 is known and feature 2 is missing. But a model usually
+If $$S=\{1\}$$, feature 1 is known and feature 2 is missing. But a model usually
 does not accept a "missing in the philosophical sense" token. Someone has to
 fill feature 2 with something. An expectation. A baseline. A conditional draw. A
 masked value. A causal intervention. A local reference point. A sample from a
@@ -80,8 +80,8 @@ The word "missing" is doing too much work.
 
 ## Two Ways To Remove a Feature
 
-Suppose the model uses features \(X_1\) and \(X_2\), and the row being explained
-is \(x=(x_1,x_2)\). Two common games are:
+Suppose the model uses features $$X_1$$ and $$X_2$$, and the row being explained
+is $$x=(x_1,x_2)$$. Two common games are:
 
 **Interventional game.** Fix the known features and draw the missing features
 from their marginal background distribution, as if the missing features were
@@ -148,28 +148,28 @@ $$
 \quad x_1=1.2,\quad x_2=1.1.
 $$
 
-The model literally ignores \(x_2\). Its prediction is \(1.4 \cdot 1.2 = 1.68\).
+The model literally ignores $$x_2$$. Its prediction is $$1.4 \cdot 1.2 = 1.68$$.
 
-In the interventional game, \(X_2\) gets no attribution:
+In the interventional game, $$X_2$$ gets no attribution:
 
 $$
 \phi_{2,I}=0.
 $$
 
-In the conditional game, \(X_2\) gets positive attribution. Why? Because knowing
-that \(X_2=1.1\) makes \(X_1\) look high in this background population:
+In the conditional game, $$X_2$$ gets positive attribution. Why? Because knowing
+that $$X_2=1.1$$ makes $$X_1$$ look high in this background population:
 
 $$
 \mathbb{E}[X_1 \mid X_2=x_2] = \rho x_2.
 $$
 
-So the coalition "only \(x_2\) is known" has model value
+So the coalition "only $$x_2$$ is known" has model value
 
 $$
 v_C(\{2\})=\beta_1\rho x_2.
 $$
 
-The model did not read \(x_2\). The conditional explainer did.
+The model did not read $$x_2$$. The conditional explainer did.
 
 That sentence is the whole post.
 
@@ -300,23 +300,23 @@ conditional x2    = about 0.578
 linear x2 term    = 0.000
 ```
 
-There is no direct \(x_2\) term in the model. The conditional game is not
-claiming otherwise. It is saying that, in this background distribution, \(x_2\)
-is evidence about \(x_1\), and \(x_1\) is valuable to the model.
+There is no direct $$x_2$$ term in the model. The conditional game is not
+claiming otherwise. It is saying that, in this background distribution, $$x_2$$
+is evidence about $$x_1$$, and $$x_1$$ is valuable to the model.
 
 Now set **Correlation rho** to zero. The violet conditional curve collapses onto
-the blue interventional curve. \(x_2\) stops carrying information about \(x_1\).
+the blue interventional curve. $$x_2$$ stops carrying information about $$x_1$$.
 
 Set **Correlation rho** negative. The sign of the proxy attribution flips.
-Feature 2 still is not read by the model, but it now predicts a lower \(X_1\)
+Feature 2 still is not read by the model, but it now predicts a lower $$X_1$$
 when it is high.
 
-Turn up **X2 linear weight**. Now \(x_2\) has direct model use, and both games
+Turn up **X2 linear weight**. Now $$x_2$$ has direct model use, and both games
 must allocate some value to it. The disagreement no longer means "used versus
 unused"; it means the direct contribution is mixed with a dependence story.
 
 Turn up **Interaction**. The baseline changes because
-\(\mathbb{E}[X_1X_2]=\rho\). This is a quiet but important detail: the background
+$$\mathbb{E}[X_1X_2]=\rho$$. This is a quiet but important detail: the background
 distribution does not only affect missing-feature coalitions. It can also change
 the reference point from which every bar is measured.
 
@@ -339,7 +339,7 @@ Change any one of those inputs and the bars can move.
 The background distribution is especially easy to understate. A training set is
 not a neutral object. It might mix countries, product tiers, calendar regimes,
 clinical sites, fraud eras, market states, or demographic groups. The baseline
-\(v(\varnothing)\) is an expectation over that population. A feature's marginal
+$$v(\varnothing)$$ is an expectation over that population. A feature's marginal
 contribution is measured relative to that population.
 
 If the explanation is for a credit model, do you want the background to be all

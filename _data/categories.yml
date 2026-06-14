@@ -13,6 +13,10 @@ computer-science:
   name: Computer science
   short: CS
   color: "#D4537E"
+software-engineering:
+  name: Software engineering
+  short: Eng
+  color: "#0E9AA7"
 statistics:
   name: Statistics
   short: Statistics
@@ -21,6 +25,10 @@ quantitative-finance:
   name: Quant finance
   short: Finance
   color: "#BA7517"
+psychology:
+  name: Psychology
+  short: Psych
+  color: "#B5645D"
 meta:
   name: Meta
   short: Meta

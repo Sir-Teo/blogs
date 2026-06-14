@@ -17,7 +17,7 @@ Here is a reliable way to fool yourself:
 5. announce a power law.
 
 The ritual is seductive because power laws are beautiful. If
-\(p(x) \propto x^{-\alpha}\), scale changes do not change the basic shape. Ten
+$$p(x) \propto x^{-\alpha}$$, scale changes do not change the basic shape. Ten
 times larger is not a new regime; it is the same regime with fewer examples.
 That is why power laws show up in stories about city sizes, wealth, earthquakes,
 network degrees, file sizes, word frequencies, market moves, and scientific
@@ -103,7 +103,7 @@ asymptotic laws.
 
 ## A better ritual
 
-For continuous data above a chosen lower cutoff \(x_{\min}\), the maximum
+For continuous data above a chosen lower cutoff $$x_{\min}$$, the maximum
 likelihood estimate for a Pareto density exponent is
 
 $$
@@ -113,14 +113,14 @@ $$
 
 This one line is already better than fitting a straight line through binned
 points. It uses the tail observations directly. It also forces the analyst to
-state \(x_{\min}\). That cutoff is not clerical. It defines the claim.
+state $$x_{\min}$$. That cutoff is not clerical. It defines the claim.
 
 A good diagnostic report should include at least four objects:
 
-- the fitted exponent and number of observations above \(x_{\min}\);
+- the fitted exponent and number of observations above $$x_{\min}$$;
 - a goodness-of-fit statistic, commonly a Kolmogorov-Smirnov distance between
   empirical and fitted tail CDFs;
-- a sensitivity curve showing how \(\hat{\alpha}\) changes as \(x_{\min}\)
+- a sensitivity curve showing how $$\hat{\alpha}$$ changes as $$x_{\min}$$
   moves;
 - likelihood comparisons against alternatives such as lognormal, exponential,
   stretched exponential, or cutoff power-law tails.

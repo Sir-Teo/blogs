@@ -33,7 +33,7 @@ It is also a warning label.
 
 ## The Pairwise Game
 
-Suppose every example has a label \(Y \in \{0,1\}\) and a score \(s(X)\), where
+Suppose every example has a label $$Y \in \{0,1\}$$ and a score $$s(X)$$, where
 larger scores are meant to look more positive. Draw one positive example and one
 negative example independently. The population AUC is
 
@@ -69,7 +69,7 @@ estimates.
 So the core object is not a row. It is a pair.
 
 That is why AUC ignores any monotone transformation of the score. If model B
-replaces every score \(s\) by \(3s+7\), or by a sigmoid of \(s\), the ordering is
+replaces every score $$s$$ by $$3s+7$$, or by a sigmoid of $$s$$, the ordering is
 unchanged. The AUC is unchanged. This is exactly right if the question is
 "which examples are ranked above which?" It is exactly wrong if the question is
 "is score 0.8 really an 80% risk?"
@@ -82,7 +82,7 @@ $$
 S^- \sim N(0,1), \qquad S^+ \sim N(d,1).
 $$
 
-The separation \(d\) controls ranking quality. Under this equal-variance normal
+The separation $$d$$ controls ranking quality. Under this equal-variance normal
 model,
 
 $$
@@ -92,7 +92,7 @@ $$
 Class prevalence does not enter that formula. It enters after the ranking, when
 someone chooses a threshold or a review budget.
 
-For a threshold \(t\),
+For a threshold $$t$$,
 
 $$
 \text{TPR}(t) = P(S^+ \ge t), \qquad
@@ -108,7 +108,7 @@ $$
 {\pi \, \text{TPR}(t) + (1-\pi)\,\text{FPR}(t)},
 $$
 
-where \(\pi=P(Y=1)\) is prevalence.
+where $$\pi=P(Y=1)$$ is prevalence.
 
 Same AUC. Different prevalence. Different alert quality.
 
