@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Sinkhorn Turns Matching Soft"
-description: "Entropic optimal transport turns a hard matching problem into matrix scaling. Sinkhorn's algorithm is just row and column normalization, but the fixed point is a transport plan."
+title: "Matching, but With Soft Edges"
+description: "Entropic optimal transport turns a hard matching problem into matrix scaling. Sinkhorn repeats row and column normalization until a soft transport plan appears."
 date: 2026-06-14 10:03:00 -0400
 categories: machine-learning
 tags: [optimal-transport, sinkhorn, matrix-scaling, wasserstein, numerical-methods]
-excerpt: "Sinkhorn scaling looks too simple to be optimal transport: normalize rows, normalize columns, repeat. The trick is that entropy has changed the geometry of the matching problem."
+excerpt: "Sinkhorn scaling looks too plain to be optimal transport: normalize rows, normalize columns, repeat. Entropy changed the matching problem before the simple loop began."
 ---
 
-Some algorithms are suspicious because they are complicated.
+Some algorithms look suspicious because they are complicated.
 
 Sinkhorn's algorithm is suspicious because it is not.
 
@@ -16,12 +16,12 @@ Start with a positive matrix. Normalize every row to the supply you want.
 Normalize every column to the demand you want. Repeat. The entries settle into a
 matrix whose rows and columns have the prescribed sums.
 
-That sounds like accounting. It is also, under the right exponential matrix, a
+That sounds like accounting. Under the right exponential matrix, it is also a
 solver for a regularized optimal transport problem.
 
 This is the kind of trick that deserves to be seen slowly.
 
-## The Plan, Not the Map
+## Ship Mass, Do Not Pair Names
 
 Optimal transport begins with two distributions and a cost of moving mass from
 one support point to another. In the discrete case, there is a source histogram
@@ -80,9 +80,10 @@ $$
 Now the job is not to search all plans directly. The job is to find two positive
 scaling vectors $$u$$ and $$v$$ so that this matrix has the right marginals.
 
-That is why row and column normalization suddenly matters.
+That is why row and column normalization suddenly becomes more than
+bookkeeping.
 
-## The Old Engine
+## The Old Engine Under the New Loss
 
 Sinkhorn and Knopp studied when alternating row and column scaling of a
 nonnegative matrix converges to a doubly stochastic limit.[^sinkhorn] In the
@@ -286,7 +287,7 @@ curve shows the tradeoff: lower cost usually means fewer effective links.
 </div>
 <script defer src="{{ '/assets/js/sinkhorn-transport-lab.js?v=20260614a' | relative_url }}"></script>
 
-Try three moves.
+Try three small disturbances.
 
 First, lower **epsilon**. The transport lines become more selective. The
 coupling matrix gets hotter along a smaller set of cells. Cost falls, row focus
@@ -308,7 +309,7 @@ The most important invariant is boring and unforgiving. A transport plan is not
 valid because the lines look plausible. It is valid because every row and every
 column has the right sum.
 
-## The Bias Entropy Buys
+## Entropy Buys Bias on Purpose
 
 Entropic OT is not exact OT. It is a different problem.
 
@@ -326,18 +327,18 @@ The bias is not merely philosophical. In the lab, as epsilon grows, the plan
 chooses more links and pays higher movement cost. If you were comparing two
 distributions, this blur would change the measured discrepancy.
 
-Modern OT practice therefore often treats epsilon as a numerical and statistical
-knob, not a universal constant. Too small and the kernel becomes ill-conditioned
-or slow. Too large and the geometry washes out. The sweet spot depends on the
-scale of the cost matrix, the support size, the desired accuracy, and the role
-of the transport loss in the surrounding system.
+Modern OT practice therefore often treats epsilon as a numerical and
+statistical knob, not a universal constant. Too small and the kernel becomes
+ill-conditioned or slow. Too large and the geometry washes out. The sweet spot
+depends on the scale of the cost matrix, the support size, the desired accuracy,
+and the role of the transport loss in the surrounding system.
 
 This is one reason the computational OT literature distinguishes several
 objects that sound similar in casual conversation: regularized OT cost,
 Sinkhorn distance, debiased Sinkhorn divergence, and exact Wasserstein distance.
 They are related, but not interchangeable.
 
-## Why This Became a Machine-Learning Tool
+## Why Machine Learning Wanted It
 
 The appeal is not only speed. It is differentiability.
 
@@ -364,7 +365,7 @@ optimized through.
 That softness is not an implementation detail. It changes what the model is
 being rewarded for.
 
-## What to Remember
+## The Contract Behind the Cheat
 
 The mnemonic version is:
 
@@ -375,7 +376,7 @@ row scaling enforces supply
 column scaling enforces demand
 ```
 
-The non-mnemonic version is better:
+The less tidy version is better:
 
 Sinkhorn is not a heuristic for making a matrix pretty. It is coordinate ascent
 in the dual of entropic optimal transport, written in the humble language of
