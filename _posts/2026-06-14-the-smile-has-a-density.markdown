@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Smile Has a Density"
+title: "Volatility Smiles Have Densities"
 description: "A volatility smile is not just a curve of Black-Scholes inputs. Through call-price curvature, it encodes a risk-neutral density and exposes static arbitrage."
 date: 2026-06-14 14:54:00 -0400
 categories: quantitative-finance
