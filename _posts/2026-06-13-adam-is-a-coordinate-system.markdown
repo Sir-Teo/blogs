@@ -1,14 +1,15 @@
 ---
 layout: post
-title: "Adam's Coordinate Trick"
-description: "Adam is not just SGD with momentum. It keeps a per-coordinate memory of gradient scale, then changes the units of the update."
+title: "Adam Chooses the Units Before It Steps"
+description: "Adam is not just SGD with momentum. It keeps a per-coordinate memory of gradient scale, then silently decides what a unit step means."
 date: 2026-06-13 21:23:00 -0400
 categories: machine-learning
 tags: [adam, adamw, optimization, adaptive-optimizers, sgd, deep-learning]
-excerpt: "Adaptive optimizers are easiest to understand as coordinate systems. They can make ill-scaled problems move, but they also change what regularization and convergence mean."
+excerpt: "Adaptive optimizers are coordinate systems with memory. They can rescue ill-scaled problems, but they also change regularization, convergence, and the path to a solution."
 ---
 
-Adam is often introduced as the optimizer you try when SGD feels fussy.
+Adam is often introduced as the optimizer you reach for after SGD has made you
+stare at a loss curve for too long.
 
 That description is useful in the same way "use a car when walking is slow" is
 useful. It tells you something about convenience and almost nothing about the
@@ -18,12 +19,12 @@ Adam is not merely SGD with momentum and a nicer default learning rate.
 
 Adam changes the coordinate system of the update.
 
-That is why it can be wonderful on sparse, noisy, badly scaled problems. It is
+That is why it can feel miraculous on sparse, noisy, badly scaled problems. It is
 also why it can behave differently from SGD even when both reduce the training
 loss. The optimizer is not just deciding how far to move. It is deciding what a
 unit of movement means in each coordinate.
 
-## The Diagonal Memory
+## The Optimizer Keeps a Ruler
 
 Stochastic gradient descent keeps a single global learning rate:
 
@@ -69,7 +70,7 @@ Adam divides by a running estimate of the coordinate's gradient unit.
 
 That is a coordinate system.
 
-## A Two-Coordinate Lab
+## Two Coordinates, Two Rulers
 
 The lab below minimizes a toy quadratic:
 
@@ -234,7 +235,7 @@ Raise **Gradient noise**. The denominator starts measuring noise as well as
 curvature. That is often useful, but it is also the beginning of a different
 implicit bias: coordinates with noisy gradients get smaller steps.
 
-## AdamW Is About What Gets Divided
+## The Decay Was Being Measured Wrong
 
 The lab also compares Adam with coupled $$L_2$$ regularization to AdamW.
 
@@ -279,7 +280,7 @@ AdamW: weight decay is measured in parameter coordinates
 The question is not which one is universally correct. The question is which
 operation you meant.
 
-## The Convergence Warning
+## The Warning Label
 
 Adam works so often that it is easy to forget it has theory scars.
 
@@ -299,7 +300,7 @@ Once you see Adam as a coordinate system, these warnings feel less mysterious.
 Changing coordinates can make an optimization problem easier. It can also change
 which solution looks nearby.
 
-## The Engineering Checklist
+## Optimizer Review
 
 When Adam is the default, I would still ask:
 
