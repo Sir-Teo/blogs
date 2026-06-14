@@ -1,15 +1,17 @@
 ---
 layout: post
-title: "Game Trees Reuse Their Positions"
-description: "Alpha-beta search is usually drawn as a tree, but repeated positions turn it into a graph. Transposition tables work only when cached values remember their depth, bound type, and identity."
+title: "The Tree Told the Wrong Story"
+description: "Alpha-beta search is drawn as a tree, but repeated positions make the real work a graph. A transposition table is safe only when it stores identity, depth, and bound type."
 date: 2026-06-14 15:20:00 -0400
 categories: gaming
 tags: [game-ai, alpha-beta, transposition-tables, zobrist-hashing, chess-engines, dynamic-programming]
-excerpt: "A game position is not the path that reached it. Transposition tables exploit that fact, but a cached score is a typed claim, not just a number in a hash table."
+excerpt: "A game position is not the path that reached it. Transposition tables exploit that fact, but a cached score is a typed claim, not a loose number in a hash table."
 ---
 
-The search tree is a lie that tells the truth just long enough to teach the
-algorithm.
+The search tree is a useful lie.
+
+It tells the truth just long enough to teach the algorithm, then quietly starts
+charging rent.
 
 It says:
 
@@ -58,10 +60,10 @@ It is closer to:
 position, side to move, searched depth -> exact value or lower/upper bound
 ```
 
-If the program forgets the type of claim it cached, the table stops being memory
-and becomes rumor.
+If the program forgets the type of claim it cached, the table stops being
+memory and becomes rumor.
 
-## A Position Is Not A Path
+## Stories Repeat; Positions Do Not
 
 Imagine a tiny game with five piles. A move removes one stone from one pile.
 Starting from:
@@ -99,7 +101,7 @@ The distinction is not cosmetic. It changes the object being optimized. Without
 the table, alpha-beta is saving branches. With the table, the program is also
 recognizing repeated subproblems.
 
-## Alpha-Beta Caches Bounds
+## The Cache Stores a Claim
 
 Minimax asks for the value of a position under best play. Alpha-beta asks the
 same question while carrying two promises:
@@ -143,7 +145,7 @@ cache the theorem you proved,
 not the number you happened to return
 ```
 
-## Zobrist Keys Are Fingerprints
+## A Fingerprint Is Not a Face
 
 A chess position is too large to use directly as a fast table index. Zobrist's
 hashing method gives a beautifully practical workaround: assign random bit
@@ -179,7 +181,7 @@ check.[^zobrist] The point was not that hashing makes identity free. The point
 was that identity can be made cheap enough for search, if the remaining risk is
 engineered consciously.
 
-## The Small Machine
+## A Toy That Makes Transpositions Loud
 
 The lab below is not a chess engine. It is a small deterministic game designed
 to exaggerate transpositions. A move removes one stone from one pile, and the
@@ -258,11 +260,11 @@ There are three searches:
 
 <script defer src="{{ '/assets/js/transposition-table-lab.js' | relative_url }}"></script>
 
-At the default setting, the frontier panel has the important smell: millions of
-move sequences collapse to hundreds of distinct states at depth ten. Alpha-beta
-still prunes many branches, but it remains sensitive to repeated work. The full
-table turns the graph structure into saved nodes. The limited table is a more
-realistic compromise: it helps, but table slots overwrite one another.
+At the default setting, the frontier panel has the important smell: 8,166,900
+move sequences collapse to 381 distinct states at depth ten. Alpha-beta still
+prunes many branches, but it remains sensitive to repeated work: 58,626 visited
+nodes without a table, 3,740 with the full table, and 5,820 with the limited
+table. The graph structure is not a metaphor. It is saved work.
 
 Now try three small experiments.
 
@@ -282,7 +284,7 @@ and those same collisions become rejected misses instead of wrong evidence.
 That last switch is the core lesson. A cache miss is disappointing. A false hit
 is dangerous.
 
-## What Belongs In The Key
+## What Has To Be Part of Identity
 
 The position key must name every fact that can affect the legal moves or the
 value being searched.
@@ -308,7 +310,7 @@ will all legal continuations and terminal values remain valid?
 
 If the answer is no, the key is missing state.
 
-## A Table Entry Is A Typed Claim
+## Write Down the Theorem You Proved
 
 The lab stores five pieces of information:
 
@@ -340,7 +342,7 @@ state plus assumptions -> reusable claim plus proof strength
 The assumptions are part of the input. The proof strength is part of the
 output.
 
-## Outside Chess
+## The Pattern Escapes the Board
 
 The same pattern appears outside games.
 
@@ -356,7 +358,7 @@ that leave the future unchanged.
 That equivalence class is a research object. Make it too fine, and the system
 misses reuse. Make it too coarse, and the system reuses lies.
 
-## A Short Checklist
+## Before You Trust the Memory
 
 Before trusting a transposition table, I want answers to these questions:
 
