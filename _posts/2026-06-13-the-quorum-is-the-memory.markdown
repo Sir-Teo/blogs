@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Quorum Is the Memory"
+title: "Quorum Geometry Remembers Writes"
 description: "Distributed systems do not remember by hoping replicas agree. They remember through intersection: every future decision must touch enough of the past."
 date: 2026-06-13 19:00:00 -0400
 categories: computer-science
@@ -289,7 +289,7 @@ If the next decision can walk around the previous decision without touching it,
 the system may still be fast, available, and useful. But it is not remembering
 the thing you thought it remembered.
 
-## Notes
+## Citations and Loose Ends
 
 [^gifford]: David K. Gifford, ["Weighted Voting for Replicated Data"](https://dl.acm.org/doi/10.1145/800215.806583), *Proceedings of the Seventh Symposium on Operating System Principles*, 1979. A course-hosted PDF is available from [Cornell](https://www.cs.cornell.edu/courses/cs614/2003sp/papers/Gif79.pdf).
 
