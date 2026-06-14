@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Retry Is Part of the Load"
+title: "Retries Count as Load"
 description: "Retries are not free resilience. Under overload, they can become a traffic generator pointed at the component already failing."
 date: 2026-06-13 11:34:00 -0400
 categories: computer-science
@@ -298,7 +298,7 @@ capacity and latency:
 The goal is not to ban retries. That would be theatrical and wrong. The goal is
 to make retries visible as load. Once they are visible, they can be budgeted.
 
-## A Research Direction
+## Where I Would Push Next
 
 The experiment I would like to run next is a retry topology audit.
 
@@ -325,7 +325,7 @@ dependency slows down.
 Retries are one of the most human parts of distributed systems. They encode
 hope. The machine needs that hope bounded, jittered, idempotent, and measured.
 
-## Notes
+## Citations and Loose Ends
 
 [^tail]: Jeffrey Dean and Luiz Andre Barroso, ["The Tail at Scale"](https://cacm.acm.org/research/the-tail-at-scale/), *Communications of the ACM*, 2013. See also the [Google Research record](https://research.google/pubs/the-tail-at-scale/).
 
