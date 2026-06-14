@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Bootstrap the Sampling Plan You Actually Used"
+title: "The Bootstrap Replays Your Assumption"
 description: "Resampling is not magic. A bootstrap interval works by replaying a data-generating contract, and the wrong contract can be confidently wrong."
 date: 2026-06-13 19:16:00 -0400
 categories: statistics
 tags: [bootstrap, resampling, regression, heteroskedasticity, uncertainty, econometrics]
-excerpt: "The bootstrap is a simulator. The unit you resample is the assumption you make executable."
+excerpt: "The bootstrap is a simulator. The unit you resample is the assumption you make executable, so the wrong unit gives you precise fiction."
 ---
 
 The bootstrap has a dangerous user interface.
@@ -24,7 +24,7 @@ returns precise-looking intervals from the wrong imagined world.
 The bootstrap is not a machine for avoiding assumptions. It is a machine for
 making assumptions runnable.
 
-## The Original Spell
+## The Tiny Spell With a Hidden Clause
 
 Efron's 1979 paper introduced the bootstrap as a general way to estimate the
 sampling distribution of a statistic from the empirical distribution of the
@@ -61,7 +61,7 @@ But the sentence has a hidden clause:
 The trouble starts when observations are not exchangeable in the way your code
 pretends.
 
-## Regression Has More Than One World
+## Regression Has Multiple Worlds
 
 Freedman's regression bootstrap paper is still a wonderful antidote to casual
 resampling.[^freedman] The important line is conceptual: the bootstrap
@@ -95,7 +95,7 @@ points and their outcomes.
 
 Those are not cosmetic choices. They are different worlds.
 
-## A Lab Where Residuals Betray You
+## Where Residuals Betray You
 
 The simulator below creates a simple linear regression with true slope 1. The
 error variance can grow with $$|x|$$, and a fraction of observations can live at
@@ -179,7 +179,7 @@ The point is not "always use pairs" or "always use wild." The point is:
 the resampling unit is the assumption
 ```
 
-## White's Sandwich Is a Different Answer
+## The Sandwich Answers in Closed Form
 
 White's heteroskedasticity-consistent covariance estimator attacked a related
 problem analytically.[^white] Ordinary least squares coefficients can remain
@@ -209,7 +209,7 @@ than a first-order approximation. They are tools for the same question:
 what randomness should this inference procedure replay?
 ```
 
-## Wild Bootstrap as Score Perturbation
+## Wild Bootstrap Keeps the Row's Scale
 
 The wild bootstrap is a useful compromise for heteroskedastic regression. In its
 simple Rademacher form, after fitting the model it generates
@@ -237,7 +237,7 @@ second-order refinements. It just shows the core mechanism:
 do not detach residual scale from the row when residual scale belongs to the row
 ```
 
-## Dependence Breaks the Row Urn Too
+## Rows Are Not Always the Unit
 
 Rows are not always the unit either.
 
@@ -267,7 +267,7 @@ what would have been exchangeable before I saw the data?
 
 Then you resample that.
 
-## A Run Sheet Before Resampling
+## Before You Resample
 
 Before I trust a bootstrap interval, I want written answers to:
 
@@ -304,7 +304,7 @@ resample the unit that nature randomized
 
 That is the part worth remembering.
 
-## The Trail of Papers
+## Sources
 
 [^efron]: Bradley Efron, ["Bootstrap Methods: Another Look at the Jackknife"](https://sites.stat.washington.edu/courses/stat527/s14/readings/ann_stat1979.pdf), *The Annals of Statistics*, 1979. DOI: [10.1214/aos/1176344552](https://doi.org/10.1214/aos/1176344552).
 
