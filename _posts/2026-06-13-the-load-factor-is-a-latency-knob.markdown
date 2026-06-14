@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Load Factor, Probe Length, and the Latency Tax"
+title: "The Hash Table Is Fast Until the Tail Arrives"
 description: "Open-addressed hash tables do not merely get fuller. Their probe distributions change shape."
 date: 2026-06-13 20:59:00 -0400
 categories: computer-science
 tags: [hash-tables, linear-probing, robin-hood-hashing, performance, data-structures, software-engineering]
-excerpt: "A hash table's load factor is not just a memory-efficiency number. In open addressing, it is a tail-latency control."
+excerpt: "A hash table's load factor is not just a memory-efficiency number. In open addressing, it is a tail-latency control hiding behind an average-case slogan."
 ---
 
 A hash table is usually introduced as a miracle of average-case thinking.
@@ -26,7 +26,7 @@ The load factor is not just a memory knob.
 
 It is a latency knob.
 
-## Why Linear Probing Is So Tempting
+## Why the Simple Walk Is So Tempting
 
 Linear probing is almost rudely simple. If a key hashes to slot `h`, try
 
@@ -66,7 +66,7 @@ catastrophic after one unlucky workload pushes it a little further.
 
 There was no type error. The distribution changed shape.
 
-## Robin Hood Does Not Remove Fullness
+## Robin Hood Redistributes the Pain
 
 Robin Hood hashing changes the collision rule.
 
@@ -99,7 +99,7 @@ It does not make misses cheap when the table has long occupied runs.
 A failed lookup still has to walk until it sees an empty slot. If tombstones or
 high load leave few empty slots, the miss tail can still be ugly.
 
-## A Probe Lab
+## Put the Probes on a Histogram
 
 The lab below builds the same 256-slot open-addressed table twice:
 
@@ -262,7 +262,7 @@ is not a defect in the demo; it is a warning. If a service keeps one large table
 for a long time, it experiences one realized probe landscape, not the average
 over all possible landscapes.
 
-## Deleted Is Not Empty
+## Deleted Still Blocks the Door
 
 Deletion is the part of open addressing that people learn, implement, and then
 quietly regret.
@@ -298,7 +298,7 @@ to show the operational problem:
 live load is not the whole load seen by lookup
 ```
 
-## What Robin Hood Buys
+## What the Robin Hood Swap Buys
 
 Robin Hood hashing buys fairness of displacement.
 
@@ -333,7 +333,7 @@ That separation is the practical lesson:
 - update-heavy workload: insertion and deletion policy decide the future table,
   not only the current one.
 
-## The Benchmark You Actually Want
+## Benchmark the Tail, Not the Slogan
 
 A useful hash-table benchmark should not report only throughput at one load
 factor.
@@ -358,7 +358,7 @@ miss-heavy. The third may churn. The fourth may face hostile keys.
 
 The phrase "O(1)" is too small for all of that.
 
-## The Rule I Trust
+## The Review Rule
 
 I do not trust a hash table because it has a low average probe count.
 
