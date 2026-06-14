@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Delete Button Is a Counterfactual"
+title: "Deleting a Point, Rewriting a Counterfactual"
 description: "Machine unlearning is not the act of deleting a row. It is the demand that a deployed model behave as if the row had never been in the training set."
 date: 2026-06-14 09:30:00 -0400
 categories: machine-learning
