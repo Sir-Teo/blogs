@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "Conformal Prediction's Exchangeability Deal"
-description: "Conformal intervals are powerful because their guarantee is explicit. They promise coverage under exchangeability, not magic under every deployment shift."
+title: "Coverage Comes With Fine Print"
+description: "Conformal intervals are powerful because their guarantee is explicit: coverage under an exchangeability story, not magic under every deployment shift."
 date: 2026-06-13 00:20:00 -0400
 categories: statistics
 tags: [conformal-prediction, uncertainty, statistics, machine-learning, distribution-shift]
-excerpt: "Conformal prediction turns residuals into coverage guarantees, but the guarantee is only as honest as the exchangeability story behind the calibration data."
+excerpt: "Conformal prediction turns residuals into a coverage receipt. The receipt is only as good as the claim that calibration and deployment are comparable."
 ---
 
 Most uncertainty estimates in machine learning ask for trust. Conformal
-prediction asks for a contract.
+prediction hands you fine print.
 
 Give it a calibration set drawn like tomorrow's example, choose a target error
 rate $$\alpha$$, and split conformal prediction returns an interval that covers
@@ -33,9 +33,10 @@ places a hospital, trading desk, hiring process, robot, or retrieval system
 cares about. Conformal prediction offers a way to put statistically meaningful
 sets around those predictions.
 
-The important word is meaningful, not mystical.
+The important word is meaningful, not mystical, and the meaning lives in the
+conditions.
 
-## The Split Conformal Recipe
+## How the Receipt Is Made
 
 For regression, the simplest version is almost embarrassingly practical.
 
@@ -70,7 +71,7 @@ That impossibility result is not a defect. It is a warning label. Conformal
 prediction tells us what can be guaranteed without pretending the impossible is
 free.
 
-## Coverage Is Not Calibration
+## Coverage Is Not Sharpness
 
 Conformal intervals are sometimes described as "calibrated uncertainty." That is
 not wrong, but it can blur two ideas.
@@ -98,7 +99,7 @@ without a simple train/calibration split.[^jackknife]
 The moral is not that one conformal method wins. The moral is that the
 nonconformity score is a design object. It encodes what "surprising" means.
 
-## The Contract Can Break
+## When Tomorrow Is Not Calibration
 
 Exchangeability is weaker than many modeling assumptions, but it is still an
 assumption about the data-generating process. A random split from the same table
@@ -158,7 +159,7 @@ arbitrary.
 </figcaption>
 </figure>
 
-## The Small Test Bench
+## Coverage Bench
 
 The simulator below creates a regression problem. The model's mean prediction is
 basically right, but the noise level is larger for high $$x$$. Calibration data
@@ -222,7 +223,7 @@ because the calibration and test examples are exchangeable again. Then raise the
 shift and heteroscedasticity. The same code, same model, and same target
 coverage can become a different statistical promise.
 
-## Signals I Would Keep
+## Coverage Watchlist
 
 In production, conformal monitoring should be boring and relentless.
 
@@ -241,7 +242,7 @@ The sixth item matters because uncertainty should have authority. If a model
 emits a wide interval and the system behaves exactly the same, the interval is
 decorative.
 
-## Where the Guarantee Helps
+## Where the Receipt Has Teeth
 
 Conformal prediction is most valuable when three things are true.
 
@@ -262,7 +263,7 @@ examples in vision and language tasks.[^risk-control] That line of work is
 important because many real outputs are sets, spans, segmentations, rankings, or
 structured objects, not single numbers.
 
-## The Next Question
+## Decision-Aware Coverage
 
 The direction I care about is decision-aware conformal prediction under shift.
 
@@ -286,7 +287,7 @@ The last point is the cultural one. A conformal interval should not be a badge
 that says "safe." It should be a legal document written in statistics: valid
 under these conditions, void under these others.
 
-## The Part to Keep
+## Keep the Fine Print
 
 Conformal prediction is one of the cleanest ideas in modern machine learning
 because it separates two jobs.
