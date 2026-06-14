@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Optimizer Refuses to Choose"
+title: "Equality Saturation Refuses to Pick a Winner"
 description: "Equality saturation turns compiler optimization from a brittle sequence of rewrites into a search over equivalent programs."
 date: 2026-06-13 22:16:00 -0400
 categories: computer-science
