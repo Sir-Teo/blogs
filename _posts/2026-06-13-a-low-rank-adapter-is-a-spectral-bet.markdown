@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Low-Rank Adapter Is a Spectral Bet"
+title: "Low-Rank Fine-Tuning, Spectral Hunches"
 description: "LoRA is not magic compression. It is a hypothesis that the task-specific weight update mostly lives in a small number of directions."
 date: 2026-06-13 20:39:00 -0400
 categories: machine-learning
@@ -348,7 +348,7 @@ The most dangerous rank is the one chosen because it is popular in a config
 file. Rank should be audited the way hidden size, context length, and retrieval
 depth are audited: as a capacity and systems tradeoff.
 
-## The Sentence to Keep
+## The Short Version
 
 LoRA is not free fine-tuning.
 
