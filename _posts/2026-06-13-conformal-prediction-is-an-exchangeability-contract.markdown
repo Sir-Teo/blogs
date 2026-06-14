@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Conformal Prediction Is an Exchangeability Contract"
+title: "Conformal Prediction's Exchangeability Deal"
 description: "Conformal intervals are powerful because their guarantee is explicit. They promise coverage under exchangeability, not magic under every deployment shift."
 date: 2026-06-13 00:20:00 -0400
 categories: statistics
@@ -158,7 +158,7 @@ arbitrary.
 </figcaption>
 </figure>
 
-## A Small Experiment
+## The Small Test Bench
 
 The simulator below creates a regression problem. The model's mean prediction is
 basically right, but the noise level is larger for high $$x$$. Calibration data
@@ -222,7 +222,7 @@ because the calibration and test examples are exchangeable again. Then raise the
 shift and heteroscedasticity. The same code, same model, and same target
 coverage can become a different statistical promise.
 
-## What I Would Monitor
+## Signals I Would Keep
 
 In production, conformal monitoring should be boring and relentless.
 
@@ -262,7 +262,7 @@ examples in vision and language tasks.[^risk-control] That line of work is
 important because many real outputs are sets, spans, segmentations, rankings, or
 structured objects, not single numbers.
 
-## The Research Direction
+## The Next Question
 
 The direction I care about is decision-aware conformal prediction under shift.
 
@@ -286,7 +286,7 @@ The last point is the cultural one. A conformal interval should not be a badge
 that says "safe." It should be a legal document written in statistics: valid
 under these conditions, void under these others.
 
-## The Takeaway
+## The Part to Keep
 
 Conformal prediction is one of the cleanest ideas in modern machine learning
 because it separates two jobs.
