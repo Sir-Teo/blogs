@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Outlier Tax in Four Bits"
+title: "Four Bits, One Outlier Tax"
 description: "Quantizing a language model is not just rounding weights. A few large activation channels can spend the whole numerical budget for everyone else."
 date: 2026-06-13 01:56:00 -0400
 categories: ai-systems
@@ -182,7 +182,7 @@ That last hardware point is not a footnote. A 4-bit checkpoint that lacks a fast
 kernel can be a smaller model that runs disappointingly slowly. A quantization
 format is a numerical method plus a memory layout plus a kernel contract.
 
-## A research direction
+## Next Experiments
 
 I would like quantization reports to look less like "we used int4" and more like
 an error budget:
@@ -207,7 +207,7 @@ Quantization is successful when the cheap representation preserves the expensive
 computation. The machine does not care that the checkpoint is small. It cares
 whether the important dot products survived.
 
-## Notes
+## Source Notes
 
 [^llmint8]: Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer, "LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale," NeurIPS 2022. [arXiv](https://arxiv.org/abs/2208.07339).
 
