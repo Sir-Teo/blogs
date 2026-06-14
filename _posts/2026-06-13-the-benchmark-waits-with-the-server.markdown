@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Benchmarks Lie When Clients Wait"
-description: "Closed-loop latency tests can accidentally stop sending work when the service is slow. That coordinated omission can turn a tail-latency incident into a tidy percentile report."
+title: "The Benchmark Waited Through the Outage"
+description: "Closed-loop latency tests can stop sending work exactly when the service is slow. Coordinated omission turns a tail-latency incident into a tidy percentile report."
 date: 2026-06-13 18:27:00 -0400
 categories: computer-science
 tags: [latency, coordinated-omission, queueing, performance-testing, distributed-systems, benchmarking]
-excerpt: "A benchmark is not just a stopwatch. It is a traffic model. If the load generator waits with the overloaded service, the worst seconds can disappear from the measurement."
+excerpt: "A benchmark is a traffic model, not just a stopwatch. If the load generator waits with the overloaded service, the worst seconds can disappear from the measurement."
 ---
 
 A latency benchmark looks objective because it prints numbers.
@@ -32,7 +32,7 @@ users are omitted from the histogram.
 The benchmark is not lying maliciously. It is worse: it is telling the truth
 about the wrong experiment.
 
-## Open Loop and Closed Loop
+## The Load Generator Has a Job
 
 There are two very different traffic contracts.
 
@@ -128,7 +128,7 @@ that should sample every 10 ms, recording one 200 ms event is not equivalent to
 recording the experience of the roughly twenty scheduled arrivals affected by
 that stall.
 
-## A Stopwatch Is a Traffic Model
+## A Stopwatch Is Also a Workload
 
 Latency is usually written as:
 
@@ -161,7 +161,7 @@ also need to say whether the offered load was open-loop, whether arrivals were
 paced, how concurrency was controlled, what happened after timeouts, and whether
 the reported latency histogram corrected for coordinated omission.
 
-## Queueing Does Not Forget
+## The Queue Keeps the Receipt
 
 Little's Law says:
 
@@ -201,7 +201,7 @@ Mor Harchol-Balter's queueing text is excellent on this kind of systems
 intuition: performance is rarely only about mean service time; variability,
 scheduling, and load shape decide the wait.[^harchol]
 
-## The Tail at Scale
+## Tail Latency Multiplies
 
 Dean and Barroso's "The Tail at Scale" made the distributed-systems version of
 this argument famous.[^dean-barroso] In a large fanout service, a user-visible
@@ -218,7 +218,7 @@ interactions. Coordinated omission is especially damaging in tail-at-scale
 systems because the omitted samples are exactly the samples that would have
 populated the tail.
 
-## When Closed Loop Is Fine
+## When Waiting Is the Workload
 
 Closed-loop tests are not evil. They answer a different question.
 
@@ -242,7 +242,7 @@ measures. Correct the histogram when the intended experiment was open-loop.
 Show achieved throughput and omitted-sample estimates. Do not let the word p99
 pretend to settle the matter.
 
-## A Run Sheet for Latency Reports
+## Latency Report Checklist
 
 Before I trust a latency benchmark, I want to know:
 
@@ -277,7 +277,7 @@ benchmark has joined the outage. It waited with the server, omitted the users
 who would have arrived, and handed you a tail latency report with the tail
 trimmed off.
 
-## Sources Worth Keeping
+## Sources
 
 [^tene]: Gil Tene, ["How NOT to Measure Latency"](https://qconsf.com/sf2012/dl/qcon-sanfran-2012/slides/GilTene_HowNotToMeasureLatency.pdf), QCon San Francisco, 2012. Tene also discusses coordinated omission in the [Mechanical Sympathy forum](https://groups.google.com/g/mechanical-sympathy/c/icNZJejUHfE/m/BfDekfBEs_sJ), including expected-interval correction in HdrHistogram-style recorders.
 
