@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Residual Is the Experiment"
+title: "DML Begins With the Residuals"
 description: "Double machine learning does not make confounding disappear. It builds an orthogonal residual score so flexible prediction errors hit the causal estimate only at second order."
 date: 2026-06-13 23:40:00 -0400
 categories: statistics
@@ -434,7 +434,7 @@ Before trusting a DML estimate, I would ask:
 The lab above is friendly because all confounders are observed and the data
 really are partially linear. Real applications are less polite.
 
-## Research direction
+## A Thread Worth Pulling
 
 The diagnostic I want to see more often is a residual audit.
 
@@ -449,7 +449,7 @@ treatment variation? Which nuisance learner changes the answer?
 
 If the residual is the experiment, then audit the experiment.
 
-## Notes
+## Where This Came From
 
 [^robinson]: Peter M. Robinson, "Root-N-Consistent Semiparametric Regression," *Econometrica*, 1988. [JSTOR](https://www.jstor.org/stable/1912705).
 
