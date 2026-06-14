@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "AUC Is a Pairwise Probability"
+title: "Reading AUC as a Pairwise Bet"
 description: "ROC AUC is not accuracy, not calibration, and not deployment utility. It is the probability that a random positive outranks a random negative."
 date: 2026-06-13 21:07:00 -0400
 categories: statistics
