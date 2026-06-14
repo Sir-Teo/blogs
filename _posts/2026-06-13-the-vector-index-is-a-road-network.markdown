@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Vector Index Is a Road Network"
+title: "Vector Search Builds a Road Network"
 description: "HNSW-style vector search works because the index is navigable. Local edges give accuracy, long edges give reach, and the search beam is the fuel budget."
 date: 2026-06-13 23:28:00 -0400
 categories: ai-systems
@@ -70,7 +70,7 @@ have tiny diameter and still be hard to navigate if no one knows which local
 choice gets them closer to the target. Vector indexes have the same problem in
 geometric clothing.
 
-## The lab
+## The Small Machine
 
 The simulator below builds a two-dimensional synthetic embedding corpus with
 several clusters. It then compares four search policies:
@@ -342,7 +342,7 @@ at high `efSearch`, you have a routing-budget problem. If recall is bad even at
 high `efSearch`, you probably have a graph-construction, metric, filtering, or
 embedding problem. Those are different incidents.
 
-## A research direction
+## What I Would Try After This
 
 I want vector-index monitoring to become more like profiling a program.
 
@@ -371,7 +371,7 @@ then:
 That would turn HNSW tuning from folklore into something closer to systems
 science. The index is a road network. So profile traffic, not just destinations.
 
-## Notes
+## Sources
 
 [^hnsw]: Yu. A. Malkov and D. A. Yashunin, "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs," arXiv, 2016; later in *IEEE TPAMI*. [arXiv](https://arxiv.org/abs/1603.09320).
 
