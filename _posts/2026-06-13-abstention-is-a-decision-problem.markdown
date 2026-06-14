@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Abstention Is a Decision Problem"
+title: "When the Model May Say No"
 description: "A model should not answer merely because its confidence cleared a universal threshold. The right stop rule depends on error costs, abstention costs, and the value of more information."
 date: 2026-06-13 00:25:00 -0400
 categories: ai-systems
@@ -105,7 +105,7 @@ That is the missing layer in many LLM and agent systems. "Answer or abstain" is
 already a decision problem. "Think longer or stop" is the same problem one level
 up.
 
-## A Small Experiment
+## A Toy Run
 
 The simulator below creates synthetic binary decisions. Each case has a true
 probability that the base model's proposed action is correct. The model observes
@@ -197,7 +197,7 @@ and heterogeneity, not just on model confidence.[^l2d] That should sound obvious
 to anyone who has seen a real operations queue. It is also exactly why the
 abstention problem cannot be solved inside the softmax layer.
 
-## A Research Direction
+## What I Would Try After This
 
 The next interesting frontier is not merely "better uncertainty." It is
 decision-calibrated uncertainty for agentic systems.
@@ -223,7 +223,7 @@ Abstention is sometimes framed as humility. That is emotionally right, but
 technically incomplete. A system abstains well when it has learned the economics
 of being wrong, being silent, and buying one more piece of evidence.
 
-## Notes
+## Further Reading
 
 [^chow1957]: C. K. Chow, "An Optimum Character Recognition System Using Decision Functions," *IRE Transactions on Electronic Computers*, 1957. [PDF](https://gwern.net/doc/ai/highleyman/1957-chow.pdf).
 
