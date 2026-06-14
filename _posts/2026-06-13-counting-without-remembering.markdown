@@ -270,7 +270,7 @@ The privacy line matters. A sketch is not a list of user IDs, which is good. But
 "not a list" is not the same as "safe under all joins, salts, and side
 information." Treat it as reduced data, not purified data.
 
-## The Feeling of the Algorithm
+## How the Algorithm Feels
 
 Exact counting remembers every witness.
 
@@ -293,7 +293,7 @@ some mathematical trust.
 
 But in the right place, that is a magnificent trade.
 
-## Notes
+## References
 
 [^morris]: Robert Morris, ["Counting Large Numbers of Events in Small Registers"](https://graphics.stanford.edu/courses/cs321/Private/Readings/p840-morris.pdf), *Communications of the ACM*, 1978. Morris's counter estimates event counts rather than distinct counts, but it is a classic ancestor of probabilistic counting with tiny state.
 
