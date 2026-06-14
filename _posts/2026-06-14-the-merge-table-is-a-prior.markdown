@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "BPE Merge Tables Smuggle Priors"
-description: "A tokenizer is not a neutral parser. A BPE merge table spends vocabulary on strings that were common in its reference corpus, and that spending changes the computational price of future text."
+title: "The Tokenizer Sets the Cover Charge"
+description: "A tokenizer is not a neutral parser. A BPE merge table spends vocabulary on strings that were common in its reference corpus, changing the computational price of future text."
 date: 2026-06-14 01:24:00 -0400
 categories: ai-systems
 tags: [tokenization, bpe, language-models, compression, tokenizer-free-models, representation-learning]
-excerpt: "Subword tokenization solved the open-vocabulary problem by making rare strings decomposable. It also made a quieter bargain: frequent strings get cheap coordinates, rare strings pay in more tokens."
+excerpt: "Subword tokenization solved the open-vocabulary problem by making rare strings decomposable. It also made a quieter bargain: familiar strings get cheap coordinates, unfamiliar strings pay in more tokens."
 ---
 
 The first hidden model in a language model is often not a neural network.
@@ -33,7 +33,7 @@ That is the sense in which the merge table is a prior. Not a prior over truth,
 and not a semantic theory of language. It is a prior over the strings that the
 model will see cheaply.
 
-## A Compression Trick Becomes an Interface
+## A Compression Trick Became a Doorway
 
 Byte pair encoding started life as a compression algorithm. Philip Gage's 1994
 algorithm repeatedly replaced a frequent adjacent byte pair with a new symbol,
@@ -70,7 +70,7 @@ spell every string with the same number of pieces.
 The corpus that trained the tokenizer leaves a bill of materials for future
 text.
 
-## Cheap Coordinates
+## Vocabulary Slots Are Subsidies
 
 Suppose a raw-text BPE trainer starts with characters as symbols. At step \(k\),
 it chooses the adjacent pair
@@ -110,7 +110,7 @@ Numbers, code identifiers, logs, names, romanized words, low-resource languages,
 and domain-specific notation are exactly where this matters. They are often
 compositional to a human and fragmented to a tokenizer trained elsewhere.
 
-## A Small Merge-Table Lab
+## Make Two Tokenizers Argue
 
 The lab below trains two tiny BPE tokenizers in the browser. Both use the same
 merge budget and the same greedy algorithm. The only difference is the reference
@@ -425,6 +425,12 @@ reference distribution, and the same future text receives a different price.
 </div>
 <script defer src="{{ '/assets/js/bpe-prior-lab.js?v=20260614a' | relative_url }}"></script>
 
+At the default setting, the code probe goes from 42 pieces under the general
+tokenizer to 33 under the domain tokenizer. The crude dense-attention proxy
+drops to about 0.62x. The market log only moves from 50 to 48 pieces, and the
+rare string stays at 41 either way. The merge table helped where the reference
+corpus had bought relevant fragments. It did not become a universal decoder.
+
 Try three settings.
 
 Raise **Code share** and keep the code probe selected. The general tokenizer can
@@ -443,7 +449,7 @@ because the tokenizer has seen "technical" text. A BPE table generalizes through
 shared adjacent fragments, not through understanding. If the important pattern
 is not frequent enough to buy merges, it falls back to smaller units.
 
-## The Bias Is Not Just About Length
+## The Tax Is Not Only Token Count
 
 Token count is the easiest thing to measure, so it is the thing the lab shows.
 But the representational effect is broader.
@@ -479,7 +485,7 @@ about, measure:
 The important comparison is not "does the tokenizer work on average?" It is
 "which parts of my distribution are paying the tax?"
 
-## The Temptation to Go Token-Free
+## The Token-Free Temptation
 
 One response is to remove the learned vocabulary boundary altogether.
 
@@ -503,7 +509,7 @@ there is a free representation. There is not.
 
 The right question is which bill you want to itemize.
 
-## Tokenizers Are Dataset Artifacts
+## Treat the Tokenizer Like Data
 
 It is useful to treat a tokenizer the way we treat a training set, a benchmark,
 or a labeling policy: as a dataset artifact with assumptions.
