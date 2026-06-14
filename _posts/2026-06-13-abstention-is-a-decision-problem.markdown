@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "When the Model May Say No"
-description: "A model should not answer merely because its confidence cleared a universal threshold. The right stop rule depends on error costs, abstention costs, and the value of more information."
+title: "The Cost Model Behind Saying No"
+description: "A model should not answer because confidence cleared a universal threshold. The stop rule belongs to error costs, abstention costs, and the value of another look."
 date: 2026-06-13 00:25:00 -0400
 categories: ai-systems
 tags: [selective-prediction, abstention, decision-theory, value-of-information, calibration]
-excerpt: "Selective prediction is usually drawn as a risk-coverage curve. In deployed AI systems it is also a utility problem: act, abstain, defer, or buy more evidence."
+excerpt: "Selective prediction is more than a risk-coverage curve. In deployed systems, the policy must price being wrong, being silent, deferring, and buying evidence."
 ---
 
 Most machine learning systems are trained to answer. Production systems need a
-second skill: knowing when not to.
+less glamorous skill: knowing when the answer is not worth buying.
 
 That sounds like calibration. It is partly calibration. A model that cannot rank
 its own errors is dangerous. But abstention is not merely a confidence threshold.
@@ -38,11 +38,10 @@ and rejection jointly rather than bolting rejection on afterward.[^selective-dnn
 </div>
 
 This is why "only answer when confidence is above 90%" is not a general safety
-rule. It hides the part of the problem that actually matters: what happens if
-the model is wrong, what happens if it says nothing, and what other evidence can
-still be bought.
+rule. It hides the part of the problem that actually matters: the bill for being
+wrong, the bill for silence, and the price of one more piece of evidence.
 
-## Confidence Is Not Utility
+## Confidence Does Not Pay the Bill
 
 Suppose a model predicts an action and estimates that it has error probability
 $$r(x)$$. Let a correct action produce benefit $$B$$, a wrong action cost $$L$$,
@@ -75,7 +74,7 @@ versions all lead back to selection rules ordered by conditional expected
 risk.[^optimal-reject] A good uncertainty score is useful because it preserves
 that ordering. It is not useful because "uncertainty" is intrinsically sacred.
 
-## Risk-Coverage Curves Are Not Enough
+## The Curve Is Only the Front Door
 
 Risk-coverage curves are the right first picture. Sort examples from easiest to
 hardest according to an uncertainty score. Answer the easy ones. Reject the hard
@@ -105,7 +104,7 @@ That is the missing layer in many LLM and agent systems. "Answer or abstain" is
 already a decision problem. "Think longer or stop" is the same problem one level
 up.
 
-## A Toy Run
+## Five Policies in the Sandbox
 
 The simulator below creates synthetic binary decisions. Each case has a true
 probability that the base model's proposed action is correct. The model observes
@@ -177,7 +176,7 @@ decision is likely to cross a utility boundary. This is the operational version
 of "think longer": not more tokens everywhere, but more evidence where the
 evidence can change the action.
 
-## The Design Pattern
+## Ship a Stop Policy
 
 For an AI system that can harm users, money, or trust, I would not ship a single
 confidence threshold. I would ship a small decision policy:
@@ -197,7 +196,7 @@ and heterogeneity, not just on model confidence.[^l2d] That should sound obvious
 to anyone who has seen a real operations queue. It is also exactly why the
 abstention problem cannot be solved inside the softmax layer.
 
-## What I Would Try After This
+## More Than One Pause
 
 The next interesting frontier is not merely "better uncertainty." It is
 decision-calibrated uncertainty for agentic systems.
