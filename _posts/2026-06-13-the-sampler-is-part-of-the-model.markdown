@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "Samplers Belong in the Model"
-description: "Diffusion and flow-matching models do not end at the neural network. Their path, vector field, and numerical solver decide what distribution actually appears."
+title: "The Last Layer Is the Solver"
+description: "Diffusion and flow-matching models do not end at the neural network. The path, vector field, and numerical solver decide what distribution appears."
 date: 2026-06-13 03:18:00 -0400
 categories: machine-learning
 tags: [flow-matching, diffusion-models, generative-modeling, numerical-analysis, optimal-transport]
-excerpt: "A generative model trained as a continuous-time vector field still has to be sampled by a finite numerical method. Path geometry, coupling, solver order, and function evaluations are part of the model's behavior."
+excerpt: "A continuous-time generator still reaches users through finite steps. Path geometry, coupling, solver order, and function evaluations all show up in the samples."
 ---
 
-The first time diffusion models became obviously good, the story was usually
-told as a denoising story.
+When diffusion models first became obviously good, the story was usually told
+as a denoising story.
 
 Take data. Add noise until it becomes almost Gaussian. Train a neural network to
 undo a small piece of that corruption. Start from noise and run the learned
@@ -40,7 +40,7 @@ enough to inspect, but real enough to show the same failure modes: bad coupling
 creates tangled paths, too few solver steps bend the distribution, too much
 smoothing erases modes, and too little smoothing creates a noisy vector field.
 
-## Three Objects, Not One
+## There Are Three Moving Parts
 
 Continuous-time generative models often hide three distinct design choices under
 one word: "model."
@@ -88,7 +88,7 @@ network evaluations than earlier diffusion samplers.[^edm] That is the shape of
 the field: generation quality is not produced by a loss alone. It is produced by
 the whole numerical pipeline.
 
-## Flow Matching, in One Toy Equation
+## One Toy Equation for the Bench
 
 Flow matching asks for a velocity field directly. Instead of simulating a
 diffusion during training, define a family of probability paths and regress the
@@ -197,7 +197,7 @@ training pairs, the vector field, the solver, and the resulting sample cloud.
 </div>
 <script defer src="{{ '/assets/js/flow-matching-lab.js' | relative_url }}"></script>
 
-Try the rude settings.
+Try the rude settings first.
 
 Switch from angle-sorted coupling to random pairs. The marginal target
 distribution has not changed, but the transport problem did. The vector field is
@@ -217,7 +217,7 @@ regularization, conditioning, and training time. The failure is the same:
 sampling quality is controlled by the smoothness and accuracy of the learned
 field, not just by the endpoint distribution in the training story.
 
-## Straightness Is a Computational Resource
+## Straight Paths Spend Fewer Steps
 
 Rectified flow makes a beautifully direct claim: learn an ODE whose trajectories
 follow straight paths between samples from a base distribution and a target
@@ -254,7 +254,7 @@ path geometry decides sampler difficulty
 A model that learns a hard path may still fit its training objective. It just
 hands the bill to the sampler.
 
-## Coupling Is Not an Implementation Detail
+## Pairing Noise With Data Changes the Bill
 
 The toy lab has a coupling switch because pairing matters.
 
@@ -290,7 +290,7 @@ $$
 
 The cost did not appear at inference. It was encoded into the path.
 
-## The Error Ledger
+## When Samples Fail, Open Four Ledgers
 
 When a generated sample looks bad, "the model failed" is too coarse. At least
 four errors can be hiding in the same artifact.
@@ -327,7 +327,7 @@ crediting the network for quality that came from an expensive sampler
 
 Both happen.
 
-## The Measurement List
+## What I Want Beside FID
 
 For a serious generative-model report, I would like to see sampler diagnostics
 next to sample-quality metrics.
@@ -386,7 +386,7 @@ It is the one whose continuous story survives discretization.
 
 The sampler is not an accessory. It is the final layer of the generative model.
 
-## Reading Notes
+## Source Notes
 
 [^ddpm]: Jonathan Ho, Ajay Jain, and Pieter Abbeel, "Denoising Diffusion Probabilistic Models," NeurIPS 2020. [arXiv](https://arxiv.org/abs/2006.11239).
 
