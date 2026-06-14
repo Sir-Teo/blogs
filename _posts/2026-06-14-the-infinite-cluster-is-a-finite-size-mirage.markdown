@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Infinite Cluster Is a Finite-Size Mirage"
+title: "Percolation's Infinite Cliff, Seen in a Box"
 description: "Percolation has a clean infinite-lattice threshold, but every experiment sees a rounded finite box. A browser lab shows why the crossing curve sharpens into a phase transition."
 date: 2026-06-14 16:50:00 -0400
 categories: physics
