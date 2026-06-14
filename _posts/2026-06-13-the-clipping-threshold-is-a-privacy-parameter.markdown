@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Clipping Sets the Privacy Thermostat"
-description: "DP-SGD is often described as SGD plus noise. The more revealing description is clipped influence plus accounted randomness."
+title: "Privacy Starts With a Volume Knob"
+description: "DP-SGD is often described as SGD plus noise. The better description is clipped influence plus accounted randomness."
 date: 2026-06-13 10:42:00 -0400
 categories: machine-learning
 tags: [differential-privacy, dp-sgd, privacy, optimization, machine-learning, security]
-excerpt: "Differentially private training does not begin with noise. It begins by deciding how much one example is allowed to move the model."
+excerpt: "Differentially private training does not begin with noise. It begins by deciding how loudly one example is allowed to move the model."
 ---
 
 There is a comforting but wrong mental picture of private training:
@@ -34,7 +34,7 @@ whose value encodes what kind of training signal you are willing to suppress.
   Noise only has a calibrated meaning after sensitivity has been bounded.
 </div>
 
-## The Promise Is About Distributions
+## The Promise Is About Randomized Worlds
 
 Differential privacy is not a promise that a model never memorizes a string, or
 that a released parameter cannot be attacked, or that a sensitive fact cannot be
@@ -67,7 +67,7 @@ layer-dependent. DP-SGD's first trick is therefore not "add noise." It is:
 make the worst-case contribution finite
 ```
 
-## The Algorithm Hides in One Line
+## The One Line Before the Noise
 
 At a training step, sample a minibatch of size $$B$$. For each example
 $$x_i$$, compute its per-example gradient
@@ -116,7 +116,7 @@ representation knob.
 
 That is the part many diagrams hide.
 
-## A Small DP-SGD Laboratory
+## A Gradient Volume-Knob Lab
 
 The lab below simulates a two-dimensional projection of per-example gradients.
 Most examples form a common gradient cloud. A smaller group carries a rare,
@@ -195,7 +195,7 @@ two-dimensional projection, a noisy arrow may look tame. In a 1,000-dimensional
 model slice, the norm of Gaussian noise scales like $$\sqrt d$$. Coordinate-wise
 noise can be small while vector-level noise is large.
 
-## Clipping Is Not Neutral
+## Clipping Chooses Who Gets Quiet
 
 The clipped gradient is a biased estimator of the raw gradient:
 
@@ -228,7 +228,7 @@ The lab's rare-gradient cluster is cartoonish, but the phenomenon is real. The
 examples most affected by clipping are not necessarily bad examples. They are
 examples with high influence under the current model.
 
-## Accounting Is a Ledger, Not a Label
+## Epsilon Is a Ledger Entry
 
 One DP-SGD step is not the training run. Training is a composition of many
 randomized mechanisms: one for each private update, plus any private evaluation,
@@ -275,7 +275,7 @@ language models with user-level differential privacy, where each user's
 contribution can include many records; that is a harder and often more relevant
 unit for language systems.[^mcmahan]
 
-## What DP Does Not Automatically Fix
+## DP Is Not a Force Field
 
 DP is powerful because it is semantic rather than attack-specific. Still, it is
 not a force field around a model.
@@ -298,7 +298,7 @@ and later demonstrated extraction of verbatim training data from large language
 models.[^secret][^extracting] These attacks do not define privacy. They explain
 why a formal privacy story is worth the engineering pain.
 
-## The Audit I Would Want
+## The Privacy Ledger I Would Want
 
 For a private training run, I would want the release notes to include a privacy
 ledger, not only an epsilon.
@@ -325,7 +325,7 @@ Then add model-quality evidence that is specifically sensitive to clipping:
 The hard part is not drawing the DP-SGD box. The hard part is preserving the
 meaning of the guarantee as the training pipeline grows around it.
 
-## The Unfinished Part
+## Build a Clipping Atlas
 
 The next experiment I would like to run is not another leaderboard. It is a
 clipping atlas.
@@ -347,7 +347,7 @@ optimizer, and an engineering system are genuinely entangled. The theorem needs
 sensitivity. The optimizer feels clipping. The system must account for every
 release. The clipping threshold is where all three meet.
 
-## The Trail of Papers
+## Sources
 
 [^dwork]: Cynthia Dwork, Frank McSherry, Kobbi Nissim, and Adam Smith, ["Calibrating Noise to Sensitivity in Private Data Analysis"](https://people.csail.mit.edu/asmith/PS/sensitivity-tcc-final.pdf), TCC 2006. See also the [Springer record](https://link.springer.com/chapter/10.1007/11681878_14).
 
