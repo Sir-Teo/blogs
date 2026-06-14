@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Particle Filters Carry a Crowd"
+title: "Sometimes the Posterior Needs a Crowd"
 description: "Particle filters approximate a nonlinear, non-Gaussian filtering distribution with weighted samples. The hard part is not drawing samples; it is keeping them alive without lying to yourself."
 date: 2026-06-13 18:10:00 -0400
 categories: statistics
 tags: [particle-filter, sequential-monte-carlo, nonlinear-filtering, bayesian-inference, state-space-models]
-excerpt: "When the posterior is curved, multimodal, or sign-ambiguous, a mean and variance can be a bad summary. A particle filter keeps a moving empirical distribution instead."
+excerpt: "When the posterior is curved, multimodal, or sign-ambiguous, a mean and variance can be a bad summary. A particle filter keeps a moving crowd of weighted hypotheses instead."
 ---
 
 The Kalman filter is a beautiful machine because it keeps only what the
@@ -44,7 +44,7 @@ location is carrying. The method is not trying to make the posterior Gaussian.
 It is trying to keep enough weighted hypotheses alive that the posterior shape
 can be approximated numerically.
 
-## The Filtering Recursion
+## The Recursion Under the Crowd
 
 In a hidden Markov model, the latent state evolves by:
 
@@ -99,7 +99,7 @@ for each new observation:
 The embarrassment fades when the posterior is shaped like something a Gaussian
 cannot draw.
 
-## A Particle Filter Lab
+## A Two-Signed Observation Lab
 
 The lab below uses a standard nonlinear benchmark model:
 
@@ -200,7 +200,7 @@ do not ask only where the posterior center is
 ask what shape of uncertainty the data created
 ```
 
-## The ESS Alarm
+## The ESS Alarm Bell
 
 Importance weights decay unevenly. After a surprising observation, a few
 particles may explain the data well while most explain it terribly. Then the
@@ -241,7 +241,7 @@ Resampling is not a Bayesian update. It is a representation repair. It changes
 the particle set so the next update is numerically usable, while trying to leave
 the represented distribution unchanged.
 
-## Why the Proposal Matters
+## The Proposal Decides Where Hope Goes
 
 The lab uses the bootstrap proposal:
 
@@ -279,7 +279,7 @@ what proposal distribution keeps posterior mass represented
 at the computational budget I actually have?
 ```
 
-## The Mean Can Be the Wrong Object
+## The Mean Can Point Nowhere
 
 In the lab, the posterior mean is sometimes a useful estimate. It is also
 sometimes a compromise between incompatible stories. If particles sit near
@@ -300,7 +300,7 @@ Particle filters let you ask better downstream questions:
 
 The posterior representation is richer than the mean. Use it.
 
-## Failure Modes Worth Respecting
+## Ways the Crowd Collapses
 
 Particle filters do not defeat dimension. In high-dimensional state spaces, the
 number of particles needed to represent the posterior can become brutal. This is
@@ -327,7 +327,7 @@ weights. Too much resampling loses diversity. Adding roughening noise, move
 steps, better proposals, or analytic marginalization can help, but each fix is a
 modeling choice, not a free lunch.
 
-## A Run Sheet for Particle Filters
+## Questions Before Trusting the Crowd
 
 Before I trust a particle filter, I want to know:
 
