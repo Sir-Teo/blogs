@@ -5,245 +5,373 @@
     text: "#172026",
     muted: "#5d6872",
     rule: "#d7dee5",
-    faint: "#f8fafc",
-    trueBar: "#0f766e",
-    estimate: "#b45309",
-    error: "#be123c",
-    bound: "#6d28d9",
-    probe: "#2563eb",
-    falsePositive: "#c2410c",
-    heavy: "#0f766e"
+    grid: "#e7edf3",
+    panel: "#f8fafc",
+    white: "#ffffff",
+    exact: "#334155",
+    cm: "#be123c",
+    cu: "#0f766e",
+    bound: "#7c3aed",
+    heat: "#d97706",
+    blue: "#2563eb",
+    soft: "#eef6ff"
+  };
+
+  var DEFAULTS = {
+    events: 50000,
+    vocabulary: 2000,
+    skew: 105,
+    width: 128,
+    depth: 5,
+    threshold: 10,
+    queryRank: 6,
+    seed: 37
   };
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
 
+  function clampInt(value, min, max) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return min;
+    return clamp(Math.round(n), min, max);
+  }
+
+  function readNumber(raw, key) {
+    var value = Number(raw && raw[key]);
+    return Number.isFinite(value) ? value : DEFAULTS[key];
+  }
+
+  function cleanParams(raw) {
+    raw = raw || {};
+    return {
+      events: clampInt(readNumber(raw, "events"), 5000, 120000),
+      vocabulary: clampInt(readNumber(raw, "vocabulary"), 100, 8000),
+      skew: clampInt(readNumber(raw, "skew"), 0, 150),
+      width: clampInt(readNumber(raw, "width"), 32, 512),
+      depth: clampInt(readNumber(raw, "depth"), 1, 8),
+      threshold: clampInt(readNumber(raw, "threshold"), 2, 60),
+      queryRank: clampInt(readNumber(raw, "queryRank"), 1, 40),
+      seed: clampInt(readNumber(raw, "seed"), 1, 9999)
+    };
+  }
+
+  function readParams(root) {
+    var raw = {};
+    root.querySelectorAll("[data-param]").forEach(function (input) {
+      raw[input.getAttribute("data-param")] = input.value;
+    });
+    return raw;
+  }
+
+  function makeRng(seed) {
+    var state = (seed >>> 0) + 0x9e3779b9;
+    return function () {
+      state = (state + 0x6d2b79f5) >>> 0;
+      var t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
   function hash32(value, seed) {
-    var x = (value ^ seed) >>> 0;
-    x = Math.imul(x ^ (x >>> 16), 0x7feb352d);
-    x = Math.imul(x ^ (x >>> 15), 0x846ca68b);
-    return (x ^ (x >>> 16)) >>> 0;
+    var h = (value ^ seed) >>> 0;
+    h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+    h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h;
   }
 
-  function bucketFor(key, row, width) {
-    return hash32(Math.imul(key + 1, 1000003) ^ Math.imul(row + 7, 9176), 0x9e3779b9 + row * 2654435761) % width;
+  function bucket(item, row, width, seed) {
+    return hash32((item + 1) * 0x9e3779b1, seed ^ Math.imul(row + 1, 0x85ebca6b)) % width;
   }
 
-  function formatCount(value) {
-    if (!isFinite(value)) return "n/a";
-    if (Math.abs(value) >= 1000000) return (value / 1000000).toFixed(1) + "m";
-    if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + "k";
-    return String(Math.round(value));
+  function makeWeights(vocabulary, skew) {
+    var exponent = skew / 100;
+    var cdf = new Float64Array(vocabulary);
+    var total = 0;
+    for (var i = 0; i < vocabulary; i += 1) {
+      total += exponent === 0 ? 1 : 1 / Math.pow(i + 1, exponent);
+      cdf[i] = total;
+    }
+    for (var j = 0; j < vocabulary; j += 1) cdf[j] /= total;
+    return cdf;
+  }
+
+  function sampleCdf(cdf, u) {
+    var lo = 0;
+    var hi = cdf.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi) >>> 1;
+      if (cdf[mid] >= u) hi = mid;
+      else lo = mid + 1;
+    }
+    return lo;
+  }
+
+  function makeTable(depth, width) {
+    var rows = [];
+    for (var r = 0; r < depth; r += 1) rows.push(new Uint32Array(width));
+    return rows;
+  }
+
+  function updateClassic(table, item, width, seed) {
+    for (var r = 0; r < table.length; r += 1) {
+      table[r][bucket(item, r, width, seed)] += 1;
+    }
+  }
+
+  function updateConservative(table, item, width, seed) {
+    var positions = [];
+    var min = Infinity;
+    for (var r = 0; r < table.length; r += 1) {
+      var b = bucket(item, r, width, seed);
+      positions.push(b);
+      if (table[r][b] < min) min = table[r][b];
+    }
+    for (var row = 0; row < table.length; row += 1) {
+      var col = positions[row];
+      if (table[row][col] === min) table[row][col] += 1;
+    }
+  }
+
+  function estimate(table, item, width, seed) {
+    var min = Infinity;
+    for (var r = 0; r < table.length; r += 1) {
+      var value = table[r][bucket(item, r, width, seed)];
+      if (value < min) min = value;
+    }
+    return min;
+  }
+
+  function quantile(sorted, q) {
+    if (!sorted.length) return 0;
+    var at = (sorted.length - 1) * q;
+    var lo = Math.floor(at);
+    var hi = Math.ceil(at);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+  }
+
+  function summarize(items, key) {
+    var errors = items.map(function (row) { return row[key]; }).sort(function (a, b) { return a - b; });
+    var sum = errors.reduce(function (a, b) { return a + b; }, 0);
+    return {
+      mean: errors.length ? sum / errors.length : 0,
+      p50: quantile(errors, 0.5),
+      p95: quantile(errors, 0.95),
+      max: errors.length ? errors[errors.length - 1] : 0
+    };
+  }
+
+  function generate(params) {
+    var p = cleanParams(params);
+    var rng = makeRng(p.seed);
+    var cdf = makeWeights(p.vocabulary, p.skew);
+    var counts = new Uint32Array(p.vocabulary);
+    var cm = makeTable(p.depth, p.width);
+    var cu = makeTable(p.depth, p.width);
+    for (var i = 0; i < p.events; i += 1) {
+      var item = sampleCdf(cdf, rng());
+      counts[item] += 1;
+      updateClassic(cm, item, p.width, p.seed);
+      updateConservative(cu, item, p.width, p.seed);
+    }
+    return { params: p, counts: counts, cm: cm, cu: cu };
+  }
+
+  function evaluate(raw) {
+    var data = generate(raw);
+    var p = data.params;
+    var thresholdCount = p.events * p.threshold / 1000;
+    var items = [];
+    var observed = 0;
+    var trueHeavy = 0;
+    var cmReported = 0;
+    var cuReported = 0;
+    var cmFalsePositive = 0;
+    var cuFalsePositive = 0;
+    var cmFalseNegative = 0;
+    var cuFalseNegative = 0;
+    for (var item = 0; item < p.vocabulary; item += 1) {
+      var exact = data.counts[item];
+      if (exact > 0) observed += 1;
+      var cmEstimate = estimate(data.cm, item, p.width, p.seed);
+      var cuEstimate = estimate(data.cu, item, p.width, p.seed);
+      var isHeavy = exact >= thresholdCount;
+      var cmHit = cmEstimate >= thresholdCount;
+      var cuHit = cuEstimate >= thresholdCount;
+      if (isHeavy) trueHeavy += 1;
+      if (cmHit) cmReported += 1;
+      if (cuHit) cuReported += 1;
+      if (cmHit && !isHeavy) cmFalsePositive += 1;
+      if (cuHit && !isHeavy) cuFalsePositive += 1;
+      if (!cmHit && isHeavy) cmFalseNegative += 1;
+      if (!cuHit && isHeavy) cuFalseNegative += 1;
+      items.push({
+        item: item,
+        count: exact,
+        cm: cmEstimate,
+        cu: cuEstimate,
+        cmError: cmEstimate - exact,
+        cuError: cuEstimate - exact
+      });
+    }
+    items.sort(function (a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.item - b.item;
+    });
+    var query = items[Math.min(items.length - 1, p.queryRank - 1)];
+    var epsilon = Math.E / p.width;
+    var delta = Math.exp(-p.depth);
+    var budget = epsilon * p.events;
+    var cmSummary = summarize(items, "cmError");
+    var cuSummary = summarize(items, "cuError");
+    var checks = {
+      bounded: items.every(function (row) { return row.cm >= row.count && row.cu >= row.count; }),
+      finite: Number.isFinite(cmSummary.max) && Number.isFinite(cuSummary.max),
+      noEnumeratedFalseNegatives: cmFalseNegative === 0 && cuFalseNegative === 0,
+      itemCount: items.length === p.vocabulary
+    };
+    return {
+      budget: budget,
+      checks: checks,
+      cmSummary: cmSummary,
+      cuSummary: cuSummary,
+      data: data,
+      delta: delta,
+      epsilon: epsilon,
+      exactBytes: observed * 16,
+      items: items,
+      memoryBytes: p.width * p.depth * 4,
+      observed: observed,
+      params: p,
+      query: query,
+      thresholdCount: thresholdCount,
+      threshold: {
+        trueHeavy: trueHeavy,
+        cmReported: cmReported,
+        cuReported: cuReported,
+        cmFalsePositive: cmFalsePositive,
+        cuFalsePositive: cuFalsePositive,
+        cmFalseNegative: cmFalseNegative,
+        cuFalseNegative: cuFalseNegative
+      }
+    };
+  }
+
+  function formatInt(value) {
+    return Math.round(value).toLocaleString("en-US");
   }
 
   function formatNumber(value, digits) {
-    if (!isFinite(value)) return "n/a";
-    var places = digits == null ? 2 : digits;
-    if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + "k";
-    if (Math.abs(value) >= 100) return value.toFixed(0);
-    if (Math.abs(value) >= 10) return value.toFixed(1);
-    return value.toFixed(places);
+    if (!Number.isFinite(value)) return "n/a";
+    return value.toFixed(digits == null ? 2 : digits);
   }
 
   function formatPercent(value, digits) {
-    if (!isFinite(value)) return "n/a";
-    return value.toFixed(digits == null ? 1 : digits) + "%";
+    if (!Number.isFinite(value)) return "n/a";
+    return (100 * value).toFixed(digits == null ? 1 : digits) + "%";
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return formatNumber(bytes, bytes < 10 ? 1 : 0) + " B";
+    if (bytes < 1024 * 1024) return formatNumber(bytes / 1024, bytes < 10 * 1024 ? 1 : 0) + " KB";
+    return formatNumber(bytes / (1024 * 1024), 1) + " MB";
   }
 
   function metric(label, value) {
     return '<div class="cms-lab__metric"><span>' + label + "</span><strong>" + value + "</strong></div>";
   }
 
-  function quantile(sorted, q) {
-    if (!sorted.length) return 0;
-    var index = clamp(Math.floor(q * (sorted.length - 1)), 0, sorted.length - 1);
-    return sorted[index];
+  function updateControls(root, params) {
+    Object.keys(params).forEach(function (key) {
+      var input = root.querySelector('[data-param="' + key + '"]');
+      if (input && String(input.value) !== String(params[key])) input.value = params[key];
+    });
   }
 
-  function cleanParams(raw) {
-    raw = raw || {};
-    var universe = clamp(Math.round(raw.universe == null ? 512 : raw.universe), 64, 1024);
-    return {
-      depth: clamp(Math.round(raw.depth == null ? 4 : raw.depth), 1, 8),
-      probeRank: clamp(Math.round(raw.probeRank == null ? 80 : raw.probeRank), 1, universe),
-      skew: clamp(raw.skew == null ? 110 : Number(raw.skew), 50, 200) / 100,
-      streamLength: clamp(Math.round(raw.streamLength == null ? 40000 : raw.streamLength), 5000, 120000),
-      threshold: clamp(raw.threshold == null ? 2 : Number(raw.threshold), 0.5, 10) / 100,
-      universe: universe,
-      width: clamp(Math.round(raw.width == null ? 64 : raw.width), 8, 256)
+  function updateOutputs(root, params) {
+    var values = {
+      events: formatInt(params.events),
+      vocabulary: formatInt(params.vocabulary),
+      skew: formatNumber(params.skew / 100, 2),
+      width: formatInt(params.width),
+      depth: formatInt(params.depth),
+      threshold: formatPercent(params.threshold / 1000, 1),
+      queryRank: "#" + params.queryRank,
+      seed: String(params.seed)
     };
-  }
-
-  function zipfCounts(params) {
-    var weights = [];
-    var totalWeight = 0;
-    for (var i = 1; i <= params.universe; i += 1) {
-      var weight = 1 / Math.pow(i, params.skew);
-      weights.push(weight);
-      totalWeight += weight;
-    }
-    var items = [];
-    var assigned = 0;
-    for (var j = 0; j < params.universe; j += 1) {
-      var exact = params.streamLength * weights[j] / totalWeight;
-      var count = Math.floor(exact);
-      assigned += count;
-      items.push({
-        count: count,
-        estimate: 0,
-        error: 0,
-        fractional: exact - count,
-        key: j,
-        label: "k" + String(j + 1),
-        rank: j + 1
-      });
-    }
-    var remaining = params.streamLength - assigned;
-    items.slice().sort(function (a, b) {
-      if (b.fractional !== a.fractional) return b.fractional - a.fractional;
-      return a.rank - b.rank;
-    }).slice(0, remaining).forEach(function (item) {
-      items[item.key].count += 1;
-    });
-    return items;
-  }
-
-  function buildSketch(params, items) {
-    var table = [];
-    for (var row = 0; row < params.depth; row += 1) {
-      var cells = new Array(params.width);
-      for (var col = 0; col < params.width; col += 1) cells[col] = 0;
-      table.push(cells);
-    }
-    items.forEach(function (item) {
-      if (!item.count) return;
-      for (var row = 0; row < params.depth; row += 1) {
-        table[row][bucketFor(item.key, row, params.width)] += item.count;
-      }
-    });
-    return table;
-  }
-
-  function estimateRows(table, params, item) {
-    var rows = [];
-    for (var row = 0; row < params.depth; row += 1) {
-      var bucket = bucketFor(item.key, row, params.width);
-      rows.push({
-        bucket: bucket,
-        row: row,
-        value: table[row][bucket]
-      });
-    }
-    return rows;
-  }
-
-  function annotateItems(items, table, params) {
-    items.forEach(function (item) {
-      var rows = estimateRows(table, params, item);
-      item.rows = rows;
-      item.estimate = Math.min.apply(null, rows.map(function (row) { return row.value; }));
-      item.error = item.estimate - item.count;
+    Object.keys(values).forEach(function (key) {
+      var output = root.querySelector('[data-output="' + key + '"]');
+      if (output) output.textContent = values[key];
     });
   }
 
-  function topBy(items, field, n) {
-    return items.slice().sort(function (a, b) {
-      if (b[field] !== a[field]) return b[field] - a[field];
-      return a.rank - b.rank;
-    }).slice(0, n);
+  function updateMetrics(root, result) {
+    var node = root.querySelector("[data-metrics]");
+    if (!node) return;
+    var audit = result.checks.bounded && result.checks.finite && result.checks.noEnumeratedFalseNegatives && result.checks.itemCount ? "pass" : "check";
+    node.innerHTML = [
+      metric("Query key", "item " + (result.query.item + 1)),
+      metric("True / CM / CU", formatInt(result.query.count) + " / " + formatInt(result.query.cm) + " / " + formatInt(result.query.cu)),
+      metric("CM p95 error", formatInt(result.cmSummary.p95)),
+      metric("Error budget", formatInt(result.budget)),
+      metric("False positives", formatInt(result.threshold.cmFalsePositive) + " / " + formatInt(result.threshold.cuFalsePositive)),
+      metric("Sketch memory", formatBytes(result.memoryBytes)),
+      metric("Observed keys", formatInt(result.observed)),
+      metric("Audit", audit)
+    ].join("");
   }
 
-  function setOf(rows) {
-    var out = {};
-    rows.forEach(function (row) {
-      out[row.key] = true;
-    });
-    return out;
+  function setupCanvas(canvas, height) {
+    var width = Math.round(canvas.getBoundingClientRect().width || 900);
+    var dpr = clamp(global.devicePixelRatio || 1, 1, 2);
+    canvas.style.height = height + "px";
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(0, 0, width, height);
+    return { ctx: ctx, width: width, height: height };
   }
 
-  function histogram(values, bins, maxValue) {
-    var out = [];
-    var max = Math.max(1, maxValue);
-    for (var i = 0; i < bins; i += 1) out.push({ lo: max * i / bins, hi: max * (i + 1) / bins, count: 0 });
-    values.forEach(function (value) {
-      var index = Math.min(bins - 1, Math.floor(value / max * bins));
-      out[index].count += 1;
-    });
-    return out;
-  }
-
-  function simulate(rawParams) {
-    var params = cleanParams(rawParams || {});
-    var items = zipfCounts(params);
-    var table = buildSketch(params, items);
-    annotateItems(items, table, params);
-    var errors = items.map(function (item) { return item.error; }).sort(function (a, b) { return a - b; });
-    var thresholdCount = params.threshold * params.streamLength;
-    var trueHeavy = items.filter(function (item) { return item.count >= thresholdCount; });
-    var reported = items.filter(function (item) { return item.estimate >= thresholdCount; });
-    var falsePositives = reported.filter(function (item) { return item.count < thresholdCount; });
-    var trueTop = topBy(items, "count", 12);
-    var estTop = topBy(items, "estimate", 12);
-    var trueTop10 = setOf(topBy(items, "count", 10));
-    var estTop10 = topBy(items, "estimate", 10);
-    var topOverlap = estTop10.filter(function (item) { return trueTop10[item.key]; }).length;
-    var probe = items[params.probeRank - 1];
-    var epsilon = Math.E / params.width;
-    var bound = epsilon * params.streamLength;
-    var maxError = errors[errors.length - 1] || 0;
-    return {
-      bound: bound,
-      delta: Math.exp(-params.depth),
-      epsilon: epsilon,
-      errors: errors,
-      falsePositives: falsePositives,
-      histogram: histogram(errors, 14, Math.max(bound, maxError)),
-      items: items,
-      maxError: maxError,
-      memoryCells: params.depth * params.width,
-      p50Error: quantile(errors, 0.5),
-      p95Error: quantile(errors, 0.95),
-      params: params,
-      probe: probe,
-      reported: reported,
-      table: table,
-      thresholdCount: thresholdCount,
-      topEstimate: estTop,
-      topOverlap: topOverlap,
-      topPrecision: topOverlap / 10,
-      topTrue: trueTop,
-      trueHeavy: trueHeavy
-    };
-  }
-
-  function paramsFromRoot(root) {
-    var params = {};
-    root.querySelectorAll("input[data-param]").forEach(function (input) {
-      params[input.getAttribute("data-param")] = Number(input.value);
-    });
-    return params;
-  }
-
-  function panelTitle(ctx, box, title, subtitle) {
-    ctx.fillStyle = COLORS.text;
-    ctx.font = "700 13px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText(title, box.x, box.y);
-    if (subtitle) {
-      ctx.fillStyle = COLORS.muted;
-      ctx.font = "11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-      ctx.fillText(subtitle, box.x, box.y + 18);
-    }
-  }
-
-  function label(ctx, text, x, y, align, color, font) {
-    ctx.fillStyle = color || COLORS.muted;
-    ctx.font = font || "11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  function text(ctx, value, x, y, size, color, weight, align, baseline) {
+    ctx.fillStyle = color || COLORS.text;
+    ctx.font = (weight || 600) + " " + size + "px system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
     ctx.textAlign = align || "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, x, y);
+    ctx.textBaseline = baseline || "alphabetic";
+    ctx.fillText(value, x, y);
+  }
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    var radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  function panel(ctx, box, title, subtitle) {
+    ctx.fillStyle = COLORS.panel;
+    ctx.strokeStyle = COLORS.rule;
+    ctx.lineWidth = 1;
+    roundedRect(ctx, box.x, box.y, box.w, box.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    text(ctx, title, box.x + 16, box.y + 28, 13, COLORS.text, 760);
+    if (subtitle) text(ctx, subtitle, box.x + 16, box.y + 46, 10, COLORS.muted, 600);
   }
 
   function drawAxis(ctx, plot) {
@@ -257,219 +385,227 @@
   }
 
   function drawTopPanel(ctx, result, box) {
-    panelTitle(ctx, box, "Top keys", "true count versus Count-Min estimate");
-    var rows = result.topTrue;
-    var plot = { x: box.x + 48, y: box.y + 52, w: box.w - 64, h: box.h - 84 };
-    drawAxis(ctx, plot);
-    var maxCount = Math.max.apply(null, rows.map(function (row) { return row.estimate; }));
-    var gap = plot.w / rows.length;
-    rows.forEach(function (item, i) {
-      var x = plot.x + i * gap + gap * 0.17;
-      var barW = gap * 0.28;
-      var trueH = item.count / maxCount * plot.h;
-      var estH = item.estimate / maxCount * plot.h;
-      ctx.fillStyle = COLORS.trueBar;
-      ctx.fillRect(x, plot.y + plot.h - trueH, barW, trueH);
-      ctx.fillStyle = COLORS.estimate;
-      ctx.fillRect(x + barW + 2, plot.y + plot.h - estH, barW, estH);
-      label(ctx, String(item.rank), x + barW, plot.y + plot.h + 13, "center");
-    });
-    label(ctx, formatCount(maxCount), plot.x - 7, plot.y, "right");
-    label(ctx, "teal true, amber estimate", plot.x, box.y + box.h - 13, "left");
-    label(ctx, "threshold " + formatCount(result.thresholdCount), plot.x + plot.w, box.y + box.h - 13, "right", COLORS.bound);
-  }
-
-  function drawHeatmapPanel(ctx, result, box) {
-    panelTitle(ctx, box, "Sketch table", "probe buckets outlined in blue");
-    var table = result.table;
-    var plot = { x: box.x + 42, y: box.y + 54, w: box.w - 58, h: box.h - 90 };
-    var cellW = plot.w / result.params.width;
-    var cellH = plot.h / result.params.depth;
-    var maxCell = 1;
-    table.forEach(function (row) {
-      row.forEach(function (value) { maxCell = Math.max(maxCell, value); });
-    });
-    for (var r = 0; r < result.params.depth; r += 1) {
-      for (var c = 0; c < result.params.width; c += 1) {
-        var value = table[r][c];
-        var intensity = Math.log1p(value) / Math.log1p(maxCell);
-        var red = Math.round(248 - 132 * intensity);
-        var green = Math.round(250 - 70 * intensity);
-        var blue = Math.round(252 - 40 * intensity);
-        ctx.fillStyle = "rgb(" + red + "," + green + "," + blue + ")";
-        ctx.fillRect(plot.x + c * cellW, plot.y + r * cellH, Math.max(1, cellW), Math.max(1, cellH));
+    panel(ctx, box, "top keys", "exact counts versus two sketches");
+    var rows = result.items.slice(0, 12);
+    var plot = { x: box.x + 54, y: box.y + 68, w: box.w - 78, h: box.h - 102 };
+    var max = rows.reduce(function (m, row) { return Math.max(m, row.cm, row.cu, row.count); }, 1);
+    rows.forEach(function (row, i) {
+      var y = plot.y + i * plot.h / rows.length;
+      var h = Math.max(5, plot.h / rows.length - 5);
+      text(ctx, String(i + 1), plot.x - 14, y + h / 2, 9, COLORS.muted, 650, "right", "middle");
+      [
+        { key: "count", color: COLORS.exact, offset: 0 },
+        { key: "cm", color: COLORS.cm, offset: h * 0.34 },
+        { key: "cu", color: COLORS.cu, offset: h * 0.68 }
+      ].forEach(function (bar) {
+        ctx.fillStyle = bar.color;
+        ctx.fillRect(plot.x, y + bar.offset, row[bar.key] / max * plot.w, Math.max(2, h * 0.25));
+      });
+      if (row.item === result.query.item) {
+        ctx.strokeStyle = COLORS.bound;
+        ctx.strokeRect(plot.x - 4, y - 1, plot.w + 8, h + 2);
       }
-      label(ctx, "r" + String(r + 1), plot.x - 8, plot.y + r * cellH + cellH / 2, "right");
-    }
-    result.probe.rows.forEach(function (row) {
-      ctx.strokeStyle = COLORS.probe;
-      ctx.lineWidth = 1.6;
-      ctx.strokeRect(plot.x + row.bucket * cellW, plot.y + row.row * cellH, Math.max(2, cellW), Math.max(2, cellH));
     });
-    ctx.strokeStyle = COLORS.rule;
-    ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
-    label(ctx, "width " + result.params.width + " x depth " + result.params.depth, plot.x, box.y + box.h - 13, "left");
-    label(ctx, "dark cells carry more collision mass", plot.x + plot.w, box.y + box.h - 13, "right");
+    text(ctx, "exact", plot.x, box.y + box.h - 17, 10, COLORS.exact, 760);
+    text(ctx, "classic CM", plot.x + 50, box.y + box.h - 17, 10, COLORS.cm, 760);
+    text(ctx, "conservative", plot.x + 130, box.y + box.h - 17, 10, COLORS.cu, 760);
+    text(ctx, "max " + formatInt(max), plot.x + plot.w, box.y + box.h - 17, 10, COLORS.muted, 650, "right");
   }
 
   function drawErrorPanel(ctx, result, box) {
-    panelTitle(ctx, box, "Overcount histogram", "errors are estimate minus truth");
-    var plot = { x: box.x + 48, y: box.y + 54, w: box.w - 66, h: box.h - 88 };
+    panel(ctx, box, "collision error", "additive noise by exact rank");
+    var sample = result.items.slice(0, Math.min(180, result.items.length));
+    var plot = { x: box.x + 48, y: box.y + 68, w: box.w - 72, h: box.h - 104 };
+    var maxError = sample.reduce(function (m, row) { return Math.max(m, row.cmError, row.cuError); }, result.budget);
+    maxError = Math.max(1, maxError * 1.08);
     drawAxis(ctx, plot);
-    var maxBin = Math.max.apply(null, result.histogram.map(function (bin) { return bin.count; }));
-    var maxX = result.histogram[result.histogram.length - 1].hi || 1;
-    result.histogram.forEach(function (bin, i) {
-      var x = plot.x + i / result.histogram.length * plot.w;
-      var w = plot.w / result.histogram.length - 2;
-      var h = bin.count / Math.max(1, maxBin) * plot.h;
-      ctx.fillStyle = COLORS.error;
-      ctx.globalAlpha = 0.82;
-      ctx.fillRect(x, plot.y + plot.h - h, w, h);
-      ctx.globalAlpha = 1;
+    [0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var yy = plot.y + plot.h - f * plot.h;
+      ctx.strokeStyle = COLORS.grid;
+      ctx.beginPath();
+      ctx.moveTo(plot.x, yy);
+      ctx.lineTo(plot.x + plot.w, yy);
+      ctx.stroke();
     });
-    var boundX = plot.x + Math.min(1, result.bound / maxX) * plot.w;
+    var budgetY = plot.y + plot.h - Math.min(1, result.budget / maxError) * plot.h;
     ctx.strokeStyle = COLORS.bound;
-    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
     ctx.beginPath();
-    ctx.moveTo(boundX, plot.y);
-    ctx.lineTo(boundX, plot.y + plot.h);
-    ctx.stroke();
-    label(ctx, "0", plot.x, plot.y + plot.h + 14, "center");
-    label(ctx, formatCount(maxX), plot.x + plot.w, plot.y + plot.h + 14, "center");
-    label(ctx, "epsilon*N bound " + formatCount(result.bound), plot.x, box.y + box.h - 13, "left", COLORS.bound, "700 11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif");
-    label(ctx, "max " + formatCount(result.maxError), plot.x + plot.w, box.y + box.h - 13, "right", COLORS.text, "700 11px system-ui, -apple-system, BlinkMacSystemFont, sans-serif");
-  }
-
-  function drawGatePanel(ctx, result, box) {
-    panelTitle(ctx, box, "Heavy-hitter gate", "reported keys sit above the estimated threshold");
-    var plot = { x: box.x + 48, y: box.y + 54, w: box.w - 66, h: box.h - 88 };
-    drawAxis(ctx, plot);
-    var maxShare = Math.max(result.topEstimate[0].estimate, result.topTrue[0].count, result.thresholdCount) / result.params.streamLength * 1.12;
-    function scale(value) {
-      return plot.y + plot.h - value / result.params.streamLength / maxShare * plot.h;
-    }
-    var thresholdY = scale(result.thresholdCount);
-    ctx.strokeStyle = COLORS.bound;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(plot.x, thresholdY);
-    ctx.lineTo(plot.x + plot.w, thresholdY);
+    ctx.moveTo(plot.x, budgetY);
+    ctx.lineTo(plot.x + plot.w, budgetY);
     ctx.stroke();
     ctx.setLineDash([]);
-    result.items.forEach(function (item) {
-      var x = plot.x + (item.rank - 1) / Math.max(1, result.params.universe - 1) * plot.w;
-      var y = scale(item.estimate);
-      var isFalsePositive = item.estimate >= result.thresholdCount && item.count < result.thresholdCount;
-      ctx.fillStyle = isFalsePositive ? COLORS.falsePositive : (item.count >= result.thresholdCount ? COLORS.heavy : "#94a3b8");
-      ctx.globalAlpha = item.rank === result.params.probeRank ? 1 : 0.72;
-      ctx.beginPath();
-      ctx.arc(x, y, item.rank === result.params.probeRank ? 4 : 2.2, 0, Math.PI * 2);
-      ctx.fill();
+    sample.forEach(function (row, i) {
+      var x = plot.x + (i + 0.5) / sample.length * plot.w;
+      var y1 = plot.y + plot.h - row.cmError / maxError * plot.h;
+      var y2 = plot.y + plot.h - row.cuError / maxError * plot.h;
+      ctx.fillStyle = COLORS.cm;
+      ctx.fillRect(x - 1.5, y1 - 1.5, 3, 3);
+      ctx.fillStyle = COLORS.cu;
+      ctx.fillRect(x - 1.5, y2 - 1.5, 3, 3);
     });
-    ctx.globalAlpha = 1;
-    label(ctx, "rank 1", plot.x, plot.y + plot.h + 14, "left");
-    label(ctx, "rank " + result.params.universe, plot.x + plot.w, plot.y + plot.h + 14, "right");
-    label(ctx, "green true heavy, rust false positive", plot.x, box.y + box.h - 13, "left");
-    label(ctx, "phi " + formatPercent(result.params.threshold * 100, 1), plot.x + plot.w, box.y + box.h - 13, "right", COLORS.bound);
+    text(ctx, "0", plot.x - 8, plot.y + plot.h + 4, 10, COLORS.muted, 650, "right");
+    text(ctx, formatInt(maxError), plot.x - 8, plot.y + 4, 10, COLORS.muted, 650, "right");
+    text(ctx, "epsilon N", plot.x + plot.w, budgetY - 4, 10, COLORS.bound, 760, "right", "bottom");
+    text(ctx, "rank", plot.x + plot.w, plot.y + plot.h + 18, 10, COLORS.muted, 650, "right");
   }
 
-  function drawChart(canvas, result) {
-    var parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 900;
-    var width = Math.max(320, parentWidth);
-    var compact = width < 600;
-    var height = compact ? 1080 : 700;
-    var ratio = global.devicePixelRatio || 1;
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-    var ctx = canvas.getContext("2d");
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-    var margin = compact ? 22 : 34;
+  function heatColor(t) {
+    t = clamp(t, 0, 1);
+    if (t < 0.5) {
+      var a = t / 0.5;
+      return "rgb(" + Math.round(238 + (254 - 238) * a) + "," + Math.round(246 + (243 - 246) * a) + "," + Math.round(255 + (199 - 255) * a) + ")";
+    }
+    var b = (t - 0.5) / 0.5;
+    return "rgb(" + Math.round(254 + (190 - 254) * b) + "," + Math.round(243 + (18 - 243) * b) + "," + Math.round(199 + (60 - 199) * b) + ")";
+  }
+
+  function drawHeatPanel(ctx, result, box) {
+    panel(ctx, box, "counter table", "classic CM rows; query cells outlined");
+    var table = result.data.cm;
+    var cols = Math.min(64, result.params.width);
+    var group = Math.ceil(result.params.width / cols);
+    var plot = { x: box.x + 38, y: box.y + 66, w: box.w - 60, h: box.h - 100 };
+    var cellW = plot.w / cols;
+    var cellH = plot.h / result.params.depth;
+    var max = 1;
+    table.forEach(function (row) {
+      row.forEach(function (v) { if (v > max) max = v; });
+    });
+    for (var r = 0; r < result.params.depth; r += 1) {
+      var queryBucket = bucket(result.query.item, r, result.params.width, result.params.seed);
+      var queryGroup = Math.floor(queryBucket / group);
+      for (var c = 0; c < cols; c += 1) {
+        var start = c * group;
+        var end = Math.min(result.params.width, start + group);
+        var value = 0;
+        for (var j = start; j < end; j += 1) value = Math.max(value, table[r][j]);
+        ctx.fillStyle = heatColor(value / max);
+        ctx.fillRect(plot.x + c * cellW, plot.y + r * cellH, Math.ceil(cellW), Math.ceil(cellH));
+        if (c === queryGroup) {
+          ctx.strokeStyle = COLORS.bound;
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(plot.x + c * cellW + 1, plot.y + r * cellH + 1, Math.max(2, cellW - 2), Math.max(2, cellH - 2));
+        }
+      }
+      text(ctx, String(r + 1), plot.x - 10, plot.y + r * cellH + cellH / 2, 10, COLORS.muted, 650, "right", "middle");
+    }
+    ctx.strokeStyle = COLORS.rule;
+    ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
+    text(ctx, "width " + result.params.width + ", depth " + result.params.depth, plot.x, plot.y + plot.h + 18, 10, COLORS.muted, 650);
+    text(ctx, "max cell " + formatInt(max), plot.x + plot.w, plot.y + plot.h + 18, 10, COLORS.heat, 760, "right");
+  }
+
+  function drawThresholdPanel(ctx, result, box) {
+    panel(ctx, box, "threshold audit", "enumerating the synthetic vocabulary");
+    var plot = { x: box.x + 54, y: box.y + 76, w: box.w - 92, h: box.h - 126 };
+    var rows = [
+      { label: "true heavy", value: result.threshold.trueHeavy, color: COLORS.exact },
+      { label: "CM reports", value: result.threshold.cmReported, color: COLORS.cm },
+      { label: "CU reports", value: result.threshold.cuReported, color: COLORS.cu },
+      { label: "CM false +", value: result.threshold.cmFalsePositive, color: COLORS.heat },
+      { label: "CU false +", value: result.threshold.cuFalsePositive, color: COLORS.blue }
+    ];
+    var max = rows.reduce(function (m, row) { return Math.max(m, row.value); }, 1);
+    rows.forEach(function (row, i) {
+      var y = plot.y + i * plot.h / rows.length;
+      var h = Math.max(14, plot.h / rows.length - 10);
+      text(ctx, row.label, plot.x - 8, y + h / 2, 10, COLORS.muted, 650, "right", "middle");
+      ctx.fillStyle = row.color;
+      ctx.fillRect(plot.x, y, row.value / max * plot.w, h);
+      text(ctx, formatInt(row.value), plot.x + row.value / max * plot.w + 6, y + h / 2, 10, COLORS.text, 700, "left", "middle");
+    });
+    ctx.fillStyle = COLORS.soft;
+    roundedRect(ctx, box.x + 16, box.y + box.h - 48, box.w - 32, 30, 6);
+    ctx.fill();
+    var note = box.w < 360
+      ? "threshold = " + formatInt(result.thresholdCount) + "; no enumerated misses"
+      : "threshold = " + formatInt(result.thresholdCount) + " events; enumerated true heavy keys have no misses";
+    text(ctx, note, box.x + 28, box.y + box.h - 29, 10, COLORS.text, 650, "left", "middle");
+  }
+
+  function draw(result, canvas) {
+    var width = Math.round(canvas.getBoundingClientRect().width || 900);
+    var compact = width < 560;
+    var prepared = setupCanvas(canvas, compact ? 1120 : 760);
+    var ctx = prepared.ctx;
+    var pad = compact ? 16 : 24;
+    var gap = compact ? 18 : 22;
+    var inner = prepared.width - 2 * pad;
     if (compact) {
-      var panelW = width - margin * 2;
-      drawTopPanel(ctx, result, { x: margin, y: 28, w: panelW, h: 246 });
-      drawHeatmapPanel(ctx, result, { x: margin, y: 306, w: panelW, h: 230 });
-      drawErrorPanel(ctx, result, { x: margin, y: 568, w: panelW, h: 212 });
-      drawGatePanel(ctx, result, { x: margin, y: 812, w: panelW, h: 228 });
+      var h = (prepared.height - 2 * pad - 3 * gap) / 4;
+      drawTopPanel(ctx, result, { x: pad, y: pad, w: inner, h: h });
+      drawErrorPanel(ctx, result, { x: pad, y: pad + h + gap, w: inner, h: h });
+      drawHeatPanel(ctx, result, { x: pad, y: pad + 2 * (h + gap), w: inner, h: h });
+      drawThresholdPanel(ctx, result, { x: pad, y: pad + 3 * (h + gap), w: inner, h: h });
+      return;
+    }
+    var col = (inner - gap) / 2;
+    var row = (prepared.height - 2 * pad - gap) / 2;
+    drawTopPanel(ctx, result, { x: pad, y: pad, w: col, h: row });
+    drawErrorPanel(ctx, result, { x: pad + col + gap, y: pad, w: col, h: row });
+    drawHeatPanel(ctx, result, { x: pad, y: pad + row + gap, w: col, h: row });
+    drawThresholdPanel(ctx, result, { x: pad + col + gap, y: pad + row + gap, w: col, h: row });
+  }
+
+  function renderOne(root) {
+    var result = evaluate(readParams(root));
+    updateControls(root, result.params);
+    updateOutputs(root, result.params);
+    updateMetrics(root, result);
+    var canvas = root.querySelector("[data-canvas]");
+    if (canvas) draw(result, canvas);
+    root.__cmsResult = result;
+  }
+
+  function initOne(root) {
+    if (root.__cmsReady) return;
+    root.__cmsReady = true;
+    var timer = null;
+    function schedule() {
+      clearTimeout(timer);
+      timer = setTimeout(function () { renderOne(root); }, 80);
+    }
+    root.querySelectorAll("[data-param]").forEach(function (input) {
+      input.addEventListener("input", schedule);
+      input.addEventListener("change", schedule);
+    });
+    if (global.ResizeObserver) {
+      var observer = new ResizeObserver(function () {
+        if (root.__cmsResult) {
+          var canvas = root.querySelector("[data-canvas]");
+          if (canvas) draw(root.__cmsResult, canvas);
+        }
+      });
+      observer.observe(root);
     } else {
-      var gap = 42;
-      var panelW2 = (width - margin * 2 - gap) / 2;
-      drawTopPanel(ctx, result, { x: margin, y: 30, w: panelW2, h: 302 });
-      drawHeatmapPanel(ctx, result, { x: margin + panelW2 + gap, y: 30, w: panelW2, h: 302 });
-      drawErrorPanel(ctx, result, { x: margin, y: 382, w: panelW2, h: 258 });
-      drawGatePanel(ctx, result, { x: margin + panelW2 + gap, y: 382, w: panelW2, h: 258 });
+      global.addEventListener("resize", function () {
+        if (root.__cmsResult) {
+          var canvas = root.querySelector("[data-canvas]");
+          if (canvas) draw(root.__cmsResult, canvas);
+        }
+      });
     }
+    renderOne(root);
   }
 
-  function render(root) {
-    var result = simulate(paramsFromRoot(root));
-    var values = {
-      depth: String(result.params.depth),
-      probeRank: String(result.params.probeRank),
-      skew: result.params.skew.toFixed(2),
-      streamLength: formatCount(result.params.streamLength),
-      threshold: formatPercent(result.params.threshold * 100, 1),
-      universe: String(result.params.universe),
-      width: String(result.params.width)
-    };
-    Object.keys(values).forEach(function (key) {
-      var output = root.querySelector('[data-value="' + key + '"]');
-      if (output) output.textContent = values[key];
-    });
-    var probeInput = root.querySelector('input[data-param="probeRank"]');
-    if (probeInput) {
-      probeInput.max = String(result.params.universe);
-      if (Number(probeInput.value) > result.params.universe) probeInput.value = String(result.params.universe);
-    }
-    var metrics = root.querySelector("[data-metrics]");
-    if (metrics) {
-      metrics.innerHTML = [
-        metric("memory", formatCount(result.memoryCells) + " counters"),
-        metric("epsilon*N", formatCount(result.bound)),
-        metric("p95 overcount", formatCount(result.p95Error)),
-        metric("max overcount", formatCount(result.maxError)),
-        metric("top-10 precision", formatPercent(result.topPrecision * 100, 0)),
-        metric("false positives", String(result.falsePositives.length)),
-        metric("probe " + result.probe.label, formatCount(result.probe.count) + " -> " + formatCount(result.probe.estimate)),
-        metric("failure delta", formatNumber(result.delta, 4))
-      ].join("");
-    }
-    var canvas = root.querySelector("canvas[data-canvas]");
-    if (canvas) drawChart(canvas, result);
-  }
-
-  function init(root) {
-    var redraw = function () { render(root); };
-    root.querySelectorAll("input[data-param]").forEach(function (input) {
-      input.addEventListener("input", redraw);
-    });
-    global.addEventListener("resize", redraw);
-    redraw();
-  }
-
-  function initAll() {
-    if (!global.document) return;
-    Array.prototype.slice.call(global.document.querySelectorAll("[data-cms-lab]")).forEach(init);
+  function init() {
+    Array.prototype.slice.call(global.document.querySelectorAll("[data-count-min-sketch-lab]")).forEach(initOne);
   }
 
   var api = {
-    bucketFor: bucketFor,
+    bucket: bucket,
     cleanParams: cleanParams,
-    simulate: simulate,
-    zipfCounts: zipfCounts
+    estimate: estimate,
+    evaluate: evaluate,
+    hash32: hash32
   };
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = api;
-  }
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
   global.CountMinSketchLab = api;
 
   if (global.document) {
-    global.document.addEventListener("DOMContentLoaded", initAll);
+    if (global.document.readyState === "loading") global.document.addEventListener("DOMContentLoaded", init);
+    else init();
   }
-}(typeof window !== "undefined" ? window : globalThis));
+})(typeof window !== "undefined" ? window : globalThis);

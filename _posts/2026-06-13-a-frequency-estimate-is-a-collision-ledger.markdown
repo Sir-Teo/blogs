@@ -83,33 +83,47 @@ queries for candidate keys; it does not by itself enumerate all candidates.
     box-sizing: border-box;
     color: #172026;
     margin: 2rem 0;
+    max-width: 100%;
+    overflow: hidden;
     padding: 1rem;
   }
 
   .cms-lab__controls {
     display: grid;
-    gap: 0.9rem 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+    gap: 0.85rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .cms-lab__controls label,
+  .cms-lab__metric span,
+  .cms-lab__note,
+  .cms-lab__legend {
+    color: #5d6872;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    line-height: 1.45;
   }
 
   .cms-lab__controls label {
-    color: #46515c;
     display: grid;
-    font-size: 0.86rem;
     font-weight: 650;
     gap: 0.35rem;
-    line-height: 1.25;
+    min-width: 0;
+  }
+
+  .cms-lab__controls input {
+    accent-color: #be123c;
+    box-sizing: border-box;
+    font: inherit;
+    margin: 0;
+    min-width: 0;
+    width: 100%;
   }
 
   .cms-lab__controls output {
     color: #172026;
     font-variant-numeric: tabular-nums;
-    font-weight: 750;
-  }
-
-  .cms-lab__controls input {
-    accent-color: #b45309;
-    width: 100%;
+    font-weight: 780;
   }
 
   .cms-lab__metrics {
@@ -123,15 +137,8 @@ queries for candidate keys; it does not by itself enumerate all candidates.
     background: #f8fafc;
     border: 1px solid #e3e9ef;
     border-radius: 6px;
-    min-height: 4.2rem;
+    min-height: 4rem;
     padding: 0.62rem 0.7rem;
-  }
-
-  .cms-lab__metric span,
-  .cms-lab__note {
-    color: #5d6872;
-    font-size: 0.8rem;
-    line-height: 1.45;
   }
 
   .cms-lab__metric span {
@@ -139,88 +146,148 @@ queries for candidate keys; it does not by itself enumerate all candidates.
   }
 
   .cms-lab__metric strong {
+    color: #172026;
     display: block;
-    font-size: 1.05rem;
+    font-family: var(--font-ui);
+    font-size: 1rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
     margin-top: 0.25rem;
+    overflow-wrap: anywhere;
   }
 
   .cms-lab canvas {
+    background: #ffffff;
+    border: 1px solid #d7dee5;
+    border-radius: 8px;
+    box-sizing: border-box;
     display: block;
-    height: auto;
-    max-width: 100%;
+    height: 760px;
+    margin-top: 0.75rem;
+    width: 100%;
+  }
+
+  .cms-lab__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 1rem;
+    margin-top: 0.8rem;
+  }
+
+  .cms-lab__legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .cms-lab__legend i {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.65rem;
+    width: 0.65rem;
   }
 
   .cms-lab__note {
-    margin: 0.9rem 0 0;
+    margin: 0.65rem 0 0;
+  }
+
+  @media (max-width: 680px) {
+    .cms-lab {
+      padding: 0.8rem;
+    }
+
+    .cms-lab__controls,
+    .cms-lab__metrics {
+      grid-template-columns: 1fr;
+    }
+
+    .cms-lab canvas {
+      height: 1120px;
+    }
   }
 </style>
 
-<div id="count-min-sketch-lab" class="cms-lab" data-cms-lab>
+<div id="count-min-sketch-lab" class="cms-lab" data-count-min-sketch-lab>
   <div class="cms-lab__controls">
     <label>
-      Stream events: <output data-value="streamLength">40.0k</output>
-      <input type="range" min="5000" max="120000" step="5000" value="40000" data-param="streamLength">
+      Stream events <output data-output="events">50,000</output>
+      <input type="range" min="5000" max="120000" step="5000" value="50000" data-param="events" aria-label="Stream events">
     </label>
     <label>
-      Distinct keys: <output data-value="universe">512</output>
-      <input type="range" min="64" max="1024" step="64" value="512" data-param="universe">
+      Vocabulary <output data-output="vocabulary">2,000</output>
+      <input type="range" min="100" max="8000" step="100" value="2000" data-param="vocabulary" aria-label="Vocabulary size">
     </label>
     <label>
-      Zipf skew: <output data-value="skew">1.10</output>
-      <input type="range" min="50" max="200" step="5" value="110" data-param="skew">
+      Zipf skew <output data-output="skew">1.05</output>
+      <input type="range" min="0" max="150" step="5" value="105" data-param="skew" aria-label="Zipf skew">
     </label>
     <label>
-      Sketch width: <output data-value="width">64</output>
-      <input type="range" min="8" max="256" step="8" value="64" data-param="width">
+      Width <output data-output="width">128</output>
+      <input type="range" min="32" max="512" step="16" value="128" data-param="width" aria-label="Sketch width">
     </label>
     <label>
-      Sketch depth: <output data-value="depth">4</output>
-      <input type="range" min="1" max="8" step="1" value="4" data-param="depth">
+      Depth <output data-output="depth">5</output>
+      <input type="range" min="1" max="8" step="1" value="5" data-param="depth" aria-label="Sketch depth">
     </label>
     <label>
-      Heavy threshold: <output data-value="threshold">2.0%</output>
-      <input type="range" min="0.5" max="10" step="0.5" value="2" data-param="threshold">
+      Heavy threshold <output data-output="threshold">1.0%</output>
+      <input type="range" min="2" max="60" step="1" value="10" data-param="threshold" aria-label="Heavy hitter threshold">
     </label>
     <label>
-      Probe rank: <output data-value="probeRank">80</output>
-      <input type="range" min="1" max="512" step="1" value="80" data-param="probeRank">
+      Query rank <output data-output="queryRank">#6</output>
+      <input type="range" min="1" max="40" step="1" value="6" data-param="queryRank" aria-label="Query rank">
+    </label>
+    <label>
+      Seed <output data-output="seed">37</output>
+      <input type="range" min="1" max="9999" step="1" value="37" data-param="seed" aria-label="Random seed">
     </label>
   </div>
   <div class="cms-lab__metrics" data-metrics></div>
-  <canvas data-canvas width="900" height="700" aria-label="Count-Min Sketch lab showing top-key overcounts, sketch heatmap, error histogram, and heavy-hitter threshold decisions"></canvas>
+  <canvas data-canvas width="980" height="760" aria-label="Count-Min Sketch lab comparing exact counts, classic Count-Min estimates, conservative updates, collision heat, and heavy-hitter threshold decisions"></canvas>
+  <div class="cms-lab__legend">
+    <span><i style="background:#334155"></i> Exact count</span>
+    <span><i style="background:#be123c"></i> Classic Count-Min</span>
+    <span><i style="background:#0f766e"></i> Conservative update</span>
+    <span><i style="background:#7c3aed"></i> Query / bound</span>
+    <span><i style="background:#d97706"></i> Collision heat</span>
+  </div>
   <p class="cms-lab__note">
-    Deterministic positive-count stream. The epsilon*N line is the classic
-    Count-Min point-query error scale using epsilon = e / width. Actual errors
-    depend on the stream and these fixed hash functions.
+    Deterministic insertion-only stream. The lab keeps exact counts for
+    verification, but the sketches see only hashed updates. The epsilon*N line is
+    the classic Count-Min point-query error scale using epsilon = e / width.
+    Conservative update is shown as an engineering comparison; the displayed
+    epsilon/delta contract is the standard Count-Min contract.
   </p>
 </div>
-<script defer src="{{ '/assets/js/count-min-sketch-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/count-min-sketch-lab.js?v=20260614b' | relative_url }}"></script>
 
-At the default setting, the top keys are almost exact because their counts are
-large enough that a clean row usually exists. Tail keys are messier. The probe
-key at rank 80 has true count 62 and estimated count 128 in the default stream:
-the extra 66 events are not mysterious error. They are other keys sharing the
-least-bad bucket.
+The default stream has `50,000` events over a `2,000` key vocabulary with a
+moderate Zipf skew. The sixth-ranked key appears `1,067` times. The classic
+Count-Min estimate is `1,145`; conservative update lands exactly on `1,067` for
+this seed. That does not mean conservative update is exact. It means the
+least-contaminated counters for this key were protected from some unnecessary
+increments.
 
-Raise **Sketch width**. Buckets get less crowded, so the p95 and maximum
-overcounts fall.
+Raise **Width**. Buckets get less crowded, so the p95 overcount and false
+positive count usually fall. Lower it to `32` and the threshold panel becomes a
+small disaster: almost every tail key can be pushed over a `1%` gate by
+collision mass.
 
-Raise **Sketch depth**. The estimate takes the minimum over more independent
-rows. For a fixed family of rows, adding rows cannot increase a point estimate;
-it gives the key more chances to find a cleaner bucket.
+Raise **Depth**. The estimate takes the minimum over more rows. More rows give a
+key more chances to find a clean bucket, but they also cost update work and
+memory. With depth `1`, "minimum" means "the only row," and the sketch is just a
+single shared hash table.
 
-Raise **Zipf skew**. The head becomes heavier. Heavy keys become easier to find,
-but a collision with a head key can contaminate a tail estimate badly.
+Move **Zipf skew**. A heavy head makes the true heavy hitters easier to spot,
+but a collision with a head key can poison a tail estimate. Uniform streams have
+less spectacular head collisions, yet many similarly sized keys compete near the
+threshold.
 
 Lower **Heavy threshold**. You ask the sketch to distinguish smaller counts.
-False positives become more likely because overcounted tail keys can cross the
-gate.
-
-The one-sided nature is visible in the plot: estimates sit above truth, never
-below it. That property is useful when false negatives are more expensive than
-false positives.
+Because estimates sit above truth, false positives are the natural failure mode
+when the candidate set is enumerated. The lab's audit checks exactly this:
+classic Count-Min and conservative update do not miss enumerated true heavy
+keys in the positive stream, but they may accuse extra keys.
 
 ## Counts Are Not Names
 
@@ -263,6 +330,19 @@ $$
 $$
 
 The error is the smallest collision load across the rows.
+
+Conservative update changes the write rule, not the query rule. Instead of
+incrementing every touched counter, it reads the current minimum for the key and
+increments only the counters that equal that minimum. Estan and Varghese used
+this idea in traffic-measurement filters as one of several practical
+optimizations for detecting large flows.[^estan]
+
+The intuition is simple: if one row is already inflated, do not inflate it
+again merely because the key arrived. This can sharply reduce overcount in
+practice, as the lab shows. It is still a sketch, not a certificate of truth.
+Its behavior is more delicate to analyze than the classic Count-Min update, and
+the standard $$\epsilon,\delta$$ line in the lab belongs to the classic
+construction.
 
 That formula is more useful than the theorem when debugging a system. It tells
 you what to inspect:
@@ -356,4 +436,6 @@ is the least contaminated witness.
 
 [^finding]: Graham Cormode and Marios Hadjieleftheriou, ["Finding Frequent Items in Data Streams"](https://www.vldb.org/pvldb/vol1/1454225.pdf), *PVLDB*, 1(2), 2008.
 
-[^countsketch]: Moses Charikar, Kevin Chen, and Martin Farach-Colton, ["Finding Frequent Items in Data Streams"](https://www.cs.princeton.edu/courses/archive/spring04/cos598B/bib/CharikarCF.pdf), ICALP 2002.
+[^countsketch]: Moses Charikar, Kevin Chen, and Martin Farach-Colton, ["Finding Frequent Items in Data Streams"](https://www.cs.princeton.edu/courses/archive/spr04/cos598B/bib/CharikarCF.pdf), ICALP 2002.
+
+[^estan]: Cristian Estan and George Varghese, ["New Directions in Traffic Measurement and Accounting: Focusing on the Elephants, Ignoring the Mice"](https://cse.ucsd.edu/~varghese/PAPERS/tocs2003.pdf), *ACM Transactions on Computer Systems*, 21(3), 2003.
