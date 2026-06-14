@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Guidance Scales as Density-Ratio Controls"
-description: "Classifier-free guidance is not magic prompt obedience. In the score idealization, it is an extrapolated density-ratio field, which explains both the extra fidelity and the loss of diversity."
+title: "The Prompt Is a Ratio, Not a Command"
+description: "Classifier-free guidance is not magic obedience. In the score idealization, the slider raises a conditional-vs-unconditional density ratio and buys fidelity with coverage."
 date: 2026-06-14 09:54:00 -0400
 categories: machine-learning
 tags: [diffusion-models, classifier-free-guidance, score-models, generative-models, density-ratios]
-excerpt: "The classifier-free guidance slider tilts a diffusion sampler by the ratio between conditional and unconditional density. Push it too far and you do not simply get more prompt following; you get extrapolation."
+excerpt: "The classifier-free guidance slider tilts a diffusion sampler with a density ratio. Push it too far and you do not simply get more prompt following; you get extrapolation."
 ---
 
 The most famous knob in image generation is too easy to describe badly.
@@ -28,7 +28,7 @@ No pictures of castles. No aesthetic ranking. Just two exact probability
 densities in two dimensions, their scores, and the vector field obtained by
 classifier-free guidance.
 
-## Scores Before Prompts
+## Before the Prompt Becomes a Knob
 
 A diffusion model learns to reverse a noising process. In one common
 description, the reverse dynamics need the score
@@ -96,7 +96,7 @@ the conditional model. At $$w>1$$, it extrapolates past the conditional score.
 
 That last sentence is the hinge.
 
-## The Hidden Density
+## The Distribution Hiding Behind the Slider
 
 Assume for a moment that the two scores are exact gradients of exact densities.
 Then the guided field is also a gradient:
@@ -129,10 +129,10 @@ $$
 
 The knob raises a conditional-vs-unconditional density ratio to a power.
 
-This is why the phrase "more prompt adherence" is too small. High guidance
-does not merely prefer samples likely under the prompt. It prefers samples where
-the prompt makes the point much more likely than the unconditional model would
-have made it. It rewards evidence that is distinctive for the condition.
+This is why the phrase "more prompt adherence" is too small. High guidance does
+not merely prefer samples likely under the prompt. It prefers samples where the
+prompt makes the point much more likely than the unconditional model would have
+made it. It rewards evidence that is distinctive for the condition.
 
 That can be exactly what one wants. It can also be a narrow target.
 
@@ -144,7 +144,7 @@ errors, extrapolation can magnify the difference between them.
 
 The toy below lets you see this without the distraction of image aesthetics.
 
-## A Density-Ratio Lab
+## A Toy Without Castles
 
 The lab has an unconditional distribution made from six Gaussian components:
 three prompt components and three background components. The conditional
@@ -345,15 +345,19 @@ Try this sequence.
 
 Set guidance to **0.0**. The density follows the unconditional mixture. The
 background components hold substantial mass because the prompt has not entered
-the vector field.
+the vector field. In the default setup, prompt alignment is only about 46.8%,
+while effective area is still about 71.1%.
 
 Move guidance to **1.0**. This recovers the ordinary conditional score in the
 idealized toy. Prompt alignment rises, background mass falls, and the density
 still covers several prompt modes if the condition itself is ambiguous.
 
-Now push guidance to **6.0** or **8.0**. Prompt alignment rises again, but the
-effective area collapses and the prompt-mode count falls. The sampler is not
-just becoming "more conditional." It is emphasizing points where the conditional
+At guidance **3.0**, the default panel reports about 92.6% prompt alignment,
+30.1% effective area, and 2.12 prompt modes. Now push guidance to **6.0** or
+**8.0**. Prompt alignment rises again, but the effective area collapses and the
+prompt-mode count falls. At **8.0**, the toy reaches about 95.9% alignment, but
+only 22.3% effective area and 1.94 prompt modes. The sampler is not just
+becoming "more conditional." It is emphasizing points where the conditional
 density is large relative to the unconditional density.
 
 Raise **prompt ambiguity** and repeat. Multiple prompt modes can be valid under
@@ -369,7 +373,7 @@ but the vector field also gets sharper.
 The interesting part is not any single setting. It is the shape of the trade:
 alignment, area, and mode coverage do not move together.
 
-## What the UI Usually Hides
+## What the Slider Compresses
 
 Text-to-image systems usually expose guidance as a single scalar. That is
 reasonable interface design, but it compresses several scientific choices.
@@ -408,7 +412,7 @@ noise schedules and sampling mismatch.[^lin]
 That does not mean high guidance is bad. It means high guidance is a
 distributional intervention, not a truth serum.
 
-## The Ratio Explains the Feel
+## Why the Knob Has a Personality
 
 The density-ratio view gives a compact explanation for many observed behaviors.
 
@@ -440,7 +444,7 @@ guidance that is already present before any of those engineering details enter.
 If exact densities already show the fidelity-coverage tradeoff, then real
 systems should not surprise us when the slider has a personality.
 
-## A Better Question for the Knob
+## Ask What Pressure You Are Buying
 
 "What guidance scale should I use?" is not a mathematical question by itself.
 It depends on the prompt, the model, the sampler, the noise schedule, the
