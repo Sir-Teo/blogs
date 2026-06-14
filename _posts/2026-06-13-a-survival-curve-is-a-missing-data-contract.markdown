@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Survival Curve Is a Missing-Data Contract"
+title: "Survival Curves, With the Missingness Left In"
 description: "Kaplan-Meier curves do not magically solve missing follow-up. They encode an assumption about censored futures, and that assumption can be the result."
 date: 2026-06-13 18:48:00 -0400
 categories: statistics
@@ -288,7 +288,7 @@ session, machine, or account whose future became unobserved.
 The survival curve is the visible part. The missing-data contract is the part
 that decides what the visible part means.
 
-## Notes
+## Where This Came From
 
 [^kaplan-meier]: E. L. Kaplan and Paul Meier, ["Nonparametric Estimation from Incomplete Observations"](https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501452), *Journal of the American Statistical Association*, 1958. DOI: [10.1080/01621459.1958.10501452](https://doi.org/10.1080/01621459.1958.10501452).
 
