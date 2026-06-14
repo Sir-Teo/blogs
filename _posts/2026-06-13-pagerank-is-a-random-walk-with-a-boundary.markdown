@@ -1,16 +1,14 @@
 ---
 layout: post
-title: "PageRank at the Boundary"
-description: "PageRank is not a popularity spell. It is the stationary distribution of a damped random walk, and the teleport vector is where the model's politics enter."
+title: "PageRank Reenters Through the Side Door"
+description: "PageRank is a damped random walk, and the teleport vector is the quiet place where outside judgment enters the graph."
 date: 2026-06-13 20:18:00 -0400
 categories: computer-science
 tags: [pagerank, markov-chains, graph-algorithms, ranking, web-search, link-analysis]
-excerpt: "The damping term in PageRank is often described as a random-surfer trick. It is more useful to see it as a boundary condition: where attention enters the graph when links stop being enough."
+excerpt: "The damping term is usually introduced as a random-surfer trick. I prefer the boundary story: when links stop being enough, the walk reenters from somewhere."
 ---
 
-A link is not a vote.
-
-It is a valve.
+A link is not a vote. It is a valve.
 
 PageRank became famous because it made the early web searchable. But the idea
 is easy to misremember. The algorithm does not simply count backlinks. It asks
@@ -22,7 +20,7 @@ is not decoration. It is a boundary condition.
 
 PageRank is a random walk with a boundary.
 
-## Stationary Attention
+## Follow the Walker to the Door
 
 Take a directed graph. Page $$i$$ links to page $$j$$. A random walker on page
 $$i$$ chooses one of $$i$$'s outgoing links and moves there.
@@ -65,7 +63,7 @@ This is not a hack in the pejorative sense. It is a modeling choice that says:
 when links stop giving enough information, inject attention from this boundary
 ```
 
-## The Boundary Has Content
+## The Restart Vector Has Opinions
 
 Uniform teleportation says every page is equally plausible as a restart. That
 is a clean default, but it is not neutral in every application. A medical search
@@ -97,7 +95,7 @@ High $$\alpha$$ trusts graph structure more and converges more slowly. Low
 $$\alpha$$ trusts the boundary more and makes link farms less powerful. Both
 are defensible. Neither is free.
 
-## A Small Flow Lab
+## A Tiny Web With a Trap
 
 The lab below builds a tiny web: six ordinary pages, a dangling shop page, and a
 four-page spam farm. The farm recycles rank internally. Paid links inject rank
@@ -242,7 +240,7 @@ This is why PageRank is better understood as a flow calculation than a morality
 calculation. A page with high rank is not necessarily good. It is a place where
 the modeled attention accumulates.
 
-## Spam Is a Flow Attack
+## Spam Moves the Plumbing
 
 Link spam works by changing topology.
 
@@ -270,7 +268,7 @@ If the score is a stationary distribution, then an attack is often a way to
 alter where probability mass enters, where it gets trapped, and how slowly it
 escapes.
 
-## PageRank Beyond Search
+## Same Walk, Different Meaning
 
 Gleich's survey "PageRank Beyond the Web" makes a point that is still easy to
 miss: the mathematics are not web-specific.[^gleich] A damped random walk on a
@@ -300,7 +298,7 @@ what does this walk represent in the real system?
 
 Those are not the same question.
 
-## The Engineering Checklist
+## Questions Before You Ship the Score
 
 Before shipping a PageRank-like score, I would want a ledger:
 
@@ -327,7 +325,7 @@ walk begins near a user.
 
 Same equation. Different world.
 
-## The Bit to Remember
+## The Boundary Is the Tell
 
 PageRank is not the wisdom of the web.
 
