@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Speculative Decoding Is a Latency Budget"
+title: "Speculative Decoding Has a Ledger"
 description: "Speculative decoding is often sold as free speed. The real question is whether accepted draft tokens repay the draft model, verifier overhead, and scheduler tax."
 date: 2026-06-13 01:50:00 -0400
 categories: ai-systems
@@ -208,7 +208,7 @@ lets the system buy several futures, inspect them in parallel, and keep only the
 ones the target model would have chosen. The engineering question is not whether
 guessing is clever. It is whether the guesses clear the ledger.
 
-## Notes
+## Sources Worth Keeping
 
 [^leviathan]: Yaniv Leviathan, Matan Kalman, and Yossi Matias, "Fast Inference from Transformers via Speculative Decoding," ICML 2023. [arXiv](https://arxiv.org/abs/2211.17192).
 
