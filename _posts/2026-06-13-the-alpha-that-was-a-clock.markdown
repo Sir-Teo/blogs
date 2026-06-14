@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Alpha That Was a Clock"
+title: "When Alpha Was Mostly a Clock"
 description: "At high frequency, a lead-lag signal can be a real market effect, a data-engineering artifact, or both. The Epps effect is the warning label."
 date: 2026-06-13 06:18:00 -0400
 categories: quantitative-finance
@@ -316,7 +316,7 @@ assumption about time.
 
 The market may still contain a lead. But first, prove it is not your watch.
 
-## Notes
+## Works Cited
 
 [^epps]: Thomas W. Epps, ["Comovements in Stock Prices in the Very Short Run"](https://www.tandfonline.com/doi/abs/10.1080/01621459.1979.10482508), *Journal of the American Statistical Association*, 1979. See also the [JSTOR record](https://www.jstor.org/stable/2286325).
 
