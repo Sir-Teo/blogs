@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Arrows That Survive Conditioning"
-description: "Granger causality is a statement about incremental forecasting. It becomes a causal clue only after the right past variables, lag order, and measurement process survive scrutiny."
+title: "Prediction Is a Witness, Not a Lever"
+description: "Granger causality is incremental forecasting. It becomes causal evidence only after the conditioning set, lag order, and measurement process survive scrutiny."
 date: 2026-06-14 12:00:00 -0400
 categories: statistics
 tags: [granger-causality, time-series, causal-discovery, vector-autoregression, confounding, forecasting, statistics]
-excerpt: "If X predicts Y tomorrow, X may be a cause. It may also be yesterday's thermometer for an earlier variable you forgot to measure."
+excerpt: "If X predicts Y tomorrow, X may be a cause. It may also be yesterday's thermometer for a hidden driver you forgot to measure."
 ---
 
-There is a sentence that sounds causal but is only half-causal:
+There is a sentence that walks into meetings wearing a causal hat:
 
 ```text
 X helps predict Y.
@@ -62,7 +62,7 @@ good clue to such structure when the temporal ordering, measurement process, and
 conditioning set are right. It can also be fooled by the oldest enemy in causal
 inference: a common cause.
 
-## The Shadow Problem
+## The Thermometer Problem
 
 Imagine a hidden driver $$H$$.
 
@@ -82,7 +82,7 @@ There is no direct $$X \rightarrow Y$$ path in this story. Still, $$X_{t-1}$$
 will often help predict $$Y_t$$ because $$X_{t-1}$$ is a noisy report about
 $$H_{t-2}$$.
 
-The clock is real. The arrow is not.
+The clock is real. The lever is not.
 
 That is why conditional Granger tests matter. The pairwise question asks:
 
@@ -99,7 +99,7 @@ does X still help predict Y after Y's past and H's past?
 If the signal disappears after conditioning on the earlier driver, the pairwise
 arrow was a shadow.
 
-## A Small Granger Lab
+## A Purple Driver Behind the Arrow
 
 The lab below simulates three stationary time series:
 
@@ -307,7 +307,7 @@ the point of conditioning: not to be cynical about every arrow, but to ask
 which arrows still carry information after the plausible earlier causes are in
 the room.
 
-## Pairwise Granger Is a Screening Tool
+## Pairwise Granger Draws in Pencil
 
 The pairwise test is tempting because it is clean. For every ordered pair of
 series, fit two regressions and ask whether the lags of one improve forecasts of
@@ -340,7 +340,7 @@ plausible-looking shadows.
 
 The lab is linear and friendly. Real systems are not obligated to be.
 
-## Lag Order Is Part of the Claim
+## The Lag Is Part of the Claim
 
 The slider labeled **VAR lag order** is easy to underestimate.
 
@@ -366,7 +366,7 @@ induce.[^barnett-seth]
 If your data are sampled every minute, but the mechanism operates in seconds,
 the lag you estimate is partly a property of the logging system.
 
-## What Granger Evidence Is Good For
+## What the Evidence Can Carry
 
 I do not read the lab as an argument against Granger causality. I read it as an
 argument for using the name carefully.
@@ -401,7 +401,7 @@ predictive witness -> causal lever
 That promotion needs a conditioning argument, a timing argument, and usually
 some domain knowledge.
 
-## The Checklist I Actually Use
+## My Arrow Checklist
 
 When I see a Granger-style arrow, I want to know:
 
