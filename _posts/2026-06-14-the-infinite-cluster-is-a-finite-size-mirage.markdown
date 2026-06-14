@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Percolation's Infinite Cliff, Seen in a Box"
-description: "Percolation has a clean infinite-lattice threshold, but every experiment sees a rounded finite box. A browser lab shows why the crossing curve sharpens into a phase transition."
+title: "The Cliff Lives at Infinity"
+description: "Percolation has a clean infinite-lattice threshold, but every experiment sees a rounded finite box. The browser can show the cliff only by watching the S-curve sharpen."
 date: 2026-06-14 16:50:00 -0400
 categories: physics
 tags: [percolation, critical-phenomena, finite-size-scaling, union-find, statistical-physics, applied-math]
-excerpt: "On the infinite square lattice, bond percolation changes at p=1/2. In a finite simulation there is no magic moment, only a crossing probability that steepens as the box grows."
+excerpt: "On the infinite square lattice, bond percolation changes at p=1/2. In a finite simulation there is no magic instant, only a crossing probability that steepens as the box grows."
 ---
 
-There is a strange kind of cliff that only exists at infinity.
+There is a cliff you cannot photograph.
 
 Open each edge of an infinite square grid independently with probability \(p\).
 At small \(p\), every open component is finite. At large \(p\), with probability
@@ -99,7 +99,7 @@ the threshold is a thermodynamic-limit statement, not a single finite picture
 
 Finite pictures are still valuable. They are how we learn to see the theorem.
 
-## A Crossing Lab
+## A Box That Can Only Estimate
 
 The lab below runs small Monte Carlo experiments for square-lattice bond and
 site percolation. It uses union-find to maintain connected components. For each
@@ -319,7 +319,7 @@ Third, switch from bond to site percolation. The picture still feels like
 percolation, but the threshold moves. The exact half belonged to a particular
 duality structure, not to "squareness" in the everyday sense.
 
-## Why the Curve Sharpens
+## How a Rounded S Becomes a Cliff
 
 Away from the critical point, percolation has a length scale. Below \(p_c\),
 finite clusters have a typical diameter. Above \(p_c\), the infinite cluster
@@ -354,7 +354,7 @@ larger finite systems behave more like the infinite theorem
 The theorem is not what a finite simulation outputs. The theorem is what the
 finite simulation is converging toward.
 
-## The Algorithmic View
+## Union-Find Turns Pictures Into Invariants
 
 Union-find is the right little machine for this experiment because percolation
 is a connectivity problem.
@@ -397,7 +397,7 @@ The page here chooses clarity over that acceleration. Still, the conceptual
 move is the same: once random geometry becomes connectivity bookkeeping, a
 phase transition becomes something you can measure by maintaining components.
 
-## The Dangerous Word "Critical"
+## Be Careful With "Critical"
 
 It is tempting to point at a finite picture and say:
 
