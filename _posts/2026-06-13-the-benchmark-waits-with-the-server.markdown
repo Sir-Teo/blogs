@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Benchmark Waits With the Server"
+title: "Benchmarks Lie When Clients Wait"
 description: "Closed-loop latency tests can accidentally stop sending work when the service is slow. That coordinated omission can turn a tail-latency incident into a tidy percentile report."
 date: 2026-06-13 18:27:00 -0400
 categories: computer-science
@@ -277,7 +277,7 @@ benchmark has joined the outage. It waited with the server, omitted the users
 who would have arrived, and handed you a tail latency report with the tail
 trimmed off.
 
-## Notes
+## Sources Worth Keeping
 
 [^tene]: Gil Tene, ["How NOT to Measure Latency"](https://qconsf.com/sf2012/dl/qcon-sanfran-2012/slides/GilTene_HowNotToMeasureLatency.pdf), QCon San Francisco, 2012. Tene also discusses coordinated omission in the [Mechanical Sympathy forum](https://groups.google.com/g/mechanical-sympathy/c/icNZJejUHfE/m/BfDekfBEs_sJ), including expected-interval correction in HdrHistogram-style recorders.
 
