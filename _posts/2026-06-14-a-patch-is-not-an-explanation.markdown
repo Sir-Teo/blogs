@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Patch Is Not an Explanation"
+title: "Patching Activations Without Fooling Yourself"
 description: "Activation patching is a real causal intervention, but a restored logit is evidence about a contrast, a metric, and a patch site. It is not automatically a circuit."
 date: 2026-06-14 13:58:00 -0400
 categories: machine-learning
@@ -284,7 +284,7 @@ computation instead of only staring at it. But a good intervention is still a
 question. The answer becomes an explanation only after the question is repeated
 from enough angles that the surviving mechanism has nowhere vague left to hide.
 
-## Notes
+## Primary Sources
 
 [^vig]: Jesse Vig, Sebastian Gehrmann, Yonatan Belinkov, Sharon Qian, Daniel Nevo, Simas Sakenis, Jason Huang, Yaron Singer, and Stuart Shieber, "Causal Mediation Analysis for Interpreting Neural NLP: The Case of Gender Bias," NeurIPS 2020. [arXiv](https://arxiv.org/abs/2004.12265).
 
