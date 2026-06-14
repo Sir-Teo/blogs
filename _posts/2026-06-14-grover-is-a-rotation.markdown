@@ -1,15 +1,14 @@
 ---
 layout: post
-title: "Grover Is a Rotation, Not a Spell"
-description: "A live two-amplitude lab for Grover search, amplitude amplification, overshoot, phase calibration, and the square-root limit of unstructured quantum search."
+title: "Stop Before the Vector Turns Around"
+description: "A two-amplitude Grover lab for quantum search, amplitude amplification, overshoot, phase calibration, and the square-root limit of black-box search."
 date: 2026-06-14 17:59:00 -0400
 categories: computer-science
 tags: [quantum-computing, grover-search, amplitude-amplification, algorithms, complexity, physics]
-excerpt: "Grover search is often sold as trying every answer at once. The useful picture is smaller and sharper: a calibrated rotation in a two-dimensional subspace."
+excerpt: "Grover search is not a magic scan of every answer. The useful picture is a calibrated turn in a two-dimensional subspace, with a real risk of going too far."
 ---
 
-Grover search is usually explained in a way that makes it sound like a magic
-trick:
+Grover search is too often explained like a stage trick:
 
 ```text
 put every answer in superposition
@@ -18,7 +17,7 @@ the right answer gets louder
 measure
 ```
 
-This is not wrong exactly. It is just too foggy to be useful.
+This is not exactly wrong. It is just foggy enough to teach the wrong instinct.
 
 The cleaner picture is this:
 
@@ -29,13 +28,13 @@ one for all unmarked states
 Grover's iterate rotates between them
 ```
 
-The whole algorithm is a calibrated turn.
+The whole algorithm is a timed turn.
 
 That is why it gives a square-root speedup. That is also why it can overshoot,
 why it cares about the number of marked items, why the oracle model matters, and
 why it does not turn NP-complete problems into easy problems by slogan.
 
-## The Two-State Compression
+## Collapse the Search to Two Directions
 
 Suppose there are \(N\) possible inputs and \(M\) marked inputs. The oracle
 tells us whether an input is marked. It does not reveal structure, gradients,
@@ -83,11 +82,11 @@ P_t = \sin^2((2t+1)\theta).
 $$
 
 Boyer, Brassard, Hoyer, and Tapp gave this closed-form success probability as
-part of their tight analysis of Grover search.[^boyer] The formula is the whole
-personality of the algorithm. The marked probability rises, peaks, and then
-falls. More queries are not always better.
+part of their tight analysis of Grover search.[^boyer] The formula is the
+algorithm's personality. The marked probability rises, peaks, and then falls.
+More queries are not always better.
 
-## A Rotation Lab
+## A Plane You Can Steer
 
 The lab below simulates the algorithm only in the two-dimensional
 \(|G\rangle, |B\rangle\) subspace. That is enough for unstructured search,
@@ -263,7 +262,7 @@ can move or flatten. That is a useful warning: unitary does not mean calibrated.
       <input data-param="iterations" type="range" min="0" max="640" step="1" value="50">
     </label>
     <label>
-Oracle phase error <output data-output="phaseError">+0 deg</output>
+      Oracle phase error <output data-output="phaseError">+0 deg</output>
       <input data-param="phaseError" type="range" min="-35" max="35" step="1" value="0">
     </label>
   </div>
@@ -282,7 +281,7 @@ Oracle phase error <output data-output="phaseError">+0 deg</output>
 
 <script defer src="{{ '/assets/js/grover-rotation-lab.js?v=20260614a' | relative_url }}"></script>
 
-## Why The Peak Is Around A Square Root
+## The Square Root Is an Angle Budget
 
 The starting angle \(\theta\) is small when marked items are rare:
 
@@ -313,15 +312,15 @@ The speedup is real.
 
 The ceiling is real too.
 
-## Overshoot Is Not A Bug
+## Too Many Queries Give It Back
 
 Set the lab to one marked item and slide the iteration count beyond 50.
 
 The success probability falls.
 
-Nothing decohered. Nothing got noisy. The algorithm simply kept rotating. If the
-vector passes the marked axis, later reflections push amplitude back toward the
-unmarked subspace.
+Nothing decohered. Nothing got noisy. The algorithm simply kept rotating. Once
+the vector passes the marked axis, later reflections push amplitude back toward
+the unmarked subspace.
 
 This is the part of Grover search that ordinary "try all answers at once"
 language hides. A classical search with more probes cannot become less informed.
@@ -336,7 +335,7 @@ on a bad phase.[^boyer]
 
 The query is quantum. The stopping rule is still statistics.
 
-## Phase Error Is A Coherent Tax
+## Unitary Is Not the Same as Calibrated
 
 The standard textbook reflections are exact phase flips. The oracle multiplies
 marked states by \(-1\). The diffusion step reflects about the starting state.
@@ -346,7 +345,7 @@ The lab's phase-error slider changes the oracle's marked-state flip from
 ideal. The operation remains norm-preserving; the audit still passes. But the
 success curve no longer has to land at the same peak.
 
-This is a useful distinction:
+This is the distinction the slider is meant to make uncomfortable:
 
 - unitary means probability is conserved;
 - calibrated means the intended interference pattern happens.
@@ -361,7 +360,7 @@ in the abstract. It is an error in a rotation, reflection, or controlled phase
 whose effect may accumulate across the exact number of oracle calls that made
 the algorithm useful.
 
-## Amplitude Amplification Is The General Form
+## Grover Was the Special Case
 
 Grover search is the equal-superposition special case.
 
@@ -384,9 +383,9 @@ state whose good subspace has amplitude, and if you can reflect about the
 preparation and mark good states coherently, then the same rotation can amplify
 success.
 
-The two ifs do a lot of work.
+Those two ifs do a lot of work.
 
-## The Oracle Bill
+## The Oracle Still Sends a Bill
 
 Grover search is a query-complexity result. The oracle is counted as a black-box
 call.
@@ -408,9 +407,9 @@ This is the practical checklist:
   correction overhead?
 
 The black-box theorem does not pay those bills. It tells you the best possible
-exchange rate once those bills are paid.
+exchange rate once they are paid.
 
-## What The Square Root Does To Security
+## What the Square Root Does to Keys
 
 Grover's algorithm is often summarized as "halve the exponent." That is a decent
 first-order memory for brute-force symmetric search:
@@ -430,7 +429,7 @@ This is the right contrast:
 
 Both are quantum algorithms. They are not the same kind of advantage.
 
-## The Picture I Trust
+## The Picture I Keep
 
 I do not picture Grover search as a machine opening every drawer.
 
