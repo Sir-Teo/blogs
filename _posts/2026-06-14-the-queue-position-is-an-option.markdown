@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Queue Position Has Option Value"
-description: "In a limit order book, two orders at the same price are not the same trade. FIFO priority changes fill probability, adverse selection, and the option value of waiting."
+title: "The Same Bid Has Different Futures"
+description: "In a limit order book, two orders at the same price are not the same trade. FIFO priority changes fill probability, adverse selection, and the value of waiting."
 date: 2026-06-14 00:08:00 -0400
 categories: quantitative-finance
 tags: [market-microstructure, limit-order-books, queue-position, adverse-selection, execution, quantitative-finance]
-excerpt: "A passive order at the best bid is not just a cheaper market order. It is a contingent claim: it executes only if enough future flow reaches your place in the queue before the quote moves away."
+excerpt: "A passive order at the best bid is a contingent claim: it executes only if enough future flow reaches your place in the queue before the quote moves away."
 ---
 
 The best bid is a price.
@@ -30,11 +30,11 @@ mostly exposed to large or persistent sell waves. That is already a selection
 effect. Bad queue position does not only reduce fill probability. It changes
 which states of the world are allowed to fill you.
 
-This is why queue position is an option, but not a friendly one. You have the
+This is why queue position behaves like an option, but not a friendly one. You have the
 right to trade at the bid if the future path of the book reaches you. The path
 that reaches you is informative.
 
-## The Ticket
+## Your Ticket Has a Place
 
 Suppose you place a one-unit buy limit order at the best bid. Let
 
@@ -94,7 +94,7 @@ after you buy, the spread was a coupon attached to a losing state.
 
 The conditioning is the dangerous part. A fill is evidence.
 
-## The Back of the Queue Is a Filter
+## The Back Filters the Flow
 
 Imagine there are 100 units ahead of you. A one-unit sell market order does not
 touch you. A two-unit sell market order does not touch you. A normal drizzle of
@@ -127,7 +127,7 @@ model also shows how adverse selection is built into the price schedule supplied
 by limit orders.[^glosten] Queue priority is where that price schedule becomes
 operational.
 
-## The Cancel Button Is Part of the Instrument
+## The Cancel Button Exercises the Option
 
 The option analogy becomes clearer once you allow cancellation.
 
@@ -144,7 +144,7 @@ cancel and reinsert in time.[^lehalle-mounjid]
 That is not a moral statement about speed. It is a mechanical statement about
 the payoff. A stale resting order sells optionality to faster information.
 
-## A Queue-Position Lab
+## Run the Ticket Through Weather
 
 The lab below simulates one passive buy order at the best bid. It is deliberately
 small, but it keeps the three ingredients that matter for the essay:
@@ -313,11 +313,26 @@ It is not a trading system. It is a microscope for the conditional event
 </div>
 <script defer src="{{ '/assets/js/queue-position-lab.js?v=20260614a' | relative_url }}"></script>
 
+With the default sliders, the selected order sits at `65%` of an 80-unit bid
+queue. Across 900 deterministic paths, it fills `60.6%` of the time, takes
+about `69` events to fill when it does, and has `29.2%` adverse fills
+conditional on filling. The maker markout averages about `+0.33 ticks`; the
+post-versus-cross edge is about `+0.35 ticks`. In the curve panel, the front of
+the queue fills around `85%` with no adverse fills in this run, while the very
+back fills around `36%`, has about `68%` adverse fills conditional on filling,
+and turns slightly negative.
+
+I also swept 2,916 parameter combinations across queue position, depths,
+toxicity, cancellation, pull speed, and horizon. The outcome probabilities
+stayed normalized and inside bounds. This is still a toy, but the toy is at
+least accounting for its states.
+
 Start with the queue position near the back and raise **Order-flow toxicity**.
 The fill probability may remain respectable, but the red adverse-fill share
-climbs. Now increase **Pull speed**. The red share falls, but some fills turn
-into blue "pulled" outcomes. That is the option being exercised: you give up
-some spread capture to avoid stale execution.
+climbs. Now increase **Pull speed**. Absolute adverse fills can shrink because
+more dangerous paths turn into blue "pulled" outcomes, even if the conditional
+adverse share among the remaining fills stays high. That is the option being
+exercised: you give up some spread capture to avoid stale execution.
 
 The most important panel is the value curve. It separates two questions that
 are often mashed together:
@@ -330,7 +345,7 @@ What did the fill mean?
 The first is a queueing statistic. The second is an information statistic.
 Queue position links them.
 
-## Why a Fill Is Not a Fill
+## A Fill Is a Selection Event
 
 Execution data often arrives as rows:
 
@@ -357,7 +372,7 @@ posted a buy order, the price moved up, and you still needed to buy, the non-fil
 was not neutral. It was an opportunity cost. A passive order can save the spread
 when it fills and lose the spread, plus more, when the market runs away.
 
-## Two Diagnostics I Would Actually Want
+## Two Plots Before Believing It
 
 If I were auditing a passive execution model, I would start with two plots.
 
@@ -377,7 +392,7 @@ toxic fills. A model that only predicts short-term price moves can still miss
 the practical question of whether you are likely to trade before the signal is
 gone.
 
-## The Unfinished Part
+## The Hard Part Is Inference
 
 The hard version of this problem is not the toy model above. It is inference.
 
