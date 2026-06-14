@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Record Linkage Starts as a Hypothesis Test"
+title: "The Fuzzy Join Writes Facts"
 description: "When there is no shared key, a data join becomes a statistical decision about identity under measurement error."
 date: 2026-06-13 11:08:00 -0400
 categories: computer-science
 tags: [record-linkage, entity-resolution, data-quality, statistics, data-systems, probabilistic-matching]
-excerpt: "The hard part of entity resolution is not string similarity. It is deciding when a possible match is good enough to become a fact in the database."
+excerpt: "The hard part of entity resolution is not string similarity. It is deciding when a possible match is safe enough to become a fact in the database."
 ---
 
 The most dangerous join in a data system is the one that looks almost like a
@@ -30,7 +30,7 @@ Those are not the same question.
   equality operator. It is a hypothesis test with operational costs.
 </div>
 
-## The Old Problem
+## An Old Administrative Headache
 
 Record linkage is older than most modern data infrastructure. Newcombe,
 Kennedy, Axford, and James described automatic linkage of vital records in
@@ -78,7 +78,7 @@ $$
 That middle region matters. It says uncertainty is not a bug in the user
 interface. It is part of the statistical decision.
 
-## Blocking Is the First Model
+## The First Model Is the Candidate List
 
 Before scoring pairs, a linkage system usually performs blocking: compare only
 records that share some cheap key, such as last-name initial, date bucket, zip
@@ -123,7 +123,7 @@ The first lesson is uncomfortable:
 the blocking rule can dominate the matching model
 ```
 
-## A Small Linkage Laboratory
+## Dirty Tables on the Bench
 
 The lab below generates two dirty files from a hidden population. Some records
 overlap across files; others are unique. Names can be common or rare. Fields can
@@ -201,7 +201,7 @@ entity resolution is a pipeline of irreversible decisions. Normalize, block,
 score, review, resolve, merge. A mistake early in the pipeline can look like
 confidence later.
 
-## String Similarity Is Evidence, Not Truth
+## A Similar Name Is Evidence, Not Identity
 
 Jaro's work on matching the 1985 Tampa census helped move record linkage from
 exact character agreement toward probabilistic comparison of noisy fields.[^jaro]
@@ -233,7 +233,7 @@ semantically similar. Semantic similarity is not identity. A linkage system must
 still ask whether the comparison pattern is more likely under the same-entity
 hypothesis.
 
-## Pair Decisions Are Not Entity Decisions
+## Pair Scores Do Not Make an Entity
 
 The Fellegi-Sunter model scores record pairs. Real databases contain entities.
 Those are different geometries.
@@ -267,7 +267,7 @@ Which links are safe enough to materialize, which need review,
 and which uncertainty should remain visible downstream?
 ```
 
-## The Audit I Would Want
+## The Run Sheet for a Merge
 
 For a serious linkage job, I would ask for a run sheet.
 
@@ -295,7 +295,7 @@ patient risk, household income, customer churn, or sanctions exposure from linke
 data, linkage uncertainty should not disappear. It should become uncertainty in
 the analysis.
 
-## Next Experiments
+## Propagate the Uncertainty
 
 The blog-sized experiment I want next is a linkage stress test for ML datasets.
 
@@ -314,7 +314,8 @@ not usually the final product. It is a data-generating step for something else.
 If linkage errors are structured by language, geography, class, institution, or
 name frequency, the downstream model inherits that structure.
 
-Record linkage looks like plumbing. It is really epistemology with indexes.
+Record linkage looks like plumbing. It is really epistemology with indexes and
+a merge button.
 
 The join is a hypothesis test. Treating it as an equality operator just hides
 the p-value in the warehouse.
