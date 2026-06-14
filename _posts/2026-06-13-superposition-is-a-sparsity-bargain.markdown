@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Superposition Is a Sparsity Bargain"
+title: "Superposition Buys Space With Sparsity"
 description: "Why neural networks may store more features than dimensions, why sparse autoencoders help, and why reconstruction error is not the same thing as understanding."
 date: 2026-06-13 02:47:00 -0400
 categories: machine-learning
@@ -270,7 +270,7 @@ resolution limits, artifacts, sample preparation, and a trained human deciding
 what the image means. Sparse autoencoders may become microscopes for activation
 space. That makes their artifacts more important, not less.
 
-## A Useful Research Direction
+## A Useful Next Experiment
 
 The next experiments I would trust most are not bigger by default. They are more
 diagnostic.
@@ -319,7 +319,7 @@ may ask for different dictionaries.
 Superposition is a budget. Sparse autoencoders are one way to audit the budget.
 The scientific work is to keep the ledger honest.
 
-## Notes
+## Sources
 
 [^toy]: Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen, Roger Grosse, Sam McCandlish, Jared Kaplan, Dario Amodei, Martin Wattenberg, and Christopher Olah, "Toy Models of Superposition," 2022. [Transformer Circuits](https://transformer-circuits.pub/2022/toy_model/index.html), [arXiv](https://arxiv.org/abs/2209.10652).
 
