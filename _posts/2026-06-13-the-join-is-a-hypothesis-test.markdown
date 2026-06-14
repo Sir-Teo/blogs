@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Join Is a Hypothesis Test"
+title: "Record Linkage Starts as a Hypothesis Test"
 description: "When there is no shared key, a data join becomes a statistical decision about identity under measurement error."
 date: 2026-06-13 11:08:00 -0400
 categories: computer-science
@@ -295,7 +295,7 @@ patient risk, household income, customer churn, or sanctions exposure from linke
 data, linkage uncertainty should not disappear. It should become uncertainty in
 the analysis.
 
-## A Research Direction
+## Next Experiments
 
 The blog-sized experiment I want next is a linkage stress test for ML datasets.
 
@@ -319,7 +319,7 @@ Record linkage looks like plumbing. It is really epistemology with indexes.
 The join is a hypothesis test. Treating it as an equality operator just hides
 the p-value in the warehouse.
 
-## Notes
+## References
 
 [^newcombe]: Howard B. Newcombe, James M. Kennedy, S. J. Axford, and A. P. James, ["Automatic Linkage of Vital Records"](https://pubmed.ncbi.nlm.nih.gov/14426783/), *Science*, 1959. The [Science record](https://www.science.org/doi/10.1126/science.130.3381.954) is also available.
 
