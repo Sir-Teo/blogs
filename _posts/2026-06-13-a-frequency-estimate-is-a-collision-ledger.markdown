@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Frequency Estimate Is a Collision Ledger"
+title: "Count-Min Sketches Keep a Collision Diary"
 description: "The Count-Min Sketch is not a tiny dictionary. It is a promise that every overcount came from collision mass you can budget."
 date: 2026-06-13 20:30:00 -0400
 categories: computer-science
@@ -26,7 +26,7 @@ asks whether at least one row was lucky enough to avoid too much collision mass.
 
 A frequency estimate is a collision ledger.
 
-## The Contract
+## The Exact Bargain
 
 Create a table with $$d$$ rows and $$w$$ columns. Each row has its own hash
 function. When item $$x$$ appears with positive increment $$c$$, add $$c$$ to
@@ -337,7 +337,7 @@ The reset/windowing line is important. Count-Min is a memory-saving structure,
 not a forgetting policy. If you want recent frequency rather than all-time
 frequency, the time model has to be designed explicitly.
 
-## The Sentence to Keep
+## The Portable Sentence
 
 The Count-Min Sketch does not remove keys from memory for free.
 
