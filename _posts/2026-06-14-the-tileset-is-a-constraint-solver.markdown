@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tileset Is A Constraint Solver"
+title: "Wave Function Collapse as Constraint Propagation"
 description: "Wave Function Collapse looks like procedural magic, but the useful version is a constraint solver with a texture memory: local patterns, entropy choice, propagation, and restarts."
 date: 2026-06-14 16:24:00 -0400
 categories: gaming
@@ -25,7 +25,7 @@ commitment and deletes every neighboring possibility that can no longer fit.
 This is why watching WFC is satisfying. The map does not merely fill in. It
 becomes less ambiguous.
 
-## The Trick
+## The Move
 
 Take a tiny sample:
 
