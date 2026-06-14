@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Missing Shards Are Linear Equations"
+title: "Reed-Solomon Turns Missing Shards Into Algebra"
 description: "Reed-Solomon erasure coding is not backup magic. It is a promise that any k surviving shards contain enough finite-field equations to reconstruct the original stripe."
 date: 2026-06-14 11:18:00 -0400
 categories: data-systems
