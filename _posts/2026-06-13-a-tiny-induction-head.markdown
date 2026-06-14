@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "A Tiny Induction Head"
-description: "Instead of treating in-context learning as magic, build the smallest browser-sized circuit that can copy a pattern from the prompt."
+title: "A Copy Machine Small Enough to See"
+description: "Instead of treating in-context learning as magic, build a browser-sized induction circuit that finds a repeated pattern and copies what followed it."
 date: 2026-06-13 01:27:00 -0400
 categories: machine-learning
 tags: [mechanistic-interpretability, transformers, induction-heads, in-context-learning, attention]
-excerpt: "A toy attention circuit can read examples in the prompt, find the matching one, and copy what came next. It is not a language model. That is exactly why it is useful."
+excerpt: "A tiny attention circuit can turn the prompt into a lookup table. It is not a language model, and that is exactly why the mechanism stays visible."
 ---
 
-I want to build a very small machine.
+I want to build a machine small enough that it cannot hide.
 
 Not a language model. Not a trained transformer. Just the smallest browser-sized
 object that makes one piece of in-context learning feel mechanical.
@@ -32,9 +32,10 @@ $$
 [A][B] \ldots [A] \rightarrow [B].
 $$
 
-The slogan is almost too small. That is why it is worth building.
+The slogan is almost too small. Good. Small enough means we can put it under
+glass.
 
-## Attention as a lookup table
+## The Lookup You Can See
 
 The transformer paper introduced scaled dot-product attention as a way to map
 queries, keys, and values into a weighted average of values.[^vaswani]
@@ -66,7 +67,7 @@ a glass box version of a circuit motif. The Transformer Circuits framework makes
 this kind of decomposition useful by studying attention-only transformers and
 asking what algorithms individual heads can implement.[^framework]
 
-## The toy prompt
+## The Prompt Trapdoor
 
 The lab below creates a synthetic sequence.
 
@@ -152,7 +153,7 @@ This is the feeling I wanted: in-context learning as a data structure. The
 prompt contains little records. Attention searches the records. The value path
 copies an answer out.
 
-## What this does not prove
+## Keep the Claim Small
 
 This toy circuit does not prove that all in-context learning is induction. It
 does not contain MLPs, learned embeddings, multiple layers, semantic features,
@@ -171,7 +172,7 @@ the target is an algorithm one can implement in a few lines. A circuit is not a
 vibe. It should have inputs, intermediate quantities, outputs, failure modes,
 and ablations.
 
-## A research habit
+## A Habit for Tiny Circuits
 
 When a model succeeds on a few-shot prompt, ask a blunt question:
 
