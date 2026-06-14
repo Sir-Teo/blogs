@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Bloom Filters Put a Price on False Alarms"
+title: "The Bit Array That Only Says Maybe"
 description: "A Bloom filter is a memory bargain: it can say definitely not, or maybe, but it never proves membership."
 date: 2026-06-13 17:24:00 -0400
 categories: computer-science
 tags: [bloom-filter, probabilistic-data-structures, hashing, databases, systems, false-positives]
-excerpt: "A Bloom filter is not an approximate set because it forgot a little data by accident. It is an engineered asymmetry: no false negatives, controlled false positives, and a downstream system that must know what a maybe costs."
+excerpt: "A Bloom filter is not an approximate set because it forgot data by accident. It is engineered asymmetry: no false negatives, controlled false positives, and a downstream system that knows what maybe costs."
 ---
 
 A set has a wonderfully blunt personality.
@@ -50,7 +50,7 @@ definitely yes
 
 That asymmetry is the whole instrument.
 
-## The Useful Cheat
+## How to Say No With Bits
 
 Start with an array of $$m$$ bits, all zero. To insert a key, compute $$k$$ hash
 positions and set those bits to one. To query a key, compute the same $$k$$
@@ -75,7 +75,7 @@ Nothing stores the key. Nothing stores a count. Nothing stores a witness. A bit
 can be set by one item, five items, or no item that you care about anymore. The
 data structure works because a zero bit is still an alibi.
 
-## The Formula Is the Design Budget
+## The Price List
 
 Suppose $$n$$ distinct keys have been inserted. Under the usual idealized
 hashing assumption, the probability that a particular bit remains zero after
@@ -125,7 +125,7 @@ p_\mathrm{fp}
 (0.6185)^{m/n}.
 $$
 
-This is the price list. With 10 bits per key and about 7 hash probes, the target
+Here is the price list. With 10 bits per key and about 7 hash probes, the target
 false-positive rate is about 0.8 percent. With 20 bits per key, it falls to
 about 0.007 percent. To target a rate $$p$$, the familiar back-of-the-envelope
 memory budget is:
@@ -141,7 +141,7 @@ filters are useful where a set or list would be too large, provided the effect
 of false positives can be mitigated.[^broder] That condition is not a footnote.
 It is the product requirement.
 
-## A Bloom Filter Lab
+## Play With the Maybe Machine
 
 The lab below builds a deterministic synthetic filter, queries inserted and
 absent keys, and compares empirical false positives with the formula. It uses a
@@ -224,7 +224,7 @@ because setting a one bit to one again has no effect. That idempotence is useful
 when logs are replayed or events are retried. It is also a warning: a standard
 Bloom filter answers set membership, not frequency.
 
-## The False Positive Has a Cost Center
+## The Maybe Branch Has an Owner
 
 The common mistake is to say "the false-positive rate is 1 percent" as if that
 were a complete evaluation.
@@ -267,7 +267,7 @@ That expression is crude, but it points in the right direction. A false positive
 is a product decision because the product, pipeline, or protocol defines the
 cost of believing "maybe."
 
-## Deletion Is Not Free
+## You Cannot Just Erase a Shadow
 
 A standard Bloom filter has no idea why a bit is one. If you remove an item and
 clear its bits, you may erase evidence needed by another item. That would create
@@ -288,7 +288,7 @@ you need deletion, resizing, mergeability, stable serialization, adversarial-key
 defense, or hardware locality, the data-structure choice becomes a systems
 choice again.
 
-## The Quiet Assumptions
+## Where the Contract Can Leak
 
 First, the hash model is doing work. The clean formulas assume uniform,
 independent-looking positions. Real systems use finite hashes, seeded hash
@@ -314,7 +314,7 @@ enumerate its members, but it remains a queryable artifact derived from the
 members. Salts, access controls, retention policy, and threat models still
 matter.
 
-## A Run Sheet I Would Actually Use
+## Questions for the Owner
 
 Before shipping one, I would want the owner to answer:
 
@@ -333,7 +333,7 @@ The most important line is the second one. A Bloom filter is not a generic
 optimization. It is a way of moving work from memory into uncertainty. Whether
 that is good engineering depends on where the uncertainty lands.
 
-## The Small, Sharp Feeling
+## An Honest Little Machine
 
 An exact set remembers keys.
 
