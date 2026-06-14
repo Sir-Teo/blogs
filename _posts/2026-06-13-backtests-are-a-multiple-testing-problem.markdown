@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Backtests Are a Multiple Testing Problem"
+title: "Backtests After the Research Garden"
 description: "A beautiful backtest is weak evidence unless you know how many ideas, parameters, filters, assets, and time windows were tried before it won."
 date: 2026-06-13 00:35:00 -0400
 categories: quantitative-finance
@@ -132,7 +132,7 @@ The practical rule is not "use this one correction." It is:
 5. Treat costs, turnover, capacity, and decay as part of the null, not as a
    footnote after the signal looks good.
 
-## A Small Experiment
+## A Little Stress Test
 
 The simulator below creates a research department. In each campaign, the
 department tests many candidate strategies. A small fraction may have genuine
@@ -219,7 +219,7 @@ also a monitoring problem. If a strategy was selected from a large library, its
 initial live underperformance is not surprising evidence of "bad luck." It may
 be the expected regression from selected noise.
 
-## The Research Direction
+## What I Would Try After This
 
 The strongest version of quant research is not less creative. It is more honest
 about the denominator.
@@ -238,7 +238,7 @@ investor receives only the maximum.
 A backtest is a microscope if the experiment was pre-registered. It is a mirror
 if the experiment was searched until it smiled back.
 
-## Notes
+## Further Reading
 
 [^white]: Halbert White, "A Reality Check for Data Snooping," *Econometrica*, 2000. [PDF](https://www.ssc.wisc.edu/~bhansen/718/White2000.pdf).
 
