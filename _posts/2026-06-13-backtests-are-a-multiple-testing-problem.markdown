@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Backtests After the Research Garden"
-description: "A beautiful backtest is weak evidence unless you know how many ideas, parameters, filters, assets, and time windows were tried before it won."
+title: "The Backtest Is the Best Survivor"
+description: "A beautiful backtest is weak evidence until the ideas, parameters, filters, assets, and windows that lost are counted too."
 date: 2026-06-13 00:35:00 -0400
 categories: quantitative-finance
 tags: [backtesting, quantitative-finance, multiple-testing, sharpe-ratio, overfitting]
-excerpt: "The best strategy in a large research library is selected under intense statistical pressure. Treating its Sharpe ratio as a single clean experiment is how backtests become stories."
+excerpt: "The strategy in the deck is the survivor of a search. Its Sharpe ratio only means something after the abandoned variants enter the denominator."
 ---
 
 A backtest is not one experiment if it came out of a research process.
@@ -16,7 +16,7 @@ outlier rules, factor definitions, neutralization choices, and parameter grids.
 The strategy that reaches the pitch deck is not sampled at random from that
 garden. It is selected because it looked good.
 
-That selection step changes the statistics.
+That selection step changes the statistics before anyone opens the slide deck.
 
 <div class="callout">
   <strong>Thesis:</strong> the correct question is not "what was the Sharpe
@@ -47,9 +47,9 @@ argument at the factor zoo level: once hundreds of factors have been searched,
 the familiar t-statistic hurdle near 2 is too low.[^harvey]
 
 The common theme is simple: a backtest is evidence only after the search budget
-has been disclosed.
+has been put on the table.
 
-## The Max Is Not an Average
+## The Winner Came From a Crowd
 
 Suppose a team tests $$m$$ strategies that have no true edge. Each test produces
 a one-sided p-value. If the team reports the best one, the relevant null is not
@@ -77,7 +77,7 @@ a Sharpe of 1.8." It is the maximum of a correlated family of noisy estimates.
 That is why the phrase "we only show the final model" should make an investor
 more nervous, not less. The discarded variants are part of the evidence.
 
-## Sharpe Ratios Are Estimates
+## Sharpe Has Sampling Noise
 
 Even before multiple testing, Sharpe ratios are noisy. Lo derives the sampling
 behavior of Sharpe ratios under several return assumptions and shows why naive
@@ -104,7 +104,7 @@ tallest child in a classroom is likely to be less exceptional on the next
 measurement if yesterday's height included measurement error. In finance, the
 next measurement is called live trading.
 
-## Corrections Are Not Rituals
+## Corrections Are Receipts
 
 There are several ways to respond. None is magic.
 
@@ -132,7 +132,7 @@ The practical rule is not "use this one correction." It is:
 5. Treat costs, turnover, capacity, and decay as part of the null, not as a
    footnote after the signal looks good.
 
-## A Little Stress Test
+## Research Department Simulator
 
 The simulator below creates a research department. In each campaign, the
 department tests many candidate strategies. A small fraction may have genuine
@@ -201,7 +201,7 @@ a scold; it becomes a way to separate a crowded discovery set from a random
 winner. Finally, increase live drag. A strategy can be statistically real and
 economically dead. That distinction matters because markets pay after costs.
 
-## What Should Be Logged
+## The Search Ledger
 
 The audit trail of a quant strategy should look more like an experiment registry
 than a slide deck. I would want to know:
@@ -219,7 +219,7 @@ also a monitoring problem. If a strategy was selected from a large library, its
 initial live underperformance is not surprising evidence of "bad luck." It may
 be the expected regression from selected noise.
 
-## What I Would Try After This
+## A Better Research Notebook
 
 The strongest version of quant research is not less creative. It is more honest
 about the denominator.
