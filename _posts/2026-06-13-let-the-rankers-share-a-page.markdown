@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Let the Rankers Share a Page"
-description: "A/B tests compare two rankers through different users and different queries. Interleaving compares them inside the same result page, turning ranking evaluation into a paired duel."
+title: "Put Both Rankers on the Same Page"
+description: "A/B tests compare rankers through different users and queries. Interleaving makes them share one result page, turning ranking evaluation into a paired duel."
 date: 2026-06-13 23:15:00 -0400
 categories: machine-learning
 tags: [online-evaluation, interleaving, search, ranking, ab-testing, information-retrieval, machine-learning]
-excerpt: "When two search rankers are close, the loudest source of variance is often not the ranker. It is the query, the user, and the day. Interleaving makes the rankers fight on the same page."
+excerpt: "When rankers are close, the loudest variance may be the query, user, and day. Interleaving makes the rankers fight on the same page."
 ---
 
 The ordinary A/B test asks two rankers to fight through fog.
@@ -38,9 +38,10 @@ clicked documents are then credited back to the ranker that contributed them.
 The rankers duel on the same query, in front of the same user, under the same
 position bias.
 
-That paired design is the whole trick.
+That paired design is the whole trick: make the nuisance variables sit in the
+same room as both contestants.
 
-## Clicks Are Not Labels
+## Clicks Are Witnesses With Bad Lighting
 
 Search has always been tempted by clicks. They are abundant, cheap, timely, and
 produced by real users with real information needs. Joachims's 2002 KDD paper
@@ -68,7 +69,7 @@ because everything above it was bad enough to keep the user scanning.
 Interleaving does not remove these biases from the universe. It tries to make
 the two rankers experience them on the same page.
 
-## A Ranking Experiment Can Be Paired
+## Pair the Query, Not the Traffic
 
 In a split-user A/B test, a session contributes something like:
 
@@ -124,7 +125,7 @@ method at scale.[^amazon]
 
 That last clause matters. A fast test is not automatically an easy test.
 
-## A Duel Lab
+## Same-Page Duel
 
 The lab below simulates a search product with a hidden relevance landscape.
 Each query has a set of candidate documents. Ranker A sees relevance through a
@@ -346,7 +347,7 @@ so the bias is shared more symmetrically.
 This is why interleaving can feel unfairly effective. It is not measuring
 everything. It is measuring a narrower thing with less nuisance variance.
 
-## The Thing Interleaving Does Not Tell You
+## What the Duel Cannot Ship
 
 Interleaving answers:
 
@@ -384,7 +385,7 @@ other direction: interleaving is powerful enough to be worth operational
 complexity, but the raw measurement needs translation before it becomes a
 launch decision.[^amazon]
 
-## Next Experiments
+## Three-Layer Ranking Evidence
 
 The evaluation stack I want for ranking systems has three layers:
 
