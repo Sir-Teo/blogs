@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Sketch Sees the Spectrum"
+title: "Randomized SVD Finds the Room First"
 description: "Randomized SVD works because a matrix can be interrogated by random probes. The probes do not discover every entry; they find the subspace where the matrix actually acts."
 date: 2026-06-14 04:18:00 -0400
 categories: machine-learning
@@ -403,7 +403,7 @@ The sketch does not know the spectrum.
 
 But if the spectrum is there, the sketch can hear it.
 
-## Notes
+## Where This Came From
 
 [^eckart-young]: Carl Eckart and Gale Young, "The approximation of one matrix by another of lower rank," *Psychometrika*, 1936. [Springer](https://link.springer.com/article/10.1007/BF02288367).
 
