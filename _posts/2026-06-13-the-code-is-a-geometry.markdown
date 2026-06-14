@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Hamming Codes Draw Cubes"
+title: "Reliable Bits Need Empty Space"
 description: "Error correction is not a spell that makes bits reliable. It is a geometric bargain: spend redundancy to move valid messages farther apart."
 date: 2026-06-13 20:08:00 -0400
 categories: computer-science
@@ -26,7 +26,7 @@ reliability is bought by spacing codewords apart
 
 The code is a geometry.
 
-## The Cube
+## Bits Live on a Cube
 
 An $$n$$-bit word is a vertex of an $$n$$-dimensional cube. Two words are close
 if they differ in few positions. That distance is now called Hamming distance.
@@ -44,7 +44,7 @@ If two bits flip, the received word may be closer to the wrong codeword, or may
 look like a single-bit error somewhere else. Distance 3 buys guaranteed
 single-error correction. It does not buy arbitrary miracles.
 
-## Hamming(7,4)
+## Seven Bits With an Address Book
 
 The $$(7,4)$$ Hamming code stores four data bits in seven transmitted bits.
 Positions 1, 2, and 4 are parity checks. Positions 3, 5, 6, and 7 carry data.
@@ -74,7 +74,7 @@ Four information bits consume seven channel uses. The code is less efficient
 than raw transmission on a perfect channel and far more reliable on a moderately
 noisy one.
 
-## A Small Channel Bench
+## A Noisy Channel on the Table
 
 The lab below compares four schemes on a binary symmetric channel, where every
 transmitted bit independently flips with probability $$p$$.
@@ -244,7 +244,7 @@ is detected rather than silently "corrected" into nonsense.
 That is why the lab separates **wrong** from **erasure**. A low error rate is
 not enough. The kind of error matters.
 
-## Shannon's Limit Is Not a Construction
+## Shannon Promised Existence, Not a Circuit
 
 Two years before Hamming's paper, Shannon framed communication as reproducing a
 message selected at one point at another point, with noise and uncertainty made
@@ -271,7 +271,7 @@ The same idea is visible in miniature in Hamming(7,4). A syndrome is a small set
 of parity-check failures. Modern sparse-graph decoders generalize that local
 evidence into an iterative belief update over a much larger graph.
 
-## A Code Review Checklist
+## Before You Trust the Code
 
 When I see an error-correcting code in a system, I want a ledger:
 
@@ -291,7 +291,7 @@ The most dangerous metric is "corrected errors." A high correction count can
 mean the code is doing its job. It can also mean the channel is drifting toward
 a regime where two-error patterns become common and silent miscorrection is next.
 
-## The Short Version
+## The Sentence to Keep
 
 An error-correcting code is a packing of messages in a noisy space.
 
@@ -299,6 +299,8 @@ Parity checks carve the space. Distance creates neighborhoods. The syndrome is
 a coordinate system for the noise you promised to handle. When the noise leaves
 that neighborhood, the honest decoder should know the difference between
 correction and refusal.
+
+## Sources
 
 [^hamming]: Richard W. Hamming, ["Error Detecting and Error Correcting Codes"](https://zoo.cs.yale.edu/classes/cs323/doc/Hamming.pdf), *Bell System Technical Journal*, 29(2), 1950. DOI: [10.1002/j.1538-7305.1950.tb00463.x](https://onlinelibrary.wiley.com/doi/10.1002/j.1538-7305.1950.tb00463.x).
 
