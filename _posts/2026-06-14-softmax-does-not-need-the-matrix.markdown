@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Softmax Does Not Need the Matrix"
+title: "Exact Softmax Without the Matrix"
 description: "FlashAttention is not approximate attention. Its core trick is an online softmax invariant: keep the running max, rescale the denominator, and never write the full attention matrix to memory."
 date: 2026-06-14 00:23:00 -0400
 categories: ai-systems
@@ -381,7 +381,7 @@ The matrix was real.
 
 It just did not have to be written down.
 
-## Notes
+## Sources
 
 [^attention]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, "Attention Is All You Need," NeurIPS 2017. [arXiv](https://arxiv.org/abs/1706.03762), [NeurIPS](https://papers.nips.cc/paper/7181-attention-is-all-you-need).
 
