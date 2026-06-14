@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Lease Is Not The Fence"
+title: "Leases Need Fences"
 description: "Lease expiry is a time-based promise, but stale side effects need an epoch check at the resource. A small simulator shows why clock padding and fencing tokens solve different bugs."
 date: 2026-06-14 15:44:00 -0400
 categories: software-engineering
@@ -105,7 +105,7 @@ time.[^lamport]
 
 But even perfect lease arithmetic does not solve the late-write problem.
 
-## The Lab
+## The Small Machine
 
 The simulator below has two independent failure surfaces.
 
