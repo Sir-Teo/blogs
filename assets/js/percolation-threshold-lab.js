@@ -444,7 +444,7 @@
     container.querySelectorAll("[data-param]").forEach(function (input) {
       raw[input.getAttribute("data-param")] = input.value;
     });
-    return cleanParams(raw);
+    return raw;
   }
 
   function updateOutputs(container, params) {
@@ -787,10 +787,10 @@
   }
 
   function renderOne(container) {
-    var params = readParams(container);
+    var result = evaluate(readParams(container));
+    var params = result.params;
     updateOutputs(container, params);
     updateControlValues(container, params);
-    var result = evaluate(params);
     updateMetrics(container, result);
     var canvas = container.querySelector("[data-canvas]");
     if (canvas) draw(result, canvas);
