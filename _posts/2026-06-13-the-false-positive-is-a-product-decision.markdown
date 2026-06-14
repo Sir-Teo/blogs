@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The False Positive Is a Product Decision"
+title: "Bloom Filters Put a Price on False Alarms"
 description: "A Bloom filter is a memory bargain: it can say definitely not, or maybe, but it never proves membership."
 date: 2026-06-13 17:24:00 -0400
 categories: computer-science
@@ -50,7 +50,7 @@ definitely yes
 
 That asymmetry is the whole instrument.
 
-## The Trick
+## The Useful Cheat
 
 Start with an array of $$m$$ bits, all zero. To insert a key, compute $$k$$ hash
 positions and set those bits to one. To query a key, compute the same $$k$$
@@ -357,7 +357,7 @@ the question every system eventually asks anyway:
 what does being wrong cost here?
 ```
 
-## Notes
+## Further Reading
 
 [^bloom]: Burton H. Bloom, ["Space/Time Trade-offs in Hash Coding with Allowable Errors"](https://crystal.uta.edu/~mcguigan/cse6350/papers/Bloom.pdf), *Communications of the ACM*, 1970. [ACM record](https://dl.acm.org/doi/10.1145/362686.362692).
 
