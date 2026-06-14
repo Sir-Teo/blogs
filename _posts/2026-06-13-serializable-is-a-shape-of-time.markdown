@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Serializable Histories Have a Shape"
-description: "Database isolation levels are not adjectives about safety. They are claims about which histories are allowed to exist."
+title: "Two Clean Snapshots Can Break the World"
+description: "Database isolation levels are not adjectives about safety. They are claims about which shapes of history are allowed to exist."
 date: 2026-06-13 21:35:00 -0400
 categories: software-engineering
 tags: [database-isolation, serializability, snapshot-isolation, mvcc, concurrency-control, software-engineering]
-excerpt: "Snapshot isolation feels serial because every transaction sees a clean past. The bug is that two clean pasts can still assemble a future that no serial order could have produced."
+excerpt: "Snapshot isolation feels serial because every transaction sees a clean past. The trouble is that two clean pasts can assemble a future no serial order could have produced."
 ---
 
 The dangerous database bugs are often polite.
@@ -32,7 +32,7 @@ That definition is stricter than "each transaction saw a consistent snapshot."
 Snapshot isolation can make every reader happy while the combined history is
 still impossible.
 
-## The Bug With Two True Stories
+## Two True Stories, One Broken Invariant
 
 The classic example is write skew.
 
@@ -69,7 +69,7 @@ isolation levels.[^adya]
 Graphs are the right language because the bug is not in one read or one write.
 It is in the cycle.
 
-## A History Lab
+## The Smallest Bad Histories
 
 The lab below simulates three small histories:
 
@@ -247,7 +247,7 @@ T1 -> T2 -> T1
 The database does not need to know anything about doctors. It only needs to see
 that the history cannot be placed on a line.
 
-## Snapshot Isolation Is Not a Toy
+## Snapshot Isolation Earns Its Popularity
 
 Snapshot isolation is attractive for a reason.
 
@@ -277,7 +277,7 @@ preserve it too.
 
 That is false unless the isolation level lets you compose those local proofs.
 
-## Predicates Are Data Too
+## Empty Rows Count as Data
 
 The reservation example is the same bug wearing a different coat.
 
@@ -303,7 +303,7 @@ Indexes make this concrete. A database may approximate predicate protection
 with index-range locks, SIREAD locks, or dependency tracking. But the semantic
 object is still the predicate.
 
-## What SSI Adds
+## SSI Remembers the Cycle
 
 Serializable Snapshot Isolation keeps the pleasant part of snapshot isolation:
 readers still see snapshots, and reads need not block writes in the ordinary
@@ -334,7 +334,7 @@ Partial retries are not the same thing. Retrying only the final write preserves
 the stale decision. The unit of retry is the transaction because the read set is
 part of the decision.
 
-## The Engineering Rule
+## When Time Has No Line
 
 When a production bug smells like "two users both did a valid thing and together
 created an invalid thing," look for one of these shapes:
