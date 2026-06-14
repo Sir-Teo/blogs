@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Game Tree Is a DAG in Disguise"
+title: "Game Trees Reuse Their Positions"
 description: "Alpha-beta search is usually drawn as a tree, but repeated positions turn it into a graph. Transposition tables work only when cached values remember their depth, bound type, and identity."
 date: 2026-06-14 15:20:00 -0400
 categories: gaming
@@ -179,7 +179,7 @@ check.[^zobrist] The point was not that hashing makes identity free. The point
 was that identity can be made cheap enough for search, if the remaining risk is
 engineered consciously.
 
-## The Lab
+## The Small Machine
 
 The lab below is not a chess engine. It is a small deterministic game designed
 to exaggerate transpositions. A move removes one stone from one pile, and the
