@@ -400,6 +400,11 @@
     return (100 * value).toFixed(digits == null ? 0 : digits) + "%";
   }
 
+  function formatDelta(value) {
+    var rounded = Math.round(value);
+    return (rounded > 0 ? "+" : "") + String(rounded);
+  }
+
   function metric(label, value) {
     return '<div class="branch-lab__metric"><span>' + label + "</span><strong>" + value + "</strong></div>";
   }
@@ -624,8 +629,8 @@
         metric("best miss/k", formatNumber(result.best.missesPerK, 0)),
         metric("context floor", formatNumber(result.workingSet.contextMissRate * 1000, 0)),
         metric("95% contexts", String(result.workingSet.workingSet95)),
-        metric("gshare gain", formatNumber(bimodal.missesPerK - gshare.missesPerK, 0)),
-        metric("perceptron delta", formatNumber(perceptron.missesPerK - gshare.missesPerK, 0))
+        metric("gshare - bimodal", formatDelta(gshare.missesPerK - bimodal.missesPerK)),
+        metric("perc - gshare", formatDelta(perceptron.missesPerK - gshare.missesPerK))
       ].join("");
     }
     var canvas = container.querySelector("canvas[data-canvas]");
