@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Explanation Has a Background Distribution"
+title: "SHAP Needs a Background World"
 description: "SHAP values are not pure feature truth. They are Shapley values for a particular missing-feature game."
 date: 2026-06-13 20:51:00 -0400
 categories: machine-learning
