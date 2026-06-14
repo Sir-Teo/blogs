@@ -622,7 +622,13 @@
     function renderNow() {
       var params = readState(container);
       updateOutputs(container, params);
-      latest = evaluate(params);
+      latest = evaluate({
+        length: params.length,
+        mismatch: params.mismatch * 100,
+        precision: params.precision,
+        seed: params.seed,
+        source: params.source
+      });
       if (metrics) updateMetrics(metrics, latest);
       draw(latest, canvas);
     }
