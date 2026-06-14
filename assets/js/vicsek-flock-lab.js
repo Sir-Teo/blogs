@@ -612,7 +612,7 @@
 
   function draw(result, canvas) {
     var width = Math.round(canvas.getBoundingClientRect().width || 900);
-    var compact = width < 650;
+    var compact = width < 560;
     var prepared = setupCanvas(canvas, compact ? 1120 : 760);
     var ctx = prepared.ctx;
     var pad = compact ? 16 : 24;
