@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Threshold Is a Local Experiment"
+title: "Regression Discontinuity Lives at the Cutoff"
 description: "Regression discontinuity turns a hard rule into a narrow causal comparison. The useful question is not whether the rule is sharp, but whether anything else jumps there."
 date: 2026-06-14 13:15:00 -0400
 categories: statistics
