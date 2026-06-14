@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Benchmarks Are Psychometric Instruments"
+title: "Benchmarks Need Psychometrics"
 description: "AI benchmarks do not just score models. They define a measuring instrument with a range, reliability, blind spots, and failure modes."
 date: 2026-06-13 00:45:00 -0400
 categories: ai-systems
@@ -119,7 +119,7 @@ population of users?
 
 The answer cannot be compressed into one global rank without losing something.
 
-## A Small Experiment
+## A Lab You Can Poke
 
 The simulator below creates four synthetic language models and a benchmark item
 bank. Each item has a difficulty and discrimination. One non-frontier model can
@@ -201,7 +201,7 @@ A serious model evaluation should report more than a headline score:
 The last point is easy to skip and hard to fake. A benchmark cannot measure
 everything. It should say what kind of evidence it is designed to create.
 
-## The Research Direction
+## What I Would Try After This
 
 The next generation of AI evaluation should look less like a static exam and
 more like an adaptive measurement system.
@@ -227,7 +227,7 @@ Benchmarks are how a field looks at itself. If the instrument is blurry, the
 field can mistake saturation for progress, leakage for intelligence, and
 leaderboard motion for measurement.
 
-## Notes
+## References
 
 [^rasch]: Georg Rasch, *Probabilistic Models for Some Intelligence and Attainment Tests*, 1960. [ERIC record](https://eric.ed.gov/?id=ED419814).
 
