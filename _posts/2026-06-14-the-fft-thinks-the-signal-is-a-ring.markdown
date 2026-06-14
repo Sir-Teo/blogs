@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "FFTs Wrap the Signal Around"
-description: "FFT convolution is fast because multiplication in frequency space implements convolution. The catch is that the DFT lives on a circle, so missing zero padding turns tails into aliases."
+title: "The Tail Comes Back Through the Front Door"
+description: "FFT convolution is fast, but the finite DFT lives on a circle. Without enough zero padding, the end of the answer wraps around and pollutes the beginning."
 date: 2026-06-14 05:24:00 -0400
 categories: computer-science
 tags: [fft, fourier-transform, convolution, signal-processing, numerical-computing, aliasing]
-excerpt: "The convolution theorem is not enough. A finite DFT does not see a line of samples; it sees one period of a repeating signal. If the output does not fit, the tail wraps around."
+excerpt: "The convolution theorem is only half the contract. A finite DFT sees one period of a repeating signal, so an output that does not fit has to wrap."
 ---
 
-The fast Fourier transform has the aura of a magic door.
+The fast Fourier transform feels like a trapdoor in the floor.
 
 Walk through it, multiply two spectra, walk back, and convolution becomes fast.
 That sentence is true often enough to be dangerous.
@@ -23,11 +23,9 @@ If the convolution result fits inside that lap, everything is fine. If it does
 not, the tail does not fall off the edge. It wraps around and adds itself to the
 beginning.
 
-This is not a bug in the FFT.
+This is not a bug in the FFT. It is the room you walked into.
 
-It is the geometry you asked for.
-
-## The Linear Story
+## On a Line, the Tail Has Somewhere to Go
 
 For two finite sequences \(x[n]\) and \(h[n]\), linear convolution is
 
@@ -55,12 +53,12 @@ It costs \(O(LM)\). That is fine for small filters. It is painful for long
 filters, large images, long audio, and repeated convolutions inside numerical
 pipelines.
 
-The Fourier-domain story says: convolution in time becomes multiplication in
+The Fourier-domain story says convolution in time becomes multiplication in
 frequency. MIT lecture notes state the continuous version in the familiar form:
 the Fourier transform of a convolution is a product.[^mit] The discrete version
 is what makes FFT convolution useful in code.
 
-## The Fast Door
+## The Fast Door Opens Into a Ring
 
 The DFT of \(N\) samples can be computed directly in \(O(N^2)\). Cooley and
 Tukey's 1965 paper gave the classic fast algorithm for composite lengths,
@@ -124,7 +122,7 @@ long enough FFT length: linear convolution via a ring large enough not to wrap
 Zero padding is not decoration. It is the boundary condition that tells the DFT
 how much silence exists after your finite signal.
 
-## A Ring-Convolution Lab
+## Make the Tail Wrap on Purpose
 
 The lab below builds a finite signal, a finite smoothing kernel, and compares:
 
@@ -282,9 +280,9 @@ length** to 128 and the aliasing vanishes.
 </div>
 <script defer src="{{ '/assets/js/fft-ring-lab.js?v=20260614b' | relative_url }}"></script>
 
-The first useful move is boring: raise **FFT ring length** to 128. The required
-length remains 96, but the ring is now large enough. The alias metrics drop to
-zero and the padded FFT error is down at floating-point noise.
+The first useful move is deliberately boring: raise **FFT ring length** to 128.
+The required length remains 96, but the ring is now large enough. The alias
+metrics drop to zero and the padded FFT error is down at floating-point noise.
 
 Now increase **Kernel length**. The tail grows. If the ring length does not grow
 with it, more of the linear output has to fold back into the first samples.
@@ -293,7 +291,7 @@ Finally change **Tone mixture**. The spectrum panel changes, but the padding
 rule does not. Frequency content affects how the convolution looks; support
 length determines whether the finite DFT has enough room.
 
-## The Border Is a Modeling Choice
+## The Edge Is a Policy
 
 The ring is not always wrong.
 
@@ -315,7 +313,7 @@ Reflection padding says something else. Replication padding says something
 else. Periodic padding says something else. Every boundary condition is a
 modeling choice wearing an implementation costume.
 
-## When the FFT Is Actually Worth It
+## Speed Has Setup Costs
 
 FFT convolution has overhead. You transform both inputs, multiply complex
 spectra, then inverse transform. For small filters, direct convolution can be
@@ -340,7 +338,7 @@ choose:
 
 The speedup is real. The boundary is part of the API.
 
-## The Door Opens onto a Circle
+## Remember the Shape of the Room
 
 The convolution theorem is beautiful because it turns a global sliding sum into
 local multiplication in a different basis.
