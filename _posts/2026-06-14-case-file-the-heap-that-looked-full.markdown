@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Case File: The Heap That Looked Full"
+title: "Heap Case File: When Full Was a Lie"
 description: "A memory leak is only one way a process gets fat. Fragmentation, size classes, phase changes, and per-thread caches can make the allocator's ledger diverge from the program's live data."
 date: 2026-06-14 09:52:00 -0400
 categories: software-engineering
