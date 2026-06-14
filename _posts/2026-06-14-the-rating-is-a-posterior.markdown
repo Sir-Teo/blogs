@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Rating Is a Posterior"
+title: "Ratings Carry Uncertainty"
 description: "Elo-like ratings are not prizes. They are online estimates of latent skill from noisy pairwise comparisons, and the missing number is uncertainty."
 date: 2026-06-14 00:55:00 -0400
 categories: gaming
