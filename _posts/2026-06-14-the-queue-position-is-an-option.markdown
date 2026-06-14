@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Queue Position Is an Option"
+title: "Queue Position Has Option Value"
 description: "In a limit order book, two orders at the same price are not the same trade. FIFO priority changes fill probability, adverse selection, and the option value of waiting."
 date: 2026-06-14 00:08:00 -0400
 categories: quantitative-finance
@@ -377,7 +377,7 @@ toxic fills. A model that only predicts short-term price moves can still miss
 the practical question of whether you are likely to trade before the signal is
 gone.
 
-## The Research Direction
+## The Unfinished Part
 
 The hard version of this problem is not the toy model above. It is inference.
 
@@ -419,7 +419,7 @@ Two orders can quote the same bid.
 
 Only one owns the earlier future.
 
-## Notes
+## Further Reading
 
 [^cont-stoikov-talreja]: Rama Cont, Sasha Stoikov, and Rishi Talreja, "A Stochastic Model for Order Book Dynamics," *Operations Research*, 2010. [PDF](https://www.columbia.edu/~ww2040/orderbook.pdf), [INFORMS](https://pubsonline.informs.org/doi/10.1287/opre.1090.0780).
 
