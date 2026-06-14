@@ -599,7 +599,17 @@
     function renderNow() {
       var params = readState(container);
       updateOutputs(container, params);
-      latest = simulate(params);
+      latest = simulate({
+        deleteRate: params.deleteRate * 100,
+        keyspace: params.keyspace,
+        memtable: params.memtable,
+        operations: params.operations,
+        policy: params.policy,
+        ratio: params.ratio,
+        seed: params.seed,
+        skew: params.skew * 100,
+        workload: params.workload
+      });
       if (metrics) updateMetrics(metrics, latest);
       draw(latest, canvas);
     }
