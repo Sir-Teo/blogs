@@ -101,6 +101,12 @@
     return value.toFixed(2);
   }
 
+  function formatError(value) {
+    if (!Number.isFinite(value)) return "n/a";
+    if (value > 0 && value < 0.0001) return value.toExponential(2);
+    return formatNumber(value, 4);
+  }
+
   function metric(label, value) {
     return '<div class="cg-lab__metric"><span>' + label + "</span><strong>" + value + "</strong></div>";
   }
@@ -341,8 +347,8 @@
     node.innerHTML = [
       metric("Spectrum", SPECTRA[result.params.spectrum]),
       metric("Condition", formatNumber(result.stats.kappa, 0)),
-      metric("CG A-error", formatNumber(result.current.cg.energy, 4)),
-      metric("PCG A-error", formatNumber(result.current.pcg.energy, 4)),
+      metric("CG A-error", formatError(result.current.cg.energy)),
+      metric("PCG A-error", formatError(result.current.pcg.energy)),
       metric("Precond kappa", formatNumber(result.stats.precondKappa, 1)),
       metric("Audit", audit)
     ].join("");
