@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Event Raises the Rate"
+title: "Hawkes Processes Hear Aftershocks"
 description: "A Hawkes process is a point-process model where events do not merely arrive; they temporarily make more events likely. The average rate can look normal while the clock remembers."
 date: 2026-06-14 11:27:00 -0400
 categories: quantitative-finance
@@ -347,7 +347,7 @@ branching ratio controls how much event risk is recycled into the future
 That is a model statement. It is useful without pretending to be causal by
 itself.
 
-## What I Would Log
+## Evidence I Would Save
 
 For any production event stream where bursts matter, I would not stop at rate
 charts. I would log and monitor:
