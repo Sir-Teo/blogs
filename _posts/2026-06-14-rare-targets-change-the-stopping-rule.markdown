@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Rare Targets Change the Stopping Rule"
+title: "Rare Targets Rewrite the Search"
 description: "Low-prevalence visual search is not just ordinary perception with fewer positives. Rarity changes item criteria, quitting thresholds, and the kind of mistakes people make."
 date: 2026-06-14 00:36:00 -0400
 categories: psychology
