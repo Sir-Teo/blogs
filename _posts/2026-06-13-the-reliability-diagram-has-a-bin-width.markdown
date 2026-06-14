@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Reliability Diagram Has a Bin Width"
+title: "Reliability Diagrams Need Rulers"
 description: "Probability calibration is not accuracy with decimals. Reliability diagrams, ECE, and Brier decompositions are measurement instruments, and each has a resolution limit."
 date: 2026-06-13 18:18:00 -0400
 categories: machine-learning
@@ -321,7 +321,7 @@ contract with future frequencies, and every contract needs an audit trail:
 sample size, slices, scores, bin widths, and the downstream decisions that will
 spend the numbers.
 
-## Notes
+## Primary Sources
 
 [^dawid]: A. Philip Dawid, ["The Well-Calibrated Bayesian"](https://doi.org/10.1080/01621459.1982.10477856), *Journal of the American Statistical Association*, 1982.
 
