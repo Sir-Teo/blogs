@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Clause Watches Two Literals"
+title: "Watched Literals Keep SAT Solvers Awake"
 description: "Modern SAT solvers are fast partly because most clauses are asleep most of the time. Two watched literals turn unit propagation into a lazy memory-traffic problem."
 date: 2026-06-14 08:03:00 -0400
 categories: computer-science
