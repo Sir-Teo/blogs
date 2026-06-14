@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Evaluation Has Rent"
-description: "Bayesian optimization is not magic optimizer dust. It is a policy for choosing the next expensive experiment under uncertainty, and its failures are as instructive as its wins."
+title: "Every Trial Spends the Budget"
+description: "Bayesian optimization is not optimizer dust. It is a policy for choosing the next expensive experiment under uncertainty, and its failures belong in the decision log."
 date: 2026-06-13 05:07:00 -0400
 categories: machine-learning
 tags: [bayesian-optimization, gaussian-processes, experiment-design, hyperparameter-optimization, active-learning]
-excerpt: "The unit of Bayesian optimization is not the model, the kernel, or the acquisition function. The unit is the next evaluation: one more training run, experiment, backtest, simulation, or lab measurement that you cannot afford to waste."
+excerpt: "Bayesian optimization is about the next costly trial: one more training run, experiment, backtest, simulation, or lab measurement that spends scarce budget."
 ---
 
 Suppose you are allowed to ask a black box 20 questions.
@@ -22,7 +22,7 @@ Bayesian optimization starts from that awkward constraint:
 the next evaluation has an opportunity cost
 ```
 
-This sounds modest. It is. That modesty is the whole point. Bayesian
+This sounds modest because it is. That modesty is the whole point. Bayesian
 optimization is not a universal optimizer. It is a disciplined way to decide
 what to measure next when measurement is expensive and your current map of the
 world is incomplete.
@@ -34,7 +34,7 @@ The trick is to keep two ledgers at once:
 
 The acquisition function is where those two ledgers meet.
 
-## The Loop
+## The Two-Ledger Loop
 
 Write the unknown objective as
 
@@ -111,7 +111,7 @@ Bayesian optimization. Expected improvement is not Bayesian optimization. A
 fancy acquisition function is not useful if the surrogate is wrong, the search
 space is badly encoded, or the real cost is hidden in queues and failed runs.
 
-## A Small Search Policy Lab
+## Search Policy Bench
 
 The lab below is one-dimensional on purpose. Real Bayesian optimization is often
 messy because the search space is high-dimensional, conditional, categorical,
@@ -222,7 +222,7 @@ does not waste trials exhaustively varying irrelevant dimensions.[^random]
 Bayesian optimization must beat these baselines after accounting for the extra
 complexity of the surrogate and acquisition optimizer.
 
-## What the Lab Is Hiding
+## What the Toy Refuses to Show
 
 The toy is transparent because it is one-dimensional. That is also why it is
 misleading.
@@ -264,7 +264,7 @@ question is not "Which optimizer is best?" The question is:
 What can I learn before I have spent the budget?
 ```
 
-## A Useful Mental Model
+## A Tiny Research Manager
 
 Think of Bayesian optimization as a tiny research manager.
 
@@ -296,7 +296,7 @@ sweep would have found the same result with less machinery.
 The last one is not a joke. If Bayesian optimization is a way to allocate
 expensive measurements, its own overhead belongs in the ledger too.
 
-## What I Would Measure in a Real Run
+## Optimization Audit Table
 
 For a serious hyperparameter search, I would not only report the winning
 configuration. I would keep an optimization audit table:
@@ -325,7 +325,7 @@ The same audit discipline applies outside ML. A materials-science BO run, a
 robotics calibration loop, or a trading-strategy search should preserve the
 policy history. The sequence of evaluations is part of the result.
 
-## The Research Thread I Still Like
+## Policy Accountability
 
 The part that feels underappreciated is not "use a better acquisition function."
 It is **policy accountability**.
