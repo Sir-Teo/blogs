@@ -1,19 +1,19 @@
 ---
 layout: post
-title: "Entropy Coders Stack Surprises"
-description: "Entropy coding is the quiet machine underneath compression and modern prediction. A good model buys fractional bits; the coder's job is to turn that probability ledger into a reversible stream."
+title: "Where the Half-Bits Go"
+description: "Entropy coding is the quiet accounting beneath compression: the model prices each symbol, and the coder pools those fractional prices into a reversible bitstream."
 date: 2026-06-14 08:44:00 -0400
 categories: computer-science
 tags: [compression, entropy-coding, arithmetic-coding, ans, huffman-coding, information-theory]
-excerpt: "A compressor is not only a bag of tricks. At the core is a contract: a model assigns probabilities, and an entropy coder turns the resulting surprise into bits without losing the message."
+excerpt: "A good compressor needs a predictor and a cashier. The predictor assigns probabilities; the entropy coder makes the fractional-bit bill come out exactly enough to decode."
 ---
 
-Compression has a glamorous surface and a quiet center.
+A compressor has a stage act and a back office.
 
-The glamorous part finds repeated strings, predicts pixels, learns token
-contexts, builds dictionaries, transforms blocks, and decides what the data is
-trying to be. The quiet center does something colder. It receives a sequence of
-probabilities and has to turn them into bits exactly.
+The stage act finds repeated strings, predicts pixels, learns token contexts,
+builds dictionaries, transforms blocks, and decides what the data is trying to
+be. The back office does colder work. It receives a sequence of probabilities
+and has to turn them into bits exactly.
 
 That second part is entropy coding.
 
@@ -29,7 +29,7 @@ bits. Common symbols are cheap. Surprises are expensive. Shannon's 1948 theory
 made this average price precise through entropy, and that number remains the
 center of gravity for lossless compression.[^shannon]
 
-The problem is that bits are integers, while surprise is not.
+Then the awkward part arrives: bits are integers, while surprise is not.
 
 If the model says $$p=0.3$$, the price is about $$1.737$$ bits. No one can write
 0.737 of a bit after a symbol in an ordinary prefix code. Huffman coding solves
@@ -38,19 +38,19 @@ individual codeword still has an integer length.[^huffman] Arithmetic coding
 and ANS take a stranger route: stop assigning a separate little bit string to
 each symbol. Let the whole message share the fractional accounting.
 
-That is the trick this post is about.
+This post is about where those fractional bits go.
 
-## Three Ledgers
+## The Three Bills on the Table
 
-A useful way to look at a compressor is to split it into three ledgers.
+A useful way to look at a compressor is to put three bills on the table.
 
-The first ledger is the **source**. This is the actual process generating data.
-It may be English text, sensor deltas, token IDs, transformed image residuals,
-or something uglier. It has some true distribution $$P$$, even if no one knows
-it.
+The first bill comes from the **source**. This is the actual process generating
+data. It may be English text, sensor deltas, token IDs, transformed image
+residuals, or something uglier. It has some true distribution $$P$$, even if no
+one knows it.
 
-The second ledger is the **model**. This is what the compressor believes. Call
-it $$Q$$. If the model is wrong, the expected number of ideal bits is not
+The second bill comes from the **model**. This is what the compressor believes.
+Call it $$Q$$. If the model is wrong, the expected number of ideal bits is not
 $$H(P)$$ but the cross entropy
 
 $$
@@ -66,18 +66,18 @@ $$
 is the price of using the wrong probabilities. The coder cannot rescue that
 mistake. It can only spend the probabilities it is given.
 
-The third ledger is the **coder**. It has to represent the sequence in a finite
+The third bill belongs to the **coder**. It has to represent the sequence in a finite
 bitstream and decode it exactly. This is where Huffman, arithmetic coding,
 range coding, and asymmetric numeral systems live.
 
 The distinction matters because people often say "compression" when they mean
-all three ledgers at once. A better predictor reduces cross entropy. A better
-entropy coder reduces the overhead between the probability ledger and the bits
+all three bills at once. A better predictor reduces cross entropy. A better
+entropy coder reduces the overhead between the probability bill and the bits
 that actually hit disk.
 
 Those are different wins.
 
-## The Integer Problem
+## The Half-Bit Problem
 
 Suppose a four-symbol source has probabilities:
 
@@ -103,12 +103,11 @@ F: 0.04
 ```
 
 The ideal prices are no longer integers. Huffman still builds the optimal
-prefix code for the symbol alphabet, but it has to round structure into whole
-codeword lengths. The rounding can be made smaller by coding blocks of two or
-three symbols at a time, because the fractional parts can average out across a
-larger object. That is real and useful. It is also a hint that per-symbol
-codewords are the wrong primitive if the model is good enough to deserve
-fractional prices.
+prefix code for the symbol alphabet, but it has to pour the distribution into
+whole codeword lengths. Coding blocks of two or three symbols can reduce the
+rounding, because the fractional parts average out across a larger object. That
+is real and useful. It is also a hint: per-symbol codewords are the wrong
+primitive once the model is good enough to deserve fractional prices.
 
 Arithmetic coding replaces codewords with a shrinking interval. Each symbol
 selects a subinterval whose width is proportional to its probability. After the
@@ -135,20 +134,19 @@ $$
 -\sum_{t=1}^{n} \log_2 Q(x_t).
 $$
 
-The fractional bits did not disappear. They pooled.
+The fractional bits did not disappear. They were allowed to pool.
 
-## A Small Entropy-Coder Bench
+## A Workbench for Tiny Surprises
 
 The lab below uses deterministic synthetic sources. It builds a coder model,
 quantizes it into integer frequencies, encodes the sampled sequence with a
 byte-renormalized rANS coder, decodes it, and compares the result with ideal
 cross entropy and Huffman baselines.
 
-The rANS implementation is intentionally small, but it is doing the real
-operation: a single integer state is updated by the symbol's cumulative
-frequency and renormalized by flushing bytes. The test is unforgiving. If the
-decoder does not reproduce the exact original sequence, the round-trip metric
-turns red.
+The rANS implementation is intentionally small, but it is doing the real move:
+a single integer state is updated by the symbol's cumulative frequency and
+renormalized by flushing bytes. The test is unforgiving. If the decoder does
+not reproduce the exact original sequence, the round-trip metric turns red.
 
 <style>
   .entropy-coder-lab {
@@ -339,9 +337,9 @@ turns red.
 
 Try four moves.
 
-First, choose **Dyadic toy** and set model mismatch to zero. Huffman is almost
-embarrassingly good here because the probabilities match powers of two. There
-is little fractional accounting to pool.
+First, choose **Dyadic toy** and set model mismatch to zero. Huffman looks
+nearly smug here because the probabilities match powers of two. There is little
+fractional accounting to pool.
 
 Second, switch back to **Service log**. The single-symbol Huffman code spends
 integer lengths, while the ideal and rANS ledgers can track fractional surprise
@@ -360,7 +358,7 @@ usually implemented with integer frequency tables, not Platonic real-valued
 probabilities. Coarse tables perturb the model. The penalty is often small, but
 it is not zero, and rare symbols are where the quantization hurts first.
 
-## ANS As a Stack Machine
+## ANS Loads the Stack Backward
 
 Arithmetic coding is often explained with intervals. ANS is often explained
 with a state.
@@ -388,7 +386,7 @@ $$
 That is the same surprise ledger.
 
 Duda's ANS papers framed the method as a way to combine arithmetic-coding-like
-compression rates with a simpler single-state mechanism.[^duda] The trade is
+compression rates with a simpler single-state mechanism.[^duda] The bargain is
 beautifully odd. rANS encoding runs backward through the message, and decoding
 recovers symbols forward. The bitstream behaves like a stack: bytes flushed
 while encoding later symbols are consumed when decoding earlier state
@@ -400,9 +398,9 @@ streams and for Huffman headers. The RFC explicitly notes that FSE carries a
 state across symbols and is decoded in the opposite direction from
 encoding.[^zstd]
 
-The quiet center is everywhere.
+The back office is everywhere.
 
-## Prediction Is the Expensive Part
+## The Coder Is Not the Prophet
 
 The entropy coder is only as good as its probabilities. That sounds like a
 limitation, but it is also why compression keeps reappearing as a lens on
@@ -424,7 +422,7 @@ coder.[^lmcompression]
 
 The bridge has conditions. The decoder must see the same context and reproduce
 the same probabilities. Tokenization matters. Numerical determinism matters.
-The model itself is not free to transmit. And a compressor that spends enormous
+The model itself is not free to transmit. And a compressor that burns enormous
 compute to save a few bits may be scientifically interesting while being
 economically silly.
 
@@ -432,7 +430,7 @@ Still, the equivalence is clarifying. Cross-entropy loss is not just a training
 metric with a nice gradient. It is the expected code length of the data under
 the model, up to the mechanics of the coder.
 
-## What the Coder Cannot Fix
+## The Receipt Has to Decode
 
 Entropy coding has a precise kind of humility.
 
@@ -449,8 +447,8 @@ turn surprise into a reversible bitstream
 ```
 
 That is why the lab's round trip is the most important metric. Compression is
-not a vibe. It is a receipt. Every saved bit must still leave enough
-information for the decoder to walk the machine backward.
+not a mood. Every saved bit must still leave enough information for the decoder
+to walk the machine backward.
 
 Huffman makes the receipt out of prefix codewords. Arithmetic coding makes it
 out of a nested interval. ANS makes it out of a state that grows when it absorbs
