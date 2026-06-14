@@ -1,17 +1,17 @@
 ---
 layout: post
-title: "Eligibility Traces Let Errors Echo"
-description: "TD(lambda) does not wait for the final reward. It lets a prediction error flow backward through a decaying memory of recently visited states."
+title: "A Prediction Error Leaves Footprints"
+description: "TD(lambda) gives the next surprise a trail to follow, so delayed reward can reach the states that made it likely."
 date: 2026-06-14 14:10:00 -0400
 categories: machine-learning
 tags: [reinforcement-learning, temporal-difference-learning, eligibility-traces, credit-assignment, computational-neuroscience]
-excerpt: "Delayed reward is not only a sparse-label problem. TD(lambda) turns temporal credit assignment into a memory question: which recent states are still eligible for the next prediction error?"
+excerpt: "Eligibility traces are the memory behind TD(lambda): not a full transcript, just a fading list of who should hear the next prediction error."
 ---
 
-The strange thing about a delayed reward is not that it is late.
+The cheap complaint about delayed reward is that it arrives late.
 
-The strange thing is that the agent has been making predictions the whole
-time.
+The expensive complaint is that the agent has been making predictions the whole
+time, and every one of those predictions left a receipt.
 
 In a game, a trade, a recommender session, or a long debugging run, the final
 outcome may arrive only once. But between the first decision and the last one,
@@ -27,10 +27,10 @@ outcome.[^sutton1988] That sounds like a small bookkeeping change. It is not.
 It turns "wait until the end" into "learn whenever your forecast has become
 inconsistent with what happened next."
 
-The post below is about the extra piece that makes this useful when reward is
-far away: eligibility traces.
+The extra piece, the one that makes the idea usable when the outcome is far
+away, is a fading trail called an eligibility trace.
 
-## A Prediction Can Fail Early
+## The Ending Arrives Too Late
 
 Consider a tiny random walk with terminal rewards. There are nonterminal states
 1 through \(n\), a left terminal with reward 0, and a right terminal with reward
@@ -75,7 +75,7 @@ the next prediction disagreed with the previous prediction
 
 That disagreement is enough to learn.
 
-## The Missing Memory
+## The Memory TD(0) Throws Away
 
 TD(0) updates only the state that just made the transition:
 
@@ -83,11 +83,11 @@ $$
 V(S_t) \leftarrow V(S_t) + \alpha \delta_t.
 $$
 
-But the current prediction error was prepared by earlier states. If a reward
-finally arrives, the last state should get a large update, the previous state
-should get some update, and a state seen long ago should get less unless it was
-visited repeatedly. The algorithm needs memory, but not a transcript of the
-whole episode.
+But the current prediction error did not appear out of nowhere. Earlier states
+helped prepare it. If a reward finally arrives, the last state should get a
+large update, the previous state should get some update, and a state seen long
+ago should get less unless it kept coming back. The algorithm needs memory, but
+not a transcript of the whole episode.
 
 An eligibility trace is that memory:
 
@@ -121,13 +121,14 @@ idea with traces rather than waiting for all the future returns to be known.
 Sutton and Barto's eligibility-trace chapter is still the cleanest place to
 see those views side by side.[^suttonbarto]
 
-There is one practical wrinkle. With **accumulating traces**, each revisit adds
-1 to the trace. In a loopy task, a frequently revisited state can become very
-eligible. With **replacing traces**, a revisit sets the trace to 1 instead.
-Replacing traces are not just cosmetic; in the 19-state random-walk example
-they tend to behave well across a broader range of parameters.[^replacing]
+There is one practical wrinkle, and it matters more than the tidy equation
+suggests. With **accumulating traces**, each revisit adds 1 to the trace. In a
+loopy task, a frequently revisited state can become very eligible. With
+**replacing traces**, a revisit sets the trace to 1 instead. Replacing traces
+are not just cosmetic; in the 19-state random-walk example they tend to behave
+well across a broader range of parameters.[^replacing]
 
-## A Small Lab
+## Let the Random Walk Talk Back
 
 The lab below trains tabular predictors on the 19-state random walk. The true
 value function is known, so the chart can report root-mean-square value error
@@ -186,10 +187,10 @@ rather than asking us to judge the curves by eye.
 </div>
 <script defer src="{{ '/assets/js/td-lambda-lab.js?v=20260614a' | relative_url }}"></script>
 
-In the default seed, \(\lambda=0.4\) is not a moral preference. It is an
-empirical compromise. The final RMS error is about 0.165 for TD(0.4), compared
-with about 0.184 for TD(0) and 0.192 for Monte Carlo. The lambda sweep has a
-small valley around 0.4 to 0.5. That is the useful shape: a little memory
+In the default seed, \(\lambda=0.4\) is not a moral preference. It is what this
+little world happens to reward. The final RMS error is about 0.165 for TD(0.4),
+compared with about 0.184 for TD(0) and 0.192 for Monte Carlo. The lambda sweep
+has a small valley around 0.4 to 0.5. That is the useful shape: a little memory
 helps, too much memory starts to inject variance and repeated-visit
 amplification.
 
@@ -208,10 +209,10 @@ Finally bias the walk to the right. The true value curve is no longer a
 straight line. TD is not learning a label attached to a state; it is learning
 the absorption probability implied by the transition process.
 
-The source is short enough to inspect:
+The source is short enough to audit:
 [`assets/js/td-lambda-lab.js`]({{ '/assets/js/td-lambda-lab.js' | relative_url }}).
 
-## Why This Still Feels Modern
+## Two Ways to Misread the Trick
 
 There are two ways to misunderstand TD(lambda).
 
@@ -222,17 +223,16 @@ error to exist; the next state's value estimate is already a target.
 
 The second is to think of lambda as a vague smoothness knob. Lambda is a memory
 policy. It answers: when a prediction error appears, how far back should its
-authority extend? That is a structural question that shows up everywhere:
-long-horizon credit assignment, user-session modeling, online evaluation,
-multi-step forecasting, and any learning system where the label arrives after
-the causal evidence.
+authority extend? That question shows up everywhere: long-horizon credit
+assignment, user-session modeling, online evaluation, multi-step forecasting,
+and any learning system where the label arrives after the causal evidence.
 
 The trace update also explains why credit assignment is delicate. A trace is
 stateful. It remembers the path, not just the current observation. It can
 therefore accelerate learning when the path is informative, and destabilize
 learning when the path revisits the same features too aggressively.
 
-## The Caveat That Keeps the Idea Honest
+## The Honesty of a Tabular Toy
 
 The lab is tabular. That is intentional. Every state has its own value entry,
 the true values are computable, and the failure modes are visible.
@@ -247,10 +247,10 @@ order as conventional TD(lambda).[^trueonline]
 
 Control adds another layer. Sarsa(lambda), Watkins's Q(lambda), and related
 methods attach traces to state-action pairs and must decide what to do when
-behavior is exploratory or off-policy. The prediction problem is the clean
-laboratory; the control problem inherits the idea and pays more rent.
+behavior is exploratory or off-policy. Prediction is the clean room; control
+inherits the idea and brings in more dust.
 
-## A Direction I Want To Keep Pulling
+## Half-Lives Should Probably Be Learned
 
 The old random walk still feels productive because it isolates a question that
 modern systems often blur:
