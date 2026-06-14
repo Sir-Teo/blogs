@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Why the Average Gets Weird After Dimension Two"
-description: "Stein's paradox says the coordinatewise sample mean can be beaten, uniformly, once you estimate three or more normal means at the same time."
+title: "The Average Loses Its Innocence in 3-D"
+description: "Stein's paradox says the coordinatewise sample mean can be beaten uniformly once you estimate three or more normal means at the same time."
 date: 2026-06-13 22:28:00 -0400
 categories: statistics
 tags: [james-stein, shrinkage, decision-theory, empirical-bayes, normal-means, statistics]
-excerpt: "A biased estimator can dominate the obvious unbiased one when the loss is total squared error. The trick is not magic. It is borrowing one coordinate's noise estimate to decide how much to shrink the whole vector."
+excerpt: "A biased estimator can dominate the obvious unbiased one under total squared error. The trick is borrowing the vector's noise to decide how much to shrink the whole thing."
 ---
 
 The average is innocent in one dimension.
@@ -53,7 +53,7 @@ factor returns, benchmark task accuracies, or model deltas across many slices.
 If you score the whole vector, every coordinate gets to learn a little from the
 others.
 
-## The Rule
+## The Shrinkage Rule
 
 The zero-target James-Stein estimator is
 
@@ -89,7 +89,7 @@ ordinary James-Stein rule can overshoot through the origin when `||X||^2` is
 tiny; the positive-part rule clamps that behavior. The lab below compares all
 three rules instead of asking you to take the geometry on faith.
 
-## What Is Being Borrowed?
+## The Coordinates Share a Risk Budget
 
 The usual estimator has zero bias:
 
@@ -129,7 +129,7 @@ That is why this old theorem still appears under modern names:
 Different models, same warning: the noisiest extreme coordinate is often
 extreme partly because it is noisy.
 
-## A Small Risk Lab
+## A Risk Lab for a Weird Theorem
 
 The simulator uses a known-variance normal means problem. The true vector has
 norm
@@ -339,7 +339,7 @@ as decision-theoretic optimality under aggregate loss
 
 That sentence applies far beyond normal means.
 
-## The Unfinished Part
+## Where Should the Pooling Stop?
 
 The modern version of Stein's question is not whether shrinkage exists. We know
 it does. The harder question is where the pooling boundary belongs.
@@ -365,6 +365,8 @@ noisy coordinates. We still often publish the raw `X`.
 Sometimes the raw average is admissible.
 
 Past dimension two, it has to defend itself.
+
+## Sources
 
 [^stein-1956]: Charles Stein, "Inadmissibility of the Usual Estimator for the Mean of a Multivariate Normal Distribution," *Proceedings of the Third Berkeley Symposium on Mathematical Statistics and Probability*, 1956. [Project Euclid](https://projecteuclid.org/ebooks/berkeley-symposium-on-mathematical-statistics-and-probability/Proceedings-of-the-Third-Berkeley-Symposium-on-Mathematical-Statistics-and/chapter/Inadmissibility-of-the-Usual-Estimator-for-the-Mean-of-a/bsmsp/1200501656), [PDF](https://www.stat.yale.edu/~hz68/619/Stein-1956.pdf).
 
