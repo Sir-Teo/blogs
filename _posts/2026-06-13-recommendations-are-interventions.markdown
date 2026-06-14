@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Recommendations Are Interventions"
+title: "Recommenders Change the Data They Measure"
 description: "A recommender system does not merely observe preference. It allocates exposure, changes what users can learn about, and then trains on the behavior it helped create."
 date: 2026-06-13 00:58:00 -0400
 categories: ai-systems
@@ -120,7 +120,7 @@ Here is the causal picture:
 
 There is no point in that loop where the log is a neutral survey.
 
-## A Small Experiment
+## A Lab You Can Poke
 
 The simulator below creates a catalog with six content categories. A user has an
 initial taste vector. Each policy repeatedly shows slates of items, observes
@@ -193,7 +193,7 @@ need overlap. Randomized traffic has product costs. Preference drift raises
 normative questions that a statistical estimator cannot answer. But the causal
 framing makes the hard parts visible.
 
-## What I Would Log
+## What I Would Put in the Log
 
 A serious recommender system should log more than item ids and clicks:
 
@@ -210,7 +210,7 @@ come to prefer, the evaluation question is not only prediction accuracy. It is
 whether the induced preference trajectory is one the user would endorse with
 distance and reflection.
 
-## The Research Direction
+## What I Would Try After This
 
 The next frontier is not merely better ranking. It is causal product
 measurement for adaptive preference systems.
@@ -234,7 +234,7 @@ The practical research program is clear:
 A recommender system is not a mirror. It is a steering wheel with a mirror
 attached. The click log tells us where the wheel has been pointed.
 
-## Notes
+## Primary Sources
 
 [^steck]: Harald Steck, "Training and Testing of Recommender Systems on Data Missing Not at Random," KDD 2010. [DOI](https://dl.acm.org/doi/10.1145/1835804.1835895).
 
