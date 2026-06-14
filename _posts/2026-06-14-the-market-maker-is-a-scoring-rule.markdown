@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Market Makers as Scoring Rules"
-description: "Prediction markets and proper scoring rules are the same incentive idea wearing different interfaces. LMSR turns a truthful log score into an always-on market maker with bounded loss."
+title: "The Price Is a Forecast With a Tab"
+description: "Prediction markets and proper scoring rules are the same incentive idea wearing different interfaces. LMSR turns a log score into an always-on market maker with bounded loss."
 date: 2026-06-14 02:57:00 -0400
 categories: quantitative-finance
 tags: [prediction-markets, proper-scoring-rules, lmsr, market-making, forecasting, information-aggregation]
-excerpt: "A prediction-market price is not just a quote. Under a market scoring rule, moving the price is equivalent to changing a probabilistic forecast and accepting the scoring-rule consequences."
+excerpt: "A prediction-market price is not just a quote. Under a market scoring rule, moving the price means changing a public forecast and accepting the scoring-rule consequences."
 ---
 
 A prediction market looks like a tiny exchange.
@@ -33,7 +33,7 @@ trader who moves the market from probability \(p\) to probability \(q\) is paid
 as if they changed a scored forecast from \(p\) to \(q\). The market interface
 and the forecast-evaluation interface become the same machine.
 
-## Truth Is an Incentive Shape
+## Truth Has a Payoff Shape
 
 Start without markets. Suppose a forecaster reports \(q\), and the event
 outcome is \(y \in \{0,1\}\). A scoring rule pays the forecaster based on
@@ -79,7 +79,7 @@ scoring-rule bet.
 
 The exchange is doing forecast revision.
 
-## LMSR as a Cost Function
+## LMSR Puts the Score on Tap
 
 The logarithmic market scoring rule has a clean automated-market-maker form.
 For two outcomes, let \(q_1\) and \(q_0\) be the number of outstanding shares
@@ -123,7 +123,7 @@ That is the beautiful bargain. Continuous liquidity is not free, but its maximum
 loss can be budgeted up front. The market maker is not predicting the event. It
 is selling a mechanism for other people to reveal information.
 
-## A Small Prediction-Market Lab
+## A Forecast You Can Buy Into
 
 The lab below has two linked parts.
 
@@ -307,7 +307,8 @@ Move **Reported probability** away from **True probability**. The dashed report
 line leaves the top of both expected-score curves. The log score punishes
 confident wrongness more sharply near 0 and 1; the Brier score is gentler and
 quadratic. Both are proper in the same sense: the expected score is best at the
-forecaster's belief.
+forecaster's belief. With the default 63% true probability and 78% report, the
+expected log-score regret is about 0.058 and the Brier regret is about 0.023.
 
 Now lower **Liquidity b**. The price path gets jumpier because each share moves
 the LMSR inventory ratio more. The impact panel shows the same fact as
@@ -320,10 +321,11 @@ experiment. Signals can arrive in an unlucky order, and aggressive traders can
 overshoot.
 
 The important invariant is the loss bar. Even while the price moves, the market
-maker's worst-case loss stays under the displayed \(b\log 2\) bound. LMSR buys
-liquidity with a known maximum subsidy.
+maker's worst-case loss stays under the displayed \(b\log 2\) bound. In the
+default run, the market finishes near 80.4%, the worst displayed maker loss is
+11.39, and the bound is 16.64. LMSR buys liquidity with a known maximum subsidy.
 
-## The Price Is a Public Sufficient Statistic, Until It Is Not
+## The Price Is Not Automatically Truth
 
 Prediction-market evangelism sometimes drifts into magic: prices aggregate all
 available information, therefore the price is truth.
@@ -349,7 +351,7 @@ expected-payoff optimum for an isolated forecaster. A market adds a social
 layer. That layer can aggregate information, but it can also aggregate
 constraints, incentives, and noise.
 
-## Why This Belongs Next to Machine Learning
+## Why ML Should Care
 
 Modern ML systems emit probabilities everywhere: classifiers, reward models,
 retrievers, judges, forecasts, risk scores, route selectors. We often train them
