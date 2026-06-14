@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Ratings Carry Uncertainty"
-description: "Elo-like ratings are not prizes. They are online estimates of latent skill from noisy pairwise comparisons, and the missing number is uncertainty."
+title: "The Ladder Needs Error Bars"
+description: "Elo-like ratings are not prizes. They are online estimates of latent skill from noisy pairwise comparisons, and the dangerous omission is uncertainty."
 date: 2026-06-14 00:55:00 -0400
 categories: gaming
 tags: [elo, glicko, trueskill, matchmaking, bayesian-inference, paired-comparisons, gaming, statistics]
-excerpt: "A ladder should not only ask who is rated 1800. It should ask how much evidence supports 1800, how fast the player is changing, and whether the number is safe to use for matchmaking."
+excerpt: "A ladder should not only ask who is rated 1800. It should ask how much evidence supports 1800, how fast the player is changing, and what decisions the number can safely carry."
 ---
 
-The leaderboard number looks like a fact.
+The leaderboard number likes to pose as a fact.
 
 `1847`.
 
@@ -34,7 +34,7 @@ rating = estimate + uncertainty
 Elo gives the estimate. Glicko and TrueSkill made the uncertainty harder to
 ignore.[^glicko][^trueskill]
 
-## The Paired-Comparison Contract
+## A Game Is Noisy Evidence
 
 Most rating systems start with a paired-comparison model. Player `i` plays
 player `j`. The system sees a result:
@@ -90,7 +90,7 @@ A fixed $$K$$ has to answer all of them with one number.
 
 That is too much responsibility for one letter.
 
-## Reliability Is Part of the Rating
+## The Error Bar Is Part of the Number
 
 Glickman's Glicko system makes the reliability problem explicit. Its technical
 description starts from the weakness of Elo when two players have the same
@@ -129,7 +129,7 @@ wrong social interpretation:
 No. It means the current evidence has been compressed into a point estimate.
 Sometimes that compression is harmless. Sometimes it is the bug.
 
-## A Rating Lab
+## Let a Strong Newcomer In
 
 The lab below simulates a small ladder. Each player has a hidden true skill.
 Match outcomes are noisy paired comparisons. True skill drifts slowly over
@@ -295,11 +295,17 @@ reliability.
 </div>
 <script src="{{ '/assets/js/rating-posterior-lab.js?v=20260614a' | relative_url }}"></script>
 
-Start with the default. The uncertainty-aware mean usually tracks hidden skill
-with lower error than fixed-K Elo. More interestingly, the late strong player
-moves quickly because the system admits it knows little. But the conservative
-rating, mean minus uncertainty, does not instantly place that player at the top
-of the ladder.
+Start with the default. Final RMSE is about `62` for fixed-K Elo and about `54`
+for the uncertainty-aware mean. The late strong player gets 26 games, moves
+from an initial mean of `1500` to about `1796`, and still carries uncertainty of
+about `96` rating points. The conservative public rating is therefore only
+about `1604`, even though the mean has moved much faster than Elo's `1728`.
+
+I swept 729 knob combinations. The uncertainty-aware toy had lower final RMSE
+than fixed-K Elo in 481 of them, but not all of them. With aggressive update
+settings and little actual drift, it can overreact. That is the honest lesson:
+uncertainty is not fairy dust. It is another model assumption that needs
+calibration.
 
 That is the right tension:
 
@@ -328,7 +334,7 @@ decision boundary, but they also make it harder to sort the very top if strong
 players rarely meet enough diverse opponents. A ladder is not just a model. It
 is also an experimental design.
 
-## Matchmaking and Ranking Are Different Products
+## The Matchmaker and the Trophy Case
 
 A common mistake is to use one public number for every job.
 
@@ -359,7 +365,7 @@ The same player can have:
 Compressing all of that into one integer is sometimes good interface design.
 It is rarely good statistical thinking.
 
-## The Ladder Is an Experiment
+## The Ladder Chooses Its Data
 
 Ratings are not learned from neutral data. The ladder chooses who plays whom.
 
@@ -383,7 +389,7 @@ is about data collection:
 
 A rating can be mathematically elegant and operationally blind.
 
-## Why Games Are Harder Than Chess
+## Online Games Move the Target
 
 Chess is already difficult: draws, color advantage, inactivity, junior
 improvement, rating inflation, changing pools. Online games add more trouble.
@@ -407,7 +413,7 @@ Skill is not a fixed label. It is a state.
 That makes rating closer to filtering than accounting. The system observes a
 noisy stream, updates a belief, and decides what action to take next.
 
-## What I Want From a Rating System
+## Questions for a Ladder Audit
 
 If I were auditing a ranked ladder, I would not start with the prettiness of the
 leaderboard. I would ask for calibration and uncertainty evidence.
@@ -433,7 +439,7 @@ what decisions is this number safe enough to support?
 Matchmaking, prestige, tournament seeding, anti-smurfing, rewards, and balance
 analytics may need different safety thresholds.
 
-## A Rating Is a Promise
+## The Number Is a Promise
 
 A rating system makes a promise to players:
 
