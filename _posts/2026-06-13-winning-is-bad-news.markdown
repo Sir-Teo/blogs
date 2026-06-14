@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Winning Can Be Bad News"
+title: "The Prize Came With Bad News"
 description: "In a common-value auction, winning is not just success. It is evidence that your estimate was unusually optimistic."
 date: 2026-06-13 19:12:00 -0400
 categories: quantitative-finance
 tags: [auctions, winners-curse, common-value, mechanism-design, selection-bias, quantitative-finance]
-excerpt: "The winner's curse is not folk wisdom about greedy bidders. It is a conditioning problem: the event that you win changes what your signal means."
+excerpt: "The winner's curse is not folk wisdom about greedy bidders. It is the moment the event of winning changes what your signal means."
 ---
 
 The cruelest sentence in auction theory is:
@@ -30,7 +30,7 @@ signals in the room.
 
 Winning is information about your error.
 
-## The Private-Value Trap
+## Do Not Export Vickrey Too Far
 
 Vickrey's second-price auction is one of the most beautiful mechanisms in
 economics.[^vickrey] With independent private values, bidding your true value is
@@ -69,7 +69,7 @@ second price makes truthful bidding dominant under independent private values
 
 Those extra words are the guardrail.
 
-## A Tiny Common-Value Market
+## A Small Auction House
 
 Here is a synthetic auction house.
 
@@ -157,7 +157,7 @@ Set **Winner adjustment** to zero. The winner-aware rule collapses to the plain
 posterior rule. That rule knows the signal is noisy, but it does not know that
 the winning signal is special.
 
-## The Conditional Expectation
+## Winning Changes the Posterior
 
 The whole idea fits in one inequality:
 
@@ -194,7 +194,7 @@ This is why the curse gets worse with bidder count. The expected maximum of
 independent noise grows with the number of bidders. Competition does not merely
 raise prices. It selects more aggressively for optimism.
 
-## Why Experiments Were So Embarrassing
+## The Lab Results Hurt
 
 The winner's curse became famous partly because people kept falling into it.
 
@@ -221,7 +221,7 @@ my signal is high enough to beat other signals, so part of its height is likely 
 Markets institutionalize this mistake whenever a process rewards the most
 optimistic estimate and then treats the winning estimate as if it were unbiased.
 
-## Finance Is Full of Auctions Wearing Other Clothes
+## Finance Keeps Wearing Auction Costumes
 
 Many finance problems are common-value auctions with different stationery.
 
@@ -255,7 +255,7 @@ how much of my bid is my idiosyncratic value, and how much is a noisy estimate o
 
 The second part deserves a winner's-curse discount.
 
-## Seller Revenue Is Not Buyer Wisdom
+## Revenue Is Not Buyer Wisdom
 
 From the seller's point of view, the winner's curse is not automatically bad.
 Competition and noisy information can raise expected payments. Auction design is
@@ -281,7 +281,7 @@ So the seller's dream is not simply "make everyone bid naively." That can work
 once. A market that repeatedly punishes winners may train bidders to disappear,
 collude, or demand wider discounts.
 
-## A Due-Diligence Checklist for Bidders
+## Questions Before Raising the Paddle
 
 Before bidding on a noisy common-value object, I want a separate memo answering:
 
@@ -304,7 +304,7 @@ silently assuming private values.
 
 Sometimes that assumption is fine. Sometimes it is expensive.
 
-## The Bit to Remember
+## The Sentence to Keep
 
 The winner's curse is not a proverb about overpaying.
 
@@ -322,7 +322,7 @@ what did winning reveal about the estimate that made us win?
 
 If the answer lowers the value, that is not pessimism. It is Bayes being polite.
 
-## Where This Came From
+## Source Notes
 
 [^vickrey]: William Vickrey, ["Counterspeculation, Auctions, and Competitive Sealed Tenders"](https://cramton.umd.edu/market-design-papers/vickrey-counterspeculation-auctions-and-competitive-sealed-tenders.pdf), *Journal of Finance*, 1961. DOI: [10.1111/j.1540-6261.1961.tb02789.x](https://doi.org/10.1111/j.1540-6261.1961.tb02789.x).
 
