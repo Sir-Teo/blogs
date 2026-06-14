@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Diffusion Can Break the Symmetry"
+title: "When Diffusion Writes the Pattern"
 description: "Reaction-diffusion systems are a small shock to intuition: local mixing, coupled to nonlinear reactions, can turn a nearly uniform field into spots, worms, and fronts."
 date: 2026-06-14 10:12:00 -0400
 categories: computer-science
