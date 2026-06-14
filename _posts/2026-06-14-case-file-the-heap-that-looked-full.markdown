@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Heap Case File: When Full Was a Lie"
-description: "A memory leak is only one way a process gets fat. Fragmentation, size classes, phase changes, and per-thread caches can make the allocator's ledger diverge from the program's live data."
+title: "Case File: The Heap Was Not Full"
+description: "High RSS is not always a leak. Fragmentation, size classes, phase changes, and thread-local caches can make the allocator's ledger disagree with live data."
 date: 2026-06-14 09:52:00 -0400
 categories: software-engineering
 tags: [memory-allocation, fragmentation, malloc, systems, performance, c, cpp]
-excerpt: "When RSS is too high, the first suspect is a leak. Often the heap is telling a subtler story: live bytes, rounding waste, free holes, and private caches are different line items."
+excerpt: "The process looked bloated, but the live objects were smaller. The missing bytes were hiding in rounding, holes, phase history, and private caches."
 ---
 
-Incident report:
+Incident report, coffee already cold:
 
 ```text
 process is too large
@@ -16,18 +16,18 @@ heap profiler says live objects are much smaller
 the allocator insists nothing illegal happened
 ```
 
-This is not rare. It is also not one bug.
+This is not rare. It is also not one bug wearing a trench coat.
 
-The tempting word is "leak." A leak is clean: some object is still reachable by
-the allocator even though the program has lost the right to use it. Find the
-owner, cut the reference, watch the graph fall.
+The tempting word is "leak." A leak is clean as a suspect: some object is still
+reachable by the allocator even though the program has lost the right to use
+it. Find the owner, cut the reference, watch the graph fall.
 
 But many heap incidents are not leaks. They are accounting disagreements. The
 application asks for one number of bytes. The allocator rounds, splits, caches,
 coalesces, and maps pages in a different number of bytes. The operating system
 sees yet another number. RSS is the invoice, not the explanation.
 
-So this post is a small memory forensics lab. The question is not:
+So this post is a small memory forensics lab. The question on the wall is not:
 
 ```text
 is malloc fast?
@@ -47,10 +47,10 @@ later showed a more optimistic side of the same point: on several real C and C++
 programs, conventional allocators could exhibit near-zero fragmentation once
 implementation overheads were accounted for.[^fragmentation-solved]
 
-Those two claims are not contradictory. They say: do not diagnose a heap with a
-folk theorem.
+Those two claims are not contradictory. Together they say: do not diagnose a
+heap with a folk theorem.
 
-## Exhibit A: A Heap Ledger
+## Exhibit A: Four Ledgers for One Trace
 
 The simulator below runs the same allocation/free trace through four simplified
 allocators:
@@ -62,7 +62,7 @@ allocators:
   thread, so a freed object may be quick to reuse by that thread but invisible
   to the central free list.
 
-The private-cache row is a stress model, not a production allocator. It is there
+The private-cache row is a stress model, not a production allocator. It exists
 to make one question visible: when one thread frees an object, who is allowed to
 reuse that memory next?
 
@@ -312,9 +312,9 @@ rounding. The private-cache stressor commits `60 KiB`; about `26.7 KiB` sits in
 per-thread cached blocks.
 
 None of those numbers alone is "the fragmentation." Each is a different line
-item.
+item in the bill.
 
-## Suspect 1: The Allocator Cannot Move the Body
+## Suspect 1: The Allocator Cannot Move the Furniture
 
 Conventional C and C++ heap allocators are boxed in by a simple promise: after
 `malloc` returns a pointer, the allocator cannot later move the object and fix
@@ -324,8 +324,8 @@ types and pointer graph inside the blocks.[^wilson-survey]
 
 That constraint is why fragmentation is not just "run compaction." A copying
 garbage collector can move live objects because it controls or discovers the
-references. A `malloc` implementation usually cannot. It must arrange the map
-without moving the houses.
+references. A `malloc` implementation usually cannot. It must rearrange the
+map without moving the furniture.
 
 This turns allocation into a historical process. Two heaps can contain the same
 live requests and still have different futures because the holes sit in
@@ -333,9 +333,9 @@ different places. A large object does not care that total free memory is large.
 It cares whether a sufficiently large contiguous hole exists.
 
 The lab's "largest best-fit hole" metric is a small reminder of that fact.
-Free bytes are an inventory. The largest hole is a capability.
+Free bytes are inventory. The largest hole is a capability.
 
-## Suspect 2: Rounding Is Not Always Waste
+## Suspect 2: Rounding Bought a Market
 
 Size classes look suspicious because they create internal fragmentation on
 purpose. Ask for 177 bytes and the allocator may hand you a 192-byte or
@@ -359,10 +359,11 @@ best fit, but it does not commit more pages. Change the phase shift or seed and
 the answer can move. That is exactly the allocator problem: mechanism only has
 meaning under a workload.
 
-## Suspect 3: A Free Is Not Necessarily Reusable
+## Suspect 3: The Freed Block Went to the Wrong Desk
 
 Single-threaded diagrams make `free(x)` look like a coin dropped back into one
-jar. Multithreaded allocators have more jars.
+jar. Multithreaded allocators have more jars, and not every jar is on the same
+desk.
 
 Per-thread caches and arenas reduce synchronization and often improve locality.
 They also introduce a question that a global heap never had to ask: if thread A
@@ -386,7 +387,7 @@ jemalloc, for example, emphasizes fragmentation avoidance and scalable
 concurrency, and its production story includes profiling and tuning hooks
 because the allocator has to be observable at scale.[^meta-jemalloc]
 
-## The Bad Autopsy
+## The Bad Autopsy Has One Number
 
 A bad heap autopsy reports one number:
 
@@ -405,7 +406,7 @@ private or retained bytes not currently reusable by the caller that needs them
 ```
 
 Then it asks when the peak occurred. Fragmentation at the final snapshot can be
-uninteresting if the incident happened during a phase transition. Wilson et al.
+irrelevant if the incident happened during a phase transition. Wilson et al.
 argued that real programs have ramps, peaks, plateaus, phase behavior, and
 ordering dependencies that simple random traces erase.[^wilson-survey] That is
 why allocator evaluation by "random sizes, random lifetimes" can be worse than
@@ -415,9 +416,9 @@ runs.
 The default lab trace includes a phase shift for this reason. Early allocations
 are drawn from one size mix; later allocations drift toward another. Long-lived
 objects from the first phase survive into the second. Those survivors are the
-rocks in the river. The later allocations have to flow around them.
+rocks in the river. Later allocations have to flow around them.
 
-## What I Would Measure First
+## My First Six Questions
 
 If I saw this in production, I would not start by changing allocators.
 
@@ -436,7 +437,7 @@ phase-change hole pattern may want lifetime segregation. Cross-thread retained
 slack may want allocator tuning, cache flushing, fewer arenas, different handoff
 patterns, or a workload-specific allocator.
 
-The dangerous move is to collapse all of those into one word.
+The dangerous move is collapsing all of those into one word.
 
 Fragmentation is not one substance. It is a ledger whose columns happen to add
 up to memory you paid for.
