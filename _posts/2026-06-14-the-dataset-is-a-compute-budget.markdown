@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Dataset Is A Compute Budget"
+title: "Compute-Optimal Training Starts With the Dataset"
 description: "Scaling laws are not just a slogan about bigger models. Under a fixed training budget, model size and tokens trade off, and data scarcity bends the compute-optimal frontier."
 date: 2026-06-14 15:55:00 -0400
 categories: ai-systems
