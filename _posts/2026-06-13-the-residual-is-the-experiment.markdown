@@ -1,20 +1,21 @@
 ---
 layout: post
-title: "DML Begins With the Residuals"
-description: "Double machine learning does not make confounding disappear. It builds an orthogonal residual score so flexible prediction errors hit the causal estimate only at second order."
+title: "The Experiment Hiding in the Residuals"
+description: "Double machine learning is not a confounding eraser. It builds a residual score so nuisance-model mistakes have less leverage over the causal number."
 date: 2026-06-13 23:40:00 -0400
 categories: statistics
 tags: [double-machine-learning, causal-inference, orthogonalization, semiparametrics, statistics, econometrics]
-excerpt: "A causal effect estimate should not inherit every small mistake made by a flexible prediction model. Orthogonal scores are how double machine learning buys that robustness."
+excerpt: "The useful comparison is not raw treatment against raw outcome. It is outcome residual against the part of treatment the controls failed to predict."
 ---
 
 Machine learning is very good at predicting the parts of an outcome that are
 not the treatment.
 
-That sounds like exactly what causal inference needs. Suppose we want to know
-the effect of a treatment, price change, notification, interface, policy, or
-exposure. We have many covariates. We fit a powerful model for the outcome. We
-"control for" the covariates. We read off the treatment coefficient.
+At first glance that sounds like exactly what causal inference ordered. Suppose
+we want to know the effect of a treatment, price change, notification,
+interface, policy, or exposure. We have many covariates. We fit a powerful
+model for the outcome. We "control for" the covariates. We read off the
+treatment coefficient.
 
 This is where the trap opens.
 
@@ -32,9 +33,9 @@ and the nuisance prediction problems are learned well enough,
 then use a score whose first derivative with respect to those nuisances is zero.
 ```
 
-The magic word is **orthogonal**.
+The magic word is **orthogonal**. The practical object is a residual.
 
-## A partially linear promise
+## The Clean Room Version
 
 The cleanest version is the partially linear model:
 
@@ -88,7 +89,7 @@ This formula is easy to underestimate. It is not just "control for $$X$$." It
 is a residual experiment: compare outcome residuals only along variation in
 treatment that the controls did not predict.
 
-## Why residualize both sides?
+## Do Not Leave the Treatment Dirty
 
 The tempting half-step is to predict the outcome from controls, subtract that
 prediction, and regress the remaining outcome on the raw treatment. The lab
@@ -104,13 +105,14 @@ $$
 Regressing that on raw $$D$$ divides by variation in both $$m_0(X)$$ and
 $$D-m_0(X)$$. The treatment signal is diluted by predictable treatment movement.
 
-The treatment must be residualized too.
+The treatment must be residualized too. Otherwise the denominator still contains
+variation the controls already knew how to predict.
 
 That is the same instinct behind the Frisch-Waugh-Lovell theorem in ordinary
 linear regression, but DML moves the nuisance fits outside the linear comfort
 zone.
 
-## Orthogonality buys error tolerance
+## Orthogonality Buys Some Forgiveness
 
 Chernozhukov, Chetverikov, Demirer, Duflo, Hansen, Newey, and Robins formalized
 double/debiased machine learning for treatment and structural parameters.[^dml]
@@ -138,7 +140,7 @@ an omitted confounder has fewer places to hide.[^pds] DML generalizes the same
 fear into a semiparametric score: nuisance estimation is allowed to be flexible,
 but the final moment must protect the target parameter from nuisance mistakes.
 
-## A residual lab
+## Put the Residuals on the Bench
 
 The simulator below creates data from a partially linear model. The true effect
 is fixed at $$\theta_0=0.7$$. A nonlinear function of $$X$$ affects both the
@@ -368,7 +370,7 @@ sizes. The nuisance learner becomes unstable. Cross-fitting is important, but it
 is not a license to use pathological nuisance models. The score is robust to
 first-order nuisance error, not to numerical chaos.
 
-## What the score is saying
+## What the Cloud Is Saying
 
 The cross-fit DML scatter plot is the essay in miniature. The horizontal axis is
 the residualized treatment:
@@ -391,7 +393,7 @@ treatment not explained by observed controls. It is the variation we are willing
 to compare on. This is why the residual is not a preprocessing artifact. It is
 the estimand's measuring instrument.
 
-## What DML does not buy
+## What DML Refuses to Buy
 
 DML is easy to misuse because the word "machine learning" gives it product
 energy. The method is not an identification machine.
@@ -403,7 +405,7 @@ changes across units. It does not guarantee that a black-box nuisance model is
 good enough for the target parameter. It does not make the final estimate immune
 to extrapolation.
 
-The right mental model is humbler and more powerful:
+The right mental model is humbler and more useful:
 
 ```text
 causal design chooses the moment;
@@ -414,7 +416,7 @@ cross-fitting keeps scoring honest.
 
 That is already a lot.
 
-## A checklist I would actually use
+## My DML Smell Test
 
 Before trusting a DML estimate, I would ask:
 
@@ -434,7 +436,7 @@ Before trusting a DML estimate, I would ask:
 The lab above is friendly because all confounders are observed and the data
 really are partially linear. Real applications are less polite.
 
-## A Thread Worth Pulling
+## The Residual Audit I Want
 
 The diagnostic I want to see more often is a residual audit.
 
@@ -449,7 +451,7 @@ treatment variation? Which nuisance learner changes the answer?
 
 If the residual is the experiment, then audit the experiment.
 
-## Where This Came From
+## Source Notes
 
 [^robinson]: Peter M. Robinson, "Root-N-Consistent Semiparametric Regression," *Econometrica*, 1988. [JSTOR](https://www.jstor.org/stable/1912705).
 
