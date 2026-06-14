@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "LSM Trees Pay Sorting Debt Later"
-description: "An LSM tree makes writes cheap by turning random updates into sorted runs. Compaction is where the debt comes due: write amplification, read amplification, and space amplification are the same bargain seen from three angles."
+title: "The Memtable Borrows From Tomorrow"
+description: "An LSM tree makes writes cheap by turning random updates into sorted runs. Compaction is where the sorting loan comes due."
 date: 2026-06-14 09:08:00 -0400
 categories: software-engineering
 tags: [lsm-tree, compaction, storage-engines, databases, rocksdb, leveldb, systems]
-excerpt: "A memtable is a small loan from the future. It lets writes land quickly, then compaction pays the sorting bill later by merging immutable runs."
+excerpt: "A memtable is a small loan from the future. It lets writes land quickly, then compaction pays the sorting bill by merging immutable runs."
 ---
 
 The seductive version of an LSM tree is:
@@ -37,7 +37,7 @@ compaction rewrites more data. Lower space amplification and deletes or
 overwrites must be cleaned aggressively. The three costs are not independent
 knobs. They are the same sorting debt accounted in different columns.
 
-## The Original Bargain
+## The Old Bargain Was Physical
 
 O'Neil, Cheng, Gawlick, and O'Neil introduced the LSM-tree as a disk-based data
 structure for files with high rates of inserts and deletes.[^lsm] Their central
@@ -67,7 +67,7 @@ which versions can be forgotten.
 
 Compaction is the forgetting machine.
 
-## A Small Sorting-Debt Lab
+## A Ledger for the Sorting Loan
 
 The lab below simulates a deliberately simplified LSM tree. It is not RocksDB,
 LevelDB, Cassandra, Pebble, or Bigtable. It ignores block caches, file sizes,
@@ -302,19 +302,25 @@ space behavior.[^rocks-universal][^rocks-leveled]
 
 Try five moves.
 
-First, set **Policy** to `none`. Writes look wonderfully cheap. Then look at
-point checks and obsolete share. The system did not get free storage. It merely
-left many sorted runs for future reads to inspect.
+First, set **Policy** to `none`. Writes look wonderfully cheap: in the default
+hot workload the run write amplification is only about 0.55x because repeated
+updates collapse in the memtable before flush. Then look at point checks and
+obsolete share. The system did not get free storage. It left 19 runs, about
+8.04 point checks, 3.39x space amplification, and 604 obsolete entries for
+future reads and future compaction to deal with.
 
-Second, switch to `tiered`. Write amplification stays relatively modest because
-runs are merged in batches of similar age. Read checks and space amplification
-usually remain higher than under leveled compaction, because several runs can
-survive at a level.
+Second, switch to `tiered`. In this toy, the default hot workload lands at about
+0.98x run write amplification, 2.99 point checks, 1.41x space amplification,
+and four runs. Do not read that as a universal win over leveled compaction. It
+is the toy workload and the toy policy telling you that update locality and
+whole-run merges can dominate the headline labels.
 
 Third, switch to `leveled`. The lab's leveled policy is intentionally coarse:
 it merges whole levels rather than doing RocksDB-style partial file picking.
-Even so, the shape is visible. More compaction work buys fewer runs and lower
-space overhead.
+Even so, the shape is visible. The default run does three compactions, leaves
+five runs, reports about 3.62 point checks, and keeps space amplification near
+1.56x. Compared with no compaction, the debt has clearly moved. Compared with
+tiered in this toy, the answer is more interesting than the label.
 
 Fourth, choose **append-only**. Obsolete versions nearly disappear. The sorting
 debt becomes easier because old keys are not being rewritten. Many production
@@ -325,7 +331,7 @@ forget later. Until compaction can safely drop them, they occupy space and stop
 reads. A delete is not merely the absence of a value; in an LSM tree it is a
 piece of evidence.
 
-## What Compaction Actually Buys
+## Every Run Is Sorted; the Database Is Not
 
 Every immutable run is individually sorted. The whole database is not.
 
@@ -359,7 +365,7 @@ write-stall policy.
 
 The shape of the compaction policy is the shape of the database.
 
-## Leveled, Tiered, and the Cost Triangle
+## There Is No Free Corner
 
 Tiered compaction waits until it has several comparable runs, then merges them.
 It tends to reduce write amplification because data is not repeatedly forced
@@ -377,7 +383,8 @@ documented as targeting use cases that need lower write amplification while
 trading off read and space amplification. Leveled compaction is the more common
 default when predictable reads and bounded space matter.[^rocks-universal][^rocks-leveled]
 
-There is no universally best point on this triangle.
+There is no universally best point on this triangle, and the toy above is a
+useful warning against treating policy names as outcomes.
 
 An ingest pipeline may accept high read amplification during bulk loading, then
 compact later. A latency-sensitive read service may spend more write bandwidth
@@ -388,7 +395,7 @@ values while sorting keys.[^wisckey]
 That last example is a useful reminder: "LSM tree" is not one design. It is a
 family of designs organized around deferred, batched merging.
 
-## The Hidden Contract With Workload Shape
+## Workload Shape Changes the Bill
 
 The lab's **hot updates** workload makes one important point: update locality
 changes the bill.
@@ -411,7 +418,7 @@ under overwrite-heavy, delete-heavy, read-after-write traffic.
 
 The data structure did not change. The debt schedule did.
 
-## A Tuning Checklist That Starts Earlier
+## Ask What Debt You Are Moving
 
 Before touching compaction flags, ask what debt you are trying to move.
 
@@ -437,7 +444,7 @@ The anti-pattern is to treat compaction as janitorial work. It is not cleaning
 up after the database. It is the database deciding when sorted order becomes
 real.
 
-## The Short Version
+## The Payment Plan
 
 An LSM tree is not just a log, and it is not just a tree.
 
