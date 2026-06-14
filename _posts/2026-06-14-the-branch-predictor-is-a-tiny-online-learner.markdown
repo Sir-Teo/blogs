@@ -1,21 +1,21 @@
 ---
 layout: post
-title: "Branch Predictors Learn Online"
-description: "Modern CPUs guess control flow with small adaptive models. Two-bit counters, gshare, and perceptrons expose the same old machine-learning tradeoff: context helps until memory and representation run out."
+title: "The CPU Has to Guess Right Now"
+description: "Branch prediction is online learning at the front of the processor: tiny adaptive models guess control flow before the real label arrives."
 date: 2026-06-14 08:40:00 -0400
 categories: computer-science
 tags: [branch-prediction, computer-architecture, online-learning, perceptrons, speculative-execution, systems]
-excerpt: "A branch predictor is not a fortune teller. It is a tiny online learner with a short memory, a fixed table budget, and a hard deadline."
+excerpt: "A branch predictor learns from the last branch while betting on the next one. Context helps, tables collide, and the deadline is measured in pipeline bubbles."
 ---
 
-The CPU has to guess.
+The CPU does not get to wait for certainty.
 
 Not eventually. Not after a batch job. Now.
 
 A conditional branch says: the next instruction might be over here, or it might
-be over there. A wide out-of-order processor cannot sit quietly until the branch
-resolves. It predicts, fetches down the guessed path, and later either keeps the
-work or throws it away.
+be over there. A wide out-of-order processor cannot sit quietly until the
+branch resolves. It predicts, fetches down the guessed path, and later either
+keeps the work or throws it away.
 
 That makes branch prediction feel like a hardware topic. Tables, indices,
 pipeline flushes, instruction windows.
@@ -32,9 +32,10 @@ It is online binary classification under a brutal latency budget.
 
 The old trick, still worth respecting, is the two-bit saturating counter. Each
 branch maps to a small counter. Taken increments. Not-taken decrements. The high
-bit predicts the next outcome. James Smith's early branch-prediction work studied
-this family of simple dynamic strategies with instruction traces, because even a
-few bits of state can beat static guessing when a branch is biased.[^smith]
+bit predicts the next outcome. James Smith's early branch-prediction work
+studied this family of simple dynamic strategies with instruction traces,
+because even a few bits of state can beat static guessing when a branch is
+biased.[^smith]
 
 Then the field started adding context.
 
@@ -54,10 +55,10 @@ more context -> more states to remember
 more states -> more aliasing under a fixed memory budget
 ```
 
-The branch predictor is a model. Its weights just happen to live near the front
-end of the processor.
+The branch predictor is a model. Its parameters just happen to live near the
+front end of the processor.
 
-## A Toy Predictor Race
+## Four Tiny Racers
 
 The lab below simulates a stream of conditional branches. It is not a cycle
 accurate CPU model. It does not model fetch bandwidth, branch target buffers,
@@ -65,7 +66,7 @@ wrong-path pollution, update timing, or speculative recovery. It measures only
 direction prediction on a synthetic branch trace, in misses per 1,000 dynamic
 branches.
 
-That narrowness is useful. It lets the learning problem stand still.
+That narrowness is useful. It pins the learning problem to the bench.
 
 The trace contains five branch families:
 
@@ -75,7 +76,7 @@ The trace contains five branch families:
 4. a parity branch that depends on an XOR-like relation between recent branches;
 5. decoy branches that increase the working set and table aliasing.
 
-The predictors are deliberately small:
+The predictors are deliberately small, so their failure modes are visible:
 
 1. always taken;
 2. a two-bit bimodal table indexed by branch address;
@@ -268,7 +269,9 @@ contains roughly `1,525` distinct branch-address-plus-history contexts. The
 top `95%` of dynamic branch events still need about `1,280` contexts. That is
 an alias load of about `23.8x`.
 
-So the result is not "history always wins."
+So the result is not "history always wins." The result is stranger and more
+useful: history wins only when the representation and table budget can carry
+it.
 
 On this default trace:
 
@@ -305,7 +308,7 @@ capacity matters,
 and capacity without the right feature is mostly decoration
 ```
 
-## Two-Bit Counters Are Not Dumb
+## The Counter Refuses to Panic
 
 It is tempting to laugh at a two-bit counter. It has four states. It cannot know
 why a branch is taken. It cannot represent "this branch follows the previous
@@ -316,16 +319,16 @@ hysteresis for them. A loop branch that is taken eight times and then not taken
 once should not flip its opinion after one exit. It should miss the exit,
 possibly miss the first re-entry, and keep its bias.
 
-That is a small but important design instinct: stability is useful when the
+That is the design instinct packed into two bits: stability is useful when the
 world is mostly stable.
 
 The cost is that a bimodal table sees each branch address as mostly one
 thing. If the same branch has different behavior under different recent control
 flow, the table has no place to store those conditional personalities.
 
-Two-level predictors add that place.
+Two-level predictors add a place for those conditional personalities.
 
-## History Is a Feature Map
+## History Turns Branches Into Contexts
 
 In a gshare-style predictor, the index is roughly
 
@@ -333,7 +336,7 @@ $$
 \text{index} = h(\text{PC}) \oplus \text{global history}.
 $$
 
-This is not deep magic. It is a feature map plus a hash table.
+This is not deep magic. It is a feature map strapped to a hash table.
 
 The branch address says which static branch is being predicted. The global
 history says what just happened nearby in control flow. XORing them is a cheap
@@ -357,15 +360,16 @@ properties that correlate with modern predictor miss rates.[^bwset] The lab is
 borrowing the same mental model in miniature: contexts are the examples the
 predictor must remember.
 
-More history can lower entropy. It can also explode the context count.
+More history can lower entropy. It can also explode the number of contexts the
+hardware has to remember.
 
-## Aliasing Is Interference, Not Just Collision
+## Aliasing Means Shared Opinions
 
 When two contexts map to the same counter, they have to share an opinion.
 
 If both contexts want the same answer, aliasing is harmless or even helpful. If
-one wants taken and the other wants not-taken, the counter becomes a small
-argument that never settles.
+one wants taken and the other wants not-taken, the counter has to share one
+opinion between two situations.
 
 This is why a predictor can get worse when you add history under a fixed table
 budget. The feature map becomes more expressive, but the table does not grow.
@@ -379,7 +383,7 @@ decoys and shrink the table. The branch working set grows, the alias load rises,
 and gshare's aggregate miss rate can deteriorate even while it still does a
 better job on the copy and parity branches individually.
 
-The mistake is to ask whether history is good.
+The tempting mistake is to ask whether history is good.
 
 The better question is:
 
@@ -388,7 +392,7 @@ which contexts became separable,
 and which contexts started sharing state?
 ```
 
-## Perceptrons Bought Longer Memory
+## Perceptrons Buy a Longer Memory
 
 Jimenez and Lin's perceptron predictor is a beautiful architectural idea because
 it changes the storage curve.[^perceptron] A table of pattern counters needs
@@ -412,7 +416,7 @@ But the parity branch is the warning label. XOR is not linearly separable in the
 plain feature space. The perceptron can have a long memory and still miss the
 shape of the rule.
 
-This is not a criticism of perceptrons. It is the usual model-class trade:
+That is not a criticism of perceptrons. It is the usual model-class trade:
 
 ```text
 long linear memory is powerful,
@@ -427,14 +431,14 @@ Recent predictor families also combine TAGE-like structures with statistical or
 neural correctors.
 
 That evolution is not a rejection of the simple story. It is the simple story
-scaled carefully:
+scaled with care:
 
 1. different branches need different history lengths;
 2. tags reduce destructive aliasing;
 3. side predictors catch patterns the main representation misses;
 4. every extra feature must still fit a timing and storage budget.
 
-## The Useful Analogy
+## The Analogy I Actually Use
 
 A branch predictor is a recommendation system for the instruction stream.
 
