@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Treatment Starts After Survival"
+title: "Immortal Time Bias Starts Before Treatment"
 description: "Immortal time bias is a time-zero bug in causal survival analysis. A treatment can look protective because the treated group had to survive long enough to receive it."
 date: 2026-06-14 14:22:00 -0400
 categories: statistics
@@ -286,7 +286,7 @@ is treated as a baseline attribute.
 The future is allowed to explain the future. It is not allowed to relabel the
 past.
 
-## The Research Direction
+## A Thread Worth Pulling
 
 The interesting engineering problem is not only estimating one time-dependent
 effect. It is building analysis systems that make the impossible denominator
