@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Evidence as a Betting Process"
-description: "E-values and e-processes turn sequential evidence into a nonnegative martingale, so looking repeatedly becomes part of the design instead of a hidden loophole."
+title: "If You Keep Looking, Use a Bankroll"
+description: "E-values and e-processes turn sequential evidence into a nonnegative martingale, so repeated looks become part of the design instead of a loophole."
 date: 2026-06-13 21:15:00 -0400
 categories: statistics
 tags: [e-values, e-processes, martingales, anytime-valid-inference, sequential-testing, ab-testing]
-excerpt: "A fixed-horizon p-value is a snapshot. An e-process is a bankroll: if the null is right, it is hard to get rich no matter when you stop."
+excerpt: "A fixed-horizon p-value is a snapshot. An e-process is a bankroll: under the null, it should be hard to get rich no matter when the dashboard stops."
 ---
 
 A fixed-horizon p-value is a snapshot.
@@ -23,11 +23,11 @@ week." The peeking is not always malicious. Often it is how organizations
 operate.
 
 The statistical object has to know whether it is being used as a snapshot or as
-a process.
+an alarm someone is allowed to watch.
 
 An e-process is a process.
 
-## Evidence as Capital
+## The Bankroll Rule
 
 An e-value is a nonnegative random variable $$E$$ such that, under every
 distribution in the null hypothesis,
@@ -69,7 +69,7 @@ The phrase "testing by betting" is not decorative.[^shafer] The evidence is a
 bankroll. A valid test is a fair or unfavorable game under the null. If you get
 very rich, the null has some explaining to do.
 
-## The Coin Game
+## A Fair Coin Casino
 
 Suppose we observe binary outcomes $$X_t \in \{0,1\}$$. The null hypothesis is
 that the success probability is $$1/2$$. Before seeing $$X_t$$, choose a bet size
@@ -111,7 +111,7 @@ still valid, but it may grow slowly or lose money under the alternative. Validit
 comes from fairness under the null. Power comes from choosing a game that the
 alternative is likely to win.
 
-## A Small Betting Lab
+## Peeking Lab With a Bankroll
 
 The lab below compares two things:
 
@@ -272,7 +272,7 @@ Move **Alpha**. The e-boundary changes from $$20$$ at 5% to $$100$$ at 1%.
 Evidence has a price: stronger error control requires a larger bankroll
 multiple before stopping.
 
-## What Is Safer Here?
+## Safe Means Matching the Use
 
 "Safe" does not mean "always conservative" or "always more powerful." It means
 the error guarantee survives the way the statistic is used.
@@ -304,7 +304,7 @@ That is a different statistic with a different null distribution.
 This is why the p-value is not the villain. The misuse is asking a snapshot to
 behave like a process.
 
-## What the Bet Does Not Solve
+## The Game Still Needs Design
 
 E-values do not remove all design judgment.
 
@@ -329,7 +329,7 @@ The design question is not "Can I peek?" It is:
 what process am I allowed to peek at?
 ```
 
-## The Product Translation
+## Dashboard Translation
 
 For experimentation platforms, I would like dashboards to separate three
 objects:
