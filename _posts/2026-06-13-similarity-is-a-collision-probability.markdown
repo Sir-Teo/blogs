@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "MinHash Turns Similarity Into Collisions"
-description: "MinHash turns document overlap into a coin whose probability of landing heads is the Jaccard similarity."
+title: "Similar Pages Should Share a Lottery Ticket"
+description: "MinHash turns document overlap into a collision event whose probability is the Jaccard similarity."
 date: 2026-06-13 17:36:00 -0400
 categories: computer-science
 tags: [minhash, locality-sensitive-hashing, jaccard, near-duplicate-detection, sketches, information-retrieval]
-excerpt: "Near-duplicate detection is not solved by comparing everything with everything. MinHash makes resemblance measurable from small signatures, and LSH banding turns those signatures into a tunable candidate generator."
+excerpt: "Near-duplicate search dies if every page meets every other page. MinHash gives similar documents shared lottery tickets, and LSH decides which tickets are worth inspecting."
 ---
 
 The naive near-duplicate detector has a pleasingly doomed shape:
@@ -46,7 +46,7 @@ only create pairs that collide in at least one signature band
 
 The result is not a classifier. It is a candidate generator with a dial.
 
-## The Object Being Estimated
+## First Decide What Counts as Same
 
 Broder's document resemblance framework starts by turning a document into a set
 of shingles.[^broder-resemblance] A word shingle of width 5 is a consecutive
@@ -81,7 +81,7 @@ That makes Jaccard a good first contract:
 same local pieces, same document family
 ```
 
-## The One-Line Proof
+## The Minimum Shingle Trick
 
 Imagine applying a random permutation $$\pi$$ to the universe of shingles. For a
 set $$A$$, keep only the shingle whose permuted value is smallest:
@@ -136,7 +136,7 @@ Frieze, and Mitzenmacher formalized when smaller permutation families behave
 enough like true random permutations for this estimator.[^minwise] In production
 systems, this is one of the places where "just use a hash" deserves scrutiny.
 
-## A MinHash Lab
+## A Little Duplicate Factory
 
 The lab below generates two synthetic documents and one unrelated background
 document. All three share a controllable amount of boilerplate. The first two
@@ -232,7 +232,7 @@ This is a dangerous number if read too literally. It is not the probability that
 two documents are duplicates. It is only the probability that the LSH stage will
 send this pair to the next stage.
 
-## Candidate Generation Is Not Classification
+## A Candidate Is Not a Verdict
 
 Broder's later near-duplicate filtering work emphasized a practical distinction:
 for web indexing, it is often enough to know whether resemblance is above a
@@ -269,7 +269,7 @@ Their nearest-neighbor paper treats LSH as the key ingredient for sublinear
 search in high-dimensional settings.[^indyk-motwani] MinHash is the Jaccard
 version of that idea.
 
-## Containment Is a Different Question
+## Copies Can Be Asymmetric
 
 Jaccard is symmetric:
 
@@ -306,7 +306,7 @@ This is the same lesson wearing a different coat:
 the sketch answers the question you encoded, not the question you meant
 ```
 
-## Practical Failure Modes
+## Places the Sketch Can Lie
 
 Shingle size is a bias knob. Small shingles give high recall for edited text but
 also collide on common phrases. Large shingles are more discriminative but break
@@ -333,7 +333,7 @@ paraphrase detection, or intent clustering, MinHash over word shingles can be
 too literal. If the task is copy detection, crawl deduplication, template
 pollution, or quote overlap, that literalness is a feature.
 
-## A Run Sheet for Near-Duplicate Search
+## Near-Dupe Run Sheet
 
 Before I trust a MinHash pipeline, I want to know:
 
@@ -351,7 +351,7 @@ Before I trust a MinHash pipeline, I want to know:
 The pleasant mathematical identity does not eliminate these questions. It makes
 them explicit.
 
-## What the Toy Makes Visible
+## The Lottery Ticket Picture
 
 MinHash is not a tiny summary of what a document says.
 
