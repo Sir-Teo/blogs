@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Merge Function Is the System"
+title: "CRDTs Are Their Merge Functions"
 description: "CRDTs are not a trick for avoiding distributed systems. They are a way of making merge algebra explicit: what grows, what can be forgotten, and what must be coordinated."
 date: 2026-06-13 06:54:00 -0400
 categories: computer-science
@@ -297,7 +297,7 @@ It comes from choosing a shape of state where disorder is harmless.
 In distributed systems, you do not get to choose whether time is messy. You
 only get to choose whether your data type has made peace with it.
 
-## Notes
+## Source Notes
 
 [^shapiro]: Marc Shapiro, Nuno Preguica, Carlos Baquero, and Marek Zawirski, ["Conflict-Free Replicated Data Types"](https://link.springer.com/chapter/10.1007/978-3-642-24550-3_29), SSS 2011. The broader technical report is ["A comprehensive study of Convergent and Commutative Replicated Data Types"](https://inria.hal.science/inria-00555588/en/).
 
