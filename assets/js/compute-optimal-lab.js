@@ -109,14 +109,15 @@
     var base = noCapOptimum(compute);
     var lo = Math.max(1e6, base.n / 200);
     var hi = Math.min(5e12, base.n * 200);
-    var best = null;
+    var baseLoss = lossAt(base.n, base.d, params);
+    var best = Object.assign({ n: base.n, d: base.d }, baseLoss);
     for (var i = 0; i <= 280; i += 1) {
       var t = i / 280;
       var n = Math.pow(10, Math.log10(lo) * (1 - t) + Math.log10(hi) * t);
       var d = compute / (6 * n);
       if (d < 1e8) continue;
       var l = lossAt(n, d, params);
-      if (!best || l.loss < best.loss) {
+      if (l.loss < best.loss) {
         best = Object.assign({ n: n, d: d }, l);
       }
     }

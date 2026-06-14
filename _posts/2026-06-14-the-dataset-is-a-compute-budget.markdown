@@ -1,14 +1,15 @@
 ---
 layout: post
-title: "Compute-Optimal Training Starts With the Dataset"
-description: "Scaling laws are not just a slogan about bigger models. Under a fixed training budget, model size and tokens trade off, and data scarcity bends the compute-optimal frontier."
+title: "The Next FLOP Has to Choose"
+description: "Scaling laws are not just a slogan about bigger models. Under a fixed training budget, parameters and tokens trade off, and data scarcity bends the frontier."
 date: 2026-06-14 15:55:00 -0400
 categories: ai-systems
 tags: [scaling-laws, language-models, compute-optimal-training, chinchilla, training-data, inference]
-excerpt: "A model can be too small for its compute budget, or too large for its tokens. The interesting question is not bigger versus smaller. It is where the next FLOP buys the most loss reduction."
+excerpt: "A model can be too small for its compute budget or too large for its tokens. The real question is where the next FLOP buys the most loss reduction."
 ---
 
-A training run is a wager on where loss will fall fastest.
+A training run is a wager about where the next unit of compute will do the most
+good.
 
 That sounds less glamorous than "scale the model," but it is closer to the
 engineering decision. If I give you a fixed pile of FLOPs, you can spend them
@@ -19,14 +20,14 @@ more parameters, fewer tokens
 fewer parameters, more tokens
 ```
 
-Both can be wrong.
+Both can be wrong, which is the expensive part.
 
 A model that is too small sees endless data and cannot store enough structure.
 A model that is too large sees too few tokens and never gets trained enough to
 use its capacity. The allocation problem is the quiet center of modern language
 model training.
 
-## The Old Slogan Was Not Quite Wrong
+## The Slogan Hid an Allocation Problem
 
 The original neural scaling law story was beautiful because it turned chaos
 into smooth curves. Kaplan et al. studied language models across model size,
@@ -61,10 +62,10 @@ The lesson was not "70B is magic." It was:
 for a fixed compute budget, model size and data size are joint variables
 ```
 
-Scaling laws are not a permission slip to make one axis huge. They are a map
-of marginal returns.
+Scaling laws are not a permission slip to make one axis huge. They are a map of
+marginal returns.
 
-## A Tiny Compute-Allocation Lab
+## A Sandbox for Spending FLOPs
 
 The lab below is a pedagogical model, not a reproduction of anyone's private
 training curve. It uses the same kind of loss decomposition as Chinchilla's
@@ -144,9 +145,9 @@ scarce, repeatedly spending compute on the same examples has diminishing
 returns, so the best allocation may shift toward a larger model and fewer raw
 tokens than the no-cap rule would suggest.
 
-The sliders are not the point. The geometry is.
+The sliders are not the point. The spending geometry is.
 
-## The Marginal-FLOP View
+## Ask Which Term Is Still Expensive
 
 Here is the clean version. Let loss be approximated by:
 
@@ -172,7 +173,7 @@ large, add tokens. If both terms are small relative to irreducible loss, maybe
 the next bottleneck is data quality, architecture, objective, evaluation, or
 deployment cost.
 
-## The Data Wall Is Not Just A Wall
+## The Data Wall Has Doors
 
 The phrase "we will run out of data" is too crude.
 
@@ -195,9 +196,9 @@ parameters. If high-quality fresh tokens appear, the optimum can move back
 toward longer training. If synthetic tokens are cheap but correlated with model
 mistakes, the data term may shrink less than the token count suggests.
 
-The counter is not the dataset.
+The token counter is not the dataset.
 
-## Why Production May Overtrain On Purpose
+## Serving Can Change the Answer
 
 Training-compute optimal is not the same as business optimal.
 
@@ -234,7 +235,7 @@ familiar public example of the taste shift: the original LLaMA paper emphasized
 training smaller foundation models on far more tokens because inference cost is
 important when models are served widely.[^llama]
 
-## What Scaling Laws Do Not Buy
+## What the Curves Leave Out
 
 The lab is deliberately quiet about several things that matter enormously:
 
@@ -253,7 +254,7 @@ for measurement.
 The right habit is not to memorize "20 tokens per parameter" as a commandment.
 The right habit is to ask which term is still expensive.
 
-## A Training-Run Checklist
+## Before I Trust the Run Plan
 
 Before trusting a scaling plan, I would want to see:
 
@@ -273,7 +274,7 @@ Scaling laws are not hype when they are treated as measurement.
 They are hype when they become a slogan.
 
 The dataset is not a pile next to the model. Under a compute budget, it is one
-side of the model size.
+side of the model-size decision.
 
 [^kaplan]: Jared Kaplan et al., ["Scaling Laws for Neural Language Models"](https://arxiv.org/abs/2001.08361), 2020.
 
