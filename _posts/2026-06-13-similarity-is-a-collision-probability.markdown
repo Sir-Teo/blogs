@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Similarity Is a Collision Probability"
+title: "MinHash Turns Similarity Into Collisions"
 description: "MinHash turns document overlap into a coin whose probability of landing heads is the Jaccard similarity."
 date: 2026-06-13 17:36:00 -0400
 categories: computer-science
@@ -351,7 +351,7 @@ Before I trust a MinHash pipeline, I want to know:
 The pleasant mathematical identity does not eliminate these questions. It makes
 them explicit.
 
-## The Feeling of the Algorithm
+## What the Toy Makes Visible
 
 MinHash is not a tiny summary of what a document says.
 
@@ -369,7 +369,7 @@ The exact pairwise comparison does not disappear. It moves to the end, where it
 belongs, after the sketch has made the candidate set small enough for truth to
 be affordable.
 
-## Notes
+## References
 
 [^broder-resemblance]: Andrei Z. Broder, ["On the Resemblance and Containment of Documents"](https://www.cs.princeton.edu/courses/archive/spr05/cos598E/bib/broder97resemblance.pdf), *Compression and Complexity of Sequences*, 1997.
 
