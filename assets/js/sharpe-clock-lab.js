@@ -477,10 +477,10 @@
 
   function parseParams(root) {
     var params = {
-      autocorrelation: 28,
-      baseSharpe: 75,
-      clustering: 45,
-      smoothing: 48,
+      autocorrelation: 25,
+      baseSharpe: 65,
+      clustering: 40,
+      smoothing: 40,
       trials: 300,
       years: 6
     };
