@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Cache Is a Bet on Reuse"
+title: "Cache Policy as a Bet on Reuse"
 description: "A cache replacement policy is not a housekeeping rule. It is an online prediction about which object will be useful before memory runs out."
 date: 2026-06-13 19:43:00 -0400
 categories: computer-science
@@ -353,7 +353,7 @@ Before changing a cache policy, I want a trace-backed ledger:
 The most useful metric is often "evicted and reused soon." That is regret in the
 language of a cache. Belady would not have made that eviction.
 
-## The Sentence to Keep
+## The Short Version
 
 An eviction is a prediction. An admission is a prediction too.
 
@@ -370,7 +370,7 @@ do not ask whether the cache is big enough until you know what it keeps
 
 The cache is not a drawer. It is a memory policy.
 
-## Notes
+## Works Cited
 
 [^belady]: Laszlo A. Belady, ["A Study of Replacement Algorithms for a Virtual-Storage Computer"](https://users.informatik.uni-halle.de/~hinnebur/Lehre/Web_DBIIb/uebung3_belady_opt_buffer.pdf), *IBM Systems Journal*, 1966.
 
