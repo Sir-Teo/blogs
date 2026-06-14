@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Chain Remembers Where It Started"
+title: "MCMC Chains Remember the Start"
 description: "A Metropolis chain can accept most proposals and still fail to explore. Convergence is not a mood; it is a claim about what the chain has forgotten."
 date: 2026-06-14 13:00:00 -0400
 categories: statistics
