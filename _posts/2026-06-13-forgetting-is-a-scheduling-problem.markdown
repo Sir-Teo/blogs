@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Scheduling Memory Before It Fades"
-description: "Spaced repetition is not a productivity spell. It is a queueing and control problem over memories whose recall probabilities decay at different rates."
+title: "A Review Queue Is a Memory Budget"
+description: "Spaced repetition is not a productivity spell. It is a control problem over memories whose recall probabilities decay at different rates."
 date: 2026-06-13 22:50:00 -0400
 categories: psychology
 tags: [spaced-repetition, forgetting-curve, memory, learning-science, scheduling, psychology]
-excerpt: "A review queue should not ask what you studied yesterday. It should ask which memory is closest to falling below the recall level you are willing to tolerate."
+excerpt: "A good review queue is not nostalgia for yesterday's lesson. It asks which memory is closest to falling below the recall level you are willing to tolerate."
 ---
 
 Forgetting is not the enemy of learning.
@@ -32,11 +32,10 @@ The better question is:
 When will predicted recall fall below the level I am willing to risk?
 ```
 
-A flashcard app is not just a pile of cards. It is a tiny control system trying
-to keep thousands of memories above a threshold while spending a limited number
-of reviews per day.
+A flashcard app is not just a pile of cards. It is a tiny control system with a
+daily budget, trying to keep thousands of memories above a threshold.
 
-## The Curve Is Not the Algorithm
+## The Curve Does Not Pick the Card
 
 Ebbinghaus made forgetting measurable. In *Memory: A Contribution to
 Experimental Psychology*, he used himself as the subject, studied nonsense
@@ -67,7 +66,7 @@ the same risk budget.
 This is why "review every day" is wasteful and "wait until you forget" is too
 late. The useful zone is between boredom and collapse.
 
-## Spacing Has a Ridge
+## The Ridge, Not the Rule
 
 The spacing effect is robust, but it is not a single magic interval.
 
@@ -102,7 +101,7 @@ what a review queue feels like when the deck is large. The hard part is not
 knowing that spacing helps. The hard part is deciding which item gets the next
 scarce review.
 
-## A Review Queue Lab
+## Queue Lab
 
 The lab below simulates a small deck of memories. Each item has a difficulty and
 a current half-life. Recall probability decays as:
@@ -317,7 +316,7 @@ Switch **Highlight** to `Massed`. Its early recall looks fine because it spends
 reviews immediately. The final exam-day recall is the warning: practice that is
 optimized for today's fluency can be badly scheduled for future access.
 
-## What I Would Build Next
+## Memory Budget Interface
 
 The next useful learning system would not expose a single "due" date. It would
 expose a memory budget:
