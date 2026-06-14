@@ -1,21 +1,22 @@
 ---
 layout: post
-title: "Small Draft Models May Be Wrong"
-description: "Speculative decoding is exact because the draft model is only a proposal distribution. The verifier keeps the overlap and samples the missing target mass when the draft fails."
+title: "The Small Model Is a Scout"
+description: "Speculative decoding is exact because the draft model is only a proposal distribution. The verifier keeps the overlap and samples the missing target mass when the scout guesses wrong."
 date: 2026-06-14 07:24:00 -0400
 categories: ai-systems
 tags: [llm-inference, speculative-decoding, rejection-sampling, transformers, serving-systems]
-excerpt: "The small model in speculative decoding does not have to be trusted. It only has to propose. Exactness comes from a rejection-sampling correction that reconstructs the target distribution."
+excerpt: "The little model is not trusted with the answer. It scouts a few possible tokens, the large model keeps the overlap, and a residual sampler repairs the miss."
 ---
 
-The suspicious part of speculative decoding is not the speed.
+The suspicious part is not that speculative decoding can be fast.
 
-It is the promise that the samples do not change.
+The suspicious part is that it can be fast without changing the samples.
 
-A small draft model proposes several future tokens. A large target model checks
-them in one parallel pass. Some tokens are accepted, the first failure is
-corrected, and the loop begins again. This sounds like approximation wearing a
-systems hat. Surely the small model must be biasing the output?
+A small draft model runs ahead with a few guesses. The large target model checks
+those guesses in one parallel pass. Some are accepted, the first failure is
+repaired, and the loop begins again. It sounds like approximation wearing a
+systems jacket. Surely the little model has smuggled its preferences into the
+output?
 
 Not if the correction is the right one.
 
@@ -29,12 +30,11 @@ Leviathan, Kalman, and Matias introduced speculative decoding as a way to sample
 from autoregressive Transformers faster while preserving the output
 distribution.[^leviathan] Chen, Borgeaud, Irving, Lespiau, Sifre, and Jumper
 called the stochastic version speculative sampling and gave the compact
-modified rejection-sampling proof.[^chen] Their reported speedups are exciting,
-but the mathematical contract is the part worth isolating: the small model is
-allowed to be wrong because wrong proposals are filtered through an exact
-accept/reject rule.
+modified rejection-sampling proof.[^chen] The speedups are the headline. The
+more delicate contract is the real story: the scout may be wrong, because the
+verifier prices every wrong guess.
 
-## A One-Token Machine
+## The Coin Flip at One Token
 
 Forget sequences for a moment. Suppose the target model has next-token
 distribution \(p\), and the draft model has next-token distribution \(q\).
@@ -70,7 +70,8 @@ p(x).
 $$
 
 That is the whole trick. The output distribution is the target distribution.
-The draft is only deciding which parts of \(p\) can be cheaply reused.
+The draft is only deciding which parts of \(p\) can be cheaply reused. It is
+not trusted; it is audited.
 
 The total acceptance probability is
 
@@ -94,6 +95,16 @@ The visualization separates three ideas that are often blurred together:
 2. the corrected speculative distribution is algebraically identical to the
    target,
 3. speed depends on overlap, lookahead length, and draft cost.
+
+I audited the lab through its exported API before rewriting this. With the
+default controls, the one-token overlap is 92.47%, the exact corrected TV
+distance is 0 to displayed precision, and the deliberately wrong fallback has
+TV distance 2.79%. The sampled 96-token trace uses 20 target calls and 100 draft
+calls for a toy 3.31x speedup, close to the 3.46x accounting estimate. Across
+1,296 settings spanning certainty, draft match, draft length, draft cost,
+sequence length, and seed, the exact contract stayed within \(1.4\times10^{-16}\)
+TV distance, all speed values were finite, and no trace emitted the wrong
+number of tokens.
 
 <style>
   .spec-lab {
@@ -316,7 +327,7 @@ explaining the method informally. The wrong fallback may look close when the
 draft is good. But close is not the same as exact, and speculative decoding's
 strongest claim is exactness up to numerical effects.
 
-## From One Token to a Run
+## When One Guess Becomes a Block
 
 For a sequence, apply the same one-token machine repeatedly from left to right.
 The draft proposes \(\gamma\) tokens. The target scores the proposed
@@ -347,7 +358,7 @@ temperature, tokenization, prompt domain, and draft architecture. But it is a
 good first accounting identity. A draft length of 8 does not mean 8 free tokens.
 It means you bought a geometric tail whose value depends on overlap.
 
-The 2025 "Decoding Speculative Decoding" study is useful here because it pushes
+The 2025 "Decoding Speculative Decoding" study is useful because it pushes
 against a naive story: draft-model language-modeling accuracy does not by
 itself determine speculative-decoding throughput, and draft latency can become
 the bottleneck.[^decoding-spec] A slightly worse but much faster draft can be
@@ -382,7 +393,7 @@ never overlaps with the target will be rejected often, and the system will spend
 draft work to get little speed. But as long as the correction is implemented
 correctly, the target distribution is still recovered.
 
-## The Shape of a Good Draft
+## What Makes a Useful Scout?
 
 The draft model wants to be close to the target where the target has high mass,
 but closeness is not the only objective. It also wants to be cheap, easy to
