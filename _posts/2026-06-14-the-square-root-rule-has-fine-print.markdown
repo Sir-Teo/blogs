@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Square-Root Rule Has Fine Print"
+title: "Square-Root Sharpe Needs Fine Print"
 description: "Annualizing a Sharpe ratio by sqrt(252) is not a law of nature. It is an assumption about the clock, the autocovariances, and how returns are reported."
 date: 2026-06-14 12:36:00 -0400
 categories: quantitative-finance
@@ -278,7 +278,7 @@ the market microstructure underneath the return series.
 
 The Sharpe ratio is not one number. It is a measurement taken through a clock.
 
-## Notes
+## Source Notes
 
 [^sharpe]: William F. Sharpe, "The Sharpe Ratio," *Journal of Portfolio Management*, 1994. [Stanford reprint](https://web.stanford.edu/~wfsharpe/art/sr/sr.htm).
 
