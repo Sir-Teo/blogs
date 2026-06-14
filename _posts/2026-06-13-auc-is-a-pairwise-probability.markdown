@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Reading AUC as a Pairwise Bet"
-description: "ROC AUC is not accuracy, not calibration, and not deployment utility. It is the probability that a random positive outranks a random negative."
+title: "AUC Only Sees the Pair"
+description: "ROC AUC is not accuracy, calibration, alert quality, or deployment utility. It is the probability that one random positive outranks one random negative."
 date: 2026-06-13 21:07:00 -0400
 categories: statistics
 tags: [auc, roc, precision-recall, evaluation, classification-metrics, machine-learning]
-excerpt: "AUC is a beautiful ranking statistic. The mistake is asking it to answer threshold, prevalence, calibration, and cost questions it was never given."
+excerpt: "AUC is a beautiful ranking statistic with a narrow field of vision. It sees positive-negative pairs, not thresholds, prevalence, calibration, staffing, or cost."
 ---
 
 AUC is one of those numbers that became too successful.
@@ -21,17 +21,17 @@ mean 84% of alerts are useful. It does not mean the top 5% of cases are
 profitable to review. It does not say whether the scores are calibrated. It does
 not know the cost of a false alarm or a missed case.
 
-The cleanest interpretation is older and sharper:
+The cleanest interpretation is older, sharper, and smaller:
 
 ```text
 AUC is the probability that a random positive is scored above a random negative.
 ```
 
-That is a beautiful statistic.
+That is a beautiful statistic. It is also a very particular one.
 
-It is also a warning label.
+Read it as a warning label before reading it as a grade.
 
-## The Pairwise Game
+## The Pair Is the Unit
 
 Suppose every example has a label $$Y \in \{0,1\}$$ and a score $$s(X)$$, where
 larger scores are meant to look more positive. Draw one positive example and one
@@ -74,7 +74,7 @@ unchanged. The AUC is unchanged. This is exactly right if the question is
 "which examples are ranked above which?" It is exactly wrong if the question is
 "is score 0.8 really an 80% risk?"
 
-## A Small Metric Lab
+## The Metric Bench
 
 The lab below uses a deliberately simple population model:
 
@@ -255,7 +255,7 @@ queue can fast-track 10% of cases, the sales team can call 5% of leads.
 
 AUC does not know that budget.
 
-## What ROC Hides
+## Where Base Rates Reappear
 
 ROC space plots
 
@@ -291,7 +291,7 @@ PR asks: what happens when we act on high scores?
 
 Neither curve is the business objective. They are projections of it.
 
-## What AUC Refuses To Know
+## Four Things AUC Will Not Carry
 
 AUC refuses to know four things.
 
@@ -316,7 +316,7 @@ when labels are reliable and the operating threshold is genuinely not yet known.
 It is less excellent when someone wants to decide staffing, intervention,
 capital allocation, patient follow-up, or model launch.
 
-## The Metric Stack I Would Ship
+## The Stack I Would Actually Ship
 
 For a binary model, I would rarely ship a single AUC number.
 
