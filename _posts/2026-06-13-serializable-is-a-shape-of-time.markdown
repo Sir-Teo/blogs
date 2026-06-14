@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Serializable Is a Shape of Time"
+title: "Serializable Histories Have a Shape"
 description: "Database isolation levels are not adjectives about safety. They are claims about which histories are allowed to exist."
 date: 2026-06-13 21:35:00 -0400
 categories: software-engineering
