@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Bootstrap Copies Your Sampling Plan"
+title: "Bootstrap the Sampling Plan You Actually Used"
 description: "Resampling is not magic. A bootstrap interval works by replaying a data-generating contract, and the wrong contract can be confidently wrong."
 date: 2026-06-13 19:16:00 -0400
 categories: statistics
@@ -286,7 +286,7 @@ Before I trust a bootstrap interval, I want written answers to:
 The last question is the one I like most. If you cannot name a world where your
 bootstrap fails, you probably have not named the world where it succeeds.
 
-## The Sentence to Keep
+## The Line I Would Keep
 
 The bootstrap is often taught as a recipe. It is better understood as a tiny
 simulator of the experiment you believe happened.
@@ -304,7 +304,7 @@ resample the unit that nature randomized
 
 That is the part worth remembering.
 
-## Notes
+## The Trail of Papers
 
 [^efron]: Bradley Efron, ["Bootstrap Methods: Another Look at the Jackknife"](https://sites.stat.washington.edu/courses/stat527/s14/readings/ann_stat1979.pdf), *The Annals of Statistics*, 1979. DOI: [10.1214/aos/1176344552](https://doi.org/10.1214/aos/1176344552).
 
