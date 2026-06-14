@@ -1,16 +1,14 @@
 ---
 layout: post
-title: "Reward Shaping, Gauge Freedom Included"
-description: "Potential-based reward shaping can make reinforcement learning easier without changing the task. Arbitrary shaping can quietly create a new game."
+title: "A Good Reward Hint Cancels on the Loop"
+description: "Potential-based reward shaping can make reinforcement learning easier without changing the task. Arbitrary hints can quietly create a new game."
 date: 2026-06-13 22:10:00 -0400
 categories: machine-learning
 tags: [reinforcement-learning, reward-shaping, mdp, value-iteration, reward-design, machine-learning]
-excerpt: "A reward hint is only safe when it changes the coordinates of value, not the ordering of actions. Potential-based shaping is the rare reward hack with a theorem."
+excerpt: "A reward hint is safe only when it changes the coordinates of value, not the ordering of actions. Potential-based shaping is the rare reward hack with a theorem."
 ---
 
-A reward is not the objective.
-
-It is the interface to the objective.
+A reward is not the objective. It is the interface to the objective.
 
 That distinction is easy to forget in reinforcement learning. The agent does
 not see our intention. It sees numbers. If the numbers are sparse, learning is
@@ -28,7 +26,7 @@ which action is best. In physics language, it is a gauge choice. In engineering
 language, it is the difference between a progress signal and a bug report from
 the future.
 
-## The Unsafe Version
+## The Bad Hint Pays Twice
 
 Start with a discounted Markov decision process. In a state `s`, the agent takes
 action `a`, lands in `s_next`, receives reward `R`, and discounts future reward
@@ -51,7 +49,7 @@ rare and the dynamics are unforgiving.[^randlov] But a dense signal is not
 automatically a faithful signal. It can pay the agent for the path marker
 instead of the destination.
 
-## The Gauge Version
+## The Hint That Cancels Itself
 
 Ng, Harada, and Russell gave the clean answer in their 1999 ICML paper on
 policy invariance.[^ng] Choose any bounded potential function `Phi` over states.
@@ -105,7 +103,7 @@ look-ahead advice to Q-value initialization.[^wiewiora] The recurring theme is
 the same: advice must preserve the decision problem, not merely make numbers
 larger near things we like.
 
-## A Gridworld That Cheats Back
+## The Beacon That Bribes the Agent
 
 The lab below solves a small deterministic gridworld with value iteration.
 
@@ -290,7 +288,7 @@ Potential-based shaping has zero circulation in this discounted sense. Go
 around a closed loop and the shaped rewards cancel as a telescoping difference.
 The beacon bonus does not cancel. It accumulates.
 
-## What This Means in Practice
+## Reward Design Checklist
 
 Reward shaping is often described as injecting domain knowledge. That phrase is
 too gentle. It sounds like giving the agent a map. Sometimes it is giving the
@@ -317,7 +315,7 @@ That is a rare kind of software contract.
 
 It lets you make the feedback denser without moving the goal.
 
-## A Small Mental Model
+## Tilt the Coordinates, Not the World
 
 Think of value as a height field over states.
 
