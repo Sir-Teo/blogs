@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Judge Has a Seat Number"
+title: "Judge Models Come With Seat Assignments"
 description: "LLM-as-judge evaluation is not just a model call. It is a measurement protocol with position effects, verbosity effects, calibration choices, and sampling uncertainty."
 date: 2026-06-13 09:06:00 -0400
 categories: machine-learning
@@ -259,7 +259,7 @@ It also has a seat number.
 
 If the seat number can change the result, it belongs in the experiment log.
 
-## Notes
+## The Trail of Papers
 
 [^mtbench]: Lianmin Zheng et al., ["Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena"](https://arxiv.org/abs/2306.05685), 2023. The paper studies LLM judges for open-ended chat evaluation and discusses position, verbosity, self-enhancement, and reasoning limitations.
 
