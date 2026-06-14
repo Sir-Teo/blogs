@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Merkle Root Is a Receipt"
+title: "Merkle Receipts and the Shape of Trust"
 description: "A Merkle proof does not say trust me. It says this exact item is committed by this exact root, and here are the few hashes needed to check."
 date: 2026-06-13 21:48:00 -0400
 categories: computer-science
