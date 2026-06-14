@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Volatility Targeting Is a Feedback Controller"
+title: "Volatility Targeting as Feedback Control"
 description: "Scaling exposure by estimated volatility is not a free Sharpe-ratio machine. It is a lagged control loop with estimator error, leverage caps, turnover, and crash dynamics."
 date: 2026-06-13 03:44:00 -0400
 categories: quantitative-finance
@@ -276,7 +276,7 @@ $$
 That is less elegant than $$\sigma^\*/\hat{\sigma}$$. It is closer to the
 portfolio.
 
-## What I Would Monitor
+## Signals I Would Keep
 
 If I had to run a volatility-targeted strategy, I would not start by watching
 realized volatility alone. That is the easiest metric to flatter.
@@ -309,7 +309,7 @@ $$
 
 The system around it is not.
 
-## Notes
+## Where This Came From
 
 [^engle]: Robert F. Engle, "Autoregressive Conditional Heteroscedasticity with Estimates of the Variance of United Kingdom Inflation," *Econometrica*, 1982. [JSTOR](https://www.jstor.org/stable/1912773).
 
