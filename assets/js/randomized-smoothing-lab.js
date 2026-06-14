@@ -41,8 +41,8 @@
       wiggle: snap(raw.wiggle, DEFAULTS.wiggle, 0, 120, 5),
       frequency: snap(raw.frequency, DEFAULTS.frequency, 1, 12, 1),
       samples: snap(raw.samples, DEFAULTS.samples, 128, 2048, 128),
-      px: snap(raw.px, DEFAULTS.px, -120, 120, 5),
-      py: snap(raw.py, DEFAULTS.py, -120, 120, 5),
+      px: snap(raw.px, DEFAULTS.px, -120, 120, 1),
+      py: snap(raw.py, DEFAULTS.py, -120, 120, 1),
       seed: snap(raw.seed, DEFAULTS.seed, 1, 999, 1)
     };
   }
