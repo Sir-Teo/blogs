@@ -128,7 +128,7 @@
       var vol = smileVol(params, strike, forward);
       var cleanCall = blackScholesCall(S0, strike, RATE, maturity, vol);
       var call = cleanCall + roughQuoteBump(params, strike, forward);
-      call = clamp(call, Math.max(0, S0 - strike * discount) - 0.02, S0 + 0.02);
+      call = clamp(call, Math.max(0, S0 - strike * discount), S0);
       return {
         strike: strike,
         vol: vol,

@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Volatility Smiles Have Densities"
-description: "A volatility smile is not just a curve of Black-Scholes inputs. Through call-price curvature, it encodes a risk-neutral density and exposes static arbitrage."
+title: "The Smile Pays in Butterflies"
+description: "A volatility smile is not just a curve of Black-Scholes inputs. Through call-price curvature, it encodes a risk-neutral density, and the butterfly strip tells you when the drawing is lying."
 date: 2026-06-14 14:54:00 -0400
 categories: quantitative-finance
 tags: [option-pricing, implied-volatility, risk-neutral-density, static-arbitrage, quantitative-finance]
-excerpt: "The implied-volatility smile is a coordinate system. The object underneath is the call-price surface, and its curvature is a probability density only when convexity survives."
+excerpt: "The implied-volatility smile is a quote language. The object underneath is the call-price curve, and its curvature only becomes a density when the butterflies refuse to go negative."
 ---
 
-An implied-volatility smile is easy to look at and hard to read.
+An implied-volatility smile is a nice picture. That is the trap.
 
 Traders quote a volatility for each strike because Black-Scholes gives a common
 language: take the observed option price, invert the Black-Scholes formula, and
@@ -18,7 +18,7 @@ maturity would give the same number. Markets do not do that. Low strikes, high
 strikes, crash protection, supply and demand, jumps, stochastic volatility, and
 risk premia all leave shape in the cross-section.
 
-That shape is the smile.
+That shape is the smile. It looks like the thing to interpret. It is not.
 
 But the smile is not the primitive object. The primitive object is the option
 price as a function of strike:
@@ -34,14 +34,14 @@ bad call-price curve. A slightly noisy quote sheet can make the second
 derivative explode. A fitted surface can look elegant and still create a free
 butterfly.
 
-The right mental move is:
+The right mental move is less pretty and more useful:
 
 ```text
 do not ask what the smile looks like;
 ask what density its call prices imply
 ```
 
-## Curvature Is A State Price
+## Curvature Is a State Price
 
 At a fixed maturity \(T\), the no-arbitrage price of a European call is the
 discounted risk-neutral expectation of its payoff:
@@ -114,6 +114,16 @@ negative density. The butterfly panel shows the same information in tradeable
 units: each bar is the value of a one-step call butterfly. Negative bars are
 convexity violations.
 
+I audited the lab before changing the prose. The default surface has total
+density mass 1.002, zero negative mass, a density mean of 101.87 against a
+101.74 forward, and no monotonicity violations. Raising quote roughness to 40
+keeps prices bounded but produces 25.6% negative density mass and a \(-0.025\)
+minimum butterfly. A 729-case grid over volatility, skew, curvature, maturity,
+roughness, and smoothing stayed finite; that audit also caught a synthetic
+quote clamp that could let far out-of-the-money calls dip below zero under
+roughness. The lab now clamps calls to the no-negative-price bound before
+checking curvature.
+
 <div class="smile-lab" data-smile-lab>
   <div class="smile-lab__controls">
     <label>
@@ -158,7 +168,7 @@ convexity violations.
   </p>
 </div>
 
-<script src="{{ '/assets/js/smile-density-lab.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/smile-density-lab.js?v=20260614a' | relative_url }}"></script>
 
 Start with the default smooth surface. Probability mass should be close to one,
 the density mean should sit near the forward, and the minimum butterfly should
@@ -209,7 +219,7 @@ density to forecast returns, size tail hedges, or explain variance premia, you
 are mixing probability and marginal utility. Sometimes that is exactly what you
 want. Sometimes it is a category error.
 
-## Volatility Is A Coordinate System
+## Volatility Is a Coordinate System
 
 Black-Scholes gives a one-to-one map from a European call price to an implied
 volatility, holding spot, strike, rate, and maturity fixed. That makes volatility
@@ -239,7 +249,7 @@ That makes the surface even more sensitive to bad derivatives. If the input
 surface is not arbitrage-clean, the local volatility can become negative,
 explosive, or meaningless.
 
-## The Derivative Amplifies The Lie
+## The Derivative Amplifies the Lie
 
 The dangerous part of the Breeden-Litzenberger identity is not the algebra. It is
 the numerical operation.
@@ -279,7 +289,7 @@ spreadsheet" and more like a constrained inference problem:
 The last step is not optional. If the density changes qualitatively when the
 smoother changes, the data are not telling a single story.
 
-## What The Smile Is Saying
+## What the Smile Is Saying
 
 A volatility smile is often introduced as evidence that Black-Scholes is wrong.
 That is true but incomplete. The more useful statement is:
@@ -296,7 +306,7 @@ earnings, central-bank meetings, legal decisions, or liquidation events. The
 smile is a compact way of quoting all that state dependence.
 
 But the smile only earns its interpretation after the price curve passes the
-static-arbitrage tests. Before that, it is just a drawing.
+static-arbitrage tests. Before that, it is a drawing with a nice accent.
 
 The deeper lesson is almost embarrassingly geometric:
 
