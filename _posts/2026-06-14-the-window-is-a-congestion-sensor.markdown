@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Window Is a Congestion Sensor"
+title: "Congestion Windows Listen to Queues"
 description: "TCP congestion control is not just a throughput trick. The congestion window is a distributed control variable, and oversized queues can turn full bandwidth into bad latency."
 date: 2026-06-14 15:30:00 -0400
 categories: computer-science
