@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "Double Descent and the Interpolator Lottery"
-description: "The interpolation threshold is not a moral boundary between underfitting and overfitting. It is a point where geometry, noise, and implicit regularization decide which zero-training-error solution is selected."
+title: "Which Zero-Error Model Did You Get?"
+description: "Double descent is not a moral boundary between underfitting and overfitting. It is a clue that geometry, noise, and implicit regularization selected one interpolator among many."
 date: 2026-06-13 01:05:00 -0400
 categories: machine-learning
 tags: [double-descent, benign-overfitting, interpolation, random-features, statistics]
-excerpt: "Modern models can fit the training set exactly and still generalize. The question is not whether interpolation happened, but which interpolating function the training algorithm chose."
+excerpt: "Modern models can fit the training set exactly and still generalize. The useful question starts afterward: which interpolating function did training choose?"
 ---
 
-The old story says model complexity is a dial. Turn it too low and the model
+The old story says model complexity is a dial with a warning sticker. Turn it too low and the model
 underfits. Turn it too high and the model overfits. Somewhere in the middle is
 the sweet spot.
 
@@ -36,7 +36,7 @@ whether the interpolating solution is jagged, lucky, minimum-norm, stable,
 aligned with the signal, or mostly hiding noise in directions that do not matter
 for prediction.
 
-## The Interpolation Threshold
+## The Cliff at Exact Fit
 
 In least squares, the interpolation threshold appears when the number of
 effective features is close to the number of training examples. Below the
@@ -67,7 +67,7 @@ two-layer network with random first-layer weights.[^mei]
 The key lesson is not "bigger is always better." The lesson is that the
 overparameterized side has its own bias-variance bookkeeping.
 
-## Benign Does Not Mean Free
+## Benign Still Has Conditions
 
 Benign overfitting is the surprising case where a model fits noisy training data
 exactly and still predicts well. Bartlett, Long, Lugosi, and Tsigler characterize
@@ -91,7 +91,7 @@ There are at least three moving parts:
 Double descent is what happens when these parts are summarized by a single
 complexity axis.
 
-## Effective Complexity Is Not Parameter Count
+## Complexity Is a Moving Target
 
 Nakkiran et al. argue that double descent should be understood through effective
 model complexity, not just raw parameter count. They show model-wise, epoch-wise,
@@ -110,7 +110,7 @@ fitting from the question of selection. Deep learning still has all the hard
 parts: representation learning, optimization dynamics, data structure, and
 distribution shift.
 
-## A Pocket Experiment
+## Interpolator Lab
 
 The simulator below fits random-feature ridge regressions to a noisy
 one-dimensional function. The x-axis is the number of random features. Around the
@@ -175,7 +175,7 @@ reduce test error even after training error is nearly zero, because the
 minimum-norm interpolator changes. The model is not "memorizing less." It is choosing a
 different exact fit.
 
-## What To Measure
+## Things to Log Besides Width
 
 If I were diagnosing double descent in a real system, I would not only plot
 accuracy against parameter count. I would also log:
@@ -191,7 +191,7 @@ accuracy against parameter count. I would also log:
 The interpolation threshold is a useful landmark. It is not a deployment
 guarantee.
 
-## Where I Would Push Next
+## Make the Selector Visible
 
 The practical research frontier is to make implicit regularization legible.
 
