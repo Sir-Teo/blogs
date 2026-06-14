@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Cross-Validation With a Memory"
+title: "The Fold Remembers the Label Window"
 description: "Random cross-validation can leak through time even when every feature is legal. The culprit is often the label interval, not an obviously forbidden future column."
 date: 2026-06-13 23:06:00 -0400
 categories: quantitative-finance
 tags: [cross-validation, purged-cv, embargo, time-series, backtesting, machine-learning, quantitative-finance]
-excerpt: "A time-series validation split is not a shape drawn on a dataframe. It is a claim about what information cannot cross from train to test."
+excerpt: "A time-series validation split is not a shape drawn on a dataframe. It is a claim about which label intervals cannot whisper from train to test."
 ---
 
 A validation split is not just a partition.
@@ -32,7 +32,7 @@ The leak is not in the matrix.
 
 It is in the label.
 
-## Rows Are the Wrong Primitive
+## The Row Is Not the Event
 
 Most machine-learning tooling thinks in rows. Time-series validation has to
 think in events.
@@ -69,7 +69,7 @@ from the end of each training fold before the test fold.[^sklearn] That is a
 useful primitive. It is not the whole contract. A gap between trade times is
 not always the same thing as a purge between event intervals.
 
-## The Split Is a Claim
+## A Split Makes a Promise
 
 Here is the strongest way I know to say it:
 
@@ -106,7 +106,7 @@ For a one-step autoregression with clean residuals, the danger is different
 from a 20-day overlapping financial label. For a panel of users, the danger is
 different again. The split has to match the data-generating graph.
 
-## Purging and Embargoing
+## Purge the Overlap, Embargo the Echo
 
 Suppose a test fold contains events with intervals:
 
@@ -143,7 +143,7 @@ market gives you only one history.[^afml]
 
 No splitter is a sacrament. Each one encodes a different claim.
 
-## A Small Leak Detector
+## A Little Leak Detector
 
 The lab below generates a synthetic market. There is a persistent latent signal,
 noisy features observed at trade time, and a forward return label over `H`
@@ -383,7 +383,7 @@ zero.
 
 The loss of training data is not a bug. It is the price of the claim.
 
-## The Audit I Want in Every Backtest
+## Make the Split Show Its Papers
 
 A serious time-series validation report should not only print a score. It
 should print the split hygiene:
@@ -407,7 +407,7 @@ Which test labels are represented in the training labels?
 If the answer is "many," the validation score is not a forecast of deployment.
 It is a measurement of a contaminated experiment.
 
-## A Split Can Be Too Honest Too
+## Honesty Has a Variance Bill
 
 There is a real trade-off here. Purging and embargoing throw away data. A
 walk-forward split can have high variance because early folds train on little
@@ -431,7 +431,7 @@ can quietly become an index of local history. The model does not need to know
 that it is cheating. It only needs a feature representation in which nearby
 events are close.
 
-## The Unfinished Part
+## Make Label Intervals Real Objects
 
 I would like backtesting libraries to treat label intervals as first-class
 objects. Not optional metadata. Not comments in a notebook. Objects.
