@@ -134,8 +134,9 @@
 
   function sequence(params, maxIterations, phaseError) {
     var geom = baseGeometry(params);
-    var p = phase(phaseError);
-    var d = c(p.re - 1, p.im);
+    var oraclePhase = phase(phaseError);
+    var diffusionPhase = phase(0);
+    var d = c(diffusionPhase.re - 1, diffusionPhase.im);
     var good = c(geom.sGood, 0);
     var bad = c(geom.sBad, 0);
     var rows = [];
@@ -151,7 +152,7 @@
       });
       if (t === maxIterations) break;
 
-      var afterOracleGood = cmul(p, good);
+      var afterOracleGood = cmul(oraclePhase, good);
       var afterOracleBad = bad;
       var dot = cadd(cscale(afterOracleGood, geom.sGood), cscale(afterOracleBad, geom.sBad));
       good = cadd(afterOracleGood, cscale(cmul(d, dot), geom.sGood));
@@ -488,7 +489,7 @@
   }
 
   function drawPhasePanel(ctx, result, box) {
-    panel(ctx, box, "phase calibration", "wrong reflections miss the peak coherently");
+    panel(ctx, box, "oracle phase calibration", "a mismatched phase can miss the peak coherently");
     var plot = { x: box.x + 44, y: box.y + 65, w: box.w - 70, h: box.h - 108 };
     drawAxis(ctx, plot);
     ctx.strokeStyle = COLORS.grid;
