@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Goodhart Needs a Causal Diagram"
+title: "The Metric Became a Control Surface"
 description: "Metrics fail under pressure because selection, gaming, and feedback change the data-generating process that made the metric useful."
 date: 2026-06-13 00:15:00 -0400
 categories: statistics
 tags: [goodharts-law, metrics, causal-inference, ai-safety, statistics, psychology]
-excerpt: "A metric is not a target. It is a measurement channel. Once optimization pressure flows through that channel, noise, selection, gaming, and feedback can make the proxy detach from the thing we wanted."
+excerpt: "A metric is a sensor until it gets power. Then selection, gaming, and feedback can turn the proxy into a control surface detached from the thing we wanted."
 ---
 
 Goodhart's law is usually quoted like a proverb: when a measure becomes a
@@ -27,7 +27,8 @@ come from ordinary statistics plus optimization.
   informative can change.
 </div>
 
-The practical question is not "Which metric should we trust?" It is:
+The practical question is not "Which metric should we trust?" It is quieter and
+more uncomfortable:
 
 $$
 \text{What happens to the data-generating process when this metric gets power?}
@@ -35,7 +36,7 @@ $$
 
 That question belongs as much to causal inference as to dashboard design.
 
-## The Metric Was Never the Goal
+## The Number Was a Sensor
 
 Charles Goodhart's original context was monetary policy. Relationships that
 looked stable while they were merely observed became unstable once policy tried
@@ -65,7 +66,7 @@ both trust and engagement. In the optimized regime, the system discovers
 notifications, dark patterns, outrage, and slot-machine timing. The causal path
 into $$M$$ changes. The old correlation becomes a historical artifact.
 
-## Four Failure Modes
+## Four Ways the Sensor Breaks
 
 Manheim and Garrabrant give a useful taxonomy of Goodhart effects: regressional,
 extremal, causal, and adversarial.[^manheim] The boundaries blur in real
@@ -131,7 +132,7 @@ new causal paths into the metric that do not pass through true value.
 </figcaption>
 </figure>
 
-## The Small Test Bench
+## Proxy Pressure Lab
 
 The simulator below creates a world of candidate projects. Each project has a
 true value, a noisy proxy score, and a gameable surface that can inflate the
@@ -200,7 +201,7 @@ gaming surface. Now the metric is not merely noisy; the act of optimizing it
 creates a shortcut channel. That is causal and adversarial Goodhart starting to
 mix.
 
-## Why Dashboards Lie Politely
+## Dashboards Hide the Counterfactual
 
 Dashboards usually show the selected world, not the counterfactual world. They
 show the projects funded, ads served, students admitted, candidates hired,
@@ -224,7 +225,7 @@ largest estimate, the funded project is likely to have positive estimation
 error. More options make the maximum look better while also making the surprise
 larger. Bayesian shrinkage is not pessimism; it is arithmetic humility.
 
-## A Causal Checklist
+## Before Giving the Metric Power
 
 Before turning a metric into a target, I would ask five questions.
 
@@ -245,7 +246,7 @@ errors become search targets. That is why reward hacking is not a weird corner
 case. It is what one should expect when a proxy has blind spots and optimization
 has enough power.
 
-## Mitigations That Actually Change the System
+## Mitigations That Change Incentives
 
 Metric pluralism helps, but only if the metrics fail differently. Two dashboards
 fed by the same proxy channel are not two independent witnesses.
@@ -270,7 +271,7 @@ Finally, shrinkage helps. Extreme proxy scores should be pulled toward a prior
 unless backed by independent evidence. The more options the optimizer searched,
 the more skepticism the winner deserves.
 
-## The Portable Lesson
+## The Question Under the Number
 
 Metrics are not bad. A world without measurement is a world where power hides
 behind stories.
