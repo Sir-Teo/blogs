@@ -715,7 +715,7 @@
     container.querySelectorAll("[data-param]").forEach(function (node) {
       raw[node.getAttribute("data-param")] = node.value;
     });
-    return cleanParams(raw);
+    return raw;
   }
 
   function syncOutputs(container, params) {
@@ -735,8 +735,9 @@
   }
 
   function render(container) {
-    var params = readParams(container);
-    var result = evaluate(params);
+    var raw = readParams(container);
+    var result = evaluate(raw);
+    var params = result.params;
     syncOutputs(container, params);
     var metrics = container.querySelector("[data-heap-metrics]");
     var canvas = container.querySelector("canvas");
