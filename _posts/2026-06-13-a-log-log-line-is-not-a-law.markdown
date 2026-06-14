@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "The Log-Log Trap"
-description: "Heavy tails are easy to see and hard to prove. A straight-ish line on a log-log plot is a clue, not a statistical argument."
+title: "Straight Lines That Lie Politely"
+description: "Heavy tails are easy to see and hard to prove. A straight-ish log-log plot is a lead, not a verdict."
 date: 2026-06-13 02:03:00 -0400
 categories: statistics
 tags: [power-laws, heavy-tails, statistics, finance, model-diagnostics]
-excerpt: "Power-law claims need tail cutoffs, likelihoods, uncertainty, and alternative explanations. The plot is where the work starts."
+excerpt: "A log-log line can look wonderfully lawful. Power-law claims still need cutoffs, likelihoods, uncertainty, alternatives, and a mechanism worth believing."
 ---
 
-Here is a reliable way to fool yourself:
+Here is a reliable way to fool yourself with a graph that looks serious:
 
 1. collect a skewed data set;
 2. sort the observations;
@@ -16,7 +16,7 @@ Here is a reliable way to fool yourself:
 4. see something almost straight;
 5. announce a power law.
 
-The ritual is seductive because power laws are beautiful. If
+The ritual is seductive because power laws really are beautiful. If
 $$p(x) \propto x^{-\alpha}$$, scale changes do not change the basic shape. Ten
 times larger is not a new regime; it is the same regime with fewer examples.
 That is why power laws show up in stories about city sizes, wealth, earthquakes,
@@ -45,7 +45,7 @@ Does a plausible non-power-law tail explain the same data?
 What mechanism would make the exponent meaningful?
 ```
 
-The lab below is a small machine for building skepticism.
+The lab below is a small machine for making the suspicion tactile.
 
 <div class="tail-lab" data-tail-lab>
   <div class="tail-lab__controls">
@@ -98,10 +98,10 @@ respectable line on the log-log plot, especially with a finite sample. The
 diagnostics become less comforting: the fitted exponent drifts across cutoffs,
 the KS distance grows, or the lognormal tail likelihood becomes competitive.
 
-This is the first lesson of heavy-tail work: finite samples can impersonate
-asymptotic laws.
+This is the first lesson of heavy-tail work: finite samples are good actors.
+They can impersonate asymptotic laws without blushing.
 
-## A better ritual
+## The Ritual I Trust More
 
 For continuous data above a chosen lower cutoff $$x_{\min}$$, the maximum
 likelihood estimate for a Pareto density exponent is
@@ -132,7 +132,7 @@ others are not.[^clauset] Their companion page hosts implementations of the
 methods, which is a useful reminder that this is an algorithmic workflow, not a
 plotting style.[^companion]
 
-## Finance makes the trap sharper
+## Where the Line Gets Expensive
 
 Finance is where the distinction between "heavy" and "power" becomes expensive.
 Benoit Mandelbrot's 1963 paper on speculative prices argued against the Gaussian
@@ -152,7 +152,7 @@ growth, self-organized criticality, and mixture processes can all create
 heavy-tailed observations, but they imply different interventions. A straight
 line does not tell you which machine made it.
 
-## The useful skepticism
+## My Power-Law Audit
 
 I do not read a power-law claim as false. I read it as incomplete until it has
 survived a short audit:
