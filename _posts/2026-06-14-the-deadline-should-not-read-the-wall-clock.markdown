@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Deadline Should Not Read The Wall Clock"
+title: "Deadlines Should Ignore Wall Time"
 description: "Wall clocks name calendar instants; monotonic clocks measure elapsed time. Mixing them turns NTP corrections, clock steps, and lease expiry timestamps into production bugs."
 date: 2026-06-14 15:03:00 -0400
 categories: software-engineering
