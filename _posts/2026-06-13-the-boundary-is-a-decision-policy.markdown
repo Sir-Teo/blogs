@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Decision Boundaries Have Reaction Times"
-description: "A drift-diffusion model treats a decision as noisy evidence accumulating until it crosses a threshold. The threshold is not a hack; it is the price of time, mistakes, and uncertainty."
+title: "The Button Press Has a Clock"
+description: "A drift-diffusion model treats a decision as noisy evidence accumulating until it crosses a threshold. The boundary prices time, mistakes, and uncertainty."
 date: 2026-06-13 18:00:00 -0400
 categories: psychology
 tags: [drift-diffusion-model, decision-making, reaction-time, sequential-analysis, cognitive-science, statistics]
-excerpt: "The interesting thing about a two-choice decision is not only which button was pressed. It is how long the system waited before pressing it."
+excerpt: "A two-choice decision is not only which button was pressed. It is how long the system waited before pressing it."
 ---
 
 A classifier returns a label. A person returns a label and a latency.
@@ -29,7 +29,7 @@ stopping rule. That is why it keeps reappearing in memory, perception,
 neuroscience, psychometrics, human-computer interaction, and sequential testing.
 It gives choice and time the same explanation.
 
-## A Decision Has a Clock
+## A Choice Has a Stopwatch Inside
 
 For a two-alternative task, write the latent evidence as $$X_t$$. Positive values
 favor the upper response. Negative values favor the lower response. The simplest
@@ -72,7 +72,7 @@ Ratcliff and McKoon's review is still a good entry point because it keeps the
 core promise visible: a serious model of two-choice behavior must explain the
 joint distribution of choices and response times, not merely percent correct.[^ratcliff-mckoon]
 
-## A Drift-Diffusion Lab
+## A Race You Can Slow Down
 
 The lab below simulates a positive-drift task where the upper boundary is the
 correct response. The paths panel shows individual evidence trajectories. The
@@ -155,7 +155,7 @@ The word "threshold" is sometimes used as if it were a mere implementation
 detail. In this model the boundary is the policy. It encodes how much delay is
 worth buying for a marginal reduction in mistakes.
 
-## Speed-Accuracy Is Not a Slogan
+## Speed-Accuracy Has Prices
 
 The speed-accuracy tradeoff is often described qualitatively: be careful and you
 get slower; hurry and you get noisier. The diffusion model makes it quantitative.
@@ -188,7 +188,7 @@ This is why the lab's best boundary moves when you raise **Error cost**. The
 same psychophysical stimulus can justify different caution policies in a game, a
 medical screen, a fraud system, or a trading strategy.
 
-## The Start Point Is a Prior With Hands
+## The Prior Starts Moving Before Evidence
 
 The start point $$z$$ is the part of the model that feels psychological because
 it turns a prior into a physical head start.
@@ -210,7 +210,7 @@ Accuracy alone confounds these. Reaction-time distributions help separate them.
 The separation is not automatic, and real fits need care, but the goal is
 exactly right: infer the latent computation from both what was chosen and when.
 
-## Nondecision Time Is Not Hesitation
+## The Delay Around the Decision
 
 Nondecision time $$t_0$$ is easy to dismiss because it is not the glamorous part
 of the model. That is a mistake.
@@ -228,7 +228,7 @@ The same warning applies in machine-learning systems. End-to-end latency is not
 the same as model uncertainty. A retry, cache miss, tool call, or moderation pass
 can look like "harder reasoning" unless the pipeline decomposes time.
 
-## A Sequential Test in a Nervous System
+## A Sequential Test With Fingers
 
 The diffusion model also has a statistical cousin: sequential hypothesis
 testing. A system observes evidence over time and stops when the log-likelihood
@@ -254,7 +254,7 @@ with neural activity in sensorimotor circuits reflecting the evolving decision
 variable.[^gold-shadlen] The exact neural implementation is richer than the toy
 model, but the computational grammar is recognizable.
 
-## Why Fitting These Models Is Hard
+## The Toy Is Cleaner Than the Data
 
 The toy lab is honest about the mechanism and dishonest about the mess.
 
@@ -282,7 +282,7 @@ check whether it reproduces accuracy, conditional reaction-time quantiles,
 errors, correct responses, and the effect of task manipulations. If the posterior
 predictive checks fail, the parameters are not yet explanations.
 
-## A Run Sheet for Evidence-Accumulation Work
+## Evidence-Accumulation Checklist
 
 Before I believe a diffusion-model claim, I want to know:
 
@@ -306,7 +306,7 @@ review trigger, a stop-loss, a diagnostic threshold, a beam-search termination
 rule, a confidence gate. The question is not whether there is a threshold. The
 question is what cost function taught it to stand there.
 
-## Further Reading
+## Sources
 
 [^ratcliff-1978]: Roger Ratcliff, ["A theory of memory retrieval"](https://doi.org/10.1037/0033-295X.85.2.59), *Psychological Review*, 1978.
 
