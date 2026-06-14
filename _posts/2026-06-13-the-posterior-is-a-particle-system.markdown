@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Posterior Is a Particle System"
+title: "Particle Filters Carry a Crowd"
 description: "Particle filters approximate a nonlinear, non-Gaussian filtering distribution with weighted samples. The hard part is not drawing samples; it is keeping them alive without lying to yourself."
 date: 2026-06-13 18:10:00 -0400
 categories: statistics
@@ -351,7 +351,7 @@ to keep carrying forward.
 The posterior is not always a bell curve. Sometimes it is a moving particle
 system, and the most honest thing you can do is keep the particles visible.
 
-## Notes
+## Primary Sources
 
 [^gordon]: N. J. Gordon, D. J. Salmond, and A. F. M. Smith, ["Novel approach to nonlinear/non-Gaussian Bayesian state estimation"](https://doi.org/10.1049/ip-f-2.1993.0015), *IEE Proceedings F*, 1993.
 
