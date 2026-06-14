@@ -1,16 +1,16 @@
 ---
 layout: post
-title: "Blue Noise Is a No-Clump Clause"
-description: "A live graphics and games lab for comparing uniform random points, jittered grids, best-candidate sampling, and Bridson Poisson-disk sampling by nearest-neighbor gaps, voids, and power spectra."
+title: "Random Dots Need Personal Space"
+description: "A graphics and games lab for comparing random points, jittered grids, best-candidate sampling, and Bridson Poisson disks with gaps, voids, and spectra."
 date: 2026-06-14 17:47:00 -0400
 categories: computer-graphics
 tags: [blue-noise, poisson-disk, sampling, dithering, computer-graphics, procedural-generation, games]
-excerpt: "Uniform random dots are fair, but they clump. Blue noise is the trick of making randomness spend its energy where the eye forgives it."
+excerpt: "Uniform random dots are fair, but they clump. Blue noise gives the dots a little room and pushes the remaining error where the eye is kinder."
 ---
 
-Uniform random points are honest.
+Uniform random points are honest in the least helpful way.
 
-They are also ugly.
+They keep the contract and still make a mess.
 
 Drop 180 independent points into a square and they will do exactly what the
 math promises: sometimes crowd together, sometimes leave holes, never apologize
@@ -18,11 +18,11 @@ for either. If those points are stars, grass clumps, stipple dots, shadow rays,
 bullet decals, sampling locations, or item spawns, the viewer may read the
 clumps as intention and the holes as neglect.
 
-A grid fixes the holes and creates a different crime. It is too legible. Rotate
-the camera, move the texture, march the enemy path, and the pattern starts
-whispering its lattice.
+A grid fixes the holes and commits a different crime. It is too legible. Rotate
+the camera, slide the texture, march an enemy path across it, and the pattern
+starts whispering its lattice.
 
-Blue noise is the compromise I trust most often:
+Blue noise is the compromise I reach for most often:
 
 ```text
 random enough to avoid a grid
@@ -31,10 +31,10 @@ spectrally shaped
 so mistakes become fine-grained noise
 ```
 
-That last line matters. Blue noise is not just "nice random dots." It is a
-claim about where the error lives in frequency space.
+That last line is the whole trick. Blue noise is not just "nice random dots."
+It is a claim about where the error lives in frequency space.
 
-## The Eye Dislikes Slow Mistakes
+## The Eye Notices Slow Mistakes
 
 Noise has color by analogy with light. White noise spreads power roughly evenly
 across frequencies. Blue noise pushes power toward higher frequencies and leaves
@@ -51,14 +51,14 @@ properties.[^ulichney] Mitsa and Parker later designed blue-noise masks whose
 thresholded binary patterns keep the pleasant part of ordered dithering while
 avoiding periodic artifacts.[^mitsa]
 
-The shared move is not "add randomness." The shared move is "control the
-spectrum of the randomness."
+The shared move is not "add randomness." The shared move is "shape the
+randomness so its failures are harder to see."
 
 If a sampling pattern has too much low-frequency power, it has visible geography:
 large clumps and large empty islands. If it has narrow spectral spikes, it has a
 hidden grid. A good blue-noise point set is trying to have neither.
 
-## A Small Dot Laboratory
+## The Dot Lab
 
 The lab below compares four point generators:
 
@@ -77,7 +77,8 @@ low-frequency power to about `0.19x`.
 The best-candidate pattern is competitive in this small two-dimensional lab:
 its low-frequency power is about `0.18x`. But it paid for that by checking
 roughly `483k` candidate-to-sample distances, while the Poisson-disk run used
-about `21.8k` local grid checks. That is the algorithmic part of the story.
+about `21.8k` local grid checks. That bill is the algorithmic part of the
+story.
 
 <style>
   .blue-noise-lab {
@@ -274,10 +275,10 @@ about `21.8k` local grid checks. That is the algorithmic part of the story.
 
 <script defer src="{{ '/assets/js/blue-noise-lab.js?v=20260614a' | relative_url }}"></script>
 
-## How To Read The Picture
+## The Four Panels Are a Lie Detector
 
-The first panel is only the bait. The dots should look plausible, but looking is
-not a diagnostic.
+The first panel is only the bait. The dots should look plausible, but a pleasant
+scatter plot is not a diagnostic.
 
 The nearest-neighbor histogram is the first audit. Uniform random points have a
 long left tail because independence allows arbitrarily close pairs. Jittered
@@ -302,7 +303,7 @@ map a level designer secretly cares about when distributing rocks, enemies,
 trees, or loot. It is also the map a renderer cares about when deciding whether
 some part of an integral has not been sampled well.
 
-## Poisson Disk Is A Hard-Core Promise
+## Poisson Disk Draws a Small Boundary
 
 "Poisson disk" is a slightly confusing phrase. A homogeneous Poisson process has
 independent counts and no minimum spacing. A Poisson-disk pattern is a hard-core
@@ -310,14 +311,15 @@ pattern: every pair of samples must be at least distance \(r\) apart. The disk
 language comes from imagining a disk of radius \(r/2\) around every point. Those
 disks cannot overlap.
 
-That one rule kills the worst clumps.
+That one rule kills the worst clumps before they can become visible.
 
 It does not make the pattern a grid. There is still randomness in angles, local
 packing, and boundary behavior. But it deletes the event that independent random
 sampling loves to produce: two samples almost on top of each other while some
 other region gets nothing.
 
-This is why Poisson-disk points appear in so many practical places:
+This is why Poisson-disk points keep showing up in practical graphics and game
+systems:
 
 ```text
 trees that should not intersect
@@ -327,9 +329,9 @@ shadow samples that should not alias into a lattice
 particles that should not start as clumps
 ```
 
-The rule is local, but the visual effect is global.
+The rule is local. The relief is global.
 
-## Bridson's Useful Trick
+## Bridson Makes Dart Throwing Local
 
 Naive dart throwing is simple:
 
@@ -371,9 +373,10 @@ more points than the slider asks for, it takes a seeded subset. That detail is
 important. If you stop the Bridson growth the instant you reach `n`, you do not
 get a uniform pattern over the whole square; you get a growing colony around the
 initial point with a large empty frontier. I made that mistake while building
-the lab, and the void map caught it immediately.
+the lab, and the void map caught it immediately. The empty frontier looked like
+a weather system.
 
-## The Best Candidate Has Taste, But It Is Expensive
+## Best Candidate Has Taste and a Bill
 
 Mitchell's best-candidate idea is seductive.[^mitchell] To add the next point,
 draw \(k\) random candidates and keep the one farthest from the existing set.
@@ -397,7 +400,7 @@ dimensions per sample, or many worlds in a build pipeline.
 Poisson disk wins not because it is morally better. It wins because it turns a
 global aesthetic into a local rejection test.
 
-## Jitter Is Half A Cure
+## Jitter Fixes Half the Problem
 
 Jittered grids deserve more respect than they sometimes get.
 
@@ -417,7 +420,7 @@ This is why "blue noise" is not a universal replacement for stratification,
 low-discrepancy sequences, multiple importance sampling, or domain-specific
 design. Sampling patterns are instruments. Each one has a frequency response.
 
-## What Blue Noise Does Not Promise
+## What the Blue Does Not Buy You
 
 Blue noise is a useful aesthetic and numerical bias. It is not magic.
 
@@ -442,12 +445,12 @@ and filled finite domains are not the same as infinite stationary processes.
 For tileable textures, you may want periodic distance tests. For streaming
 worlds, you may need chunks whose samples agree across chunk boundaries.
 
-The best use of blue noise is modest: use it when low-frequency clumps are more
-annoying than high-frequency grain.
+The best use of blue noise is modest: reach for it when low-frequency clumps
+are more annoying than high-frequency grain.
 
-## The Practical Rule
+## My Rule of Thumb
 
-When I need plausible randomness in a visual system, I now ask three questions:
+When I need plausible randomness in a visual system, I ask three questions:
 
 ```text
 Can two samples be too close?
