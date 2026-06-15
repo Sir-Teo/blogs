@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Urn Remembers Without Knowing the Order"
+title: "Urns Remember Without Order"
 description: "A Polya urn is reinforced and path-dependent, but still exchangeable. The order of the draws can disappear even when early luck never does."
 date: 2026-06-14 19:01:00 -0400
 categories: statistics
