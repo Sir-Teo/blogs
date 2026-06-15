@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Model Overbooks Its Feature Space"
+title: "Models Overbook Feature Space"
 description: "Neural networks may store more features than dimensions. Sparsity makes that bargain possible, and interference sends the bill."
 date: 2026-06-13 02:47:00 -0400
 categories: machine-learning
@@ -319,7 +319,7 @@ may ask for different dictionaries.
 Superposition is a budget. Sparse autoencoders are one way to audit the budget.
 The scientific work is to keep the ledger honest.
 
-## Sources
+## Paper Trail
 
 [^toy]: Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen, Roger Grosse, Sam McCandlish, Jared Kaplan, Dario Amodei, Martin Wattenberg, and Christopher Olah, "Toy Models of Superposition," 2022. [Transformer Circuits](https://transformer-circuits.pub/2022/toy_model/index.html), [arXiv](https://arxiv.org/abs/2209.10652).
 
