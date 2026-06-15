@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tokenizer Sets the Cover Charge"
+title: "Tokenizers Set the Cover Charge"
 description: "A tokenizer is not a neutral parser. A BPE merge table spends vocabulary on strings that were common in its reference corpus, changing the computational price of future text."
 date: 2026-06-14 01:24:00 -0400
 categories: ai-systems
@@ -533,7 +533,7 @@ Preprocessing is where the world is discretized. Discretization is a model.
 The merge table remembers a corpus. Then every future string negotiates with
 that memory.
 
-## References
+## Primary Sources
 
 [^gage]: Philip Gage, "A New Algorithm for Data Compression," *The C Users Journal*, February 1994. [HTML mirror](https://www.pennelynn.com/Documents/CUJ/HTML/94HTML/19940045.HTM), [Semantic Scholar](https://www.semanticscholar.org/paper/A-new-algorithm-for-data-compression-Gage/1aa9c0045f1fe8c79cce03c7c14ef4b4643a21f8).
 
