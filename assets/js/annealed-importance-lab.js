@@ -443,11 +443,12 @@
     panel(ctx, rect, "Bridge path", "effective sample size as beta increases");
     var plot = { x: rect.x + 46, y: rect.y + 62, w: rect.w - 66, h: rect.h - 98 };
     axes(ctx, plot);
+    var estimates = result.path.map(function (row) { return row.estimate; }).concat([result.exactLogZ]);
+    var low = Math.min.apply(null, estimates) - 0.3;
+    var high = Math.max.apply(null, estimates) + 0.7;
     function sx(row) { return plot.x + row.beta * plot.w; }
     function syEss(row) { return plot.y + plot.h * (1 - row.ess / result.params.runs); }
     function syLogZ(row) {
-      var low = Math.min(0, result.exactLogZ) - 0.3;
-      var high = Math.max(row.estimate, result.exactLogZ) + 0.7;
       return plot.y + plot.h * (1 - (row.estimate - low) / (high - low));
     }
     ctx.strokeStyle = COLORS.ais;
