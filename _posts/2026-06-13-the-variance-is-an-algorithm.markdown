@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Formula Lied to the Computer"
+title: "Formulas Can Lie to the Computer"
 description: "Variance looks like a formula, but in finite precision arithmetic the algorithm you choose can decide whether the answer is accurate, noisy, or impossible."
 date: 2026-06-13 20:02:00 -0400
 categories: computer-science
@@ -342,7 +342,7 @@ stable online update, a shifted pass, or a parallel merge tree. The answer you
 get is partly a property of the data and partly a property of the arithmetic
 path you chose.
 
-## Source Notes
+## Paper Trail
 
 [^goldberg]: David Goldberg, ["What Every Computer Scientist Should Know About Floating-Point Arithmetic"](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html), *ACM Computing Surveys*, 23(1), 1991. DOI: [10.1145/103162.103163](https://dl.acm.org/doi/10.1145/103162.103163).
 
