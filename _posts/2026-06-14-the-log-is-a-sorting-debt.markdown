@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Memtable Borrows From Tomorrow"
+title: "Memtables Borrow From Tomorrow"
 description: "An LSM tree makes writes cheap by turning random updates into sorted runs. Compaction is where the sorting loan comes due."
 date: 2026-06-14 09:08:00 -0400
 categories: software-engineering
