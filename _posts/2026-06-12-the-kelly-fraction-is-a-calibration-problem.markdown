@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Bet Size Comes After Trust"
+title: "Trust First, Then Size the Bet"
 description: "Kelly sizing is a clean formula with an unforgiving dependency: calibrated probabilities, executable odds, and a drawdown budget that survives contact with reality."
 date: 2026-06-12 15:30:00 -0400
 categories: quantitative-finance
@@ -8,7 +8,7 @@ tags: [kelly-criterion, calibration, quantitative-finance, statistics, machine-l
 excerpt: "Kelly looks like a formula for bravery. In practice it is a trust audit: if the probability is miscalibrated, the elegant fraction becomes leverage on a mistake."
 ---
 
-The Kelly criterion has the suspicious charm of something that fits on a napkin.
+Kelly has the suspicious charm of something that fits on a napkin.
 If a bet pays even money and wins with probability $$p$$, bet $$2p - 1$$ of your
 bankroll. If $$p = 0.60$$, the full Kelly fraction is 20%.
 
@@ -35,7 +35,7 @@ impact, and no liquidity constraints. The simplification is useful because it
 isolates the core failure mode: overconfident probabilities create oversized
 positions with very clean arithmetic.
 
-## The Napkin Formula
+## Start With the Napkin, Then Put It Down
 
 For a binary bet that wins $$b$$ units per unit wagered and loses the stake when
 wrong, the expected log-growth from betting fraction $$f$$ is
@@ -129,7 +129,7 @@ calibration; after sizing comes monitoring.
 </figcaption>
 </figure>
 
-## The Overconfidence Tax
+## Overconfidence Charges Interest
 
 The easiest way to see the problem is to write down the wrong-growth function.
 If the true probability is $$p$$, but the model reports $$\hat p$$, then the
@@ -178,7 +178,7 @@ fraction $$\lambda$$ should not be chosen by vibes. It should reflect calibratio
 error, non-stationarity, dependence between bets, liquidity, tail loss, and the
 drawdown a human or institution can actually survive.
 
-## A Betting Desk in Miniature
+## A Tiny Betting Desk
 
 The live experiment below creates binary opportunities with a real but noisy
 edge. A synthetic model ranks those opportunities, then becomes overconfident by
@@ -239,7 +239,7 @@ terminal wealth is less than one cent per starting dollar. The exact numbers are
 toy numbers, but the shape of the failure is real: an overconfident model can
 turn a positive ranking signal into a fragile sizing rule.
 
-## The Risk Board
+## Risk Board Before Victory Lap
 
 A serious Kelly-like system needs more than a backtest equity curve. I would
 ship it with at least seven diagnostics.
@@ -267,7 +267,7 @@ binning are all reasonable candidates depending on sample size and model
 shape.[^platt], [^naeini] The method matters less than the discipline: probability
 forecasts must be audited as probabilities.
 
-## The Toy Has No Market
+## Where the Toy Stops Being a Market
 
 Real markets are not a sequence of independent even-money bets. Odds move,
 liquidity disappears, constraints bind, taxes matter, and a strategy's own
@@ -289,7 +289,7 @@ many still bet in ways that left large amounts of value on the table, and a
 substantial fraction went broke.[^haghani] Bet sizing is not intuitive even when
 the rules are known. It is much harder when the probabilities come from a model.
 
-## What I Would Keep on the Desk
+## My Desk Copy
 
 The Kelly criterion is a sharp instrument. It tells us that edge, odds, and
 capital growth are linked by a clean mathematical rule. But sharp instruments
