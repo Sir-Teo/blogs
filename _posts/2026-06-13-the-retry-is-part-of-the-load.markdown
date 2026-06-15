@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Second Try Is Still Traffic"
+title: "Second Tries Are Still Traffic"
 description: "A retry is not free resilience. Under overload, it can become a traffic generator aimed at the component already failing."
 date: 2026-06-13 11:34:00 -0400
 categories: computer-science
@@ -325,7 +325,7 @@ dependency slows down.
 Retries are one of the most human parts of distributed systems. They encode
 hope. The machine needs that hope bounded, jittered, idempotent, and measured.
 
-## Source Notes
+## Reading Trail
 
 [^tail]: Jeffrey Dean and Luiz Andre Barroso, ["The Tail at Scale"](https://cacm.acm.org/research/the-tail-at-scale/), *Communications of the ACM*, 2013. See also the [Google Research record](https://research.google/pubs/the-tail-at-scale/).
 
