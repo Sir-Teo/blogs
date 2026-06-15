@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Learning Rates Spend Stability"
-description: "A learning rate is not just speed. It is a numerical stability promise about the sharpest direction the optimizer can survive."
+title: "A Step Size Is a Dare"
+description: "A learning rate is not just speed. It is a numerical stability promise about the sharpest direction the optimizer is willing to survive."
 date: 2026-06-14 13:27:00 -0400
 categories: machine-learning
 tags: [edge-of-stability, gradient-descent, learning-rate, sharpness, optimization, deep-learning]
-excerpt: "Gradient descent has a cliff at eta times sharpness equals two. Modern neural nets often train by walking near that cliff instead of politely staying far from it."
+excerpt: "Gradient descent has a cliff at eta times sharpness equals two. Modern neural nets often train near that cliff instead of politely staying far away from it."
 ---
 
 A learning rate looks like a speed knob.
@@ -23,7 +23,8 @@ The old lesson is simple enough to fit on a napkin. The new lesson is stranger:
 large neural networks often train near the edge where the napkin says ordinary
 gradient descent should be nervous.
 
-This post is about that edge.
+This post is about that edge, and about why a run can wobble there without
+immediately falling off.
 
 ## The One-Mode Cliff
 
@@ -105,6 +106,16 @@ into a small oscillation whose tail-average sharpness is almost exactly the
 
 That is the shape to notice: short-timescale loss bumps, long-timescale
 improvement, and sharpness living near the numerical stability boundary.
+
+I audited the lab before rewriting. At the default controls, the frozen
+quadratic multiplier is \(-1.02\), so the scalar mode diverges exactly as the
+\(\eta\lambda>2\) rule predicts. The nonlinear toy runs all 140 steps without
+diverging, has 68 upward-loss steps, ends at loss 0.0044, and averages sharpness
+1.002x the \(2/\eta\) edge over its tail. A 324-case sweep over step size,
+curvature, target, initialization, and step count found no phase-classification
+errors in the frozen quadratic, 297 finite nonlinear runs, and 27 honest
+divergences. I also fixed the lab to export its API through `module.exports`, so
+the audit no longer has to reach through `globalThis`.
 
 <style>
   .edge-lab {
@@ -276,7 +287,7 @@ improvement, and sharpness living near the numerical stability boundary.
     interact.
   </p>
 </div>
-<script defer src="{{ '/assets/js/edge-stability-lab.js?v=20260614a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/edge-stability-lab.js?v=20260614b' | relative_url }}"></script>
 
 The source is deliberately inspectable in
 [`assets/js/edge-stability-lab.js`]({{ '/assets/js/edge-stability-lab.js' | relative_url }}).
@@ -383,7 +394,7 @@ measurement protocol are controlled.
 
 It is not, by itself, a moral ranking of models.
 
-## What To Log When Training Gets Weird
+## What to Log When Training Gets Weird
 
 When a training run suddenly becomes jagged, I would rather see a stability
 ledger than another screenshot of the loss curve.
@@ -407,7 +418,7 @@ are noisy, because the optimizer is bouncing off a sharp direction, because
 momentum is storing old gradients, or because an adaptive method changed units.
 Those are different failures and different opportunities.
 
-## The Step Is Part Of The Model
+## The Step Is Part of the Model
 
 A trained model is not only architecture plus data.
 

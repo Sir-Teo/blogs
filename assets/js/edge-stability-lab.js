@@ -486,13 +486,16 @@
     root.document.querySelectorAll("[data-edge-stability-lab]").forEach(init);
   }
 
-  root.EdgeStabilityLab = {
+  var api = {
     cleanParams: cleanParams,
     evaluate: evaluate,
     simulateDeepLinear: simulateDeepLinear,
     simulateQuadratic: simulateQuadratic,
     topHessianScalar: topHessianScalar
   };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.EdgeStabilityLab = api;
 
   if (root.document) {
     if (root.document.readyState === "loading") {
