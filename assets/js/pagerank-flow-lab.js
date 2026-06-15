@@ -15,6 +15,7 @@
     residual: "#2563eb",
     boundary: "#6d28d9"
   };
+  var AUDIT_CACHE = null;
 
   var NODE_DEFS = [
     { key: "atlas", label: "Atlas", group: "core", x: 0.20, y: 0.24 },
@@ -55,6 +56,25 @@
     var total = values.reduce(function (acc, value) { return acc + value; }, 0);
     if (!isFinite(total) || total <= 0) return values.map(function () { return 1 / values.length; });
     return values.map(function (value) { return value / total; });
+  }
+
+  function sum(values) {
+    return values.reduce(function (acc, value) { return acc + value; }, 0);
+  }
+
+  function close(actual, expected, tolerance) {
+    return isFinite(actual) && isFinite(expected) && Math.abs(actual - expected) <= tolerance;
+  }
+
+  function probabilityVector(values) {
+    return values.length > 0 && values.every(function (value) { return value >= -1e-12; }) && close(sum(values), 1, 1e-10);
+  }
+
+  function monotoneNondecreasing(values) {
+    for (var i = 1; i < values.length; i += 1) {
+      if (values[i] + 1e-12 < values[i - 1]) return false;
+    }
+    return true;
   }
 
   function formatPercent(value, digits) {
@@ -261,6 +281,93 @@
       teleport: run.teleport,
       top: rows[0]
     };
+  }
+
+  function runAudit() {
+    var checks = [];
+    var baseParams = cleanParams({
+      alpha: 85,
+      iterations: 28,
+      paidLinks: 2,
+      spamLeak: 1,
+      topicBias: 30
+    });
+
+    function check(label, passed, detail) {
+      checks.push({ label: label, passed: !!passed, detail: detail || "" });
+    }
+
+    check("normalize sums to one", probabilityVector(normalize([2, 3, 5])));
+    check("normalize fallback is uniform", normalize([0, 0, 0]).every(function (value) { return close(value, 1 / 3, 1e-12); }));
+
+    var clamped = cleanParams({ alpha: 999, iterations: 1, paidLinks: -2, spamLeak: 99, topicBias: -20 });
+    check("parameter clamps", clamped.alpha === 0.95 && clamped.iterations === 2 && clamped.paidLinks === 0 && clamped.spamLeak === LEAK_EDGES.length && clamped.topicBias === 0);
+
+    var teleportUniform = teleportVector(0);
+    var teleportTopic = teleportVector(1);
+    check("uniform teleport vector", probabilityVector(teleportUniform) && teleportUniform.every(function (value) { return close(value, 1 / NODE_DEFS.length, 1e-12); }));
+    check("topic teleport vector", probabilityVector(teleportTopic) && teleportTopic[2] > teleportUniform[2] && share(teleportTopic, SPAM_INDICES) < share(teleportUniform, SPAM_INDICES));
+
+    var graph = buildGraph(baseParams);
+    check("graph edge count", graph.edges.length === BASE_EDGES.length + baseParams.paidLinks + baseParams.spamLeak);
+    check("graph has no duplicate adjacency entries", graph.adjacency.every(function (out) {
+      return out.every(function (target, index) { return out.indexOf(target) === index; });
+    }));
+    check("paid edges enter spam hub", graph.edges.filter(function (edge) { return edge.kind === "paid"; }).every(function (edge) { return edge.to === 6; }));
+
+    var danglingNext = stepRank([1, 0], { adjacency: [[], [0]] }, [0.25, 0.75], 0.85);
+    check("dangling nodes redistribute to teleport", close(danglingNext[0], 0.25, 1e-12) && close(danglingNext[1], 0.75, 1e-12));
+
+    var alphaZeroNext = stepRank([0.9, 0.1], { adjacency: [[1], [0]] }, [0.4, 0.6], 0);
+    check("alpha zero ignores links", close(alphaZeroNext[0], 0.4, 1e-12) && close(alphaZeroNext[1], 0.6, 1e-12));
+
+    var linkOnlyNext = stepRank([1, 0], { adjacency: [[1], [0]] }, [0.4, 0.6], 1);
+    check("link-only step follows outgoing edge", close(linkOnlyNext[0], 0, 1e-12) && close(linkOnlyNext[1], 1, 1e-12));
+
+    var result = simulate(baseParams);
+    check("rank vector is probability mass", probabilityVector(result.rank));
+    check("core and spam partition mass", close(result.coreShare + result.spamShare, 1, 1e-10));
+    check("history length and residual", result.history.length === baseParams.iterations && close(result.residual, result.history[result.history.length - 1].residual, 1e-15));
+    check("top row matches maximum rank", close(result.top.rank, Math.max.apply(null, result.rank), 1e-12));
+    check("default converges tightly", result.residual < 1e-6);
+    check("paid sweep is monotone", monotoneNondecreasing(result.sweep.map(function (row) { return row.spamShare; })));
+    check("default paid links lift spam share", result.paidLift > 0.10);
+    var shortRun = simulate(Object.assign({}, baseParams, { iterations: 2 }));
+    var longRun = simulate(Object.assign({}, baseParams, { iterations: 80 }));
+    check("sweep endpoints match selected model", close(longRun.sweep[baseParams.paidLinks].spamShare, longRun.spamShare, 1e-10));
+    check("more power iterations reduce residual", longRun.residual < shortRun.residual);
+
+    var noPaid = simulate(Object.assign({}, baseParams, { paidLinks: 0, iterations: 80 }));
+    var manyPaid = simulate(Object.assign({}, baseParams, { paidLinks: 5, iterations: 80 }));
+    check("paid links raise farm mass", close(noPaid.paidLift, 0, 1e-12) && manyPaid.spamShare > result.spamShare);
+
+    var noLeak = simulate(Object.assign({}, baseParams, { spamLeak: 0, iterations: 80 }));
+    var maxLeak = simulate(Object.assign({}, baseParams, { spamLeak: 4, iterations: 80 }));
+    check("leak edges drain the farm", noLeak.spamShare > result.spamShare && maxLeak.spamShare < result.spamShare);
+
+    var lowAlpha = simulate(Object.assign({}, baseParams, { alpha: 0.50, iterations: 80 }));
+    var highAlpha = simulate(Object.assign({}, baseParams, { alpha: 0.95, iterations: 80 }));
+    check("higher damping trusts traps longer", highAlpha.spamShare > lowAlpha.spamShare && highAlpha.paidLift > lowAlpha.paidLift);
+
+    var noTopic = simulate(Object.assign({}, baseParams, { topicBias: 0, iterations: 80 }));
+    var strongTopic = simulate(Object.assign({}, baseParams, { topicBias: 1, iterations: 80 }));
+    check("topic boundary shifts mass away from spam", strongTopic.spamShare < noTopic.spamShare && strongTopic.top.label === "Docs");
+
+    var nextAfterLong = stepRank(longRun.rank, longRun.graph, longRun.teleport, longRun.params.alpha);
+    check("long run is a fixed point", l1(nextAfterLong, longRun.rank) < 1e-10);
+
+    var passed = checks.filter(function (item) { return item.passed; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      ok: passed === checks.length,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function paramsFromRoot(root) {
@@ -538,6 +645,7 @@
 
   function render(root) {
     var result = simulate(paramsFromRoot(root));
+    var audit = cachedAudit();
     var values = {
       alpha: result.params.alpha.toFixed(2),
       iterations: String(result.params.iterations),
@@ -557,7 +665,8 @@
         metric("core share", formatShare(result.coreShare, 1)),
         metric("paid-edge lift", signedShare(result.paidLift, 1)),
         metric("dangling mass", formatShare(result.danglingMass, 1)),
-        metric("L1 residual", formatNumber(result.residual, 4))
+        metric("L1 residual", formatNumber(result.residual, 4)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -565,6 +674,8 @@
   }
 
   function init(root) {
+    if (root.__pageRankLabReady) return;
+    root.__pageRankLabReady = true;
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
@@ -580,6 +691,7 @@
 
   var api = {
     cleanParams: cleanParams,
+    runAudit: runAudit,
     simulate: simulate,
     stepRank: stepRank,
     teleportVector: teleportVector
@@ -591,6 +703,10 @@
   global.PageRankFlowLab = api;
 
   if (global.document) {
-    global.document.addEventListener("DOMContentLoaded", initAll);
+    if (global.document.readyState === "loading") {
+      global.document.addEventListener("DOMContentLoaded", initAll);
+    } else {
+      initAll();
+    }
   }
 }(typeof window !== "undefined" ? window : globalThis));
