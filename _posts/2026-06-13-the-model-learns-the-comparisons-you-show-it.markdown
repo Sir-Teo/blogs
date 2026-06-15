@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Loss Never Saw the Missing Pair"
+title: "Loss Functions Never See the Missing Pair"
 description: "Preference optimization is not a direct tap into human values. It is a policy update seen through pairwise labels, a reference model, a KL temperature, and the comparison distribution."
 date: 2026-06-13 08:34:00 -0400
 categories: machine-learning
@@ -319,7 +319,7 @@ The model learns the comparisons you show it.
 
 Show it carefully.
 
-## References
+## Further Reading
 
 [^bradley-terry]: Ralph Allan Bradley and Milton E. Terry, ["Rank Analysis of Incomplete Block Designs: I. The Method of Paired Comparisons"](https://academic.oup.com/biomet/article-abstract/39/3-4/324/326091), *Biometrika*, 1952.
 
