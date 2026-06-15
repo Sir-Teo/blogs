@@ -22,8 +22,31 @@
     { color: COLORS.gate, key: "gate", label: "freq gate" }
   ];
 
+  var DEFAULTS = {
+    cacheSize: 32,
+    hotSet: 48,
+    locality: 80,
+    requests: 2400,
+    scanEvery: 5,
+    scanLength: 140,
+    shift: 0
+  };
+
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function finiteOr(value, fallback) {
+    var numeric = Number(value);
+    return isFinite(numeric) ? numeric : fallback;
+  }
+
+  function percentValue(value, fallback, min, max) {
+    var numeric = finiteOr(value, fallback);
+    if (numeric >= 0 && numeric <= 1 && max > 1) numeric *= 100;
+    return clamp(numeric, min, max) / 100;
   }
 
   function formatNumber(value) {
@@ -66,14 +89,15 @@
   }
 
   function cleanParams(params) {
+    params = params || {};
     return {
-      cacheSize: clamp(Math.round(params.cacheSize), 8, 96),
-      hotSet: clamp(Math.round(params.hotSet), 8, 160),
-      locality: clamp(params.locality, 30, 95) / 100,
-      requests: clamp(Math.round(params.requests), 600, 5000),
-      scanEvery: clamp(Math.round(params.scanEvery), 3, 24),
-      scanLength: clamp(Math.round(params.scanLength), 0, 400),
-      shift: clamp(params.shift, 0, 100) / 100
+      cacheSize: clamp(Math.round(finiteOr(params.cacheSize == null ? DEFAULTS.cacheSize : params.cacheSize, DEFAULTS.cacheSize)), 8, 96),
+      hotSet: clamp(Math.round(finiteOr(params.hotSet == null ? DEFAULTS.hotSet : params.hotSet, DEFAULTS.hotSet)), 8, 160),
+      locality: percentValue(params.locality == null ? DEFAULTS.locality : params.locality, DEFAULTS.locality, 30, 95),
+      requests: clamp(Math.round(finiteOr(params.requests == null ? DEFAULTS.requests : params.requests, DEFAULTS.requests)), 600, 5000),
+      scanEvery: clamp(Math.round(finiteOr(params.scanEvery == null ? DEFAULTS.scanEvery : params.scanEvery, DEFAULTS.scanEvery)), 3, 24),
+      scanLength: clamp(Math.round(finiteOr(params.scanLength == null ? DEFAULTS.scanLength : params.scanLength, DEFAULTS.scanLength)), 0, 400),
+      shift: percentValue(params.shift == null ? DEFAULTS.shift : params.shift, DEFAULTS.shift, 0, 100)
     };
   }
 
@@ -203,6 +227,22 @@
     return finishStats(stats, trace, new Set(cache.keys()));
   }
 
+  function fifoMisses(keys, cacheSize) {
+    var cache = [];
+    var inCache = new Set();
+    var misses = 0;
+    keys.forEach(function (key) {
+      if (inCache.has(key)) return;
+      misses += 1;
+      if (cache.length >= cacheSize) {
+        inCache.delete(cache.shift());
+      }
+      cache.push(key);
+      inCache.add(key);
+    });
+    return misses;
+  }
+
   function simulateGate(trace, params) {
     var stats = emptyStats("gate", trace);
     var cache = new Map();
@@ -318,7 +358,6 @@
       }
       stack.unshift(req.key);
       last.set(req.key, true);
-      if (stack.length > 500) stack.pop();
     });
     return distances;
   }
@@ -362,6 +401,290 @@
       },
       trace: trace
     };
+  }
+
+  function bruteOptimalMisses(keys, cacheSize) {
+    var memo = new Map();
+
+    function signature(index, cache) {
+      return index + "|" + cache.slice().sort(function (a, b) { return a - b; }).join(",");
+    }
+
+    function search(index, cache) {
+      if (index >= keys.length) return 0;
+      var key = signature(index, cache);
+      if (memo.has(key)) return memo.get(key);
+      var current = keys[index];
+      var nextCache;
+      var best;
+
+      if (cache.indexOf(current) >= 0) {
+        best = search(index + 1, cache);
+      } else if (cache.length < cacheSize) {
+        nextCache = cache.slice();
+        nextCache.push(current);
+        best = 1 + search(index + 1, nextCache);
+      } else {
+        best = Infinity;
+        for (var i = 0; i < cache.length; i += 1) {
+          nextCache = cache.slice();
+          nextCache[i] = current;
+          best = Math.min(best, 1 + search(index + 1, nextCache));
+        }
+      }
+
+      memo.set(key, best);
+      return best;
+    }
+
+    return search(0, []);
+  }
+
+  function statsAreCoherent(stats, traceLength, cacheSize) {
+    return stats.hits + stats.misses === traceLength &&
+      stats.hitTimeline.length === traceLength &&
+      stats.evictions >= 0 &&
+      stats.cache.length <= cacheSize &&
+      stats.hotRequests + stats.scanRequests === traceLength &&
+      stats.hotHits <= stats.hotRequests &&
+      stats.scanAdmitted <= stats.scanRequests &&
+      isFinite(stats.hitRate) &&
+      isFinite(stats.hotHitRate) &&
+      isFinite(stats.scanAdmitRate);
+  }
+
+  function runAudit() {
+    var checks = [];
+    var gridCases = 0;
+    var maxBeladyGap = 0;
+
+    function pass(name, ok, detail) {
+      checks.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+
+    function near(a, b, tolerance) {
+      return isFinite(a) && isFinite(b) && Math.abs(a - b) <= (tolerance == null ? 1e-12 : tolerance);
+    }
+
+    var defaults = cleanParams();
+    pass(
+      "defaults are stable",
+      defaults.cacheSize === DEFAULTS.cacheSize &&
+        defaults.hotSet === DEFAULTS.hotSet &&
+        near(defaults.locality, DEFAULTS.locality / 100) &&
+        defaults.requests === DEFAULTS.requests &&
+        defaults.scanEvery === DEFAULTS.scanEvery &&
+        defaults.scanLength === DEFAULTS.scanLength &&
+        near(defaults.shift, DEFAULTS.shift / 100)
+    );
+
+    var clamped = cleanParams({
+      cacheSize: 4.2,
+      hotSet: 1000,
+      locality: 120,
+      requests: 512.2,
+      scanEvery: 99,
+      scanLength: -20,
+      shift: 150
+    });
+    pass(
+      "numeric controls clamp and round",
+      clamped.cacheSize === 8 &&
+        clamped.hotSet === 160 &&
+        near(clamped.locality, 0.95) &&
+        clamped.requests === 600 &&
+        clamped.scanEvery === 24 &&
+        clamped.scanLength === 0 &&
+        near(clamped.shift, 1)
+    );
+
+    var recovered = cleanParams({
+      cacheSize: NaN,
+      hotSet: "bad",
+      locality: Infinity,
+      requests: -Infinity,
+      scanEvery: undefined,
+      scanLength: "oops",
+      shift: null
+    });
+    pass(
+      "non-finite controls recover defaults",
+      recovered.cacheSize === DEFAULTS.cacheSize &&
+        recovered.hotSet === DEFAULTS.hotSet &&
+        near(recovered.locality, DEFAULTS.locality / 100) &&
+        recovered.requests === DEFAULTS.requests &&
+        recovered.scanEvery === DEFAULTS.scanEvery &&
+        recovered.scanLength === DEFAULTS.scanLength &&
+        near(recovered.shift, 0)
+    );
+
+    var fractional = cleanParams({ locality: 0.8, shift: 0.5 });
+    pass("fractional percentages are accepted", near(fractional.locality, 0.8) && near(fractional.shift, 0.5));
+
+    var defaultResult = simulate(DEFAULTS);
+    pass(
+      "default trace has requested length and scan work",
+      defaultResult.trace.length === DEFAULTS.requests &&
+        defaultResult.trace.some(function (req) { return req.type === "scan"; }) &&
+        defaultResult.trace.some(function (req) { return req.type === "hot"; })
+    );
+
+    var defaultTraceAgain = makeTrace(defaultResult.params);
+    pass(
+      "synthetic trace generation is deterministic",
+      defaultTraceAgain.length === defaultResult.trace.length &&
+        defaultTraceAgain.every(function (req, index) {
+          var original = defaultResult.trace[index];
+          return req.key === original.key && req.phase === original.phase && req.type === original.type;
+        })
+    );
+
+    var scanKeys = defaultResult.trace.filter(function (req) { return req.type === "scan"; }).map(function (req) { return req.key; });
+    pass("scan objects are one-hit objects", new Set(scanKeys).size === scanKeys.length);
+
+    pass(
+      "default policy ledgers conserve requests",
+      POLICIES.every(function (policy) {
+        return statsAreCoherent(defaultResult.policies[policy.key], defaultResult.trace.length, defaultResult.params.cacheSize);
+      })
+    );
+
+    pass(
+      "Belady is an upper bound on the default trace",
+      POLICIES.every(function (policy) {
+        return defaultResult.policies.belady.hitRate + 1e-12 >= defaultResult.policies[policy.key].hitRate;
+      })
+    );
+
+    pass(
+      "frequency gate blocks default scans",
+      defaultResult.policies.lru.scanAdmitRate === 1 &&
+        defaultResult.policies.gate.scanAdmitRate === 0 &&
+        defaultResult.policies.gate.hotHitRate > defaultResult.policies.lru.hotHitRate
+    );
+
+    var noScan = simulate(Object.assign({}, DEFAULTS, { scanLength: 0 }));
+    pass(
+      "recency wins when scans disappear",
+      noScan.policies.lru.hitRate > noScan.policies.gate.hitRate &&
+        noScan.policies.lru.scanRequests === 0 &&
+        noScan.policies.gate.scanRequests === 0
+    );
+
+    var shifted = simulate(Object.assign({}, DEFAULTS, { shift: 50 }));
+    pass(
+      "frequency gate lags after a hot-set shift",
+      shifted.policies.lru.hotHitRate > shifted.policies.gate.hotHitRate &&
+        shifted.policies.lru.hitRate > shifted.policies.gate.hitRate
+    );
+
+    var tinyKeys = [1, 2, 3, 1, 4, 1, 2, 5, 1, 2, 3, 4, 5];
+    var tinyTrace = tinyKeys.map(function (key) { return { key: key, phase: 0, type: "hot" }; });
+    var tinyBelady = simulateBelady(tinyTrace, { cacheSize: 3 });
+    var tinyOptimal = bruteOptimalMisses(tinyKeys, 3);
+    pass("Belady matches brute-force optimum on a tiny trace", tinyBelady.misses === tinyOptimal);
+
+    var anomaly = [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5];
+    pass("FIFO anomaly fixture is live", fifoMisses(anomaly, 3) === 9 && fifoMisses(anomaly, 4) === 10);
+
+    var lruStackOk = true;
+    var previousMisses = Infinity;
+    for (var size = 1; size <= 6; size += 1) {
+      var lru = simulateLRU(tinyTrace, { cacheSize: size });
+      lruStackOk = lruStackOk && lru.misses <= previousMisses;
+      previousMisses = lru.misses;
+    }
+    pass("LRU stack misses are monotone with cache size", lruStackOk);
+
+    var distances = reuseDistances([
+      { key: 1 },
+      { key: 2 },
+      { key: 3 },
+      { key: 1 },
+      { key: 2 },
+      { key: 1 }
+    ]);
+    pass(
+      "reuse distances count distinct intervening objects",
+      !isFinite(distances[0]) &&
+        !isFinite(distances[1]) &&
+        !isFinite(distances[2]) &&
+        distances[3] === 2 &&
+        distances[4] === 2 &&
+        distances[5] === 1
+    );
+
+    var histogram = reuseHistogram(defaultResult.trace);
+    pass(
+      "reuse histogram accounts for every request",
+      histogram.reduce(function (sum, bin) { return sum + bin.count; }, 0) === defaultResult.trace.length
+    );
+
+    var timelineOk = POLICIES.every(function (policy) {
+      return defaultResult.timeline[policy.key].every(function (row) {
+        return row.rate >= 0 && row.rate <= 1 && row.index >= 0;
+      });
+    });
+    pass("windowed timelines stay bounded", timelineOk);
+
+    var gridOk = true;
+    [16, 32, 64].forEach(function (cacheSize) {
+      [24, 48, 96].forEach(function (hotSet) {
+        [0, 140].forEach(function (scanLength) {
+          [0, 50].forEach(function (shift) {
+            var params = {
+              cacheSize: cacheSize,
+              hotSet: hotSet,
+              locality: 80,
+              requests: 1200,
+              scanEvery: 5,
+              scanLength: scanLength,
+              shift: shift
+            };
+            var result = simulate(params);
+            gridCases += 1;
+            POLICIES.forEach(function (policy) {
+              maxBeladyGap = Math.max(maxBeladyGap, result.policies[policy.key].hitRate - result.policies.belady.hitRate);
+            });
+            gridOk = gridOk &&
+              result.trace.length === 1200 &&
+              result.reuse.reduce(function (sum, bin) { return sum + bin.count; }, 0) === result.trace.length &&
+              POLICIES.every(function (policy) {
+                return statsAreCoherent(result.policies[policy.key], result.trace.length, result.params.cacheSize) &&
+                  result.policies.belady.hitRate + 1e-12 >= result.policies[policy.key].hitRate;
+              });
+          });
+        });
+      });
+    });
+    pass("36-scenario grid preserves accounting and Belady bound", gridOk && gridCases === 36);
+
+    var cleanAgain = cleanParams(defaultResult.params);
+    pass(
+      "clean parameters can be re-cleaned without percent drift",
+      cleanAgain.cacheSize === defaultResult.params.cacheSize &&
+        cleanAgain.hotSet === defaultResult.params.hotSet &&
+        near(cleanAgain.locality, defaultResult.params.locality) &&
+        cleanAgain.requests === defaultResult.params.requests &&
+        cleanAgain.scanEvery === defaultResult.params.scanEvery &&
+        cleanAgain.scanLength === defaultResult.params.scanLength &&
+        near(cleanAgain.shift, defaultResult.params.shift)
+    );
+
+    var passed = checks.filter(function (check) { return check.ok; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      failures: checks.filter(function (check) { return !check.ok; }),
+      gridCases: gridCases,
+      maxBeladyGap: maxBeladyGap,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function panelTitle(ctx, box, title, subtitle) {
@@ -557,13 +880,15 @@
     });
     var metrics = root.querySelector("[data-metrics]");
     if (metrics) {
+      var audit = cachedAudit();
       metrics.innerHTML = [
         metric("Belady hit rate", formatPercent(result.policies.belady.hitRate * 100)),
         metric("LRU hit rate", formatPercent(result.policies.lru.hitRate * 100)),
         metric("LFU hit rate", formatPercent(result.policies.lfu.hitRate * 100)),
         metric("Gate hit rate", formatPercent(result.policies.gate.hitRate * 100)),
         metric("LRU scan admits", formatPercent(result.policies.lru.scanAdmitRate * 100)),
-        metric("Gate scan admits", formatPercent(result.policies.gate.scanAdmitRate * 100))
+        metric("Gate scan admits", formatPercent(result.policies.gate.scanAdmitRate * 100)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -571,9 +896,13 @@
   }
 
   function init(root) {
+    if (root.__cachePolicyLabReady) return;
+    root.__cachePolicyLabReady = true;
+
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
+      input.addEventListener("change", redraw);
     });
     global.addEventListener("resize", redraw);
     redraw();
@@ -585,6 +914,10 @@
   }
 
   var api = {
+    cleanParams: cleanParams,
+    makeTrace: makeTrace,
+    reuseDistances: reuseDistances,
+    runAudit: runAudit,
     simulate: simulate
   };
 
