@@ -505,7 +505,7 @@
   }
 
   function drawSpectrum(ctx, box, result) {
-    panel(ctx, box, "error spectrum", "smoothing damps high modes; coarse correction attacks low modes");
+    panel(ctx, box, "error spectrum", "smooth high modes; coarse grid cuts low modes");
     var plot = { x: box.x + 38, y: box.y + 62, w: box.w - 56, h: box.h - 96 };
     plotFrame(ctx, plot);
     var m = result.spectra.initial.length;
@@ -522,14 +522,14 @@
       });
       if ((k + 1) % 8 === 0) label(ctx, String(k + 1), plot.x + (k + 0.5) * group, plot.y + plot.h + 13, { align: "center", color: COLORS.muted, size: 9 });
     }
-    label(ctx, "mode", plot.x + plot.w, box.y + box.h - 20, { align: "right", color: COLORS.muted, size: 10 });
+    label(ctx, "mode", plot.x + plot.w, plot.y - 14, { align: "right", color: COLORS.muted, size: 10 });
     label(ctx, "initial", plot.x + 6, plot.y + 14, { color: COLORS.muted, size: 10 });
     label(ctx, "smooth", plot.x + 62, plot.y + 14, { color: COLORS.smooth, size: 10, weight: "780" });
     label(ctx, "V-cycle", plot.x + 120, plot.y + 14, { color: COLORS.multi, size: 10, weight: "780" });
   }
 
   function drawHierarchy(ctx, box, result) {
-    panel(ctx, box, "grid hierarchy", "restriction makes smooth residual visible on coarser grids");
+    panel(ctx, box, "grid hierarchy", "residuals restricted through the hierarchy");
     var levels = result.mg.stats.restrictedResiduals.length ? result.mg.stats.restrictedResiduals : restrictCascade(result.problem.f);
     var plot = { x: box.x + 26, y: box.y + 62, w: box.w - 52, h: box.h - 96 };
     var maxNorm = Math.max.apply(null, levels.map(function (row) { return row.norm; })) || 1;
@@ -543,8 +543,12 @@
       ctx.lineWidth = 1;
       ctx.fillRect(x, y - 10, w, 20);
       ctx.strokeRect(x, y - 10, w, 20);
-      label(ctx, row.n + " pts", x + 6, y, { color: COLORS.text, size: 10, weight: "720" });
-      label(ctx, "res " + formatNumber(row.norm / maxNorm, 2), x + w - 6, y, { align: "right", color: COLORS.muted, size: 10 });
+      if (w > 92) {
+        label(ctx, row.n + " pts", x + 6, y, { color: COLORS.text, size: 10, weight: "720" });
+        label(ctx, "res " + formatNumber(row.norm / maxNorm, 2), x + w - 6, y, { align: "right", color: COLORS.muted, size: 10 });
+      } else {
+        label(ctx, row.n + " pts", x + w / 2, y, { align: "center", color: COLORS.text, size: 9, weight: "720" });
+      }
       if (i + 1 < levels.length) {
         ctx.strokeStyle = "rgba(93,104,114,0.36)";
         ctx.beginPath();
