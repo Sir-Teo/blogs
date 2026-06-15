@@ -207,7 +207,7 @@ Quantization is successful when the cheap representation preserves the expensive
 computation. The machine does not care that the checkpoint is small. It cares
 whether the important dot products survived.
 
-## Source Notes
+## Reading Trail
 
 [^llmint8]: Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer, "LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale," NeurIPS 2022. [arXiv](https://arxiv.org/abs/2208.07339).
 
