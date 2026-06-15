@@ -38,10 +38,10 @@ append-only:   this newer root extends that older root
 non-equivocal: everyone is being shown the same root
 ```
 
-A Merkle tree gives you sharp tools for all three, but it does not run the
-social machinery by itself.
+A Merkle tree gives you sharp tools for all three. It does not run the social
+machinery by itself.
 
-## The One Hash Everyone Argues About
+## One Hash for the Whole Argument
 
 A binary Merkle tree hashes leaves first, then hashes pairs of child hashes until
 one root remains. Certificate Transparency specifies domain separation: leaves
@@ -239,7 +239,7 @@ The cure is not a cleverer local Merkle path. The cure is shared checkpoints,
 gossip, monitors, witnesses, or some other mechanism that makes split views
 collide in public.
 
-## The Web PKI Version
+## Web PKI, With Receipts
 
 Certificate Transparency exists because the web PKI has many certificate
 authorities, and a bad or compromised authority can issue a certificate that a
@@ -266,7 +266,7 @@ There is a lovely engineering humility here. The log operator is not assumed to
 be angelic. The data structure is designed so the operator can answer audits
 cheaply, and so contradictory answers leave cryptographic evidence.
 
-## When the Directory Lies
+## If the Directory Lies
 
 The same pattern appears in end-to-end encrypted messaging. A messaging service
 often maintains a directory from users to public keys. If the service silently
@@ -287,7 +287,7 @@ The Merkle root is not magic dust. It is a commitment point in a protocol:
 Without the third piece, a malicious server can show each user a locally
 consistent little world.
 
-## What the Receipt Does Not Buy
+## What a Receipt Does Not Buy
 
 Merkle proofs are easy to oversell.
 
