@@ -1,17 +1,23 @@
 ---
 layout: post
-title: "The Context Window Is a Dispatch Room"
-description: "Long-context models changed retrieval, but they did not remove the dispatch problem: decide what evidence deserves attention, placement, and an answer."
+title: "RAG Is the Question of What Gets Read"
+description: "Long-context models changed retrieval, but they did not remove the dispatch problem: deciding what evidence deserves attention, placement, and an answer."
 date: 2026-06-12 19:10:00 -0400
 categories: ai-systems
 tags: [rag, long-context, information-retrieval, llms, ai-systems, evaluation]
-excerpt: "RAG versus long context is the wrong fight. The durable problem is dispatch: admit the right evidence, place it where it can be used, and refuse weak support."
+excerpt: "RAG versus long context is the wrong fight. The durable problem is evidence dispatch: admit the right passages, place them where they can be used, and refuse weak support."
 ---
 
 The lazy version of the retrieval-augmented generation debate has the clean snap
-of a hallway argument: if context windows keep getting longer, retrieval will
-become obsolete. Why build chunkers, indexes, rerankers, and citation pipelines
-when the model can read the whole corpus?
+of a hallway argument:
+
+```text
+if context windows keep getting longer,
+retrieval becomes obsolete
+```
+
+Why build chunkers, indexes, rerankers, and citation pipelines when the model
+can read the whole corpus?
 
 That question is useful because it is almost right, which is the dangerous kind
 of wrong. Long-context models do make some retrieval systems look
@@ -51,7 +57,7 @@ irrelevant but persuasive passages, stale documents, and answers that sound
 grounded because something was retrieved, not because the right thing was
 retrieved.
 
-## The Three Memories
+## Three Kinds of Memory, Three Kinds of Trouble
 
 Modern language systems mix at least three memories.
 
@@ -143,7 +149,7 @@ decide whether retrieved evidence deserves an answer next time.
 </figcaption>
 </figure>
 
-## The Window Has Geography
+## A Window Still Has Geography
 
 Even if the relevant passage is inside the window, the model may not use it
 reliably. "Lost in the Middle" showed that performance can degrade when the
@@ -238,7 +244,7 @@ That is the shape of a dispatch problem. The best system is not the one that
 always retrieves the most. It is the one that admits enough evidence, excludes
 enough noise, and knows when the evidence does not justify an answer.
 
-## Answering Requires a Gate
+## Put a Gate Before the Answer
 
 A useful RAG system should make an explicit contract:
 
@@ -271,7 +277,7 @@ The common theme is not "add another LLM call." The common theme is selection
 under uncertainty. Retrieval should produce evidence plus a confidence story,
 not just a list of chunks handed over like a tray of props.
 
-## Numbers on the Wall
+## Numbers I Would Want on the Wall
 
 For a serious system, I would track at least eight numbers.
 
@@ -294,7 +300,7 @@ is first in context is not using long context robustly. A retriever that sends
 the right passage but hides it behind twenty near-misses has not completed its
 job.
 
-## When the Whole Document Belongs
+## Sometimes the Whole Document Belongs
 
 Long context is not a straw man. It wins in several real cases.
 
@@ -350,7 +356,7 @@ The experiments I would want next are simple and hard:
 That is how RAG becomes less of a vector-database recipe and more of a reliable
 AI system.
 
-## Keep the Dispatch Question
+## Keep the Dispatch Question Alive
 
 Long context asks: how much can the model read?
 
