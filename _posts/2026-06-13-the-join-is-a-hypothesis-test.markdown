@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Fuzzy Join Writes Facts"
+title: "Fuzzy Joins Write Facts"
 description: "When there is no shared key, a data join becomes a statistical decision about identity under measurement error."
 date: 2026-06-13 11:08:00 -0400
 categories: computer-science
@@ -320,7 +320,7 @@ a merge button.
 The join is a hypothesis test. Treating it as an equality operator just hides
 the p-value in the warehouse.
 
-## References
+## Paper Trail
 
 [^newcombe]: Howard B. Newcombe, James M. Kennedy, S. J. Axford, and A. P. James, ["Automatic Linkage of Vital Records"](https://pubmed.ncbi.nlm.nih.gov/14426783/), *Science*, 1959. The [Science record](https://www.science.org/doi/10.1126/science.130.3381.954) is also available.
 
