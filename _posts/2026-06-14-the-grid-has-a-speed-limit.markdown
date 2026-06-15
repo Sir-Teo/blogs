@@ -156,6 +156,8 @@ amplification, and a sweep over Courant numbers.
     max-width: 100%;
     overflow: hidden;
     padding: 1rem;
+    position: relative;
+    isolation: isolate;
   }
 
   .cfl-lab__controls {
@@ -163,6 +165,8 @@ amplification, and a sweep over Courant numbers.
     gap: 0.85rem 0.75rem;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     overflow: hidden;
+    position: relative;
+    z-index: 1;
   }
 
   .cfl-lab__controls label {
@@ -246,6 +250,8 @@ amplification, and a sweep over Courant numbers.
     gap: 0.55rem;
     grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
     margin: 1rem 0 0.85rem;
+    position: relative;
+    z-index: 2;
   }
 
   .cfl-lab__metric {
