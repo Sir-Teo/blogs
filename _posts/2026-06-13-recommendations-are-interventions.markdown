@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Feed Taught the User, Then Took Notes"
+title: "Feeds Teach Users, Then Take Notes"
 description: "A recommender does not merely observe preference. It allocates exposure, changes what users can learn about, and trains on behavior it helped create."
 date: 2026-06-13 00:58:00 -0400
 categories: ai-systems
@@ -234,7 +234,7 @@ The practical research program is clear:
 A recommender system is not a mirror. It is a steering wheel with a mirror
 attached. The click log tells us where the wheel has been pointed.
 
-## Sources
+## Source Notes
 
 [^steck]: Harald Steck, "Training and Testing of Recommender Systems on Data Missing Not at Random," KDD 2010. [DOI](https://dl.acm.org/doi/10.1145/1835804.1835895).
 
