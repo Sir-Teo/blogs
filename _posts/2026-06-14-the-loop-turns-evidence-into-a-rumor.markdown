@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Loop Turns Evidence Into a Rumor"
+title: "Loops Turn Evidence Into Rumor"
 description: "Belief propagation is exact on trees because every message summarizes disjoint evidence. On a loopy graph, the same local rule can double-count its own echo."
 date: 2026-06-14 21:18:00 -0400
 categories: machine-learning
@@ -398,7 +398,7 @@ That is why "message passing" is both powerful and dangerous as a metaphor. A
 message is not automatically information. Sometimes it is an echo with a
 different timestamp.
 
-## Verification Notes
+## Reading Trail
 
 The JavaScript lab exports the exact enumerator, BP runner, and evaluator used by
 the page. The Node verification covered:
