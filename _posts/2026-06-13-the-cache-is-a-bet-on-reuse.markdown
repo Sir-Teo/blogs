@@ -370,7 +370,7 @@ do not ask whether the cache is big enough until you know what it keeps
 
 The cache is not a drawer. It is a memory policy.
 
-## Sources
+## Reading Trail
 
 [^belady]: Laszlo A. Belady, ["A Study of Replacement Algorithms for a Virtual-Storage Computer"](https://users.informatik.uni-halle.de/~hinnebur/Lehre/Web_DBIIb/uebung3_belady_opt_buffer.pdf), *IBM Systems Journal*, 1966.
 
