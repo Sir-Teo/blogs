@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
   var COLORS = {
     rawFull: "#b45309",
     rawHalf: "#7c3aed",
@@ -8,6 +8,7 @@
     muted: "#5d6872",
     rule: "#d7dee5"
   };
+  var AUDIT_CACHE = null;
 
   function rng(seed) {
     var state = seed >>> 0;
@@ -213,6 +214,130 @@
     };
   }
 
+  function close(left, right, tolerance) {
+    return Math.abs(left - right) <= tolerance;
+  }
+
+  function probability(value) {
+    return Number.isFinite(value) && value >= 0 && value <= 1;
+  }
+
+  function logit(p) {
+    return Math.log(p / (1 - p));
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    record("sigmoid midpoint", sigmoid(0) === 0.5);
+    record("sigmoid upper clamp", sigmoid(40) === 1);
+    record("sigmoid lower clamp", sigmoid(-40) === 0);
+    record("clamp bounds", clamp(5, 0, 3) === 3 && clamp(-1, 0, 3) === 0 && clamp(2, 0, 3) === 2);
+
+    record("even-money Kelly formula", close(kellyFraction(0.6, 1), 0.2, 1e-12));
+    record("Kelly does not short negative edge", kellyFraction(0.49, 1) === 0);
+    record("Kelly cap binds", kellyFraction(0.8, 0.25) === 0.25);
+
+    var guardedSmall = guardedProbability(0.62, 120);
+    var guardedLarge = guardedProbability(0.62, 2400);
+    record("guarded probability stays conservative", guardedSmall >= 0.5 && guardedSmall < 0.62);
+    record("larger calibration sample relaxes guard", guardedLarge > guardedSmall && guardedLarge < 0.62);
+
+    var rawLong = sideProbability({ rawP: 0.7, rawLogit: logit(0.7) }, 1, "raw");
+    var rawShort = sideProbability({ rawP: 0.3, rawLogit: logit(0.3) }, 1, "raw");
+    var calibratedLong = sideProbability({ rawP: 0.7, rawLogit: logit(0.7) }, 0.5, "calibrated");
+    record("sideProbability chooses long side", rawLong.side === 1 && close(rawLong.p, 0.7, 1e-12));
+    record("sideProbability chooses short side", rawShort.side === 0 && close(rawShort.p, 0.7, 1e-12));
+    record("calibration slope shrinks confidence", calibratedLong.side === 1 && calibratedLong.p < rawLong.p && calibratedLong.p > 0.5);
+
+    var toyEvents = [
+      { rawP: 0.6, rawLogit: logit(0.6), outcome: 1 },
+      { rawP: 0.6, rawLogit: logit(0.6), outcome: 0 }
+    ];
+    var fullPath = evaluatePath(toyEvents, { source: "raw", multiplier: 1, guarded: false }, 1, { cap: 100, calibration: 800 });
+    var halfPath = evaluatePath(toyEvents, { source: "raw", multiplier: 0.5, guarded: false }, 1, { cap: 100, calibration: 800 });
+    record("path wealth multiplication", close(fullPath.wealth, 0.96, 1e-12));
+    record("path log growth", close(fullPath.logGrowth, Math.log(0.96) / 2, 1e-12));
+    record("path drawdown from peak", close(fullPath.maxDrawdown, 0.2, 1e-12));
+    record("path trade rate", fullPath.tradeRate === 1);
+    record("half Kelly changes exposure", close(halfPath.wealth, 0.99, 1e-12));
+
+    var cappedPath = evaluatePath([{ rawP: 0.8, rawLogit: logit(0.8), outcome: 1 }], { source: "raw", multiplier: 1, guarded: false }, 1, { cap: 25, calibration: 800 });
+    record("position cap applies to path", close(cappedPath.wealth, 1.25, 1e-12));
+
+    var calibrationToy = [
+      { rawP: 0.8, rawLogit: logit(0.8), outcome: 1 },
+      { rawP: 0.8, rawLogit: logit(0.8), outcome: 1 },
+      { rawP: 0.2, rawLogit: logit(0.2), outcome: 0 },
+      { rawP: 0.2, rawLogit: logit(0.2), outcome: 0 }
+    ];
+    record("log loss favors informative slope", logLoss(calibrationToy, 1) < logLoss(calibrationToy, 0.15));
+    record("ECE is bounded", probability(ece(calibrationToy, function (event) { return event.rawP; })));
+    record("quantile interpolation", quantile([1, 3], 0.5) === 2);
+
+    var summary = summarize([
+      { wealth: 1, maxDrawdown: 0.1, logGrowth: 0.01, tradeRate: 0.5 },
+      { wealth: 3, maxDrawdown: 0.3, logGrowth: 0.03, tradeRate: 0.7 },
+      { wealth: 5, maxDrawdown: 0.5, logGrowth: 0.05, tradeRate: 0.9 }
+    ]);
+    record("summary quantiles ordered", summary.q05 <= summary.q25 && summary.q25 <= summary.median && summary.median <= summary.q75 && summary.q75 <= summary.q95);
+    record("summary mean log growth", close(summary.logGrowthPer100, 3, 1e-12));
+    record("summary trade rate", close(summary.tradeRate, 0.7, 1e-12));
+
+    function auditEvaluation(name, params) {
+      var result = evaluate(params);
+      var keys = result.summaries.map(function (row) { return row.key; }).join(",");
+      record(name + " strategy keys", keys === "rawFull,rawHalf,calibrated,guarded");
+      record(name + " ECE bounded", probability(result.rawEce) && probability(result.calibratedEce));
+      record(name + " slope bounded", Number.isFinite(result.slope) && result.slope >= 0.15 && result.slope <= 1.4);
+      result.summaries.forEach(function (row) {
+        record(name + " " + row.key + " wealth quantiles ordered", row.q05 <= row.q25 && row.q25 <= row.median && row.median <= row.q75 && row.q75 <= row.q95);
+        record(name + " " + row.key + " drawdown bounded", probability(row.medianDrawdown));
+        record(name + " " + row.key + " trade rate bounded", probability(row.tradeRate));
+        record(name + " " + row.key + " finite growth", Number.isFinite(row.logGrowthPer100));
+      });
+      return result;
+    }
+
+    var defaults = { overconfidence: 180, calibration: 800, edge: 32, cap: 25 };
+    var first = auditEvaluation("default", defaults);
+    var second = evaluate(defaults);
+    record("evaluate deterministic slope", first.slope === second.slope);
+    record("evaluate deterministic summary", first.summaries[0].q05 === second.summaries[0].q05);
+    record("default calibration improves ECE", first.calibratedEce < first.rawEce);
+    record("default slope shrinks overconfidence", first.slope < 1);
+    var rawFull = first.summaries.find(function (row) { return row.key === "rawFull"; });
+    var guarded = first.summaries.find(function (row) { return row.key === "guarded"; });
+    record("guarded improves lower tail in default", guarded.q05 > rawFull.q05);
+    record("guarded drawdown no worse than raw full", guarded.medianDrawdown <= rawFull.medianDrawdown);
+
+    var lowConfidence = auditEvaluation("lower overconfidence", { overconfidence: 120, calibration: 1200, edge: 32, cap: 25 });
+    record("lower overconfidence still calibrates", lowConfidence.calibratedEce <= lowConfidence.rawEce + 0.01);
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function formatPercent(value) {
     return (value * 100).toFixed(1) + "%";
   }
@@ -235,7 +360,7 @@
     var parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 800;
     var width = Math.max(320, parentWidth);
     var height = 360;
-    var ratio = window.devicePixelRatio || 1;
+    var ratio = global.devicePixelRatio || 1;
     canvas.style.width = width + "px";
     canvas.style.height = height + "px";
     canvas.width = Math.round(width * ratio);
@@ -357,6 +482,7 @@
     lab.querySelector('[data-value="cap"]').textContent = params.cap + "%";
 
     var result = evaluate(params);
+    var audit = cachedAudit();
     var rawFull = result.summaries.find(function (row) { return row.key === "rawFull"; });
     var guarded = result.summaries.find(function (row) { return row.key === "guarded"; });
     lab.querySelector("[data-metrics]").innerHTML = [
@@ -365,28 +491,44 @@
       metric("Calibrated ECE", formatPoints(result.calibratedEce)),
       metric("Raw Kelly 5% wealth", formatWealth(rawFull.q05)),
       metric("Guarded median drawdown", formatPercent(guarded.medianDrawdown)),
-      metric("Guarded trade rate", formatPercent(guarded.tradeRate))
+      metric("Guarded trade rate", formatPercent(guarded.tradeRate)),
+      metric("Audit", audit.passed + "/" + audit.checked)
     ].join("");
     drawChart(lab.querySelector("[data-canvas]"), result.summaries);
   }
 
   function init() {
-    var labs = Array.prototype.slice.call(document.querySelectorAll("[data-kelly-lab]"));
+    if (!global.document) return;
+    var labs = Array.prototype.slice.call(global.document.querySelectorAll("[data-kelly-lab]"));
     labs.forEach(function (lab) {
+      if (lab.__kellyLabReady) return;
+      lab.__kellyLabReady = true;
       var render = function () {
         renderLab(lab);
       };
       Array.prototype.slice.call(lab.querySelectorAll("input")).forEach(function (input) {
         input.addEventListener("input", render);
       });
-      window.addEventListener("resize", render);
+      global.addEventListener("resize", render);
       render();
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  var api = {
+    evaluate: evaluate,
+    guardedProbability: guardedProbability,
+    kellyFraction: kellyFraction,
+    runAudit: runAudit
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  global.KellyLab = api;
+
+  if (global.document) {
+    if (global.document.readyState === "loading") {
+      global.document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
   }
-})();
+}(typeof window !== "undefined" ? window : globalThis));
