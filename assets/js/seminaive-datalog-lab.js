@@ -387,8 +387,8 @@
     ctx.strokeStyle = COLORS.rule;
     ctx.strokeRect(ox, oy, size, size);
     label(ctx, "source", ox - 6, oy + size / 2, { align: "right", color: COLORS.muted, size: 10 });
-    label(ctx, "destination", ox + size / 2, box.y + box.h - 21, { align: "center", color: COLORS.muted, size: 10 });
     label(ctx, result.bfs.size + " reachable pairs", ox, box.y + box.h - 22, { color: COLORS.closure, size: 12, weight: "780" });
+    label(ctx, "destination", ox + size, box.y + box.h - 22, { align: "right", color: COLORS.muted, size: 10 });
   }
 
   function plotFrame(ctx, plot) {
@@ -425,7 +425,7 @@
     }
     label(ctx, "Naive", plot.x + 6, plot.y + 14, { color: COLORS.naive, size: 10, weight: "780" });
     label(ctx, "Semi-naive", plot.x + 68, plot.y + 14, { color: COLORS.semi, size: 10, weight: "780" });
-    label(ctx, "round", plot.x + plot.w, box.y + box.h - 20, { align: "right", color: COLORS.muted, size: 10 });
+    if (box.w > 420) label(ctx, "round", plot.x + plot.w, box.y + box.h - 20, { align: "right", color: COLORS.muted, size: 10 });
   }
 
   function drawFrontier(ctx, box, result) {
@@ -461,7 +461,10 @@
   function drawRules(ctx, box, result) {
     panel(ctx, box, "one recursive rule", "replace one old path input with delta");
     var x = box.x + 18;
-    var y = box.y + 66;
+    var y = box.y + 58;
+    var rowStep = 37;
+    var rowHeight = 30;
+    var textSize = box.w < 380 ? 10 : 11;
     var lines = [
       ["edge(x,y).", COLORS.edge],
       ["path(x,y) :- edge(x,y).", COLORS.closure],
@@ -472,12 +475,11 @@
       ctx.fillStyle = i === 3 ? "rgba(124,58,237,0.10)" : "rgba(248,250,252,0.95)";
       ctx.strokeStyle = i === 3 ? "rgba(124,58,237,0.36)" : COLORS.rule;
       ctx.beginPath();
-      ctx.roundRect(x, y + i * 42, box.w - 36, 31, 6);
+      ctx.roundRect(x, y + i * rowStep, box.w - 36, rowHeight, 6);
       ctx.fill();
       ctx.stroke();
-      label(ctx, row[0], x + 10, y + i * 42 + 16, { color: row[1], size: 11, weight: "760" });
+      label(ctx, row[0], x + 10, y + i * rowStep + rowHeight / 2, { color: row[1], size: textSize, weight: "760" });
     });
-    label(ctx, "same closure, fewer repeated joins", x, box.y + box.h - 24, { color: COLORS.semi, size: 12, weight: "780" });
   }
 
   function draw(canvas, result) {
