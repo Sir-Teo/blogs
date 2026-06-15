@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Same Bid Has Different Futures"
+title: "Same Bid, Different Futures"
 description: "In a limit order book, two orders at the same price are not the same trade. FIFO priority changes fill probability, adverse selection, and the value of waiting."
 date: 2026-06-14 00:08:00 -0400
 categories: quantitative-finance
@@ -434,7 +434,7 @@ Two orders can quote the same bid.
 
 Only one owns the earlier future.
 
-## Further Reading
+## Paper Trail
 
 [^cont-stoikov-talreja]: Rama Cont, Sasha Stoikov, and Rishi Talreja, "A Stochastic Model for Order Book Dynamics," *Operations Research*, 2010. [PDF](https://www.columbia.edu/~ww2040/orderbook.pdf), [INFORMS](https://pubsonline.informs.org/doi/10.1287/opre.1090.0780).
 
