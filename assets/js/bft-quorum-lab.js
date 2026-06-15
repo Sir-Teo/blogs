@@ -17,14 +17,22 @@
     neutral: "#94a3b8"
   };
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
 
+  function readNumber(raw, key, fallback) {
+    var value = raw && raw[key] != null ? Number(raw[key]) : fallback;
+    return isFinite(value) ? value : fallback;
+  }
+
   function normalize(raw) {
-    var n = clamp(Math.round(Number(raw.n) || 10), 4, 31);
-    var f = clamp(Math.round(Number(raw.f) || 3), 0, Math.floor((n - 1) / 2));
-    var q = clamp(Math.round(Number(raw.q) || 7), 1, n);
+    raw = raw || {};
+    var n = clamp(Math.round(readNumber(raw, "n", 10)), 4, 31);
+    var f = clamp(Math.round(readNumber(raw, "f", 3)), 0, Math.floor((n - 1) / 2));
+    var q = clamp(Math.round(readNumber(raw, "q", 7)), 1, n);
     return { n: n, f: f, q: q };
   }
 
@@ -114,17 +122,29 @@
     var certSizes = c.a.length === s.q && c.b.length === s.q;
     var intersection = c.a.filter(function (id) { return c.b.indexOf(id) >= 0; });
     var intersectionOk = intersection.length === expectedForced;
+    var uniqueA = new Set(c.a).size === c.a.length;
+    var uniqueB = new Set(c.b).size === c.b.length;
+    var byzSet = {};
+    c.byz.forEach(function (id) { byzSet[id] = true; });
+    var byzInIntersection = intersection.filter(function (id) { return byzSet[id]; }).length;
+    var honestIntersection = intersection.length - byzInIntersection;
+    var honestOk = honestIntersection === s.honestOverlap;
+    var unsafeWitnessOk = s.safety || intersection.every(function (id) { return byzSet[id]; });
     var nested = result.rows.every(function (row) {
       return row.safety === (Math.max(0, 2 * row.q - row.n) > row.f)
         && row.liveness === (row.q <= row.n - row.f);
     });
     return {
-      passed: forcedOk && safetyOk && liveOk && certSizes && intersectionOk && nested,
+      passed: forcedOk && safetyOk && liveOk && certSizes && intersectionOk && uniqueA && uniqueB && honestOk && unsafeWitnessOk && nested,
       forcedOk: forcedOk,
       safetyOk: safetyOk,
       liveOk: liveOk,
       certSizes: certSizes,
       intersectionOk: intersectionOk,
+      uniqueA: uniqueA,
+      uniqueB: uniqueB,
+      honestOk: honestOk,
+      unsafeWitnessOk: unsafeWitnessOk,
       nested: nested
     };
   }
@@ -147,6 +167,68 @@
       if (canonical.safety && canonical.liveness) minimalClusterPassed += 1;
     }
     return { total: total, passed: passed, minimalClusterPassed: minimalClusterPassed, minimalClusterTotal: 10 };
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    var defaultCase = evaluate({ n: 10, f: 3, q: 7 });
+    record("default status", defaultCase.status.safety && defaultCase.status.liveness && defaultCase.status.honestOverlap === 1 && defaultCase.status.liveSlack === 0);
+    record("default certificate audit", defaultCase.audit.passed);
+
+    var unsafeCase = evaluate({ n: 10, f: 3, q: 6 });
+    record("lower quorum is unsafe", !unsafeCase.status.safety && unsafeCase.status.liveness && unsafeCase.status.honestOverlap === 0);
+    record("unsafe witness spends only Byzantine overlap", unsafeCase.audit.unsafeWitnessOk);
+
+    var stallCase = evaluate({ n: 10, f: 3, q: 8 });
+    record("higher quorum may stall", stallCase.status.safety && !stallCase.status.liveness && stallCase.status.liveSlack === -1);
+
+    for (var f0 = 1; f0 <= 10; f0 += 1) {
+      var n0 = 3 * f0 + 1;
+      var q0 = 2 * f0 + 1;
+      var canonical = evaluate({ n: n0, f: f0, q: q0 });
+      record("canonical safe/live f=" + f0, canonical.status.both);
+      record("canonical forced overlap f=" + f0, canonical.status.forcedOverlap === f0 + 1);
+      record("canonical honest overlap f=" + f0, canonical.status.honestOverlap === 1);
+      record("canonical zero slack f=" + f0, canonical.status.liveSlack === 0);
+      record("canonical max faults f=" + f0, canonical.status.maxFaults === f0);
+    }
+
+    for (var n = 4; n <= 31; n += 1) {
+      for (var f = 0; f <= Math.floor((n - 1) / 2); f += 1) {
+        var rows = [];
+        for (var q = 1; q <= n; q += 1) {
+          var result = evaluate({ n: n, f: f, q: q });
+          record("grid local audit n=" + n + " f=" + f + " q=" + q, result.audit.passed);
+          rows.push(result.status);
+        }
+        var anyBoth = rows.some(function (row) { return row.both; });
+        record("window exists iff n > 3f n=" + n + " f=" + f, anyBoth === (n > 3 * f));
+      }
+    }
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function formatSigned(value) {
@@ -386,6 +468,7 @@
       params[input.getAttribute("data-param")] = Number(input.value);
     });
     var result = evaluate(params);
+    var audit = cachedAudit();
     var values = {
       n: String(result.params.n),
       f: String(result.params.f),
@@ -406,7 +489,7 @@
         metric("Live slack", formatSigned(result.status.liveSlack)),
         metric("Conflict", result.status.safety ? "blocked" : "possible"),
         metric("Liveness", result.status.liveness ? "possible" : "stalls"),
-        metric("Audit", result.audit.passed ? "passed" : "check")
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
 
@@ -433,7 +516,8 @@
     auditResult: auditResult,
     buildCertificates: buildCertificates,
     evaluate: evaluate,
-    quorumStatus: quorumStatus
+    quorumStatus: quorumStatus,
+    runAudit: runAudit
   };
 
   if (global.document) {
