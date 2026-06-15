@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Ball Comes From the Vote Gap"
+title: "Vote Gaps Draw the Ball"
 description: "Randomized smoothing turns a classifier into a Gaussian vote. When the top class wins by enough, the prediction earns a certified L2 ball."
 date: 2026-06-14 12:10:00 -0400
 categories: machine-learning
