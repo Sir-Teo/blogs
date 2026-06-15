@@ -379,8 +379,8 @@
       ctx.setLineDash([]);
     });
     text(ctx, "integrand", plot.x + plot.w - 64, yF(run.profile[run.profile.length - 1].f) - 6, COLORS.truth, 11, 750);
-    text(ctx, "-90°", plot.x, plot.y + plot.h + 17, COLORS.muted, 10, 500);
-    text(ctx, "90°", plot.x + plot.w, plot.y + plot.h + 17, COLORS.muted, 10, 500, "right");
+    text(ctx, "-90 deg", plot.x, plot.y + plot.h + 17, COLORS.muted, 10, 500);
+    text(ctx, "90 deg", plot.x + plot.w, plot.y + plot.h + 17, COLORS.muted, 10, 500, "right");
   }
 
   function drawConvergence(ctx, run, box) {
@@ -490,12 +490,12 @@
     var labels = {
       seed: String(params.seed),
       samples: String(params.samples),
-      lightAngle: Math.round(degrees(params.lightAngle)) + "°",
-      lightSize: Math.round(degrees(params.lightSize)) + "°",
+      lightAngle: Math.round(degrees(params.lightAngle)) + " deg",
+      lightSize: Math.round(degrees(params.lightSize)) + " deg",
       lightPower: fmt(params.lightPower, 1),
       environment: Math.round(params.environment * 100) + "%",
-      lobeAngle: Math.round(degrees(params.lobeAngle)) + "°",
-      roughness: Math.round(degrees(params.roughness)) + "°"
+      lobeAngle: Math.round(degrees(params.lobeAngle)) + " deg",
+      roughness: Math.round(degrees(params.roughness)) + " deg"
     };
     Object.keys(labels).forEach(function (key) {
       var out = lab.querySelector('[data-value="' + key + '"]');
