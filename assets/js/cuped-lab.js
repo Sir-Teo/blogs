@@ -13,6 +13,7 @@
     faint: "#f8fafc",
     band: "#dbeafe"
   };
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -32,6 +33,18 @@
     if (Math.abs(value) >= 10) return value.toFixed(1) + "%";
     if (Math.abs(value) >= 1) return value.toFixed(2) + "%";
     return value.toFixed(3) + "%";
+  }
+
+  function close(actual, expected, tolerance) {
+    return isFinite(actual) && isFinite(expected) && Math.abs(actual - expected) <= tolerance;
+  }
+
+  function probability(value) {
+    return isFinite(value) && value >= 0 && value <= 1;
+  }
+
+  function orderedSummary(stats) {
+    return stats.p05 <= stats.p50 && stats.p50 <= stats.p95 && isFinite(stats.variance);
   }
 
   function metric(label, value) {
@@ -232,6 +245,94 @@
       xBadDiff: summary(xBadDiff),
       xDiff: summary(xDiff)
     };
+  }
+
+  function runAudit() {
+    var checks = [];
+    var baseParams = {
+      usersPerArm: 1200,
+      trueLift: 0.08,
+      correlation: 65,
+      coverage: 100,
+      leakage: 0,
+      trials: 220
+    };
+
+    function check(label, passed, detail) {
+      checks.push({ label: label, passed: !!passed, detail: detail || "" });
+    }
+
+    check("mean arithmetic", close(mean([1, 2, 3]), 2, 1e-12));
+    check("sample variance", close(variance([1, 2, 3]), 1, 1e-12));
+    check("sample covariance", close(covariance([1, 2, 3], [2, 4, 6]), 2, 1e-12));
+    check("correlation scale", close(correlation([1, 2, 3], [2, 4, 6]), 1, 1e-12));
+    check("interpolated quantile", close(quantile([1, 3], 0.5), 2, 1e-12));
+    check("clamp bounds", clamp(4, 0, 3) === 3 && clamp(-1, 0, 3) === 0);
+
+    var ledgerRows = [
+      { treatment: 0, y: 1, x: 0, xBad: 0 },
+      { treatment: 0, y: 3, x: 2, xBad: 2 },
+      { treatment: 1, y: 5, x: 4, xBad: 4 },
+      { treatment: 1, y: 7, x: 6, xBad: 6 }
+    ];
+    check("arm difference", close(difference(ledgerRows, "y"), 4, 1e-12));
+    check("difference standard error", close(seDifference(ledgerRows, "y"), Math.sqrt(2), 1e-12));
+
+    var firstTrial = runTrial(baseParams, 0);
+    var laterTrial = runTrial(baseParams, 1);
+    var rows = firstTrial.rows || [];
+    var treated = rows.filter(function (row) { return row.treatment === 1; }).length;
+    var control = rows.filter(function (row) { return row.treatment === 0; }).length;
+    check("first trial exposes equal-arm ledger", rows.length === 2400 && treated === 1200 && control === 1200);
+    check("later trials omit row payloads", laterTrial.rows === null);
+    check("minimum arm-size clamp", runTrial(Object.assign({}, baseParams, { usersPerArm: 20 }), 0).rows.length === 100);
+    check("correlation remains bounded", Math.abs(firstTrial.corr) <= 1 + 1e-12);
+    check("standard errors are nonnegative", firstTrial.seUnadj > 0 && firstTrial.seCuped > 0 && firstTrial.seBad > 0);
+    check("CUPED identity", close(firstTrial.cuped, firstTrial.unadj - firstTrial.theta * firstTrial.xDiff, 1e-12));
+    check("bad-adjusted identity", close(firstTrial.bad, firstTrial.unadj - firstTrial.thetaBad * firstTrial.xBadDiff, 1e-12));
+    check("uncontaminated covariate delta", close(firstTrial.xBadDiff, firstTrial.xDiff, 1e-12));
+
+    var leakyTrial = runTrial(Object.assign({}, baseParams, { leakage: 100 }), 0);
+    check(
+      "contaminated covariate delta",
+      close(leakyTrial.xBadDiff, leakyTrial.xDiff + baseParams.trueLift, 1e-12)
+    );
+    check("contaminated algebra still matches estimator", close(leakyTrial.bad, leakyTrial.unadj - leakyTrial.thetaBad * leakyTrial.xBadDiff, 1e-12));
+
+    var result = simulate(baseParams);
+    check("trial count respected", result.trials === baseParams.trials && result.results.length === baseParams.trials);
+    check("summaries are ordered", orderedSummary(result.unadj) && orderedSummary(result.cuped) && orderedSummary(result.bad));
+    check("covariate summaries are ordered", orderedSummary(result.xDiff) && orderedSummary(result.xBadDiff));
+    check("detection rates are probabilities", probability(result.unadjDetection) && probability(result.cupedDetection) && probability(result.badDetection));
+    check("default variance reduction", result.varianceRatio > 0 && result.varianceRatio < 0.70);
+    check("default detection improves", result.cupedDetection > result.unadjDetection);
+    check("default CUPED remains centered", Math.abs(result.cuped.mean - baseParams.trueLift) < 0.02);
+    check("zero leakage keeps estimators identical", close(result.bad.mean, result.cuped.mean, 1e-12) && close(result.badVarianceRatio, result.varianceRatio, 1e-12));
+    check("minimum simulated trials clamp", simulate(Object.assign({}, baseParams, { trials: 1 })).trials === 40);
+
+    var lowCoverage = simulate(Object.assign({}, baseParams, { coverage: 40 }));
+    check("lower coverage weakens correlation", lowCoverage.avgCorr < result.avgCorr);
+    check("lower coverage cuts less variance", lowCoverage.varianceRatio > result.varianceRatio);
+
+    var noCorrelation = simulate(Object.assign({}, baseParams, { correlation: 0 }));
+    check("no-correlation scenario stays near raw variance", Math.abs(noCorrelation.avgCorr) < 0.03 && noCorrelation.varianceRatio > 0.95 && noCorrelation.varianceRatio < 1.08);
+
+    var leaky = simulate(Object.assign({}, baseParams, { leakage: 100 }));
+    check("leakage shifts the bad covariate", leaky.xBadDiff.mean > result.xDiff.mean + 0.07);
+    check("leakage biases the bad adjustment", leaky.bad.mean < baseParams.trueLift && Math.abs(leaky.bad.mean - baseParams.trueLift) > Math.abs(result.cuped.mean - baseParams.trueLift) + 0.02);
+
+    var passed = checks.filter(function (item) { return item.passed; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      ok: passed === checks.length,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function panelTitle(ctx, box, title, subtitle) {
@@ -501,6 +602,7 @@
   function render(root) {
     var params = paramsFromRoot(root);
     var result = simulate(params);
+    var audit = cachedAudit();
     var values = {
       correlation: formatPercent(params.correlation),
       coverage: formatPercent(params.coverage),
@@ -521,7 +623,8 @@
         metric("Unadj detect", formatPercent(result.unadjDetection * 100)),
         metric("CUPED detect", formatPercent(result.cupedDetection * 100)),
         metric("CUPED mean", formatNumber(result.cuped.mean)),
-        metric("Bad-adjusted mean", formatNumber(result.bad.mean))
+        metric("Bad-adjusted mean", formatNumber(result.bad.mean)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -529,6 +632,8 @@
   }
 
   function init(root) {
+    if (root.__cupedLabReady) return;
+    root.__cupedLabReady = true;
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
@@ -543,6 +648,7 @@
   }
 
   var api = {
+    runAudit: runAudit,
     runTrial: runTrial,
     simulate: simulate
   };
@@ -553,6 +659,10 @@
   global.CupedLab = api;
 
   if (global.document) {
-    global.document.addEventListener("DOMContentLoaded", initAll);
+    if (global.document.readyState === "loading") {
+      global.document.addEventListener("DOMContentLoaded", initAll);
+    } else {
+      initAll();
+    }
   }
 }(typeof window !== "undefined" ? window : globalThis));
