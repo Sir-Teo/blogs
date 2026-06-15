@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Last Column Knows Where to Search"
+title: "Last Column Knows Where to Search"
 description: "The FM-index turns the Burrows-Wheeler transform into a searchable compressed index: exact matching becomes a right-to-left interval-narrowing game."
 date: 2026-06-14 16:34:00 -0400
 categories: computer-science
