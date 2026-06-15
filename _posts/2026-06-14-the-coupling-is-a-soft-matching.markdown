@@ -83,7 +83,7 @@ scaling vectors $$u$$ and $$v$$ so that this matrix has the right marginals.
 That is why row and column normalization suddenly becomes more than
 bookkeeping.
 
-## The Old Engine Under the New Loss
+## Old Engine Under the New Loss
 
 Sinkhorn and Knopp studied when alternating row and column scaling of a
 nonnegative matrix converges to a doubly stochastic limit.[^sinkhorn] In the
