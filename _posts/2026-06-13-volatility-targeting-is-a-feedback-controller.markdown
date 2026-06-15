@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Risk Dial Has a Delay"
+title: "Risk Dials Have Delays"
 description: "Scaling exposure by estimated volatility is not a free Sharpe-ratio machine. It is a lagged control loop with estimator error, leverage caps, turnover, and crash dynamics."
 date: 2026-06-13 03:44:00 -0400
 categories: quantitative-finance
@@ -309,7 +309,7 @@ $$
 
 The system around it is not.
 
-## Source Notes
+## Primary Sources
 
 [^engle]: Robert F. Engle, "Autoregressive Conditional Heteroscedasticity with Estimates of the Variance of United Kingdom Inflation," *Econometrica*, 1982. [JSTOR](https://www.jstor.org/stable/1912773).
 
