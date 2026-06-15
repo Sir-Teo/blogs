@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The People Who Leave the Curve"
+title: "Who Leaves the Curve?"
 description: "Kaplan-Meier curves do not magically solve missing follow-up. They keep censored futures in the accounting and expose the assumption doing the work."
 date: 2026-06-13 18:48:00 -0400
 categories: statistics
@@ -8,7 +8,7 @@ tags: [survival-analysis, censoring, kaplan-meier, hazards, missing-data, churn,
 excerpt: "Survival analysis is about events, but also about the people, loans, devices, and accounts whose futures disappear before the endpoint arrives."
 ---
 
-A survival curve looks like a calm object.
+A survival curve looks calm.
 
 It starts at one. It steps down. It says:
 
@@ -33,7 +33,7 @@ Those missing futures are called censoring. The hard question is not whether
 censoring exists. It always exists. The hard question is whether the people who
 left the curve are exchangeable with the people who remained under observation.
 
-## The Denominator Ledger
+## Denominator Ledger
 
 Kaplan and Meier's 1958 estimator is one of the great small machines in
 statistics.[^kaplan-meier] At each observed event time $$t_j$$, let:
@@ -182,7 +182,7 @@ on the covariates and history included in the analysis. If the reason someone
 vanished is unmeasured and related to their future event time, the model is
 estimating through a hole.
 
-## The Strange Little Ratio
+## Hazard Ratios Are Strange Little Ratios
 
 The hazard ratio is useful, but it is easy to over-read.
 
@@ -217,7 +217,7 @@ how many customer-months did this cohort keep before tau?
 That is not always the only estimand you need. But it is hard to confuse with a
 conditional instantaneous rate.
 
-## When Disappearing Is the Product
+## When Disappearing Is Part of the Product
 
 Survival analysis was born in life testing and medical follow-up, but the same
 trap appears in software and finance.
@@ -266,7 +266,7 @@ after this event, can the endpoint still happen in the same system?
 
 If no, do not casually call it loss to follow-up.
 
-## Survival Report Intake
+## Intake Form for a Survival Curve
 
 Before I trust a survival, retention, failure, or default curve, I want to know:
 
