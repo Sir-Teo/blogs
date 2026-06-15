@@ -34,7 +34,7 @@ so mistakes become fine-grained noise
 That last line is the whole trick. Blue noise is not just "nice random dots."
 It is a claim about where the error lives in frequency space.
 
-## The Eye Notices Slow Mistakes
+## Eye Notices Slow Mistakes
 
 Noise has color by analogy with light. White noise spreads power roughly evenly
 across frequencies. Blue noise pushes power toward higher frequencies and leaves
