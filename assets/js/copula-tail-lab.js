@@ -30,6 +30,7 @@
     focus: "student",
     seed: 31
   };
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -307,8 +308,9 @@
   }
 
   function theoreticalLambda(kind, params) {
-    if (kind === "gaussian" || params.tau <= 0) return 0;
+    if (kind === "gaussian") return 0;
     if (kind === "clayton") {
+      if (params.tau <= 0) return 0;
       return Math.pow(2, -1 / thetaFromTau(params.tau));
     }
     var rho = rhoFromTau(params.tau);
@@ -363,6 +365,186 @@
       return series[key].esTail > series[best].esTail ? key : best;
     }, order[0]);
     return { params: params, series: series, order: order, worst: worst };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
+  function close(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function isProbability(value) {
+    return Number.isFinite(value) && value >= 0 && value <= 1;
+  }
+
+  function sortedLosses(series, key) {
+    return series.points.map(function (point) { return point[key]; }).sort(function (a, b) { return a - b; });
+  }
+
+  function sameSorted(a, b, tolerance) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i += 1) {
+      if (!close(a[i], b[i], tolerance)) return false;
+    }
+    return true;
+  }
+
+  function highCount(points, q) {
+    return points.reduce(function (count, point) {
+      return count + (point.u > q ? 1 : 0);
+    }, 0);
+  }
+
+  function seriesIsFinite(series) {
+    return isProbability(series.spearman * 0.5 + 0.5) &&
+      isProbability(series.lossCorrelation * 0.5 + 0.5) &&
+      isProbability(series.tailConditional) &&
+      isProbability(series.jointTail) &&
+      isProbability(series.lambda) &&
+      Number.isFinite(series.varTail) &&
+      Number.isFinite(series.esTail) &&
+      series.esTail >= series.varTail - 1e-12 &&
+      series.points.length > 0 &&
+      series.curve.length === 20 &&
+      series.curve.every(function (row) {
+        return row.q >= 0.80 && row.q <= 0.991 && isProbability(row.conditional);
+      });
+  }
+
+  function runAudit() {
+    var passed = 0;
+    var checked = 0;
+    var failures = [];
+    var defaults = cleanParams(DEFAULTS);
+    var result = evaluate(DEFAULTS);
+    var gaussian = result.series.gaussian;
+    var student = result.series.student;
+    var clayton = result.series.clayton;
+    var gridCases = 0;
+    var gridValid = 0;
+
+    function check(name, condition, details) {
+      checked += 1;
+      if (condition) {
+        passed += 1;
+      } else {
+        failures.push({ name: name, details: details || null });
+      }
+    }
+
+    function sameMargins(a, b) {
+      return sameSorted(sortedLosses(a, "x"), sortedLosses(b, "x"), 1e-12) &&
+        sameSorted(sortedLosses(a, "y"), sortedLosses(b, "y"), 1e-12);
+    }
+
+    check("parameter sanitation snaps and clamps", (function () {
+      var params = cleanParams({ tau: 83, df: 19.8, samples: 777, tail: 88, seed: -5, focus: "bad", marginal: "bad" });
+      return params.tau === 0.80 &&
+        params.df === 16 &&
+        params.samples === 800 &&
+        params.tail === 0.90 &&
+        params.seed === 1 &&
+        params.focus === DEFAULTS.focus &&
+        params.marginal === DEFAULTS.marginal;
+    })());
+    check("rank uniforms are the midpoint grid", (function () {
+      var ranks = rankUniforms([30, 10, 20, 40]).slice().sort(function (a, b) { return a - b; });
+      return sameSorted(ranks, [0.125, 0.375, 0.625, 0.875], 1e-15);
+    })());
+    check("normal quantile is symmetric", close(invNorm(0.975), -invNorm(0.025), 1e-8));
+    check("student t cdf is centered and symmetric", close(studentTCdf(0, 5), 0.5, 1e-12) &&
+      close(studentTCdf(1.4, 5), 1 - studentTCdf(-1.4, 5), 2e-4));
+    check("Kendall tau maps to elliptical rho", close(rhoFromTau(0.5), Math.SQRT1_2, 1e-12) &&
+      close(rhoFromTau(0), 0, 1e-12));
+    check("Kendall tau maps to Clayton theta", (function () {
+      var theta = thetaFromTau(0.45);
+      return close(theta / (theta + 2), 0.45, 1e-12);
+    })());
+    check("theoretical tail coefficients are probabilities", result.order.every(function (key) {
+      return isProbability(result.series[key].lambda);
+    }));
+    check("Gaussian has zero asymptotic tail dependence", theoreticalLambda("gaussian", defaults) === 0);
+    check("t tail dependence falls as degrees of freedom rise", theoreticalLambda("student", Object.assign({}, defaults, { df: 3 })) >
+      theoreticalLambda("student", Object.assign({}, defaults, { df: 16 })));
+    check("survival Clayton tail dependence rises with tau", theoreticalLambda("clayton", Object.assign({}, defaults, { tau: 0.20 })) <
+      theoreticalLambda("clayton", Object.assign({}, defaults, { tau: 0.70 })));
+    check("default result order and worst ES match the post", result.order.join("|") === "gaussian|student|clayton" && result.worst === "clayton");
+    check("default co-tail facts match the post", close(gaussian.tailConditional, 0.2857142857142857, 1e-15) &&
+      close(student.tailConditional, 0.36904761904761907, 1e-15) &&
+      close(clayton.tailConditional, 0.6071428571428571, 1e-15));
+    check("default ES facts match the post", close(gaussian.esTail, 2.8918724923654233, 1e-12) &&
+      close(student.esTail, 2.942234308464295, 1e-12) &&
+      close(clayton.esTail, 3.1870519729096882, 1e-12));
+    check("copulas share the same marginal loss grid", sameMargins(gaussian, student) && sameMargins(gaussian, clayton));
+    check("joint tail equals conditional times tail mass", result.order.every(function (key) {
+      var series = result.series[key];
+      var mass = highCount(series.points, result.params.tail) / result.params.samples;
+      return close(series.jointTail, series.tailConditional * mass, 1e-15);
+    }));
+    check("portfolio ES is at least VaR", result.order.every(function (key) {
+      return result.series[key].esTail >= result.series[key].varTail;
+    }));
+    check("focus changes presentation but not the dependence runs", (function () {
+      var other = evaluate(Object.assign({}, DEFAULTS, { focus: "gaussian" }));
+      return close(other.series.clayton.tailConditional, clayton.tailConditional, 1e-15) &&
+        close(other.series.student.esTail, student.esTail, 1e-12);
+    })());
+    check("zero tau keeps t common-shock tail dependence visible", (function () {
+      var zeroTau = evaluate(Object.assign({}, DEFAULTS, { tau: 0, samples: 5200, tail: 95 }));
+      return Math.abs(zeroTau.series.gaussian.tailConditional - 0.05) < 0.03 &&
+        Math.abs(zeroTau.series.clayton.tailConditional - 0.05) < 0.03 &&
+        zeroTau.series.student.tailConditional > 0.10 &&
+        zeroTau.series.student.lambda > 0;
+    })());
+    check("same copula with different marginals keeps rank co-tail", (function () {
+      var normalResult = evaluate(Object.assign({}, DEFAULTS, { marginal: "normal" }));
+      return result.order.every(function (key) {
+        return close(result.series[key].tailConditional, normalResult.series[key].tailConditional, 1e-15);
+      });
+    })());
+
+    [3, 31, 211].forEach(function (seed) {
+      [0, 0.35, 0.65].forEach(function (tau) {
+        [2, 6].forEach(function (df) {
+          ["normal", "skew"].forEach(function (marginal) {
+            [95, 99].forEach(function (tail) {
+              var tested = evaluate({ seed: seed, tau: tau * 100, df: df, marginal: marginal, samples: 1200, tail: tail });
+              var finite = tested.order.every(function (key) { return seriesIsFinite(tested.series[key]); });
+              var margins = sameMargins(tested.series.gaussian, tested.series.student) &&
+                sameMargins(tested.series.gaussian, tested.series.clayton);
+              gridCases += 1;
+              if (finite && margins) gridValid += 1;
+            });
+          });
+        });
+      });
+    });
+    check("72-case copula grid is numerically valid", gridCases === 72 && gridValid === 72, {
+      cases: gridCases,
+      valid: gridValid
+    });
+
+    return {
+      ok: passed,
+      cases: checked,
+      passed: passed,
+      checked: checked,
+      gridCases: gridCases,
+      failures: failures,
+      defaultFacts: {
+        gaussianCoTail: gaussian.tailConditional,
+        studentCoTail: student.tailConditional,
+        claytonCoTail: clayton.tailConditional,
+        gaussianES: gaussian.esTail,
+        studentES: student.esTail,
+        claytonES: clayton.esTail,
+        tLambda: student.lambda,
+        claytonLambda: clayton.lambda
+      }
+    };
   }
 
   function formatPercent(x, digits) {
@@ -660,12 +842,14 @@
     updateOutputs(container, result.params);
     var metrics = container.querySelector("[data-metrics]");
     if (metrics) {
+      var audit = cachedAudit();
       metrics.innerHTML = [
         metric("model Kendall tau", formatPercent(result.params.tau, 0)),
         metric("Gaussian co-tail", formatPercent(result.series.gaussian.tailConditional, 1)),
         metric("t co-tail", formatPercent(result.series.student.tailConditional, 1)),
         metric("Clayton co-tail", formatPercent(result.series.clayton.tailConditional, 1)),
-        metric("largest ES", LABELS[result.worst])
+        metric("largest ES", LABELS[result.worst]),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = container.querySelector("canvas[data-canvas]");
@@ -690,14 +874,17 @@
     root.document.querySelectorAll("[data-copula-tail-lab]").forEach(mount);
   }
 
-  root.CopulaTailLab = {
+  var api = {
     cleanParams: cleanParams,
     evaluate: evaluate,
     invNorm: invNorm,
     marginalQuantile: marginalQuantile,
     rankUniforms: rankUniforms,
+    runAudit: runAudit,
     theoreticalLambda: theoreticalLambda
   };
+  root.CopulaTailLab = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
 
   if (root.document) {
     if (root.document.readyState === "loading") root.document.addEventListener("DOMContentLoaded", init);
