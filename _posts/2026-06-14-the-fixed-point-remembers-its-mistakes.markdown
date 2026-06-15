@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Fixed Point Remembers Its Mistakes"
+title: "Fixed Points Remember Mistakes"
 description: "Anderson acceleration turns a slow fixed-point iteration into a small residual-canceling least-squares problem. The magic is real, but only if you respect memory, damping, and safeguards."
 date: 2026-06-14 20:44:00 -0400
 categories: applied-math
