@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The TFLOP Number Is Not a Speedometer"
+title: "TFLOP Numbers Are Not Speedometers"
 description: "A processor's peak FLOP rate is only one roof. The other roof is memory bandwidth, and the useful question is how much arithmetic each byte gets to buy."
 date: 2026-06-14 19:38:03 -0400
 categories: software-engineering
