@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Small Model Is a Scout"
+title: "Small Models Can Be Scouts"
 description: "Speculative decoding is exact because the draft model is only a proposal distribution. The verifier keeps the overlap and samples the missing target mass when the scout guesses wrong."
 date: 2026-06-14 07:24:00 -0400
 categories: ai-systems
