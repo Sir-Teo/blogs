@@ -62,7 +62,7 @@ have been scattered away from their old homes.
 
 The assignment function became an outage amplifier.
 
-## The Ring Lets Only Its Neighbors Notice
+## Ring Lets Only Its Neighbors Notice
 
 The classic consistent-hashing picture puts both servers and keys on a circle.
 Hash each server to points on the ring. Hash each key to one point. The key is
