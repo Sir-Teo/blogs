@@ -15,7 +15,7 @@
     best: "#0f766e",
     heatLow: "#ecfeff",
     heatMid: "#bfdbfe",
-    heatHigh: "#7c3aed"
+    heatHigh: "#b45309"
   };
 
   var DEFAULTS = {
@@ -346,7 +346,7 @@
   function setCanvasSize(canvas) {
     var box = canvas.getBoundingClientRect();
     var cssWidth = Math.max(320, Math.round(box.width || canvas.parentNode.clientWidth || 900));
-    var cssHeight = cssWidth < 620 ? 1120 : 780;
+    var cssHeight = cssWidth < 560 ? 1120 : 780;
     var ratio = Math.min(2, global.devicePixelRatio || 1);
     canvas.width = Math.round(cssWidth * ratio);
     canvas.height = Math.round(cssHeight * ratio);
@@ -391,7 +391,7 @@
       return "rgb(" + Math.round(236 + (191 - 236) * a) + "," + Math.round(254 + (219 - 254) * a) + "," + Math.round(255 + (254 - 255) * a) + ")";
     }
     var b = (t - 0.5) / 0.5;
-    return "rgb(" + Math.round(191 + (124 - 191) * b) + "," + Math.round(219 + (58 - 219) * b) + "," + Math.round(254 + (237 - 254) * b) + ")";
+    return "rgb(" + Math.round(191 + (180 - 191) * b) + "," + Math.round(219 + (83 - 219) * b) + "," + Math.round(254 + (9 - 254) * b) + ")";
   }
 
   function pathBounds(result) {
@@ -517,7 +517,7 @@
 
   function drawWeights(ctx, rect, result) {
     panel(ctx, rect, "Last Anderson mix", "affine weights on recent residuals");
-    var plot = { x: rect.x + 44, y: rect.y + 66, w: rect.w - 66, h: rect.h - 110 };
+    var plot = { x: rect.x + 44, y: rect.y + 78, w: rect.w - 66, h: rect.h - 132 };
     var weights = result.anderson.lastWeights;
     var maxAbs = Math.max(1, Math.max.apply(null, weights.map(function (w) { return Math.abs(w); })));
     var zeroY = plot.y + plot.h * 0.5;
@@ -539,8 +539,8 @@
     });
     ctx.fillStyle = COLORS.muted;
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillText("sum = " + fmt(weights.reduce(function (a, b) { return a + b; }, 0), 2), plot.x, rect.y + rect.h - 18);
-    ctx.fillText("negative bars extrapolate", plot.x + plot.w - 126, rect.y + rect.h - 18);
+    ctx.fillText("sum = " + fmt(weights.reduce(function (a, b) { return a + b; }, 0), 2), plot.x, rect.y + 61);
+    ctx.fillText("negative bars extrapolate", plot.x + plot.w - 126, rect.y + 61);
   }
 
   function drawSweep(ctx, rect, result) {
@@ -607,7 +607,7 @@
     var frame = setCanvasSize(canvas);
     var ctx = frame.ctx;
     var pad = 14;
-    if (frame.width < 620) {
+    if (frame.width < 560) {
       drawTerrain(ctx, { x: pad, y: pad, w: frame.width - pad * 2, h: 300 }, result);
       drawResiduals(ctx, { x: pad, y: 330, w: frame.width - pad * 2, h: 248 }, result);
       drawWeights(ctx, { x: pad, y: 594, w: frame.width - pad * 2, h: 230 }, result);
