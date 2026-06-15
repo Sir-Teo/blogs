@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Trade Starts After the Decision"
+title: "After the Decision, the Trade Begins"
 description: "A portfolio model has a decision price. The desk has a path through liquidity, volatility, impact, patience, and information leakage."
 date: 2026-06-13 01:20:00 -0400
 categories: quantitative-finance
@@ -275,7 +275,7 @@ is a system that knows what kind of market it is currently inside.
 That is why a trade is a trajectory. Prediction decides where the portfolio
 should go. Execution decides the path, and the path writes itself into returns.
 
-## Reading Notes
+## Paper Trail
 
 [^perold]: Andre F. Perold, "The Implementation Shortfall: Paper vs. Reality," *Journal of Portfolio Management*, 1988. [Harvard Business School](https://www.hbs.edu/faculty/Pages/item.aspx?num=2083).
 
