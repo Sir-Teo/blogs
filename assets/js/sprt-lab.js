@@ -132,10 +132,11 @@
     var d = design(rawParams);
     var params = d.params;
     var oneRandom = rng(params.seed * 65537 + 99);
+    var auditTrials = Math.max(2400, params.trials);
     var one = runOne(params, params.trueP, oneRandom, true);
     var summary = summarize(params, params.trueP, params.trials, params.seed + 7);
-    var atNull = summarize(params, params.p0, Math.max(900, params.trials), params.seed + 101);
-    var atAlt = summarize(params, params.p1, Math.max(900, params.trials), params.seed + 211);
+    var atNull = summarize(params, params.p0, auditTrials, params.seed + 101);
+    var atAlt = summarize(params, params.p1, auditTrials, params.seed + 211);
     var points = curve(params);
 
     return {
