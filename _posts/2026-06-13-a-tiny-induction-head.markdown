@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Copy Machine Small Enough to See"
+title: "Build a Copy Machine You Can See"
 description: "Instead of treating in-context learning as magic, build a browser-sized induction circuit that finds a repeated pattern and copies what followed it."
 date: 2026-06-13 01:27:00 -0400
 categories: machine-learning
@@ -8,7 +8,7 @@ tags: [mechanistic-interpretability, transformers, induction-heads, in-context-l
 excerpt: "A tiny attention circuit can turn the prompt into a lookup table. It is not a language model, and that is exactly why the mechanism stays visible."
 ---
 
-I want to build a machine small enough that it cannot hide.
+I want to build a machine small enough that it has nowhere to hide.
 
 Not a language model. Not a trained transformer. Just the smallest browser-sized
 object that makes one piece of in-context learning feel mechanical.
@@ -35,7 +35,7 @@ $$
 The slogan is almost too small. Good. Small enough means we can put it under
 glass.
 
-## The Lookup You Can See
+## Visible Lookup
 
 The transformer paper introduced scaled dot-product attention as a way to map
 queries, keys, and values into a weighted average of values.[^vaswani]
@@ -67,7 +67,7 @@ a glass box version of a circuit motif. The Transformer Circuits framework makes
 this kind of decomposition useful by studying attention-only transformers and
 asking what algorithms individual heads can implement.[^framework]
 
-## The Prompt Trapdoor
+## Prompt Trapdoor
 
 The lab below creates a synthetic sequence.
 
@@ -193,7 +193,7 @@ keep the phenomenon visible while adding reality.
 Small machines are good teachers. They do not explain everything. They explain
 one thing without hiding behind scale.
 
-## Where This Came From
+## Paper Trail
 
 [^vaswani]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, "Attention Is All You Need," NeurIPS 2017. [arXiv](https://arxiv.org/abs/1706.03762).
 
