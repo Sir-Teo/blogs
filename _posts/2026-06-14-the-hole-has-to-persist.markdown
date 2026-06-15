@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Hole Has to Persist"
+title: "Holes Have to Persist"
 description: "Persistent homology turns a point cloud into a scale experiment. Components and loops are allowed to appear and die; the barcode records which ones survive long enough to be believed."
 date: 2026-06-14 20:56:00 -0400
 categories: applied-math
@@ -430,7 +430,7 @@ reasonable scales and resampling choices, it becomes harder to dismiss.
 This is why the method feels philosophically different from many summaries. It
 does not choose the scale first. It lets the scale vary, then asks what remains.
 
-## Verification Notes
+## Works Cited
 
 The lab exports `PersistentHomologyLab` and a CommonJS API for Node checks. I
 audited the default ring, a clean ring, a noisy ring with outliers, a
