@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Backtest Is the Best Survivor"
+title: "Beautiful Backtests Come From a Crowd"
 description: "A beautiful backtest is weak evidence until the ideas, parameters, filters, assets, and windows that lost are counted too."
 date: 2026-06-13 00:35:00 -0400
 categories: quantitative-finance
@@ -238,7 +238,7 @@ investor receives only the maximum.
 A backtest is a microscope if the experiment was pre-registered. It is a mirror
 if the experiment was searched until it smiled back.
 
-## Further Reading
+## Primary Sources
 
 [^white]: Halbert White, "A Reality Check for Data Snooping," *Econometrica*, 2000. [PDF](https://www.ssc.wisc.edu/~bhansen/718/White2000.pdf).
 
