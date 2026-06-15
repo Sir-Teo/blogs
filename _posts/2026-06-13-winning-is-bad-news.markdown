@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Prize Came With Bad News"
+title: "Winning Can Be Bad News"
 description: "In a common-value auction, winning is not just success. It is evidence that your estimate was unusually optimistic."
 date: 2026-06-13 19:12:00 -0400
 categories: quantitative-finance
@@ -322,7 +322,7 @@ what did winning reveal about the estimate that made us win?
 
 If the answer lowers the value, that is not pessimism. It is Bayes being polite.
 
-## Source Notes
+## Further Reading
 
 [^vickrey]: William Vickrey, ["Counterspeculation, Auctions, and Competitive Sealed Tenders"](https://cramton.umd.edu/market-design-papers/vickrey-counterspeculation-auctions-and-competitive-sealed-tenders.pdf), *Journal of Finance*, 1961. DOI: [10.1111/j.1540-6261.1961.tb02789.x](https://doi.org/10.1111/j.1540-6261.1961.tb02789.x).
 
