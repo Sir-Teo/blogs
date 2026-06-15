@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Search That Refuses to Reread"
+title: "Search That Refuses to Reread"
 description: "KMP string search is linear because a mismatch leaves evidence behind. The failure table remembers which prefix is also a suffix."
 date: 2026-06-14 14:44:00 -0400
 categories: computer-science
