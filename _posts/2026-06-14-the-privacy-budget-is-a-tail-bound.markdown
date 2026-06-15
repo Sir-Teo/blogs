@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "The Privacy Budget Is a Tail Bound"
-description: "Differential privacy is easier to reason about when epsilon is treated as a likelihood-ratio threshold and delta as a controlled tail event."
+title: "Epsilon Is Not a Purse"
+description: "Differential privacy is easier to reason about when epsilon is a likelihood-ratio threshold, delta is tail slack, and the accountant keeps the whole curve alive."
 date: 2026-06-14 20:05:00 -0400
 categories: computer-science
 tags: [differential-privacy, gaussian-mechanism, renyi-differential-privacy, privacy-loss, machine-learning, statistics]
-excerpt: "A privacy budget is not a percentage of secrecy spent. For Gaussian mechanisms, it is a statement about the tail of a privacy-loss random variable."
+excerpt: "A privacy budget is not a little purse of secrecy coins. For Gaussian mechanisms, the useful object is the tail of a privacy-loss random variable."
 ---
 
 A privacy budget sounds like a purse.
@@ -122,7 +122,7 @@ epsilon(delta)        the reported point on that curve
 The first one is pedagogically useful. The second one is the guarantee. The
 third one is a report.
 
-## A Small Accountant
+## A Tiny Accountant
 
 The lab below studies the simplest transcript: repeat a unit-sensitivity
 Gaussian release \(k\) times with independent noise of standard deviation
@@ -147,6 +147,14 @@ RDP conversion is also conservative, but it composes cleanly and generalizes
 well. Mironov introduced Renyi differential privacy partly because the full
 curve of privacy guarantees composes more naturally than a single chosen
 \((\varepsilon,\delta)\) point.[^mironov]
+
+I audited those numbers against the lab implementation. At the default
+`epsilon = 6.0`, the analytic Gaussian curve reports `delta = 2.726e-5`, while
+the one-sided privacy-loss tail is `1.090e-4`; both sit above the `1e-6` target.
+Across `1,296` combinations of noise, releases, delta, probe epsilon, sample
+count, and seed, every numerical check passed: finite accountants, monotone
+delta curves, bounded probabilities, and exact Gaussian epsilon no larger than
+the tail or RDP reports.
 
 Move the **Epsilon probe**. At `epsilon = 6.0`, the exact Gaussian curve gives
 about `2.7e-5`, which misses the `1e-6` target. Slide it toward the exact
