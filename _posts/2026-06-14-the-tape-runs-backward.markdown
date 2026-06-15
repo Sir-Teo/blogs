@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Gradient Keeps Receipts"
+title: "Gradients Keep Receipts"
 description: "Reverse-mode automatic differentiation is not numerical differencing and not symbolic algebra. It is a transposed execution of the program, and the receipts are the memory bill."
 date: 2026-06-14 04:51:00 -0400
 categories: machine-learning
