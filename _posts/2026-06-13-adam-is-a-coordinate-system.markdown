@@ -24,7 +24,7 @@ also why it can behave differently from SGD even when both reduce the training
 loss. The optimizer is not just deciding how far to move. It is deciding what a
 unit of movement means in each coordinate.
 
-## The Optimizer Keeps a Ruler
+## Optimizer Keeps a Ruler
 
 Stochastic gradient descent keeps a single global learning rate:
 
