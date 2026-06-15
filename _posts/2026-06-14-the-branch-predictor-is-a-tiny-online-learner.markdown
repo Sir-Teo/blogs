@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The CPU Has to Guess Right Now"
+title: "CPUs Have to Guess Right Now"
 description: "Branch prediction is online learning at the front of the processor: tiny adaptive models guess control flow before the real label arrives."
 date: 2026-06-14 08:40:00 -0400
 categories: computer-science
