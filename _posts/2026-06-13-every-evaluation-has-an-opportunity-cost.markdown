@@ -355,7 +355,7 @@ This would make Bayesian optimization feel less like a black-box optimizer and
 more like a scientific instrument. The goal is not to automate curiosity away.
 The goal is to spend curiosity carefully.
 
-## Further Reading
+## Primary Sources
 
 [^ego]: Donald R. Jones, Matthias Schonlau, and William J. Welch, "Efficient
     Global Optimization of Expensive Black-Box Functions," *Journal of Global
