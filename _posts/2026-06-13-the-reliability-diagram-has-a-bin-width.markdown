@@ -322,7 +322,7 @@ contract with future frequencies, and every contract needs an audit trail:
 sample size, slices, scores, bin widths, and the downstream decisions that will
 spend the numbers.
 
-## Source Notes
+## Paper Trail
 
 [^dawid]: A. Philip Dawid, ["The Well-Calibrated Bayesian"](https://doi.org/10.1080/01621459.1982.10477856), *Journal of the American Statistical Association*, 1982.
 
