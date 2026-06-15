@@ -4,6 +4,7 @@ title: "Cuckoo Hashing Fails as a Graph"
 description: "The basic cuckoo table does not fail because the insertion loop is unlucky. It fails when the hidden bipartite graph contains too many edges for its vertices."
 date: 2026-06-14 18:44:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [cuckoo-hashing, hash-tables, random-graphs, data-structures, probabilistic-analysis, systems]
 excerpt: "Cuckoo hashing looks like an eviction game. Underneath, it is a matching problem on a random bipartite graph."
 ---

@@ -4,6 +4,7 @@ title: "Small Models Can Be Scouts"
 description: "Speculative decoding is exact because the draft model is only a proposal distribution. The verifier keeps the overlap and samples the missing target mass when the scout guesses wrong."
 date: 2026-06-14 07:24:00 -0400
 categories: ai-systems
+series: faster-llm-inference
 tags: [llm-inference, speculative-decoding, rejection-sampling, transformers, serving-systems]
 excerpt: "The little model is not trusted with the answer. It scouts a few possible tokens, the large model keeps the overlap, and a residual sampler repairs the miss."
 ---

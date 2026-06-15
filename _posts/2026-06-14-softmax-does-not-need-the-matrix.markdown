@@ -4,6 +4,7 @@ title: "Matrices Were Never Required"
 description: "FlashAttention is exact attention scheduled differently: keep the running max, rescale the denominator, and avoid writing the full attention matrix to memory."
 date: 2026-06-14 00:23:00 -0400
 categories: ai-systems
+series: faster-llm-inference
 tags: [flashattention, transformers, softmax, gpu-kernels, memory-hierarchy, ai-systems]
 excerpt: "The attention equation invites an n by n matrix. The kernel does not have to keep one: exact attention can stream through tiles if the softmax normalizer travels with it."
 ---

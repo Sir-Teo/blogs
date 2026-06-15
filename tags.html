@@ -5,7 +5,27 @@ permalink: /tags/
 ---
 
 <div class="topics">
-  <p class="topics__intro">Browse the notebook by category or by tag.</p>
+  <p class="topics__intro">Browse the notebook by series, category, or tag.</p>
+
+  <h2 class="topics__h">By series</h2>
+  <div class="topics__series">
+    {%- for s in site.data.series -%}
+      {%- assign s_slug = s[0] -%}
+      {%- assign s_meta = s[1] -%}
+      {%- assign s_posts = site.posts | where: "series", s_slug | sort: "date" -%}
+      {%- if s_posts.size > 0 -%}
+      <section class="topics__group" id="series-{{ s_slug }}">
+        <h3 class="topics__group-title">{{ s_meta.name }}<span class="topics__count">{{ s_posts.size }}</span></h3>
+        {%- if s_meta.blurb %}<p class="topics__blurb">{{ s_meta.blurb }}</p>{% endif -%}
+        <ol class="topics__serieslist">
+          {%- for post in s_posts -%}
+          <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
+          {%- endfor -%}
+        </ol>
+      </section>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
 
   <h2 class="topics__h">By category</h2>
   <div class="topics__cats">

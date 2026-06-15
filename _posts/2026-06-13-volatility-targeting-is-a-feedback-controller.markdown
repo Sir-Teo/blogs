@@ -4,6 +4,7 @@ title: "Risk Dials Have Delays"
 description: "Scaling exposure by estimated volatility is not a free Sharpe-ratio machine. It is a lagged control loop with estimator error, leverage caps, turnover, and crash dynamics."
 date: 2026-06-13 03:44:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [volatility-targeting, quantitative-finance, risk-management, control, garch, portfolio-construction]
 excerpt: "Volatility targeting estimates risk, sets leverage, pays turnover, and hopes the sensor moves before the regime does."
 ---

@@ -4,6 +4,7 @@ title: "Context Windows Have Rent Due"
 description: "Long-context inference is not only attention math. Every live token leaves key and value vectors in GPU memory, and the serving stack pays that rent request by request."
 date: 2026-06-13 05:44:00 -0400
 categories: machine-learning
+series: faster-llm-inference
 tags: [kv-cache, llm-inference, long-context, attention, serving-systems, transformers]
 excerpt: "A context window is not just a model-card number. During decoding, it becomes live memory: keys and values for every retained token, every layer, every request."
 ---

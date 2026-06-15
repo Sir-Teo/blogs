@@ -4,6 +4,7 @@ title: "Trust First, Then Size the Bet"
 description: "Kelly sizing is a clean formula with an unforgiving dependency: calibrated probabilities, executable odds, and a drawdown budget that survives contact with reality."
 date: 2026-06-12 15:30:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [kelly-criterion, calibration, quantitative-finance, statistics, machine-learning, risk]
 excerpt: "Kelly looks like a formula for bravery. In practice it is a trust audit: if the probability is miscalibrated, the elegant fraction becomes leverage on a mistake."
 ---

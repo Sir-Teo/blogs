@@ -4,6 +4,7 @@ title: "Beautiful Backtests Come From a Crowd"
 description: "A beautiful backtest is weak evidence until the ideas, parameters, filters, assets, and windows that lost are counted too."
 date: 2026-06-13 00:35:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [backtesting, quantitative-finance, multiple-testing, sharpe-ratio, overfitting]
 excerpt: "The strategy in the deck is the survivor of a search. Its Sharpe ratio only means something after the abandoned variants enter the denominator."
 ---

@@ -4,6 +4,7 @@ title: "After the Decision, the Trade Begins"
 description: "A portfolio model has a decision price. The desk has a path through liquidity, volatility, impact, patience, and information leakage."
 date: 2026-06-13 01:20:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [optimal-execution, market-impact, quantitative-finance, control, microstructure]
 excerpt: "The paper portfolio can sell at the decision price. The real portfolio has to release child orders into a market that remembers the path."
 ---

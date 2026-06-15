@@ -4,6 +4,7 @@ title: "Saying No Needs a Price List"
 description: "A model should not answer because confidence cleared a universal threshold. The stop rule belongs to error costs, abstention costs, and the value of another look."
 date: 2026-06-13 00:25:00 -0400
 categories: ai-systems
+series: calibrated-confidence
 tags: [selective-prediction, abstention, decision-theory, value-of-information, calibration]
 excerpt: "Selective prediction is more than a risk-coverage curve. In deployed systems, the policy must price being wrong, being silent, deferring, and buying evidence."
 ---

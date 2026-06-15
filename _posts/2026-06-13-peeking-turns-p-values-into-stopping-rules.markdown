@@ -4,6 +4,7 @@ title: "Dashboards Can Change the Experiment"
 description: "A fixed-horizon p-value is a different object once the team checks it every morning and ships the first good-looking day."
 date: 2026-06-13 04:08:00 -0400
 categories: statistics
+series: trustworthy-experiments
 tags: [ab-testing, sequential-testing, p-values, experimentation, statistics, psychology]
 excerpt: "Optional stopping is not a character flaw. It is a different experiment. Once the team can stop when the graph looks good, the stopping rule belongs in the math."
 ---

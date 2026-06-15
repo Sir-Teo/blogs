@@ -4,6 +4,7 @@ title: "Clocks Can Say Concurrent"
 description: "Lamport clocks preserve causal order, but scalar timestamps still sort concurrent events. Vector clocks keep the partial order visible instead of inventing certainty."
 date: 2026-06-14 08:42:00 -0400
 categories: computer-science
+series: distributed-systems
 tags: [distributed-systems, vector-clocks, lamport-clocks, causality, concurrency, logical-time]
 excerpt: "A distributed timestamp is a claim about causality, not a wall clock. Vector clocks are useful because they can say two events are unrelated."
 ---

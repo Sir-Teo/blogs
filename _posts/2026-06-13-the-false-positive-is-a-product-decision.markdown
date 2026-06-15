@@ -4,6 +4,7 @@ title: "Bit Arrays That Only Say Maybe"
 description: "A Bloom filter is a memory bargain: it can say definitely not, or maybe, but it never proves membership."
 date: 2026-06-13 17:24:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [bloom-filter, probabilistic-data-structures, hashing, databases, systems, false-positives]
 excerpt: "A Bloom filter is not an approximate set because it forgot data by accident. It is engineered asymmetry: no false negatives, controlled false positives, and a downstream system that knows what maybe costs."
 ---

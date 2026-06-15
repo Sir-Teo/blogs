@@ -4,6 +4,7 @@ title: "Draft Tokens Have to Earn Their Keep"
 description: "Speculative decoding is often sold as free speed. The real question is whether accepted draft tokens repay the draft model, verifier overhead, and scheduler tax."
 date: 2026-06-13 01:50:00 -0400
 categories: ai-systems
+series: faster-llm-inference
 tags: [llm-inference, speculative-decoding, latency, serving-systems, transformers]
 excerpt: "The useful unit is not tokens proposed. It is accepted tokens per expensive verifier call, priced against draft work and scheduler overhead."
 ---

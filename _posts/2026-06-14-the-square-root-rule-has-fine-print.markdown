@@ -4,6 +4,7 @@ title: "Sharpe Ratios Have Clocks"
 description: "Annualizing a Sharpe ratio by sqrt(252) is not a law of nature. It is an assumption about the sampling clock, the autocovariances, and how returns are reported."
 date: 2026-06-14 12:36:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [sharpe-ratio, autocorrelation, newey-west, hedge-funds, quantitative-finance, risk-management]
 excerpt: "The same strategy can look like a 1.47 Sharpe on daily marks and a 0.90 Sharpe after accounting for serial correlation. The spreadsheet is not always lying; sometimes the clock is."
 ---

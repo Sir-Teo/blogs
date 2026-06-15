@@ -4,6 +4,7 @@ title: "Coverage Comes With Fine Print"
 description: "Conformal intervals are powerful because their guarantee is explicit: coverage under an exchangeability story, not magic under every deployment shift."
 date: 2026-06-13 00:20:00 -0400
 categories: statistics
+series: calibrated-confidence
 tags: [conformal-prediction, uncertainty, statistics, machine-learning, distribution-shift]
 excerpt: "Conformal prediction turns residuals into a coverage receipt. The receipt is only as good as the claim that calibration and deployment are comparable."
 ---

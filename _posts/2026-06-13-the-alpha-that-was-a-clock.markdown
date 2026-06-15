@@ -4,6 +4,7 @@ title: "Alpha Was Hiding in the Timestamp"
 description: "At high frequency, a lead-lag signal can be market structure, a data-engineering artifact, or both. The Epps effect is the warning label."
 date: 2026-06-13 06:18:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [market-microstructure, epps-effect, covariance-estimation, lead-lag, high-frequency-data, quantitative-finance]
 excerpt: "A strategy says one asset predicts another by a few seconds. Before believing the alpha, audit the clocks: asynchronous ticks, stale prices, microstructure noise, and timestamp conventions can manufacture a signal."
 ---

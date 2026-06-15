@@ -1,0 +1,21 @@
+# Curated reading threads. A post joins one by setting `series: <slug>` in its
+# front matter; order within a series is chronological (by date).
+# slug -> display name + one-line blurb.
+probabilistic-data-structures:
+  name: Probabilistic data structures
+  blurb: Sketches, filters, and hash tables that trade a little accuracy for a lot of space.
+trustworthy-experiments:
+  name: Trustworthy experiments
+  blurb: How A/B tests and metrics quietly mislead, and what keeps them honest.
+faster-llm-inference:
+  name: Faster LLM inference
+  blurb: The systems tricks that make large models cheap enough to serve.
+quantitative-trading:
+  name: Quantitative trading
+  blurb: Sizing, executing, and stress-testing a strategy without fooling yourself.
+calibrated-confidence:
+  name: Calibrated confidence
+  blurb: Making a model's stated uncertainty mean what it actually says.
+distributed-systems:
+  name: Distributed systems
+  blurb: Time, consistency, and failure when one machine is no longer enough.

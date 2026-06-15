@@ -4,6 +4,7 @@ title: "Hash Tables Are Fast Until the Tail Arrives"
 description: "Open-addressed hash tables do not merely get fuller. Their probe distributions change shape."
 date: 2026-06-13 20:59:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [hash-tables, linear-probing, robin-hood-hashing, performance, data-structures, software-engineering]
 excerpt: "A hash table's load factor is not just a memory-efficiency number. In open addressing, it is a tail-latency control hiding behind an average-case slogan."
 ---

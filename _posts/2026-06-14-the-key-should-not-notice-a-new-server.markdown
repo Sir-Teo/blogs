@@ -4,6 +4,7 @@ title: "Do Not Reassign the World to Add One Box"
 description: "Consistent hashing is mostly a remapping contract: when the fleet changes, only the keys that genuinely belong on the new owner should move."
 date: 2026-06-14 09:21:00 -0400
 categories: data-systems
+series: distributed-systems
 tags: [consistent-hashing, rendezvous-hashing, distributed-caches, load-balancing, data-systems]
 excerpt: "Modulo hashing can balance a static fleet and still destroy locality when the fleet changes. Consistent hashing keeps most keys home when servers arrive or leave."
 ---

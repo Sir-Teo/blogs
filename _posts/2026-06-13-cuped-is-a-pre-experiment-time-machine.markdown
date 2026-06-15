@@ -4,6 +4,7 @@ title: "Yesterday Can Tighten an A/B Test"
 description: "CUPED borrows pre-period signal to reduce variance. Move the timing line past treatment, and precision quietly turns into bias."
 date: 2026-06-13 17:52:00 -0400
 categories: statistics
+series: trustworthy-experiments
 tags: [cuped, ab-testing, variance-reduction, regression-adjustment, experimentation, causal-inference]
 excerpt: "CUPED subtracts predictable pre-treatment variation. The power comes from yesterday; the danger starts when the covariate can be moved by the experiment."
 ---

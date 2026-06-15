@@ -4,6 +4,7 @@ title: "Every Expert Has a Line Outside"
 description: "Sparse mixture-of-experts models promise cheap active compute, but the router is really allocating scarce expert capacity under bursty demand."
 date: 2026-06-13 02:24:00 -0400
 categories: ai-systems
+series: faster-llm-inference
 tags: [mixture-of-experts, routing, transformers, queueing, load-balancing, inference]
 excerpt: "A mixture-of-experts layer is not just a bag of specialists. It is a little dispatch desk inside the forward pass: tokens arrive, experts fill up, and the router decides who gets served."
 ---

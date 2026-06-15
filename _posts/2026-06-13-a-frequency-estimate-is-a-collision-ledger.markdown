@@ -4,6 +4,7 @@ title: "Collisions Keep the Receipts"
 description: "Count-Min is not a tiny dictionary. It is a one-sided bargain: lose identities, keep upper bounds, and budget the collision mass."
 date: 2026-06-13 20:30:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [count-min-sketch, heavy-hitters, streaming-algorithms, probabilistic-data-structures, frequency-estimation, data-systems]
 excerpt: "Count-Min estimates stream frequencies by sharing buckets. The useful trick is not avoiding collisions; it is making every error an overcount with a budget."
 ---

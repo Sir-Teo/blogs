@@ -4,6 +4,7 @@ title: "Counting Without Names"
 description: "HyperLogLog is the strange bargain behind large-scale distinct counts: forget identities, keep rare hash patterns, and still estimate how many unique things passed by."
 date: 2026-06-13 07:58:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [hyperloglog, streaming-algorithms, cardinality-estimation, sketches, probabilistic-data-structures, databases]
 excerpt: "A set answers by remembering every identity. HyperLogLog answers by keeping only the rarest hash patterns, and that loss of memory is the useful part."
 ---

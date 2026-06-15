@@ -4,6 +4,7 @@ title: "Do Not Trust a Naked ECE"
 description: "Calibration plots are measuring instruments. Change the ruler, the bins, or the slice, and the confidence story can change with it."
 date: 2026-06-13 18:18:00 -0400
 categories: machine-learning
+series: calibrated-confidence
 tags: [calibration, reliability-diagram, expected-calibration-error, brier-score, evaluation, uncertainty]
 excerpt: "A probability forecast is a promise about long-run frequencies, but every audit of that promise arrives with bin widths, slices, and sample noise."
 ---

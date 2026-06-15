@@ -4,6 +4,7 @@ title: "Leases Expire; Writes Do Not"
 description: "Lease expiry is a time-based promise, but stale side effects need an epoch check at the resource. Clock padding and fencing tokens solve different bugs."
 date: 2026-06-14 15:44:00 -0400
 categories: software-engineering
+series: distributed-systems
 tags: [distributed-systems, leases, fencing-tokens, clocks, chubby, truetime, reliability]
 excerpt: "A lease can tell a coordinator when it is willing to move on. It cannot unsend an old request. The resource needs a monotonically increasing epoch."
 ---

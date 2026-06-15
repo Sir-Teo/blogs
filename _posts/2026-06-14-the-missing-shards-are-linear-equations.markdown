@@ -4,6 +4,7 @@ title: "Missing Shards Are Equations"
 description: "Reed-Solomon erasure coding is not backup magic. It is the promise that any k honest surviving shards contain enough GF(256) equations to rebuild the stripe."
 date: 2026-06-14 11:18:00 -0400
 categories: data-systems
+series: distributed-systems
 tags: [reed-solomon, erasure-coding, finite-fields, storage-systems, distributed-storage, coding-theory]
 excerpt: "A failed disk is easier than a lying disk: erasures name the holes, so recovery is matrix inversion instead of detective work."
 ---

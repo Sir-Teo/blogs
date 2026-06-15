@@ -4,6 +4,7 @@ title: "Crash Risk Lives in the Corner"
 description: "A portfolio can keep the same one-name loss distributions and broad rank association while changing its joint crash probability. The missing object is the copula."
 date: 2026-06-14 10:47:00 -0400
 categories: quantitative-finance
+series: quantitative-trading
 tags: [copulas, tail-dependence, risk-management, quantitative-finance, credit-risk, statistics]
 excerpt: "Correlation is a polite one-line summary. A copula is the map of where dependence lives, and the corner of the map is where portfolios usually break."
 ---

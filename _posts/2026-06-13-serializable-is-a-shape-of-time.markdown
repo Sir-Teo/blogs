@@ -4,6 +4,7 @@ title: "Two Clean Snapshots Can Break the World"
 description: "Database isolation levels are not adjectives about safety. They are claims about which shapes of history are allowed to exist."
 date: 2026-06-13 21:35:00 -0400
 categories: software-engineering
+series: distributed-systems
 tags: [database-isolation, serializability, snapshot-isolation, mvcc, concurrency-control, software-engineering]
 excerpt: "Snapshot isolation feels serial because every transaction sees a clean past. The trouble is that two clean pasts can assemble a future no serial order could have produced."
 ---

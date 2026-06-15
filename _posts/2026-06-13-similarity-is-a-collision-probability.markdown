@@ -4,6 +4,7 @@ title: "Similar Pages Should Share a Lottery Ticket"
 description: "MinHash turns document overlap into a collision event whose probability is the Jaccard similarity."
 date: 2026-06-13 17:36:00 -0400
 categories: computer-science
+series: probabilistic-data-structures
 tags: [minhash, locality-sensitive-hashing, jaccard, near-duplicate-detection, sketches, information-retrieval]
 excerpt: "Near-duplicate search dies if every page meets every other page. MinHash gives similar documents shared lottery tickets, and LSH decides which tickets are worth inspecting."
 ---

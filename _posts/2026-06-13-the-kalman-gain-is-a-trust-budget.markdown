@@ -4,6 +4,7 @@ title: "How Far Should a Noisy Sensor Move You?"
 description: "A Kalman filter is not a smoothing trick. It is a recursive argument about how much to trust a model versus a noisy measurement."
 date: 2026-06-13 17:43:00 -0400
 categories: statistics
+series: calibrated-confidence
 tags: [kalman-filter, state-space-models, time-series, signal-extraction, control, quantitative-finance]
 excerpt: "The state is hidden, the sensor is noisy, and the model is only partly trusted. The Kalman gain says how much a new measurement is allowed to move belief."
 ---

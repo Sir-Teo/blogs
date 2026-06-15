@@ -4,6 +4,7 @@ title: "Metrics Become Control Surfaces"
 description: "Metrics fail under pressure because selection, gaming, and feedback change the data-generating process that made the metric useful."
 date: 2026-06-13 00:15:00 -0400
 categories: statistics
+series: trustworthy-experiments
 tags: [goodharts-law, metrics, causal-inference, ai-safety, statistics, psychology]
 excerpt: "A metric is a sensor until it gets power. Then selection, gaming, and feedback can turn the proxy into a control surface detached from the thing we wanted."
 ---

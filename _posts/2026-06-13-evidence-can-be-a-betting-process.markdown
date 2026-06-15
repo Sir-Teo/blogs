@@ -4,6 +4,7 @@ title: "If You Keep Looking, Use a Bankroll"
 description: "E-values and e-processes turn sequential evidence into a nonnegative martingale, so repeated looks become part of the design instead of a loophole."
 date: 2026-06-13 21:15:00 -0400
 categories: statistics
+series: trustworthy-experiments
 tags: [e-values, e-processes, martingales, anytime-valid-inference, sequential-testing, ab-testing]
 excerpt: "A fixed-horizon p-value is a snapshot. An e-process is a bankroll: under the null, it should be hard to get rich no matter when the dashboard stops."
 ---

@@ -21,6 +21,30 @@ layout: default
     </p>
   </header>
 
+  {%- if page.series -%}
+  {%- assign s_meta = site.data.series[page.series] -%}
+  {%- assign s_posts = site.posts | where: "series", page.series | sort: "date" -%}
+  {%- if s_posts.size > 1 -%}
+  {%- assign s_idx = 0 -%}
+  {%- for sp in s_posts -%}{%- if sp.url == page.url -%}{%- assign s_idx = forloop.index -%}{%- endif -%}{%- endfor -%}
+  <nav class="series" aria-label="Series">
+    <div class="series__head">
+      <span class="series__eyebrow">Series</span>
+      <a class="series__title" href="{{ '/tags/' | relative_url }}#series-{{ page.series }}">{{ s_meta.name | default: page.series }}</a>
+      <span class="series__part">Part {{ s_idx }} of {{ s_posts.size }}</span>
+    </div>
+    <ol class="series__list">
+      {%- for sp in s_posts -%}
+      <li class="series__item{% if sp.url == page.url %} is-current{% endif %}">
+        {%- if sp.url == page.url -%}<span aria-current="true">{{ sp.title | escape }}</span>
+        {%- else -%}<a href="{{ sp.url | relative_url }}">{{ sp.title | escape }}</a>{%- endif -%}
+      </li>
+      {%- endfor -%}
+    </ol>
+  </nav>
+  {%- endif -%}
+  {%- endif -%}
+
   <div class="post-content e-content">
     {{ content }}
   </div>
