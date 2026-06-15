@@ -7,6 +7,8 @@
   var QUALITY_POINTS = 18;
   var QUALITY_TRIALS = 14;
   var AUDIT_CACHE = null;
+  var LOG_FACTORIALS = [0];
+  var BINOMIAL_TAIL_CACHE = Object.create(null);
   var COLORS = {
     text: "#172026",
     muted: "#5d6872",
@@ -168,6 +170,76 @@
     return (greenCount - gamma * tokens) / Math.sqrt(Math.max(1e-9, tokens * gamma * (1 - gamma)));
   }
 
+  function logFactorial(n) {
+    for (var i = LOG_FACTORIALS.length; i <= n; i += 1) {
+      LOG_FACTORIALS[i] = LOG_FACTORIALS[i - 1] + Math.log(i);
+    }
+    return LOG_FACTORIALS[n];
+  }
+
+  function logAddExp(a, b) {
+    if (a === -Infinity) return b;
+    if (b === -Infinity) return a;
+    var hi = Math.max(a, b);
+    return hi + Math.log(Math.exp(a - hi) + Math.exp(b - hi));
+  }
+
+  function logBinomialPmf(k, n, p) {
+    if (p <= 0) return k === 0 ? 0 : -Infinity;
+    if (p >= 1) return k === n ? 0 : -Infinity;
+    return logFactorial(n) - logFactorial(k) - logFactorial(n - k) +
+      k * Math.log(p) + (n - k) * Math.log1p(-p);
+  }
+
+  function binomialTail(count, tokens, gamma) {
+    var n = Math.max(0, Math.round(tokens));
+    var p = clamp(gamma, 0, 1);
+    var k0 = Math.ceil(count);
+    if (k0 <= 0) return 1;
+    if (k0 > n) return 0;
+    var key = n + "|" + p.toFixed(6) + "|" + k0;
+    if (Object.prototype.hasOwnProperty.call(BINOMIAL_TAIL_CACHE, key)) {
+      return BINOMIAL_TAIL_CACHE[key];
+    }
+    var total = -Infinity;
+    for (var k = k0; k <= n; k += 1) {
+      total = logAddExp(total, logBinomialPmf(k, n, p));
+    }
+    var value = clamp(Math.exp(total), 0, 1);
+    BINOMIAL_TAIL_CACHE[key] = value;
+    return value;
+  }
+
+  function exactPValue(greenCount, tokens, gamma) {
+    return binomialTail(greenCount, tokens, gamma);
+  }
+
+  function thresholdCount(tokens, gamma, threshold) {
+    var center = gamma * tokens;
+    var scale = Math.sqrt(Math.max(1e-9, tokens * gamma * (1 - gamma)));
+    return Math.ceil(center + threshold * scale);
+  }
+
+  function exactFalsePositive(tokens, gamma, threshold) {
+    return binomialTail(thresholdCount(tokens, gamma, threshold), tokens, gamma);
+  }
+
+  function sum(values) {
+    return values.reduce(function (total, value) { return total + value; }, 0);
+  }
+
+  function expectedGreenShare(params) {
+    var total = 0;
+    for (var pos = 0; pos < params.tokens; pos += 1) {
+      var base = baseDistribution(pos, params);
+      var dist = biasedDistribution(base, pos, params);
+      for (var token = 0; token < dist.length; token += 1) {
+        if (isGreen(pos, token, params)) total += dist[token];
+      }
+    }
+    return total / params.tokens;
+  }
+
   function generate(mode, params, trial) {
     var random = rng(params.seed * 1000003 + trial * 9176 + (mode === "null" ? 11 : mode === "marked" ? 29 : 53));
     var greenCount = 0;
@@ -209,12 +281,14 @@
         });
       }
     }
+    var z = score(greenCount, params.tokens, params.gamma);
     return {
       mode: mode,
-      z: score(greenCount, params.tokens, params.gamma),
+      z: z,
       greenCount: greenCount,
       greenShare: greenCount / params.tokens,
-      pValue: normalTail(score(greenCount, params.tokens, params.gamma)),
+      pValue: normalTail(z),
+      exactPValue: exactPValue(greenCount, params.tokens, params.gamma),
       qualityTax: active ? tax / active : 0,
       activeShare: active / params.tokens,
       editShare: edited / params.tokens,
@@ -238,20 +312,23 @@
     return rows;
   }
 
-  function summarize(rows, threshold) {
+  function summarize(rows, params) {
     function power(list) {
-      return list.reduce(function (sum, row) { return sum + (row.z >= threshold ? 1 : 0); }, 0) / list.length;
+      return list.reduce(function (sum, row) { return sum + (row.z >= params.threshold ? 1 : 0); }, 0) / list.length;
     }
     function mean(list, key) {
       return list.reduce(function (sum, row) { return sum + row[key]; }, 0) / list.length;
     }
+    var cutoff = thresholdCount(params.tokens, params.gamma, params.threshold);
     return {
       falsePositive: power(rows.nulls),
       markedPower: power(rows.marked),
       attackedPower: power(rows.attacked),
       meanMarkedZ: mean(rows.marked, "z"),
       meanAttackedZ: mean(rows.attacked, "z"),
-      meanTax: mean(rows.marked, "qualityTax")
+      meanTax: mean(rows.marked, "qualityTax"),
+      thresholdCount: cutoff,
+      exactFalsePositive: binomialTail(cutoff, params.tokens, params.gamma)
     };
   }
 
@@ -260,12 +337,13 @@
     return values.map(function (tokens) {
       var p = Object.assign({}, params, { tokens: tokens });
       var rows = monteCarlo(p, SWEEP_TRIALS);
-      var s = summarize(rows, params.threshold);
+      var s = summarize(rows, p);
       return {
         tokens: tokens,
         markedPower: s.markedPower,
         attackedPower: s.attackedPower,
-        falsePositive: s.falsePositive
+        falsePositive: s.falsePositive,
+        exactFalsePositive: s.exactFalsePositive
       };
     });
   }
@@ -286,21 +364,128 @@
       params: params,
       rows: rows,
       one: one,
-      summary: summarize(rows, params.threshold),
+      summary: summarize(rows, params),
       sweep: sweepTokens(params),
       audit: cachedAudit()
     };
   }
 
   function runAudit() {
-    var ok = 0;
-    var cases = 0;
+    var passed = 0;
+    var checked = 0;
+    var failures = [];
+    var defaultParams = {
+      seed: 7,
+      tokens: 240,
+      gamma: 0.25,
+      bias: 1.6,
+      entropy: 0.68,
+      edits: 0.20,
+      human: 0.25,
+      threshold: 4.0
+    };
+    var noBiasParams = Object.assign({}, defaultParams, { bias: 0 });
+    var highBiasParams = Object.assign({}, defaultParams, { bias: 2.4 });
+    var defaultRows = monteCarlo(defaultParams, DISPLAY_TRIALS);
+    var defaultSummary = summarize(defaultRows, defaultParams);
+    var cutoff = thresholdCount(defaultParams.tokens, defaultParams.gamma, defaultParams.threshold);
+    var exactFpr = exactFalsePositive(defaultParams.tokens, defaultParams.gamma, defaultParams.threshold);
+    var base = baseDistribution(17, defaultParams);
+    var noBias = biasedDistribution(base, 17, noBiasParams);
+    var biased = biasedDistribution(base, 17, defaultParams);
+    var noBiasRun = generate("marked", noBiasParams, 42);
+    var markedRun = generate("marked", defaultParams, 43);
+    var attackedRun = generate("attacked", defaultParams, 44);
+    var shortRun = generate("marked", Object.assign({}, defaultParams, { tokens: 80 }), 45);
+    var sweep = sweepTokens(defaultParams);
+    var gridCases = 0;
+    var gridValid = 0;
+
+    function check(name, condition, details) {
+      checked += 1;
+      if (condition) {
+        passed += 1;
+      } else {
+        failures.push({ name: name, details: details || null });
+      }
+    }
+
+    function close(a, b, tolerance) {
+      return Math.abs(a - b) <= tolerance;
+    }
+
+    function finiteProbability(value) {
+      return Number.isFinite(value) && value >= 0 && value <= 1;
+    }
+
+    function finiteRun(row, tokens) {
+      return Number.isFinite(row.z) &&
+        Number.isInteger(row.greenCount) &&
+        row.greenCount >= 0 &&
+        row.greenCount <= tokens &&
+        finiteProbability(row.greenShare) &&
+        finiteProbability(row.pValue) &&
+        finiteProbability(row.exactPValue) &&
+        finiteProbability(row.activeShare) &&
+        finiteProbability(row.editShare) &&
+        finiteProbability(row.humanShare) &&
+        Number.isFinite(row.qualityTax) &&
+        row.qualityTax >= 0 &&
+        row.tape.length === Math.min(tokens, 180) &&
+        row.tape.every(function (item) {
+          return Number.isInteger(item.token) &&
+            item.token >= 0 &&
+            item.token < V &&
+            typeof item.green === "boolean" &&
+            typeof item.human === "boolean" &&
+            typeof item.edit === "boolean" &&
+            typeof item.marked === "boolean";
+        });
+    }
+
+    check("normal tail centers at one half", close(normalTail(0), 0.5, 1e-7), normalTail(0));
+    check("normal tail decreases with z", normalTail(4) < normalTail(3) && normalTail(3) < normalTail(2), {
+      z2: normalTail(2),
+      z3: normalTail(3),
+      z4: normalTail(4)
+    });
+    check("z-score is zero at the null mean", close(score(60, 240, 0.25), 0, 1e-12));
+    check("default exact threshold is a small tail", cutoff === 87 && exactFpr > 0 && exactFpr < 1e-4, {
+      cutoff: cutoff,
+      exactFalsePositive: exactFpr
+    });
+    check("binomial tail is monotone in the count", binomialTail(cutoff + 1, 240, 0.25) <= binomialTail(cutoff, 240, 0.25));
+    check("exact p-value matches threshold tail at the cutoff", close(exactPValue(cutoff, 240, 0.25), exactFpr, 1e-15));
+    check("base distribution is normalized", base.every(function (v) { return v >= 0; }) && close(sum(base), 1, 1e-10), sum(base));
+    check("zero bias leaves the base distribution unchanged", noBias.every(function (v, i) { return close(v, base[i], 1e-15); }));
+    check("biased distribution is normalized", biased.every(function (v) { return v >= 0; }) && close(sum(biased), 1, 1e-10), sum(biased));
+    check("bias raises expected green share", expectedGreenShare(highBiasParams) > expectedGreenShare(noBiasParams), {
+      noBias: expectedGreenShare(noBiasParams),
+      highBias: expectedGreenShare(highBiasParams)
+    });
+    check("zero bias has zero KL tax", close(noBiasRun.qualityTax, 0, 1e-12), noBiasRun.qualityTax);
+    check("positive bias has positive KL tax", markedRun.qualityTax > 0, markedRun.qualityTax);
+    check("generated token tapes have the expected length", attackedRun.tape.length === 180 && shortRun.tape.length === 80);
+    check("generated runs have bounded shares and probabilities", finiteRun(markedRun, defaultParams.tokens) && finiteRun(attackedRun, defaultParams.tokens));
+    check("attack metadata stays inside the document", attackedRun.activeShare + attackedRun.humanShare <= 1.0000001 && attackedRun.editShare <= attackedRun.activeShare + 1e-12, attackedRun);
+    check("default power ordering is sensible", defaultSummary.markedPower >= defaultSummary.attackedPower && defaultSummary.attackedPower > defaultSummary.falsePositive, defaultSummary);
+    check("attacks dilute the mean score", defaultSummary.meanAttackedZ < defaultSummary.meanMarkedZ, defaultSummary);
+    check("token sweep probabilities are bounded and recover with length", sweep.every(function (row) {
+      return finiteProbability(row.markedPower) &&
+        finiteProbability(row.attackedPower) &&
+        finiteProbability(row.falsePositive) &&
+        finiteProbability(row.exactFalsePositive);
+    }) && sweep[sweep.length - 1].attackedPower >= sweep[0].attackedPower, sweep);
+    check("stricter thresholds spend less false-positive budget",
+      exactFalsePositive(240, 0.25, 5) < exactFalsePositive(240, 0.25, 4) &&
+      exactFalsePositive(240, 0.25, 4) < exactFalsePositive(240, 0.25, 3));
+
     [3, 7, 19, 31].forEach(function (seed) {
       [0.15, 0.25, 0.40].forEach(function (gamma) {
         [0.0, 1.2, 2.4].forEach(function (bias) {
           [0.25, 0.75].forEach(function (entropy) {
             [0, 0.35].forEach(function (edits) {
-              cases += 1;
+              gridCases += 1;
               var params = {
                 seed: seed,
                 tokens: 160,
@@ -322,15 +507,42 @@
                   Number.isFinite(row.pValue) &&
                   row.pValue >= 0 &&
                   row.pValue <= 1 &&
+                  Number.isFinite(row.exactPValue) &&
+                  row.exactPValue >= 0 &&
+                  row.exactPValue <= 1 &&
                   row.tape.length <= 180;
-              }) && Math.abs(score(params.gamma * params.tokens, params.tokens, params.gamma)) < 1e-9;
-              if (valid) ok += 1;
+              }) &&
+                exactFalsePositive(params.tokens, params.gamma, params.threshold) >= 0 &&
+                exactFalsePositive(params.tokens, params.gamma, params.threshold) <= 1 &&
+                Math.abs(score(params.gamma * params.tokens, params.tokens, params.gamma)) < 1e-9;
+              if (valid) gridValid += 1;
             });
           });
         });
       });
     });
-    return { ok: ok, cases: cases };
+    check("144-case parameter grid is numerically valid", gridValid === 144 && gridCases === 144, {
+      valid: gridValid,
+      cases: gridCases
+    });
+
+    return {
+      ok: passed,
+      cases: checked,
+      passed: passed,
+      checked: checked,
+      gridCases: gridCases,
+      failures: failures,
+      defaultFacts: {
+        thresholdCount: cutoff,
+        exactFalsePositive: exactFpr,
+        normalTail: normalTail(defaultParams.threshold),
+        cleanPower: defaultSummary.markedPower,
+        attackedPower: defaultSummary.attackedPower,
+        meanMarkedZ: defaultSummary.meanMarkedZ,
+        meanAttackedZ: defaultSummary.meanAttackedZ
+      }
+    };
   }
 
   function drawText(ctx, text, x, y, color, size, weight, align) {
@@ -559,10 +771,11 @@
       metrics.innerHTML = [
         metric("clean power", formatPercent(result.summary.markedPower, 0)),
         metric("attacked power", formatPercent(result.summary.attackedPower, 0)),
-        metric("false positives", formatPercent(result.summary.falsePositive, 1)),
+        metric("null MC", formatPercent(result.summary.falsePositive, 1)),
+        metric("tail budget", result.summary.exactFalsePositive < 0.001 ? result.summary.exactFalsePositive.toExponential(1) : formatPercent(result.summary.exactFalsePositive, 2)),
         metric("one-doc z", formatNumber(result.one.attacked.z, 2)),
-        metric("p-value", result.one.attacked.pValue < 0.001 ? result.one.attacked.pValue.toExponential(1) : formatNumber(result.one.attacked.pValue, 3)),
-        metric("audit grid", result.audit.ok + "/" + result.audit.cases)
+        metric("exact p-value", result.one.attacked.exactPValue < 0.001 ? result.one.attacked.exactPValue.toExponential(1) : formatNumber(result.one.attacked.exactPValue, 3)),
+        metric("audit", result.audit.passed + "/" + result.audit.checked)
       ].join("");
     }
     var canvas = lab.querySelector("[data-canvas]");
@@ -584,17 +797,26 @@
     render(lab);
   }
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      baseDistribution: baseDistribution,
-      generate: generate,
-      monteCarlo: monteCarlo,
-      normalTail: normalTail,
-      runAudit: runAudit,
-      simulate: simulate,
-      sweepTokens: sweepTokens
-    };
-  }
+  var api = {
+    baseDistribution: baseDistribution,
+    biasedDistribution: biasedDistribution,
+    binomialTail: binomialTail,
+    exactFalsePositive: exactFalsePositive,
+    exactPValue: exactPValue,
+    expectedGreenShare: expectedGreenShare,
+    generate: generate,
+    monteCarlo: monteCarlo,
+    normalTail: normalTail,
+    runAudit: runAudit,
+    score: score,
+    simulate: simulate,
+    summarize: summarize,
+    sweepTokens: sweepTokens,
+    thresholdCount: thresholdCount
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  if (global) global.WatermarkTailLab = api;
 
   if (global && global.document) {
     Array.prototype.slice.call(global.document.querySelectorAll("[data-watermark-lab]")).forEach(init);
