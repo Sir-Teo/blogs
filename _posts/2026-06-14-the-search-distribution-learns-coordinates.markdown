@@ -189,7 +189,7 @@ So treat it as a microscope, not as a replacement for a production library.
     }
 
     .cma-lab canvas {
-      height: 900px;
+      height: 980px;
     }
   }
 </style>
@@ -233,7 +233,7 @@ So treat it as a microscope, not as a replacement for a production library.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cma-coordinate-lab.js?v=20260614a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cma-coordinate-lab.js?v=20260614b' | relative_url }}"></script>
 
 With the default settings, the lab starts both optimizers at the same point with
 the same population size. The objective has a `120x` condition number and a

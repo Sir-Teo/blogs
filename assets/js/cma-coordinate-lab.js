@@ -429,7 +429,7 @@
   function setupCanvas(canvas) {
     var rect = canvas.getBoundingClientRect();
     var width = Math.max(320, rect.width || 860);
-    var height = width < 560 ? 900 : 760;
+    var height = width < 560 ? 980 : 760;
     var dpr = global.devicePixelRatio || 1;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -692,9 +692,11 @@
     ctx.fillRect(0, 0, width, height);
     if (width < 560) {
       var gap = 14;
-      drawLandscape(ctx, { x: 0, y: 0, w: width, h: 430 }, result);
-      drawConvergence(ctx, { x: 0, y: 430 + gap, w: width, h: 220 }, result);
-      drawLedger(ctx, { x: 0, y: 430 + 220 + 2 * gap, w: width, h: height - 430 - 220 - 2 * gap }, result);
+      var landscapeH = 410;
+      var convergenceH = 230;
+      drawLandscape(ctx, { x: 0, y: 0, w: width, h: landscapeH }, result);
+      drawConvergence(ctx, { x: 0, y: landscapeH + gap, w: width, h: convergenceH }, result);
+      drawLedger(ctx, { x: 0, y: landscapeH + convergenceH + 2 * gap, w: width, h: height - landscapeH - convergenceH - 2 * gap }, result);
     } else {
       var gap2 = 16;
       var topH = Math.round(height * 0.62);
@@ -729,7 +731,7 @@
       metrics.innerHTML = [
         metric("CMA best", formatSci(result.cma.best)),
         metric("Spherical best", formatSci(result.spherical.best)),
-        metric("Advantage", formatNumber(Math.min(result.advantage, 999999), result.advantage > 100 ? 0 : 1) + "x"),
+        metric("Advantage", result.advantage >= 1000000 ? result.advantage.toExponential(1) + "x" : formatNumber(result.advantage, result.advantage > 100 ? 0 : 1) + "x"),
         metric("Axis error", formatNumber(result.axisError, 1) + " deg"),
         metric("Cov condition", formatNumber(result.covarianceCondition, 1) + "x"),
         metric("Audit", result.audit.passed ? "passed" : "check")
