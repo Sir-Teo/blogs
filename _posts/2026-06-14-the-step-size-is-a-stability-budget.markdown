@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Step Size Is a Dare"
+title: "Step Sizes Are Dares"
 description: "A learning rate is not just speed. It is a numerical stability promise about the sharpest direction the optimizer is willing to survive."
 date: 2026-06-14 13:27:00 -0400
 categories: machine-learning
