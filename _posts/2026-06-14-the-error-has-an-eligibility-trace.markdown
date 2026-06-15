@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Prediction Error Leaves Footprints"
+title: "Prediction Errors Leave Footprints"
 description: "TD(lambda) gives the next surprise a trail to follow, so delayed reward can reach the states that made it likely."
 date: 2026-06-14 14:10:00 -0400
 categories: machine-learning
