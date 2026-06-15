@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Lease Expired; the Write Did Not"
+title: "Leases Expire; Writes Do Not"
 description: "Lease expiry is a time-based promise, but stale side effects need an epoch check at the resource. Clock padding and fencing tokens solve different bugs."
 date: 2026-06-14 15:44:00 -0400
 categories: software-engineering
