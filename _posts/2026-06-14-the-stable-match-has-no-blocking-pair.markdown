@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Stable Matching Hunts Blocking Pairs"
-description: "Deferred acceptance is not a sorting algorithm. It is a way to remove every mutually tempting off-book deal while making one side best off among all stable outcomes."
+title: "The Side Deal Is the Bug"
+description: "Deferred acceptance is not a sorting algorithm. It is a way to remove every mutually tempting off-book deal while choosing one endpoint of the stable set."
 date: 2026-06-14 06:42:00 -0400
 categories: computer-science
 tags: [matching, mechanism-design, algorithms, game-theory, school-choice, market-design]
-excerpt: "A stable matching is not the matching with the largest total score. It is a matching where no unmatched pair would rather leave together. The deferred-acceptance algorithm turns that idea into a verifiable invariant."
+excerpt: "A stable matching is not the assignment with the largest total score. It is the one where no unmatched pair can look at each other and say: we should leave together."
 ---
 
 The first surprise is that "best match" is the wrong phrase.
@@ -17,7 +17,7 @@ incentives say another.
 
 That pair is called a blocking pair.
 
-The stable matching problem asks for a matching with no such pair. It is not
+The stable matching problem asks for an assignment with no such pair. It is not
 maximizing total happiness. It is not sorting everyone by a single score. It is
 not asking every agent to get their first choice. It is a different kind of
 object:
@@ -129,6 +129,16 @@ The green cells are the student-proposing stable match. Purple outlines mark
 the program-proposing stable match. Red dots mark examples of blocking pairs in
 the random pairing. The rank ledger reports average rank, where lower is
 better.
+
+I audited the lab against the actual matching functions. At the default seed,
+student-proposing DA and program-proposing DA both have zero blocking pairs,
+while the random pairing has 52. The student-proposing run uses 28 proposals
+over 6 rounds; students average rank 2.00, while programs average rank 6.36.
+When programs propose, those ranks move in the opposite direction: programs
+average 2.14 and students average 6.14. A 162-case sweep over market size,
+shared prestige, mutual fit, seed, and trial count found zero blocking pairs for
+both DA endpoints, at least one random blocking pair in every generated market,
+and no run exceeding the \(n^2\) proposal bound.
 
 <style>
   .stable-lab {
@@ -321,7 +331,7 @@ better.
 
 <script src="{{ '/assets/js/stable-matching-lab.js?v=20260614a' | relative_url }}"></script>
 
-## What the Experiment Is Actually Checking
+## What the Experiment Actually Checks
 
 The lab is not using a canned theorem display. It generates preference lists,
 runs both deferred-acceptance directions, and then enumerates all possible
@@ -351,7 +361,7 @@ because every rejection records a fact about impossibility: the rejected side
 cannot later claim that receiver as part of any stable outcome that improves
 them.
 
-## Why This Is Not Just a Toy Wedding Algorithm
+## Not Just a Toy Wedding Algorithm
 
 The marriage metaphor is historically sticky, but the modern applications are
 institutional.
@@ -387,7 +397,7 @@ the right invariant to inspect. If the dangerous deviation is coalition
 formation, budget gaming, false capacity reports, collusion, or dynamic
 learning, the invariant is different.
 
-## Stability Is a Local Notion With Global Teeth
+## A Local Rule With Global Teeth
 
 A maximum-weight matching can be unstable. A stable matching can be far from
 maximum weight. This is not a bug; it is the point.
@@ -413,7 +423,7 @@ That framing appears all over software systems:
 In each case, "optimal" is incomplete until you specify what kind of defection
 is allowed.
 
-## A Small Theorem With a Design Choice Inside
+## The Theorem Still Takes Sides
 
 Deferred acceptance has the feel of a sorting algorithm if you only watch the
 proposals move. But sorting has one order. Deferred acceptance has two sides,
