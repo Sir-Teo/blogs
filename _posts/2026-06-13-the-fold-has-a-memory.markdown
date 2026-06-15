@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Fold Remembers the Label Window"
+title: "Folds Remember Label Windows"
 description: "Random cross-validation can leak through time even when every feature is legal. The culprit is often the label interval, not an obviously forbidden future column."
 date: 2026-06-13 23:06:00 -0400
 categories: quantitative-finance
@@ -459,7 +459,7 @@ the folds share label intervals, the rigor is decorative.
 A fold has a memory. The validation job is to decide how much of that memory
 must be erased before the score deserves to be believed.
 
-## Reading Notes
+## Primary Sources
 
 [^afml]: Marcos Lopez de Prado, *Advances in Financial Machine Learning*, Wiley, 2018. The table of contents includes chapters on labeling, overlapping outcomes, sample uniqueness, and "Why K-Fold CV Fails in Finance" with "Purged K-Fold CV," purging, and embargo. [PhilPapers entry](https://philpapers.org/rec/LPEAIF), [Wiley](https://www.wiley.com/en-us/Advances%2Bin%2BFinancial%2BMachine%2BLearning-p-9781119482086).
 
