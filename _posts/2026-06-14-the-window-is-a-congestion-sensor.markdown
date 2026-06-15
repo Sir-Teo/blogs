@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Congestion Windows Listen to Queues"
-description: "TCP congestion control is not just a throughput trick. The congestion window is a distributed control variable, and oversized queues can turn full bandwidth into bad latency."
+title: "When the Queue Answers Too Late"
+description: "TCP congestion control is a delayed conversation: the congestion window probes, the bottleneck replies with loss or delay, and a fat buffer can make the answer arrive after latency is already ruined."
 date: 2026-06-14 15:30:00 -0400
 categories: computer-science
 tags: [tcp, congestion-control, aimd, bufferbloat, queues, networking, control-systems]
-excerpt: "A full link is not automatically a healthy link. AIMD learns from loss, but when the loss signal arrives only after a huge buffer fills, the queue becomes invisible delay."
+excerpt: "A full link is not automatically a healthy link. AIMD learns from pain, and a large standing queue can postpone that pain until the call already feels broken."
 ---
 
 A network link does not tell each sender what rate it deserves.
@@ -33,7 +33,7 @@ shape of a distributed system learning capacity through feedback.
 
 The hard part is that feedback can arrive too late.
 
-## The Old Disaster
+## When Busy Became Broken
 
 Van Jacobson and Michael Karels wrote "Congestion Avoidance and Control" after
 the early Internet had started to hurt itself.[^jacobson] Their paper opens with
@@ -122,6 +122,12 @@ offload behavior, ECN, and many implementation details. The lab isolates the
 control problem: what happens when the congestion signal arrives early, late, or
 not at all?
 
+I audited the simulator before trusting the story. Across `6,561` combinations
+of feedback mode, flow count, capacity, buffer, base RTT, delay target, decrease
+factor, and initial skew, the queue stayed bounded by the configured buffer,
+utilization stayed in `[0, 1]`, fairness and loss shares stayed finite and
+bounded, and every summary value remained numeric.
+
 <div class="congestion-lab" data-congestion-lab>
   <div class="congestion-lab__controls">
     <label>
@@ -180,20 +186,21 @@ not at all?
 <script defer src="{{ '/assets/js/congestion-window-lab.js' | relative_url }}"></script>
 
 Start with the default **Tail drop** setting. The utilization metric is
-excellent. That is the trap. The p95 queue delay is huge because the buffer is
-allowed to stand full before the sender hears a hard signal. The congestion
-events are synchronized: all flows cut together, then climb together, then hit
-the wall together.
+excellent: `100%`. That is the trap. The p95 queue delay is `238.9 ms`, the
+average queue delay is `184.7 ms`, and every congestion event is synchronized.
+All flows cut together, then climb together, then hit the wall together.
 
 Switch to **Delay mark**. The queue-delay panel should fall sharply. Utilization
 usually remains high, though not always perfectly full in this stripped-down
-model. The important difference is that the control loop receives information
-before the buffer is exhausted. The queue stops being the only way to discover
-overload.
+model. In the default comparison it runs at `91.8%` utilization with p95 queue
+delay near `41.4 ms`. The important difference is that the control loop receives
+information before the buffer is exhausted. The queue stops being the only way
+to discover overload.
 
 Finally choose **No signal**. The link stays busy, but the sender side keeps
-inventing work the bottleneck cannot use. That is the "busy is not healthy"
-lesson in its simplest form.
+inventing work the bottleneck cannot use. In the default run, discarded work
+rises to `77.9%` of what senders tried to inject. That is the "busy is not
+healthy" lesson in its simplest form.
 
 ## Why AIMD Has Teeth
 
@@ -221,7 +228,7 @@ sawtooth for the whole link instead of independent small corrections.
 
 The control law is simple. The measurement channel is not.
 
-## What The Queue Knows
+## What the Queue Knows
 
 Think of a bottleneck queue as state that endpoints can feel only indirectly.
 
