@@ -131,6 +131,12 @@ HLL registers. It is a good foil. A bitmap is excellent while many bits are
 empty. Once nearly all bits are occupied, the zeros disappear and the estimator
 has no air left to breathe.
 
+The audit badge is deliberately mundane: the script exports the same 83-check
+suite that feeds the visible counter. It verifies monotone register updates,
+idempotent duplicate handling, registerwise-max merges, exact shard/direct
+equivalence, ordered trial quantiles, load-curve accounting, and the
+$$1.04/\sqrt{m}$$ standard-error ledger.
+
 <div class="hll-lab" data-hll-lab>
   <div class="hll-lab__controls">
     <label>
@@ -170,10 +176,12 @@ has no air left to breathe.
     Deterministic synthetic experiment. It uses the classical HLL estimator with
     the small-range linear-counting correction. Memory assumes 6-bit registers
     and a simple exact-set payload estimate; real hash tables have overhead and
-    production HLL implementations use additional engineering.
+    production HLL implementations use additional engineering. The audit badge
+    reports deterministic implementation checks, not a claim about adversarial
+    hash robustness.
   </p>
 </div>
-<script src="{{ '/assets/js/hyperloglog-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hyperloglog-lab.js?v=20260615a' | relative_url }}"></script>
 
 The default setting uses $$m=1024$$ registers, which predicts a standard error
 near 3.25 percent. That number is not a worst-case guarantee for every hash
