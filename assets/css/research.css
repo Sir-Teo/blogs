@@ -410,19 +410,7 @@ strong {
   border-bottom: 1px solid var(--faint);
 }
 
-/* Year divider: a quiet milestone between eras of the list. */
-.postlist__year {
-  font-family: var(--font-ui);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  padding: 1.4rem 0.7rem 0.5rem;
-}
-
-.postlist__item:first-child .postlist__link,
-.postlist__year:first-child {
+.postlist__item:first-child .postlist__link {
   padding-top: 0.95rem;
 }
 
@@ -453,14 +441,6 @@ strong {
   font-size: 0.72rem;
   color: var(--muted);
   min-width: 0;
-}
-
-.postlist__date {
-  flex: none;
-  font-family: var(--font-ui);
-  font-size: 0.72rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .postlist__dot {
@@ -667,11 +647,6 @@ strong {
 .post-content p,
 .home-intro {
   text-wrap: pretty;
-}
-
-.post-meta__sep {
-  margin: 0 0.2rem;
-  opacity: 0.6;
 }
 
 /* ---------- Code ---------- */

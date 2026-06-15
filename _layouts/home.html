@@ -31,16 +31,10 @@ layout: default
   <p class="postlist__status" aria-live="polite"><span id="postcount">{{ site.posts.size }}</span> notes</p>
 
   <ul class="postlist">
-    {%- assign last_year = "" -%}
     {%- for post in site.posts -%}
     {%- assign slug = post.categories.first -%}
     {%- assign meta = site.data.categories[slug] -%}
     {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
-    {%- assign post_year = post.date | date: "%Y" -%}
-    {%- if post_year != last_year -%}
-    <li class="postlist__year" data-year="{{ post_year }}" aria-hidden="true">{{ post_year }}</li>
-    {%- assign last_year = post_year -%}
-    {%- endif -%}
     {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }}{% endif %}{%- endcapture -%}
     <li class="postlist__item" data-category="{{ slug }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
       <a class="postlist__link" href="{{ post.url | relative_url }}">
@@ -50,7 +44,6 @@ layout: default
           {%- else -%}
           <span class="postlist__cat"></span>
           {%- endif -%}
-          <time class="postlist__date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
         </span>
         <span class="postlist__title">{{ post.title | escape }}</span>
         {%- if desc and desc != "" -%}

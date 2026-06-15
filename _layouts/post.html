@@ -14,10 +14,9 @@ layout: default
     {%- endif -%}
     <h1 class="post-title p-name">{{ page.title | escape }}</h1>
     <p class="post-meta">
-      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
       {%- assign words = content | number_of_words -%}
       {%- assign minutes = words | divided_by: 200 | plus: 1 -%}
-      <span class="post-meta__sep">&middot;</span> {{ minutes }} min read
+      {{ minutes }} min read
     </p>
   </header>
 

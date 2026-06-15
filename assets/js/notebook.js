@@ -145,7 +145,6 @@
   if (chipbar) {
     var chips = Array.prototype.slice.call(chipbar.querySelectorAll('.chip'));
     var items = Array.prototype.slice.call(document.querySelectorAll('.postlist__item'));
-    var years = Array.prototype.slice.call(document.querySelectorAll('.postlist__year'));
     var empty = document.querySelector('.postlist__empty');
     var status = document.querySelector('.postlist__status');
     var count = document.getElementById('postcount');
@@ -166,17 +165,6 @@
         var match = catMatch && textMatch;
         li.hidden = !match;
         if (match) shown++;
-      });
-      // A year divider is shown only when at least one post under it survives
-      // the active filter, so the list never strands an empty heading.
-      years.forEach(function (yr) {
-        var visible = false;
-        var node = yr.nextElementSibling;
-        while (node && !node.classList.contains('postlist__year')) {
-          if (node.classList.contains('postlist__item') && !node.hidden) { visible = true; break; }
-          node = node.nextElementSibling;
-        }
-        yr.hidden = !visible;
       });
       if (empty) empty.hidden = shown !== 0;
       if (count) count.textContent = shown;
