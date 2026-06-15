@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Smoother That Drew Spots"
+title: "Smoothing Drew the Spots"
 description: "Reaction-diffusion systems bend intuition: local mixing plus nonlinear reactions can turn a nearly uniform field into spots, worms, fronts, and decay."
 date: 2026-06-14 10:12:00 -0400
 categories: computer-science
