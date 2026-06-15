@@ -281,7 +281,7 @@ can move or flatten. That is a useful warning: unitary does not mean calibrated.
 
 <script defer src="{{ '/assets/js/grover-rotation-lab.js?v=20260614a' | relative_url }}"></script>
 
-## The Square Root Is an Angle Budget
+## Square Root Is an Angle Budget
 
 The starting angle \(\theta\) is small when marked items are rare:
 
