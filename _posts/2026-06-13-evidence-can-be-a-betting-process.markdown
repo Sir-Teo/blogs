@@ -27,7 +27,7 @@ an alarm someone is allowed to watch.
 
 An e-process is a process.
 
-## The Bankroll Rule
+## Bankroll Rule
 
 An e-value is a nonnegative random variable $$E$$ such that, under every
 distribution in the null hypothesis,
