@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Stopwatch Is Not the Calendar"
+title: "Stopwatches Are Not Calendars"
 description: "Wall clocks name calendar instants; monotonic clocks measure elapsed time. Mixing them turns NTP corrections, clock steps, and lease expiries into production bugs."
 date: 2026-06-14 15:03:00 -0400
 categories: software-engineering
