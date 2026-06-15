@@ -25,7 +25,7 @@ commitment and deletes every neighboring possibility that can no longer fit.
 This is why watching WFC is satisfying. The map does not merely fill in. It
 becomes less ambiguous.
 
-## The Move
+## Move
 
 Take a tiny sample:
 
