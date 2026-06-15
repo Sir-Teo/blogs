@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Critical Point Remembers"
+title: "Critical Points Remember"
 description: "At the Ising critical point, local Monte Carlo updates keep revisiting the same large domains. A cluster move changes the unit of motion."
 date: 2026-06-14 19:54:00 -0400
 categories: physics
