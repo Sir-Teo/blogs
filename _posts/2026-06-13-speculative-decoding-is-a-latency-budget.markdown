@@ -111,9 +111,11 @@ worth more than those costs.
     Deterministic latency model. It assumes one serial draft pass per proposed
     token, one parallel target verification pass, and independent draft
     acceptance. Real systems should replace these knobs with measured traces.
+    The visible audit counter is produced by the shared lab script and checks
+    both this latency ledger and the exact rejection-sampling lab in part two.
   </p>
 </div>
-<script defer src="{{ '/assets/js/speculative-decoding-lab.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/speculative-decoding-lab.js?v=20260615a' | relative_url }}"></script>
 
 Read the heatmap horizontally. More lookahead is useful until the rejected tail
 and verifier overhead eat the benefit. Read it vertically. Acceptance quality is
