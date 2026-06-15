@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Delete Button Owes a Counterfactual"
+title: "Delete Buttons Owe Counterfactuals"
 description: "Machine unlearning is not just deleting a row. It is the demand that a deployed model behave as if that row had never entered training."
 date: 2026-06-14 09:30:00 -0400
 categories: machine-learning
