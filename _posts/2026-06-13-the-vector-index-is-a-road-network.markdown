@@ -279,7 +279,7 @@ each expanded node also fans out to more neighbors. In real HNSW deployments,
 larger `M` usually means more memory, slower construction, and better high-recall
 search. The same trade appears here, only in miniature.
 
-## The Failure Is Often Routing
+## Failure Is Often Routing
 
 The local graph has accurate local geometry. If search starts inside the right
 cluster, it often finds the right point. Its failure is routing.
