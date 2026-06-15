@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tail Comes Back Through the Front Door"
+title: "Tails Come Back Through the Front Door"
 description: "FFT convolution is fast, but the finite DFT lives on a circle. Without enough zero padding, the end of the answer wraps around and pollutes the beginning."
 date: 2026-06-14 05:24:00 -0400
 categories: computer-science
@@ -355,7 +355,7 @@ Zero padding makes that circle large enough to contain the line.
 
 Once you remember the ring, the magic door becomes an engineering tool again.
 
-## Further Reading
+## Reading Trail
 
 [^mit]: MIT OpenCourseWare, "Introduction to Neural Computation," Lecture 12, includes the convolution theorem: convolution in time corresponds to multiplication in frequency. [PDF](https://ocw.mit.edu/courses/9-40-introduction-to-neural-computation-spring-2018/3af4f6a0ae1df1d886293979018142b0_MIT9_40S18_Lec12.pdf).
 
