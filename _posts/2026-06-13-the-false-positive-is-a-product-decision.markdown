@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Bit Array That Only Says Maybe"
+title: "Bit Arrays That Only Say Maybe"
 description: "A Bloom filter is a memory bargain: it can say definitely not, or maybe, but it never proves membership."
 date: 2026-06-13 17:24:00 -0400
 categories: computer-science
@@ -357,7 +357,7 @@ the question every system eventually asks anyway:
 what does being wrong cost here?
 ```
 
-## Further Reading
+## Works Cited
 
 [^bloom]: Burton H. Bloom, ["Space/Time Trade-offs in Hash Coding with Allowable Errors"](https://crystal.uta.edu/~mcguigan/cse6350/papers/Bloom.pdf), *Communications of the ACM*, 1970. [ACM record](https://dl.acm.org/doi/10.1145/362686.362692).
 
