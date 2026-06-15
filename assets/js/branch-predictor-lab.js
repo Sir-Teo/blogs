@@ -30,11 +30,29 @@
     loopPeriod: 9,
     seed: 23
   };
+  var AUDIT_CACHE = null;
 
   var FAMILY_ORDER = ["loop", "copy", "parity", "random", "decoy"];
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function close(actual, expected, tolerance) {
+    return isFinite(actual) && isFinite(expected) && Math.abs(actual - expected) <= tolerance;
+  }
+
+  function sum(values) {
+    return values.reduce(function (acc, value) { return acc + value; }, 0);
+  }
+
+  function familyCounts(trace) {
+    var counts = {};
+    FAMILY_ORDER.forEach(function (family) { counts[family] = 0; });
+    trace.forEach(function (event) {
+      counts[event.family] = (counts[event.family] || 0) + 1;
+    });
+    return counts;
   }
 
   function snap(value, fallback, min, max, step) {
@@ -391,6 +409,90 @@
     };
   }
 
+  function runAudit() {
+    var checks = [];
+    var baseParams = cleanParams(DEFAULTS);
+
+    function check(label, passed, detail) {
+      checks.push({ label: label, passed: !!passed, detail: detail || "" });
+    }
+
+    var snapped = cleanParams({ entriesExp: 99, history: -4, blocks: 211, noise: 42, decoys: 5, loopPeriod: 99, seed: "nope" });
+    check("parameter snapping", snapped.entriesExp === 10 && snapped.history === 0 && snapped.blocks === 200 && snapped.noise === 30 && snapped.decoys === 4 && snapped.loopPeriod === 24 && snapped.seed === DEFAULTS.seed);
+
+    check("counter prediction threshold", counterPredict(0) === false && counterPredict(1) === false && counterPredict(2) === true && counterPredict(3) === true);
+    check("counter saturates upward", updateCounter(3, true) === 3 && updateCounter(2, true) === 3);
+    check("counter saturates downward", updateCounter(0, false) === 0 && updateCounter(1, false) === 0);
+    check("hash is deterministic unsigned", hashInt(0x12345678) === hashInt(0x12345678) && hashInt(-1) >= 0);
+
+    var smallParams = cleanParams({ entriesExp: 4, history: 2, blocks: 200, noise: 0, decoys: 0, loopPeriod: 5, seed: 7 });
+    var trace = generateTrace(smallParams);
+    var counts = familyCounts(trace);
+    check("no-decoy trace length", trace.length === smallParams.blocks * 5);
+    check("trace family counts", counts.loop === smallParams.blocks && counts.copy === smallParams.blocks && counts.parity === smallParams.blocks && counts.random === smallParams.blocks * 2 && counts.decoy === 0);
+    check("loop exits once per period", trace.filter(function (event) { return event.family === "loop" && !event.outcome; }).length === smallParams.blocks / smallParams.loopPeriod);
+    check("copy branch mirrors previous random without noise", trace.every(function (event, index) {
+      return event.family !== "copy" || event.outcome === trace[index - 1].outcome;
+    }));
+    check("parity branch follows xor without noise", trace.every(function (event, index) {
+      return event.family !== "parity" || event.outcome === (trace[index - 3].outcome !== trace[index - 1].outcome);
+    }));
+
+    var decoyTrace = generateTrace(baseParams);
+    var decoyCounts = familyCounts(decoyTrace);
+    check("default decoys add traffic", decoyCounts.decoy === baseParams.blocks * 2);
+    check("trace generation is deterministic", JSON.stringify(generateTrace(smallParams).slice(0, 20)) === JSON.stringify(trace.slice(0, 20)));
+
+    var bimodal = runPredictor(makeBimodal(16), trace, true);
+    check("predictor accounts for every event", bimodal.total === trace.length && sum(FAMILY_ORDER.map(function (family) { return bimodal.byFamily[family].total; })) === trace.length);
+    check("timeline cap", bimodal.timeline.length === 180);
+    check("loop is easy for two-bit counter", bimodal.byFamily.loop.missRate < 0.45);
+
+    var gshareNoHistory = runPredictor(makeGshare(64, 0), trace, false);
+    var gshareHistory = runPredictor(makeGshare(64, 2), trace, false);
+    check("gshare zero history matches bimodal table shape", close(gshareNoHistory.missesPerK, runPredictor(makeBimodal(64), trace, false).missesPerK, 1e-12));
+    check("history helps copy branch", gshareHistory.byFamily.copy.missRate < gshareNoHistory.byFamily.copy.missRate);
+
+    var perceptron = runPredictor(makePerceptron(64, 4), trace, false);
+    check("perceptron learns linear copy", perceptron.byFamily.copy.missRate < 0.15);
+    check("perceptron struggles with parity", perceptron.byFamily.parity.missRate > perceptron.byFamily.copy.missRate + 0.20);
+
+    var workingSet = branchWorkingSet(trace, smallParams.history, 16);
+    check("working set covers contexts", workingSet.contexts >= workingSet.workingSet95 && workingSet.workingSet95 > 0);
+    check("working set occupancy is bounded", workingSet.occupiedEntries <= 16 && workingSet.collidingContexts === workingSet.contexts - workingSet.occupiedEntries);
+    check("context miss rate is probability", workingSet.contextMissRate >= 0 && workingSet.contextMissRate <= 1);
+
+    var occupancy = tableOccupancy(trace, smallParams.history, 16);
+    check("occupancy preserves traffic", occupancy.length === 16 && sum(occupancy) === trace.length);
+
+    var defaultResult = evaluate(baseParams);
+    var lowPressure = evaluate(Object.assign({}, baseParams, { entriesExp: 10, decoys: 0, noise: 0 }));
+    var noHistoryResult = evaluate(Object.assign({}, baseParams, { history: 0, decoys: 0, noise: 0, entriesExp: 10 }));
+    var defaultGshare = defaultResult.stats.filter(function (row) { return row.key === "gshare"; })[0];
+    var defaultBimodal = defaultResult.stats.filter(function (row) { return row.key === "bimodal"; })[0];
+    var lowGshare = lowPressure.stats.filter(function (row) { return row.key === "gshare"; })[0];
+    var lowPerceptron = lowPressure.stats.filter(function (row) { return row.key === "perceptron"; })[0];
+    var noHistoryGshare = noHistoryResult.stats.filter(function (row) { return row.key === "gshare"; })[0];
+    check("default best predictor is reported", defaultResult.stats.some(function (row) { return row.key === defaultResult.best.key && row.missesPerK === defaultResult.best.missesPerK; }));
+    check("default working set aliases table", defaultResult.workingSet.aliasLoad > 1);
+    check("default history can hurt under aliasing", defaultGshare.missesPerK > defaultBimodal.missesPerK);
+    check("larger clean table lets gshare win", lowPressure.best.key === "gshare" && lowGshare.missesPerK < lowPerceptron.missesPerK);
+    check("removing history hurts parity", noHistoryGshare.byFamily.parity.missRate > lowGshare.byFamily.parity.missRate + 0.20);
+
+    var passed = checks.filter(function (item) { return item.passed; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      ok: passed === checks.length,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function formatNumber(value, digits) {
     if (!isFinite(value)) return "n/a";
     return value.toFixed(digits == null ? 1 : digits);
@@ -619,6 +721,7 @@
     var params = readParams(container);
     updateOutputs(container, params);
     var result = evaluate(params);
+    var audit = cachedAudit();
     var metrics = container.querySelector("[data-metrics]");
     var bimodal = result.stats.filter(function (row) { return row.key === "bimodal"; })[0];
     var gshare = result.stats.filter(function (row) { return row.key === "gshare"; })[0];
@@ -630,7 +733,8 @@
         metric("context floor", formatNumber(result.workingSet.contextMissRate * 1000, 0)),
         metric("95% contexts", String(result.workingSet.workingSet95)),
         metric("gshare - bimodal", formatDelta(gshare.missesPerK - bimodal.missesPerK)),
-        metric("perc - gshare", formatDelta(perceptron.missesPerK - gshare.missesPerK))
+        metric("perc - gshare", formatDelta(perceptron.missesPerK - gshare.missesPerK)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = container.querySelector("canvas[data-canvas]");
@@ -654,7 +758,7 @@
     root.document.querySelectorAll("[data-branch-predictor-lab]").forEach(mount);
   }
 
-  root.BranchPredictorLab = {
+  var api = {
     branchWorkingSet: branchWorkingSet,
     cleanParams: cleanParams,
     evaluate: evaluate,
@@ -663,9 +767,15 @@
     makeBimodal: makeBimodal,
     makeGshare: makeGshare,
     makePerceptron: makePerceptron,
+    runAudit: runAudit,
     runPredictor: runPredictor,
     tableOccupancy: tableOccupancy
   };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+  root.BranchPredictorLab = api;
 
   if (root.document) {
     if (root.document.readyState === "loading") {
