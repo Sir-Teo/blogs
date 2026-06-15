@@ -14,6 +14,7 @@
     rule: "#d7dee5",
     faint: "#f8fafc"
   };
+  var AUDIT_CACHE = null;
 
   var WORDS = [
     "model", "vector", "policy", "cache", "query", "index", "signal", "market",
@@ -274,6 +275,145 @@
     };
   }
 
+  function close(left, right, tolerance) {
+    return Math.abs(left - right) <= tolerance;
+  }
+
+  function probability(value) {
+    return Number.isFinite(value) && value >= 0 && value <= 1;
+  }
+
+  function auditSet(array) {
+    var map = Object.create(null);
+    array.forEach(function (value) { map[value] = true; });
+    return { array: array, map: map };
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    var shingles = shingleSet(["a", "b", "c", "a", "b", "c"], 2);
+    record("shingleSet deduplicates", shingles.array.length === 3);
+    record("shingleSet keeps expected shingle", shingles.map["a b"] && shingles.map["b c"] && shingles.map["c a"]);
+    record("short document has no shingles", shingleSet(["a"], 2).array.length === 0);
+
+    var sameStats = setStats(auditSet(["x", "y"]), auditSet(["x", "y"]));
+    record("identical sets have Jaccard one", sameStats.jaccard === 1 && sameStats.shared === 2 && sameStats.union === 2);
+    var disjointStats = setStats(auditSet(["x", "y"]), auditSet(["a", "b"]));
+    record("disjoint sets have Jaccard zero", disjointStats.jaccard === 0 && disjointStats.union === 4);
+    var partialStats = setStats(auditSet(["x", "y", "z"]), auditSet(["y", "z", "w"]));
+    record("partial set ledger closes", partialStats.shared === 2 && partialStats.leftOnly === 1 && partialStats.rightOnly === 1 && partialStats.union === 4);
+    record("partial Jaccard formula", partialStats.jaccard === 0.5);
+
+    var hashes = shingleHashes(auditSet(["alpha", "beta", "gamma"]));
+    var sigA = minhashSignature(hashes, 12, 0x12345678);
+    var sigB = minhashSignature(hashes, 12, 0x12345678);
+    record("identical signatures match", signatureAgreement(sigA, sigB) === 1);
+    record("signature length matches rows", sigA.length === 12);
+    var emptySig = minhashSignature([], 5, 0x12345678);
+    record("empty signatures use max sentinel", emptySig.every(function (value) { return value === 0xffffffff; }));
+    record("empty signature agreement is one", signatureAgreement(emptySig, emptySig) === 1);
+
+    var bandedLeft = [1, 2, 3, 4, 5, 6];
+    var bandedRight = [1, 2, 7, 4, 8, 6];
+    var banded = bandMatches(bandedLeft, bandedRight, 3, 2);
+    record("band match length", banded.length === 3);
+    record("band matching requires every row", banded[0] === true && banded[1] === false && banded[2] === false);
+
+    record("lsh zero boundary", lshProbability(0, 20, 5) === 0);
+    record("lsh one boundary", lshProbability(1, 20, 5) === 1);
+    record("lsh formula", close(lshProbability(0.5, 20, 5), 1 - Math.pow(1 - Math.pow(0.5, 5), 20), 1e-12));
+    record("lsh clamps similarity low", lshProbability(-2, 20, 5) === 0);
+    record("lsh clamps similarity high", lshProbability(2, 20, 5) === 1);
+    record("more bands raise candidate probability", lshProbability(0.6, 30, 5) > lshProbability(0.6, 10, 5));
+    record("more rows lower candidate probability", lshProbability(0.6, 20, 6) < lshProbability(0.6, 20, 3));
+
+    function auditScenario(name, params) {
+      var result = simulate(params);
+      var trueMatchCount = result.matches.filter(Boolean).length;
+      var trueBackgroundMatchCount = result.backgroundMatches.filter(Boolean).length;
+      record(name + " rows ledger", result.rows === result.bands * result.rowsPerBand);
+      record(name + " signature lengths", result.signatureA.length === result.rows && result.signatureB.length === result.rows);
+      record(name + " estimate recomputes", close(result.estimate, signatureAgreement(result.signatureA, result.signatureB), 1e-12));
+      record(name + " band length", result.matches.length === result.bands && result.backgroundMatches.length === result.bands);
+      record(name + " candidate flag", result.candidate === (trueMatchCount > 0));
+      record(name + " background candidate flag", result.backgroundCandidate === (trueBackgroundMatchCount > 0));
+      record(name + " exact ledger closes", result.exact.union === result.exact.shared + result.exact.leftOnly + result.exact.rightOnly);
+      record(name + " background ledger closes", result.background.union === result.background.shared + result.background.leftOnly + result.background.rightOnly);
+      record(name + " exact probability", probability(result.exact.jaccard));
+      record(name + " estimate probability", probability(result.estimate));
+      record(name + " background probability", probability(result.background.jaccard) && probability(result.backgroundEstimate));
+      record(name + " LSH probability formula", close(result.candidateProbability, lshProbability(result.exact.jaccard, result.bands, result.rowsPerBand), 1e-12));
+      record(name + " background LSH formula", close(result.backgroundProbability, lshProbability(result.background.jaccard, result.bands, result.rowsPerBand), 1e-12));
+      record(name + " threshold formula", close(result.threshold, Math.pow(1 / result.bands, 1 / result.rowsPerBand), 1e-12));
+      record(name + " pair count formula", result.allPairs === result.corpus * (result.corpus - 1) / 2);
+      record(name + " expected background formula", close(result.expectedBackgroundCandidates, result.allPairs * result.backgroundProbability, 1e-9));
+      record(name + " synthetic estimate near exact", Math.abs(result.estimate - result.exact.jaccard) <= 0.16);
+      return result;
+    }
+
+    var defaultCase = auditScenario("default", {
+      bands: 20,
+      boilerplate: 15,
+      corpus: 2000,
+      editRate: 16,
+      rowsPerBand: 5,
+      shingleSize: 4
+    });
+    record("default near pair becomes candidate", defaultCase.candidate);
+    record("default background is filtered", !defaultCase.backgroundCandidate);
+
+    var identical = auditScenario("identical", {
+      bands: 20,
+      boilerplate: 0,
+      corpus: 2000,
+      editRate: 0,
+      rowsPerBand: 5,
+      shingleSize: 4
+    });
+    record("identical exact one", identical.exact.jaccard === 1 && identical.estimate === 1 && identical.candidateProbability === 1);
+    record("identical all bands match", identical.matches.every(Boolean));
+
+    var dissimilar = auditScenario("dissimilar", {
+      bands: 20,
+      boilerplate: 0,
+      corpus: 2000,
+      editRate: 70,
+      rowsPerBand: 5,
+      shingleSize: 8
+    });
+    record("dissimilar exact zero", dissimilar.exact.jaccard === 0 && dissimilar.estimate === 0 && dissimilar.candidateProbability === 0);
+    record("dissimilar no bands match", !dissimilar.matches.some(Boolean));
+
+    var noBoiler = simulate({ bands: 20, boilerplate: 0, corpus: 2000, editRate: 20, rowsPerBand: 5, shingleSize: 3 });
+    var withBoiler = simulate({ bands: 20, boilerplate: 60, corpus: 2000, editRate: 20, rowsPerBand: 5, shingleSize: 3 });
+    record("boilerplate raises background resemblance", withBoiler.background.jaccard > noBoiler.background.jaccard);
+    record("boilerplate raises background candidate probability", withBoiler.backgroundProbability > noBoiler.backgroundProbability);
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function panelTitle(ctx, box, title, subtitle) {
     ctx.fillStyle = COLORS.text;
     ctx.font = "600 13px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
@@ -492,6 +632,7 @@
   function render(root) {
     var params = paramsFromRoot(root);
     var result = simulate(params);
+    var audit = cachedAudit();
     var values = {
       bands: String(result.bands),
       boilerplate: formatPercent(params.boilerplate),
@@ -512,7 +653,8 @@
         metric("Signature rows", String(result.rows)),
         metric("Candidate chance", formatPercent(result.candidateProbability * 100)),
         metric("Background chance", formatPercent(result.backgroundProbability * 100)),
-        metric("Sig bytes/doc", formatNumber(result.rows * 4) + " B")
+        metric("Sig bytes/doc", formatNumber(result.rows * 4) + " B"),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -520,6 +662,8 @@
   }
 
   function init(root) {
+    if (root.__minhashLabReady) return;
+    root.__minhashLabReady = true;
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
@@ -536,6 +680,7 @@
   var api = {
     lshProbability: lshProbability,
     minhashSignature: minhashSignature,
+    runAudit: runAudit,
     shingleSet: shingleSet,
     simulate: simulate
   };
@@ -546,6 +691,7 @@
   global.MinHashLab = api;
 
   if (global.document) {
-    global.document.addEventListener("DOMContentLoaded", initAll);
+    if (global.document.readyState === "loading") global.document.addEventListener("DOMContentLoaded", initAll);
+    else initAll();
   }
 }(typeof window !== "undefined" ? window : globalThis));
