@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Hash Table Is Fast Until the Tail Arrives"
+title: "Hash Tables Are Fast Until the Tail Arrives"
 description: "Open-addressed hash tables do not merely get fuller. Their probe distributions change shape."
 date: 2026-06-13 20:59:00 -0400
 categories: computer-science
