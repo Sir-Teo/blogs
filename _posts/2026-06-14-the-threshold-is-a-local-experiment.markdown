@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Threshold Only Speaks Nearby"
+title: "Thresholds Only Speak Nearby"
 description: "Regression discontinuity turns a hard rule into a narrow causal comparison. The useful question is not whether the rule is sharp, but whether anything else jumps at the same line."
 date: 2026-06-14 13:15:00 -0400
 categories: statistics
