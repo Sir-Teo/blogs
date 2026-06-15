@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Metric Became a Control Surface"
+title: "Metrics Become Control Surfaces"
 description: "Metrics fail under pressure because selection, gaming, and feedback change the data-generating process that made the metric useful."
 date: 2026-06-13 00:15:00 -0400
 categories: statistics
@@ -292,7 +292,7 @@ It should ask:
 
 > What new causal paths made it go up?
 
-## References
+## Source Notes
 
 [^goodhart]: Charles A. E. Goodhart, ["Problems of Monetary Management: The U.K. Experience"](https://www.econbiz.de/Record/problems-of-monetary-management-the-u-k-experience-goodhart-charles/10002525062), *Papers in Monetary Economics*, 1975.
 
