@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Sampler Paced in the Wrong Room"
+title: "Samplers Can Pace in the Wrong Room"
 description: "A Metropolis chain can accept most proposals and still fail to explore. Convergence is a claim about what the chain has forgotten, not how busy it looks."
 date: 2026-06-14 13:00:00 -0400
 categories: statistics
