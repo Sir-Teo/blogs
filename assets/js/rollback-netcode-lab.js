@@ -29,6 +29,7 @@
   var FRAMES = 240;
   var SPEED = 1.35;
   var CURVE_DELAYS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -125,6 +126,39 @@
     var sorted = values.slice().sort(function (a, b) { return a - b; });
     var index = clamp(Math.floor((sorted.length - 1) * q), 0, sorted.length - 1);
     return sorted[index];
+  }
+
+  function close(actual, expected, tolerance) {
+    return Math.abs(actual - expected) <= tolerance;
+  }
+
+  function finiteNumber(value) {
+    return Number.isFinite(value);
+  }
+
+  function monotoneNonincreasing(values, tolerance) {
+    for (var i = 1; i < values.length; i += 1) {
+      if (values[i] > values[i - 1] + tolerance) return false;
+    }
+    return true;
+  }
+
+  function countLate(delays, inputDelay) {
+    return delays.slice(0, FRAMES).reduce(function (total, delay) {
+      return total + (delay > inputDelay ? 1 : 0);
+    }, 0);
+  }
+
+  function sumNonHardDepth(events) {
+    return events.reduce(function (total, event) {
+      return total + (event.hard ? 0 : event.depth);
+    }, 0);
+  }
+
+  function maxNonHardDepth(events) {
+    return events.reduce(function (maxDepth, event) {
+      return event.hard ? maxDepth : Math.max(maxDepth, event.depth);
+    }, 0);
   }
 
   function simulateRollback(params, inputs, delays, actual) {
@@ -275,6 +309,125 @@
       selected: selected,
       curve: curve
     };
+  }
+
+  function rollbackLedgersValid(row) {
+    var rb = row.rollback;
+    var nonHardEvents = rb.events.filter(function (event) { return !event.hard; });
+    return rb.frames.length === FRAMES &&
+      rb.frames.every(function (frame) {
+        return frame.frame >= 0 &&
+          frame.frame < FRAMES &&
+          frame.visibleFrame >= 0 &&
+          frame.visibleFrame < FRAMES &&
+          finiteNumber(frame.predicted) &&
+          finiteNumber(frame.actual) &&
+          finiteNumber(frame.absError) &&
+          frame.absError >= 0 &&
+          (frame.eventKind === "" || frame.eventKind === "rollback" || frame.eventKind === "snap");
+      }) &&
+      close(rb.inputLatencyMs, row.params.inputDelay * FRAME_MS, 1e-9) &&
+      rb.totalRollbackFrames === sumNonHardDepth(rb.events) &&
+      rb.maxRollback === maxNonHardDepth(rb.events) &&
+      close(rb.rollbackFramesPerMinute, rb.totalRollbackFrames * 15, 1e-9) &&
+      close(rb.rollbackEventsPerMinute, nonHardEvents.length * 15, 1e-9) &&
+      rb.predictedShare >= 0 &&
+      rb.predictedShare <= 1 &&
+      rb.events.every(function (event) {
+        return event.frame >= 0 &&
+          event.frame < FRAMES &&
+          event.sourceFrame >= 0 &&
+          event.sourceFrame < FRAMES &&
+          event.depth >= 1 &&
+          (event.hard ? event.depth > row.params.rollbackWindow : event.depth <= row.params.rollbackWindow);
+      });
+  }
+
+  function lockstepLedgerValid(row) {
+    var ls = row.lockstep;
+    var late = countLate(row.delays, row.params.inputDelay);
+    var lateDepth = row.delays.slice(0, FRAMES).reduce(function (total, delay) {
+      return total + Math.max(0, delay - row.params.inputDelay);
+    }, 0);
+    return close(ls.inputLatencyMs, row.params.inputDelay * FRAME_MS, 1e-9) &&
+      close(ls.lateShare, late / FRAMES, 1e-12) &&
+      close(ls.stallFramesPerMinute, lateDepth * 15, 1e-9) &&
+      ls.maxLate === Math.max.apply(null, row.delays.slice(0, FRAMES).map(function (delay) {
+        return Math.max(0, delay - row.params.inputDelay);
+      }));
+  }
+
+  function positionsValid(row) {
+    return row.actual.length === row.inputs.length + 1 &&
+      row.actual.slice(0, FRAMES).every(function (position, frame) {
+        return close(row.actual[frame + 1] - position, row.inputs[frame] * SPEED, 1e-9);
+      });
+  }
+
+  function runAudit() {
+    var checks = [];
+    function check(name, passed, detail) {
+      checks.push({ name: name, passed: Boolean(passed), detail: detail || "" });
+    }
+
+    var clamped = cleanParams({ rtt: 222, jitter: -4, inputDelay: 99, volatility: -8, rollbackWindow: 99, simCost: 2 });
+    check("parameter clamps and snaps", clamped.rtt === 220 && clamped.jitter === 0 && clamped.inputDelay === 8 && clamped.volatility === 0 && clamped.rollbackWindow === 16 && clamped.simCost === 5);
+
+    var fallback = cleanParams({ rtt: "x", jitter: "x", inputDelay: "x", volatility: "x", rollbackWindow: "x", simCost: "x" });
+    check("default fallbacks", Object.keys(DEFAULTS).every(function (key) { return fallback[key] === DEFAULTS[key]; }));
+
+    var defaultA = evaluate(DEFAULTS);
+    var defaultB = evaluate(DEFAULTS);
+    check("deterministic replay", JSON.stringify(defaultA) === JSON.stringify(defaultB));
+    check("curve covers delay choices", defaultA.curve.length === CURVE_DELAYS.length && defaultA.curve.every(function (row, index) { return row.params.inputDelay === CURVE_DELAYS[index]; }));
+    check("selected row matches chosen delay", JSON.stringify(defaultA.selected.rollback) === JSON.stringify(defaultA.curve[DEFAULTS.inputDelay].rollback));
+    check("actual timeline integrates inputs", positionsValid(defaultA.selected));
+    check("rollback ledgers are consistent", rollbackLedgersValid(defaultA.selected));
+    check("lockstep ledger is consistent", lockstepLedgerValid(defaultA.selected));
+    check("delay-curve ledgers are consistent", defaultA.curve.every(function (row) {
+      return positionsValid(row) && rollbackLedgersValid(row) && lockstepLedgerValid(row);
+    }));
+
+    check("delay lowers lockstep stalls", monotoneNonincreasing(defaultA.curve.map(function (row) { return row.lockstep.stallFramesPerMinute; }), 1e-9));
+    check("delay lowers rollback work", monotoneNonincreasing(defaultA.curve.map(function (row) { return row.rollback.rollbackFramesPerMinute; }), 1e-9));
+    check("delay raises input latency", defaultA.curve[8].rollback.inputLatencyMs > defaultA.curve[0].rollback.inputLatencyMs && defaultA.curve[8].rollback.events.length < defaultA.curve[0].rollback.events.length);
+
+    var lowVol = evaluate({ volatility: 0 });
+    var highVol = evaluate({ volatility: 100 });
+    check("input volatility hurts prediction", highVol.selected.rollback.events.length > lowVol.selected.rollback.events.length && highVol.selected.rollback.p95Error > lowVol.selected.rollback.p95Error);
+
+    var lowJitter = evaluate({ jitter: 0 });
+    var highJitter = evaluate({ jitter: 90 });
+    check("jitter increases timing debt", highJitter.selected.lockstep.stallFramesPerMinute > lowJitter.selected.lockstep.stallFramesPerMinute && highJitter.selected.lockstep.maxLate > lowJitter.selected.lockstep.maxLate);
+    check("jitter can force hard correction", highJitter.selected.rollback.hardSnaps > lowJitter.selected.rollback.hardSnaps && highJitter.selected.rollback.budgetMisses > lowJitter.selected.rollback.budgetMisses);
+
+    var lowRtt = evaluate({ rtt: 20 });
+    var highRtt = evaluate({ rtt: 220 });
+    check("RTT increases prediction horizon", highRtt.selected.rollback.predictedShare > lowRtt.selected.rollback.predictedShare && highRtt.selected.rollback.rollbackFramesPerMinute > lowRtt.selected.rollback.rollbackFramesPerMinute);
+    check("RTT increases lockstep stalls", highRtt.selected.lockstep.stallFramesPerMinute > lowRtt.selected.lockstep.stallFramesPerMinute);
+
+    var smallWindow = evaluate({ inputDelay: 0, rollbackWindow: 2 });
+    var largeWindow = evaluate({ inputDelay: 0, rollbackWindow: 16 });
+    check("small rollback windows snap", smallWindow.selected.rollback.hardSnaps > largeWindow.selected.rollback.hardSnaps);
+    check("large rollback windows repair more history", largeWindow.selected.rollback.totalRollbackFrames > smallWindow.selected.rollback.totalRollbackFrames);
+
+    var cheap = evaluate({ simCost: 5 });
+    var expensive = evaluate({ simCost: 80 });
+    check("re-sim cost only changes budget misses", expensive.selected.rollback.budgetMisses > cheap.selected.rollback.budgetMisses && expensive.selected.rollback.totalRollbackFrames === cheap.selected.rollback.totalRollbackFrames);
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function panelTitle(ctx, box, title, subtitle) {
@@ -540,13 +693,15 @@
     if (metrics) {
       var rb = result.selected.rollback;
       var ls = result.selected.lockstep;
+      var audit = cachedAudit();
       metrics.innerHTML = [
         metric("Input delay", formatNumber(rb.inputLatencyMs, 0) + "ms"),
         metric("Corrections", rb.events.length),
         metric("Resim frames", rb.totalRollbackFrames),
         metric("Max rollback", rb.maxRollback + "f"),
         metric("Lockstep stalls", formatPct(ls.lateShare)),
-        metric("P95 error", formatNumber(rb.p95Error, 1) + "u")
+        metric("P95 error", formatNumber(rb.p95Error, 1) + "u"),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -554,6 +709,8 @@
   }
 
   function init(root) {
+    if (root.__rollbackNetcodeLabReady) return;
+    root.__rollbackNetcodeLabReady = true;
     var frame = 0;
     function requestRender() {
       if (frame) global.cancelAnimationFrame(frame);
@@ -575,7 +732,8 @@
 
   global.RollbackNetcodeLab = {
     evaluate: evaluate,
-    cleanParams: cleanParams
+    cleanParams: cleanParams,
+    runAudit: runAudit
   };
 
   if (typeof module !== "undefined" && module.exports) {
