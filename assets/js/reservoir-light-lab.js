@@ -542,8 +542,8 @@
   }
 
   function drawEstimates(ctx, box, result) {
-    drawPanel(ctx, box, "one-frame estimates", "truth versus one sample, power sampling, RIS, and temporal reuse");
-    var plot = { x: box.x + 46, y: box.y + 58, w: box.w - 66, h: box.h - 92 };
+    drawPanel(ctx, box, "one-frame estimates", "truth, noisy samples, and reservoirs");
+    var plot = { x: box.x + 46, y: box.y + 88, w: box.w - 66, h: box.h - 122 };
     var values = result.model.truth.concat(result.estimates.uniform, result.estimates.power, result.estimates.ris, result.estimates.temporal);
     var sy = scale(extent(values, 0.12), { min: plot.y + plot.h, max: plot.y });
     var sx = scale({ min: 0, max: PIXELS - 1 }, { min: plot.x, max: plot.x + plot.w });
@@ -562,16 +562,16 @@
     ctx.lineTo(px, plot.y + plot.h);
     ctx.stroke();
     ctx.setLineDash([]);
-    drawLegend(ctx, plot.x + 4, box.y + box.h - 17, [
+    drawLegend(ctx, plot.x + 4, box.y + 60, [
       ["truth", COLORS.trueLine],
       ["RIS", COLORS.ris],
       ["temporal", COLORS.temporal],
       ["uniform", COLORS.uniform]
-    ]);
+    ], plot.w - 8);
   }
 
   function drawHistory(ctx, box, result) {
-    drawPanel(ctx, box, "variance over frames", "temporal reservoir averages more candidate streams");
+    drawPanel(ctx, box, "variance over frames", "reuse averages candidate streams");
     var plot = { x: box.x + 50, y: box.y + 58, w: box.w - 72, h: box.h - 92 };
     var vals = [];
     result.history.forEach(function (h) { vals.push(h.uniform, h.power, h.ris, h.temporal); });
@@ -593,7 +593,7 @@
   }
 
   function drawWeights(ctx, box, result) {
-    drawPanel(ctx, box, "selected pixel ledger", "target contribution can differ sharply from power proposal");
+    drawPanel(ctx, box, "selected pixel ledger", "green target versus amber proposal");
     var plot = { x: box.x + 46, y: box.y + 58, w: box.w - 68, h: box.h - 92 };
     var row = result.model.matrix[result.selectedPixel];
     var items = row.map(function (value, i) {
@@ -620,22 +620,29 @@
     });
     ctx.fillStyle = COLORS.muted;
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillText("top contributing lights: green target, amber proposal", plot.x, box.y + box.h - 17);
+    ctx.fillText("green target; amber proposal", plot.x, box.y + box.h - 17);
   }
 
-  function drawLegend(ctx, x, y, items) {
+  function drawLegend(ctx, x, y, items, maxWidth) {
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
     var offset = 0;
+    var row = 0;
     items.forEach(function (item) {
+      var itemWidth = Math.max(76, ctx.measureText(item[0]).width + 50);
+      if (maxWidth && offset > 0 && offset + itemWidth > maxWidth) {
+        offset = 0;
+        row += 1;
+      }
+      var baseY = y + row * 16;
       ctx.strokeStyle = item[1];
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(x + offset, y - 4);
-      ctx.lineTo(x + offset + 18, y - 4);
+      ctx.moveTo(x + offset, baseY - 4);
+      ctx.lineTo(x + offset + 18, baseY - 4);
       ctx.stroke();
       ctx.fillStyle = COLORS.muted;
-      ctx.fillText(item[0], x + offset + 23, y);
-      offset += Math.max(70, item[0].length * 7 + 38);
+      ctx.fillText(item[0], x + offset + 23, baseY);
+      offset += itemWidth;
     });
   }
 
