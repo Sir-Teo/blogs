@@ -192,6 +192,12 @@ logits should be shrunk before sizing. The chart compares four policies:
 - a guarded calibrated rule that subtracts a crude uncertainty reserve before
   sizing.
 
+The audit badge is not a performance claim. It is the same deterministic
+69-check suite exported by the script: even-money Kelly arithmetic, conservative
+guarding, side selection, path wealth multiplication, drawdown accounting,
+quantile ordering, calibration-ECE improvement in the default run, deterministic
+replay, and bounded trade-rate/drawdown summaries.
+
 <div class="kelly-lab" data-kelly-lab>
   <div class="kelly-lab__controls">
     <label>
@@ -222,10 +228,11 @@ logits should be shrunk before sizing. The chart compares four policies:
   <p class="kelly-lab__note">
     Deterministic simulation, 360 paths of 260 even-money bets. Dots are median
     terminal wealth per $1; whiskers show the 5th to 95th percentile on a log
-    wealth scale.
+    wealth scale. The audit badge checks implementation contracts; it does not
+    turn the toy model into investment advice or certify live-market execution.
   </p>
 </div>
-<script defer src="{{ '/assets/js/kelly-lab.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/kelly-lab.js?v=20260615a' | relative_url }}"></script>
 
 The point is not that a toy simulator settles portfolio theory. It does not.
 The point is more operational: when the model is overconfident, the raw Kelly
