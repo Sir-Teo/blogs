@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Sketch Shrinks Every Direction"
+title: "Sketches Shrink Every Direction"
 description: "Frequent Directions is a deterministic streaming sketch for covariance. It keeps a tiny matrix, repeatedly shrinks the spectrum, and still promises that no direction is forgotten by too much."
 date: 2026-06-14 20:26:00 -0400
 categories: computer-science
@@ -495,7 +495,7 @@ for every direction, this is how much variance I might owe you
 
 That is a good shape for memory to have.
 
-## Verification Notes
+## Source Notes
 
 The browser lab exports its simulator as `FrequentDirectionsLab` and as a
 CommonJS module for Node checks. I audited the default setting, a small-sketch
