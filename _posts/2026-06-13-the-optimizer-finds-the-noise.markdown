@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Inverse Turns Noise Into a Bet"
+title: "Inverses Turn Noise Into Bets"
 description: "Mean-variance optimization is elegant until the covariance matrix is estimated from too little history. The inverse turns tiny noisy eigenvalues into large portfolio bets."
 date: 2026-06-13 18:38:00 -0400
 categories: quantitative-finance
