@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Midpoint Is a Truce"
+title: "Midpoint as Truce"
 description: "A bid-ask spread is not one cost. It prices immediacy, adverse selection, inventory risk, and the mechanics of keeping a market open."
 date: 2026-06-13 10:12:00 -0400
 categories: quantitative-finance
@@ -311,7 +311,7 @@ looking like a price. It starts looking like a truce.
 The spread is the premium paid to trade now, before the market knows whether now
 was a harmless convenience or the beginning of a repricing.
 
-## Source Notes
+## Primary Sources
 
 [^glosten]: Lawrence R. Glosten and Paul R. Milgrom, ["Bid, ask and transaction prices in a specialist market with heterogeneously informed traders"](https://econpapers.repec.org/article/eeejfinec/v_3a14_3ay_3a1985_3ai_3a1_3ap_3a71-100.htm), *Journal of Financial Economics*, 1985. See also the [Columbia Business School record](https://business.columbia.edu/faculty/research/bid-ask-and-transaction-prices-specialist-market-heterogeneously-informed-traders).
 
