@@ -15,6 +15,7 @@
     rule: "#d7dee5",
     faint: "#f8fafc"
   };
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -117,8 +118,8 @@
 
   function simulate(params) {
     var filter = buildFilter(params);
-    var absentQueries = params.queries;
-    var presentQueries = Math.round(absentQueries * params.presentShare / 100);
+    var absentQueries = Math.max(0, Math.round(params.queries));
+    var presentQueries = filter.n > 0 ? Math.round(absentQueries * params.presentShare / 100) : 0;
     var falsePositives = 0;
     var trueNegatives = 0;
     var truePositives = 0;
@@ -163,6 +164,167 @@
       trueNegatives: trueNegatives,
       truePositives: truePositives
     };
+  }
+
+  function countBits(bits) {
+    var total = 0;
+    for (var i = 0; i < bits.length; i += 1) total += bits[i];
+    return total;
+  }
+
+  function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  function close(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function probability(value) {
+    return isFinite(value) && value >= 0 && value <= 1;
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    function auditScenario(name, params) {
+      var result = simulate(params);
+      var filter = result.filter;
+      var actualOnes = countBits(filter.bits);
+      record(name + " bit accounting", filter.ones === actualOnes, filter.ones + " !== " + actualOnes);
+      record(name + " occupancy accounting", close(result.occupancy, filter.ones / filter.m, 1e-12));
+      record(name + " no false negatives", result.falseNegatives === 0, String(result.falseNegatives));
+      record(name + " absent ledger closes", result.falsePositives + result.trueNegatives === result.absentQueries);
+      record(name + " present ledger closes", result.truePositives + result.falseNegatives === result.presentQueries);
+      record(name + " empirical probability", probability(result.empiricalFpr));
+      record(name + " formula probability", probability(result.theoryFpr));
+      record(name + " exact occupancy probability", probability(result.exactOccupancy));
+      record(name + " optimum probability", probability(result.optFpr));
+      record(name + " optimum k formula", close(result.optK, Math.max(1, params.bitsPerItem * Math.LN2), 1e-12));
+      record(name + " exact occupancy complement", close(result.exactOccupancy, 1 - exactZeroProbability(filter.n, filter.m, filter.k), 1e-12));
+
+      if (filter.n > 0) {
+        [1, Math.max(1, Math.ceil(filter.n / 2)), filter.n].forEach(function (key) {
+          var pos = positions(key, filter.k, filter.m, filter.salt);
+          record(name + " position count key " + key, pos.length === filter.k);
+          record(name + " positions in range key " + key, pos.every(function (index) {
+            return Number.isInteger(index) && index >= 0 && index < filter.m;
+          }));
+          record(name + " inserted bits set key " + key, pos.every(function (index) {
+            return filter.bits[index] === 1;
+          }));
+          record(name + " query inserted key " + key, query(filter, key));
+        });
+      } else {
+        record(name + " empty filter has no ones", filter.ones === 0);
+        record(name + " empty filter has no false positives", result.falsePositives === 0);
+      }
+
+      return result;
+    }
+
+    var base = {
+      bitsPerItem: 10,
+      duplicatePasses: 1,
+      hashes: 7,
+      items: 4000,
+      keyBytes: 16,
+      presentShare: 10,
+      queries: 5000
+    };
+    var defaultCase = auditScenario("default", base);
+    record("default near integer optimum", Math.abs(defaultCase.filter.k - defaultCase.optK) < 0.1);
+
+    var cramped = auditScenario("cramped", {
+      bitsPerItem: 3,
+      duplicatePasses: 1,
+      hashes: 3,
+      items: 2500,
+      keyBytes: 16,
+      presentShare: 30,
+      queries: 3000
+    });
+    var roomy = auditScenario("roomy", {
+      bitsPerItem: 18,
+      duplicatePasses: 1,
+      hashes: 12,
+      items: 2500,
+      keyBytes: 16,
+      presentShare: 30,
+      queries: 3000
+    });
+    record("more bits reduce target false positives", roomy.theoryFpr < cramped.theoryFpr);
+    record("more bits reduce occupancy", roomy.occupancy < cramped.occupancy);
+
+    var onePass = simulate(base);
+    var replayed = simulate({
+      bitsPerItem: base.bitsPerItem,
+      duplicatePasses: 6,
+      hashes: base.hashes,
+      items: base.items,
+      keyBytes: base.keyBytes,
+      presentShare: base.presentShare,
+      queries: base.queries
+    });
+    record("duplicate inserts are idempotent", replayed.filter.ones === onePass.filter.ones && arraysEqual(replayed.filter.bits, onePass.filter.bits));
+
+    var fewHashes = simulate({
+      bitsPerItem: 10,
+      duplicatePasses: 1,
+      hashes: 1,
+      items: 4000,
+      keyBytes: 16,
+      presentShare: 10,
+      queries: 5000
+    });
+    var manyHashes = simulate({
+      bitsPerItem: 10,
+      duplicatePasses: 1,
+      hashes: 18,
+      items: 4000,
+      keyBytes: 16,
+      presentShare: 10,
+      queries: 5000
+    });
+    record("hash curve has interior minimum", defaultCase.theoryFpr < fewHashes.theoryFpr && defaultCase.theoryFpr < manyHashes.theoryFpr);
+
+    var empty = auditScenario("empty", {
+      bitsPerItem: 10,
+      duplicatePasses: 1,
+      hashes: 7,
+      items: 0,
+      keyBytes: 16,
+      presentShare: 50,
+      queries: 1000
+    });
+    record("empty filter formula is zero", empty.theoryFpr === 0 && empty.exactOccupancy === 0);
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function fprCurve(params, n, m) {
@@ -406,6 +568,7 @@
   function render(root) {
     var params = paramsFromRoot(root);
     var result = simulate(params);
+    var audit = cachedAudit();
     var values = {
       bitsPerItem: formatNumber(params.bitsPerItem),
       duplicatePasses: params.duplicatePasses + "x",
@@ -428,7 +591,8 @@
         metric("Bits set", formatPercent(result.occupancy * 100)),
         metric("Optimal k", formatNumber(result.optK)),
         metric("Filter memory", formatNumber(result.filterBytes / 1024) + " KiB"),
-        metric("Exact keys", formatNumber(result.exactBytes / 1024) + " KiB")
+        metric("Exact keys", formatNumber(result.exactBytes / 1024) + " KiB"),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
 
@@ -453,6 +617,7 @@
   var api = {
     optimalK: optimalK,
     positions: positions,
+    runAudit: runAudit,
     simulate: simulate,
     theoreticalFpr: theoreticalFpr
   };
@@ -463,6 +628,7 @@
   global.BloomFilterLab = api;
 
   if (global.document) {
-    global.document.addEventListener("DOMContentLoaded", initAll);
+    if (global.document.readyState === "loading") global.document.addEventListener("DOMContentLoaded", initAll);
+    else initAll();
   }
 }(typeof window !== "undefined" ? window : globalThis));
