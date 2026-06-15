@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Prompt Is a Ratio, Not a Command"
+title: "Prompts Are Ratios, Not Commands"
 description: "Classifier-free guidance is not magic obedience. In the score idealization, the slider raises a conditional-vs-unconditional density ratio and buys fidelity with coverage."
 date: 2026-06-14 09:54:00 -0400
 categories: machine-learning
