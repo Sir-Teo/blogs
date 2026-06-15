@@ -2,6 +2,11 @@
   "use strict";
 
   var V = 64;
+  var DISPLAY_TRIALS = 96;
+  var SWEEP_TRIALS = 32;
+  var QUALITY_POINTS = 18;
+  var QUALITY_TRIALS = 14;
+  var AUDIT_CACHE = null;
   var COLORS = {
     text: "#172026",
     muted: "#5d6872",
@@ -242,7 +247,7 @@
     var values = [40, 80, 120, 180, 260, 380, 560, 800, 1100];
     return values.map(function (tokens) {
       var p = Object.assign({}, params, { tokens: tokens });
-      var rows = monteCarlo(p, 120);
+      var rows = monteCarlo(p, SWEEP_TRIALS);
       var s = summarize(rows, params.threshold);
       return {
         tokens: tokens,
@@ -253,8 +258,13 @@
     });
   }
 
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function simulate(params) {
-    var rows = monteCarlo(params, 260);
+    var rows = monteCarlo(params, DISPLAY_TRIALS);
     var one = {
       nulls: generate("null", params, 1001),
       marked: generate("marked", params, 1002),
@@ -266,7 +276,7 @@
       one: one,
       summary: summarize(rows, params.threshold),
       sweep: sweepTokens(params),
-      audit: runAudit()
+      audit: cachedAudit()
     };
   }
 
@@ -451,17 +461,17 @@
     var params = result.params;
     var samples = [];
     var maxTax = 0.001;
-    for (var i = 0; i <= 28; i += 1) {
-      var bias = 3.5 * i / 28;
+    for (var i = 0; i <= QUALITY_POINTS; i += 1) {
+      var bias = 3.5 * i / QUALITY_POINTS;
       var p = Object.assign({}, params, { bias: bias });
       var totalTax = 0;
       var totalZ = 0;
-      for (var j = 0; j < 50; j += 1) {
+      for (var j = 0; j < QUALITY_TRIALS; j += 1) {
         var run = generate("marked", p, 500 + j);
         totalTax += run.qualityTax;
         totalZ += run.z;
       }
-      var row = { bias: bias, tax: totalTax / 50, z: totalZ / 50 };
+      var row = { bias: bias, tax: totalTax / QUALITY_TRIALS, z: totalZ / QUALITY_TRIALS };
       maxTax = Math.max(maxTax, row.tax);
       samples.push(row);
     }
@@ -548,8 +558,16 @@
   }
 
   function init(lab) {
+    var frame = null;
+    function scheduleRender() {
+      if (frame) global.cancelAnimationFrame(frame);
+      frame = global.requestAnimationFrame(function () {
+        frame = null;
+        render(lab);
+      });
+    }
     Array.prototype.slice.call(lab.querySelectorAll("[data-param]")).forEach(function (input) {
-      input.addEventListener("input", function () { render(lab); });
+      input.addEventListener("input", scheduleRender);
     });
     render(lab);
   }
