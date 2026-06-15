@@ -1,4 +1,6 @@
-(function () {
+(function (global) {
+  "use strict";
+
   var COLORS = {
     click: "#0f766e",
     value: "#b45309",
@@ -17,6 +19,38 @@
     { key: "audit", label: "Causal audit", short: "A" },
     { key: "diversity", label: "Diversity", short: "D" }
   ];
+
+  var DEFAULTS = {
+    feedback: 45,
+    positionBias: 65,
+    exploration: 12,
+    catalogSkew: 55,
+    familiarity: 35,
+    sessions: 420
+  };
+
+  var AUDIT_CACHE = null;
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function numeric(raw, key) {
+    var value = Number(raw && raw[key]);
+    return Number.isFinite(value) ? value : DEFAULTS[key];
+  }
+
+  function cleanParams(raw) {
+    raw = raw || {};
+    return {
+      feedback: Math.round(clamp(numeric(raw, "feedback"), 0, 90)),
+      positionBias: Math.round(clamp(numeric(raw, "positionBias"), 0, 95)),
+      exploration: Math.round(clamp(numeric(raw, "exploration"), 0, 45)),
+      catalogSkew: Math.round(clamp(numeric(raw, "catalogSkew"), 0, 90)),
+      familiarity: Math.round(clamp(numeric(raw, "familiarity"), 0, 80)),
+      sessions: Math.round(clamp(numeric(raw, "sessions"), 120, 900))
+    };
+  }
 
   function rng(seed) {
     var state = seed >>> 0;
@@ -43,14 +77,22 @@
     return 1 / (1 + Math.exp(-x));
   }
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
   function normalize(values) {
     var total = values.reduce(function (sum, value) { return sum + Math.max(0, value); }, 0);
     if (total <= 0) return values.map(function () { return 1 / values.length; });
     return values.map(function (value) { return Math.max(0, value) / total; });
+  }
+
+  function sum(values) {
+    return values.reduce(function (total, value) { return total + value; }, 0);
+  }
+
+  function close(actual, expected, tolerance) {
+    return Math.abs(actual - expected) <= tolerance;
+  }
+
+  function finiteNumber(value) {
+    return Number.isFinite(value);
   }
 
   function entropy(counts) {
@@ -77,6 +119,7 @@
   }
 
   function makeCatalog(params) {
+    params = cleanParams(params);
     var rand = rng(20260613 + params.catalogSkew * 19 + params.sessions * 3);
     var skew = params.catalogSkew / 100;
     var weights = CATEGORIES.map(function (_, index) {
@@ -209,6 +252,7 @@
   }
 
   function runPolicy(policy, catalog, params, seedOffset) {
+    params = cleanParams(params);
     var rand = rng(20260613 + seedOffset * 101 + params.feedback * 7 + params.positionBias * 11 + params.exploration * 13);
     var anchorTaste = initialTaste();
     var state = makeState(catalog);
@@ -268,11 +312,15 @@
       latentValue: state.latentSum / Math.max(1, state.attentionSum),
       diversity: entropy(state.exposureCounts),
       drift: drift,
-      headShare: headShare
+      headShare: headShare,
+      clicks: state.clicks,
+      exposures: state.exposures,
+      attentionMean: state.attentionSum / Math.max(1, state.exposures)
     };
   }
 
   function evaluate(params) {
+    params = cleanParams(params);
     var catalog = makeCatalog(params);
     var results = POLICIES.map(function (policy, index) {
       return runPolicy(policy, catalog, params, index + 1);
@@ -282,10 +330,102 @@
     var bestValue = results.slice().sort(function (a, b) { return b.latentValue - a.latentValue; })[0];
 
     return {
+      params: params,
+      catalog: catalog,
       results: results,
       byKey: byKey,
       bestValue: bestValue
     };
+  }
+
+  function catalogHeadShare(catalog) {
+    var head = catalog.filter(function (item) { return item.category < 2; }).length;
+    return head / Math.max(1, catalog.length);
+  }
+
+  function average(rows, key) {
+    return mean(rows.map(function (row) { return row[key]; }));
+  }
+
+  function mean(values) {
+    return values.reduce(function (total, value) { return total + value; }, 0) / Math.max(1, values.length);
+  }
+
+  function policyRowsValid(result) {
+    return result.results.every(function (row) {
+      return row.exposures === result.params.sessions * 8 &&
+        row.clicks >= 0 &&
+        row.clicks <= row.exposures &&
+        close(row.clickRate, row.clicks / row.exposures, 1e-12) &&
+        ["clickRate", "latentValue", "diversity", "drift", "headShare", "attentionMean"].every(function (key) {
+          return finiteNumber(row[key]) && row[key] >= 0 && row[key] <= 1;
+        });
+    });
+  }
+
+  function runAudit() {
+    var checks = [];
+    function check(name, passed, detail) {
+      checks.push({ name: name, passed: Boolean(passed), detail: detail || "" });
+    }
+
+    var clamped = cleanParams({ feedback: -10, positionBias: 200, exploration: 99, catalogSkew: -4, familiarity: 120, sessions: 9999 });
+    check("parameter clamps", clamped.feedback === 0 && clamped.positionBias === 95 && clamped.exploration === 45 && clamped.catalogSkew === 0 && clamped.familiarity === 80 && clamped.sessions === 900);
+
+    var fallback = cleanParams({ feedback: "x", positionBias: "x", exploration: "x", catalogSkew: "x", familiarity: "x", sessions: "x" });
+    check("default fallbacks", Object.keys(DEFAULTS).every(function (key) { return fallback[key] === DEFAULTS[key]; }));
+
+    check("initial taste is normalized", close(sum(initialTaste()), 1, 1e-12));
+    check("normalizer handles zeros", normalize([0, 0, 0]).every(function (value) { return close(value, 1 / 3, 1e-12); }));
+    check("entropy extremes", close(entropy([5, 0, 0, 0, 0, 0]), 0, 1e-12) && close(entropy([1, 1, 1, 1, 1, 1]), 1, 1e-12));
+
+    var defaultA = evaluate(DEFAULTS);
+    var defaultB = evaluate(DEFAULTS);
+    check("deterministic replay", JSON.stringify(defaultA.results) === JSON.stringify(defaultB.results));
+    check("policy set complete", POLICIES.every(function (policy) { return defaultA.byKey[policy.key] && defaultA.byKey[policy.key].label === policy.label; }));
+    check("best latent policy is max", defaultA.results.every(function (row) { return defaultA.bestValue.latentValue >= row.latentValue; }));
+    check("catalog shape", defaultA.catalog.length === 180 && defaultA.catalog.every(function (item) {
+      return item.id >= 0 && item.id < 180 && item.category >= 0 && item.category < CATEGORIES.length && item.quality >= 0.05 && item.quality <= 0.95 && finiteNumber(item.popularity);
+    }));
+    check("policy rows are finite ledgers", policyRowsValid(defaultA));
+
+    check("click-only exploits the log", defaultA.byKey.click.clickRate > defaultA.byKey.random.clickRate && defaultA.byKey.click.diversity < defaultA.byKey.random.diversity && defaultA.byKey.click.drift > defaultA.byKey.random.drift);
+    check("diversity guardrail keeps coverage", defaultA.byKey.diversity.diversity > defaultA.byKey.click.diversity && defaultA.byKey.diversity.headShare < defaultA.byKey.click.headShare && defaultA.byKey.diversity.drift < defaultA.byKey.click.drift);
+    check("audit beats click-only on latent value", defaultA.byKey.audit.latentValue > defaultA.byKey.click.latentValue);
+
+    var zeroFeedback = evaluate({ feedback: 0, familiarity: 35, catalogSkew: 55, positionBias: 65, exploration: 12, sessions: 420 });
+    check("zero feedback has no preference drift", zeroFeedback.results.every(function (row) { return close(row.drift, 0, 1e-12); }));
+
+    var highFeedback = evaluate({ feedback: 90, familiarity: 80, catalogSkew: 90, positionBias: 65, exploration: 12, sessions: 420 });
+    check("feedback loop creates drift", highFeedback.byKey.click.drift > zeroFeedback.byKey.click.drift + 0.6 && highFeedback.byKey.diversity.drift < highFeedback.byKey.click.drift);
+
+    var lowPositionBias = evaluate({ positionBias: 0 });
+    var highPositionBias = evaluate({ positionBias: 95 });
+    check("position bias lowers attention", highPositionBias.byKey.random.attentionMean < lowPositionBias.byKey.random.attentionMean);
+    check("position bias lowers observed clicks", average(highPositionBias.results, "clickRate") < average(lowPositionBias.results, "clickRate"));
+
+    var lowExploration = evaluate({ exploration: 0 });
+    var highExploration = evaluate({ exploration: 45 });
+    check("exploration rescues audit overlap", highExploration.byKey.audit.diversity > lowExploration.byKey.audit.diversity + 0.5 && highExploration.byKey.audit.drift < lowExploration.byKey.audit.drift);
+
+    var lowSkew = evaluate({ catalogSkew: 0 });
+    var highSkew = evaluate({ catalogSkew: 90 });
+    check("catalog skew changes the item pool", catalogHeadShare(highSkew.catalog) > catalogHeadShare(lowSkew.catalog));
+    check("catalog skew changes random exposure", highSkew.byKey.random.headShare > lowSkew.byKey.random.headShare && highSkew.byKey.random.diversity < lowSkew.byKey.random.diversity);
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function metric(label, value) {
@@ -436,6 +576,7 @@
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       params[input.getAttribute("data-param")] = Number(input.value);
     });
+    params = cleanParams(params);
 
     var result = evaluate(params);
     var values = {
@@ -454,6 +595,7 @@
 
     var metrics = root.querySelector("[data-metrics]");
     var byKey = result.byKey;
+    var audit = cachedAudit();
     if (metrics) {
       metrics.innerHTML = [
         metric("Click-only clicks", formatPercent(byKey.click.clickRate)),
@@ -461,7 +603,8 @@
         metric("Audit value", formatScore(byKey.audit.latentValue)),
         metric("Diversity value", formatScore(byKey.diversity.latentValue)),
         metric("Click drift", formatPercent(byKey.click.drift)),
-        metric("Best latent policy", result.bestValue.label)
+        metric("Best latent policy", result.bestValue.label),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
 
@@ -470,6 +613,8 @@
   }
 
   function init(root) {
+    if (root.__recommenderLabReady) return;
+    root.__recommenderLabReady = true;
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
@@ -478,7 +623,25 @@
     redraw();
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-recommender-lab]").forEach(init);
-  });
-}());
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-recommender-lab]").forEach(init);
+      });
+    } else {
+      document.querySelectorAll("[data-recommender-lab]").forEach(init);
+    }
+  }
+
+  global.RecommenderLab = {
+    cleanParams: cleanParams,
+    evaluate: evaluate,
+    normalize: normalize,
+    entropy: entropy,
+    runAudit: runAudit
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = global.RecommenderLab;
+  }
+}(typeof window !== "undefined" ? window : globalThis));
