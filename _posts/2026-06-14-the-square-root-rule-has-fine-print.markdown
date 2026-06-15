@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Sharpe Ratio Has a Clock"
+title: "Sharpe Ratios Have Clocks"
 description: "Annualizing a Sharpe ratio by sqrt(252) is not a law of nature. It is an assumption about the sampling clock, the autocovariances, and how returns are reported."
 date: 2026-06-14 12:36:00 -0400
 categories: quantitative-finance
@@ -290,7 +290,7 @@ the market microstructure underneath the return series.
 The Sharpe ratio is not one number floating in space. It is a measurement taken
 through a clock.
 
-## Source Notes
+## Further Reading
 
 [^sharpe]: William F. Sharpe, "The Sharpe Ratio," *Journal of Portfolio Management*, 1994. [Stanford reprint](https://web.stanford.edu/~wfsharpe/art/sr/sr.htm).
 
