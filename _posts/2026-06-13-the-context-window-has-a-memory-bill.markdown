@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Context Window Has Rent Due"
+title: "Context Windows Have Rent Due"
 description: "Long-context inference is not only attention math. Every live token leaves key and value vectors in GPU memory, and the serving stack pays that rent request by request."
 date: 2026-06-13 05:44:00 -0400
 categories: machine-learning
@@ -378,7 +378,7 @@ tail failures by token age and document role
 That would make the cache visible as part of the model. Because in deployment,
 it is.
 
-## Source Notes
+## Further Reading
 
 [^attention]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
     Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin,
