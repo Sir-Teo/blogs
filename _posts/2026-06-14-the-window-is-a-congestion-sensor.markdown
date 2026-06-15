@@ -102,7 +102,7 @@ about where the feedback lives. If the only signal is overflow, the queue may
 have already accumulated hundreds of milliseconds of delay before the control
 loop reacts.
 
-## A Congestion Lab
+## Congestion Lab
 
 The lab below is a deterministic toy, not a TCP stack. Each flow has a
 congestion window measured in packets. Each round is one base RTT. A shared
