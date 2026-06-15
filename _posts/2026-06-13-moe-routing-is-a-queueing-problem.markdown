@@ -339,7 +339,7 @@ served, well-routed tokens per unit of time.
 
 That is a queueing metric wearing a neural-network jacket.
 
-## References
+## Primary Sources
 
 [^shazeer]: Noam Shazeer et al., ["Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer"](https://arxiv.org/abs/1701.06538), ICLR 2017.
 
