@@ -85,7 +85,7 @@ The privacy loss grows like a drifted random walk.
 
 Not like a purse with coins removed.
 
-## The Tail Is Not the Whole DP Curve
+## Tail Is Not the Whole DP Curve
 
 The tempting sufficient check is:
 
