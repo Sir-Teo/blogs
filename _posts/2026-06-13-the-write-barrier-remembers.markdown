@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Store That Saved a Live Object"
+title: "Stores Can Save Live Objects"
 description: "A garbage collector is a graph traversal racing a mutating graph. The write barrier is the small memory of a store that keeps the traversal true."
 date: 2026-06-13 21:55:00 -0400
 categories: software-engineering
@@ -309,7 +309,7 @@ for memory of the mutations.
 
 That memory is the write barrier.
 
-## Source Notes
+## Works Cited
 
 [^dijkstra]: Edsger W. Dijkstra, Leslie Lamport, A. J. Martin, C. S. Scholten, and E. F. M. Steffens, ["On-the-Fly Garbage Collection: An Exercise in Cooperation"](https://lamport.azurewebsites.net/pubs/garbage.pdf), *Communications of the ACM*, 1978.
 
