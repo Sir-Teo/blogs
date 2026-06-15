@@ -591,7 +591,17 @@
 
   function drawMarginals(ctx, box, result) {
     drawPanel(ctx, box, "Exact vs BP marginals", "probability each variable is +1");
-    var plot = { x: box.x + 42, y: box.y + 60, w: box.w - 62, h: box.h - 92 };
+    ctx.fillStyle = COLORS.bp;
+    ctx.fillRect(box.x + 16, box.y + 54, 14, 4);
+    ctx.fillStyle = COLORS.muted;
+    ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("BP", box.x + 35, box.y + 59);
+    ctx.fillStyle = COLORS.exact;
+    ctx.fillRect(box.x + 74, box.y + 54, 14, 4);
+    ctx.fillStyle = COLORS.muted;
+    ctx.fillText("exact", box.x + 93, box.y + 59);
+    var plot = { x: box.x + 42, y: box.y + 74, w: box.w - 62, h: box.h - 108 };
     drawGrid(ctx, plot, result.model.n - 1, 4);
     var barW = plot.w / result.model.n * 0.32;
     for (var i = 0; i < result.model.n; i += 1) {
@@ -611,15 +621,6 @@
       ctx.fillText(String(i), cx, plot.y + plot.h + 16);
     }
     ctx.textAlign = "left";
-    ctx.fillStyle = COLORS.bp;
-    ctx.fillRect(plot.x + 2, box.y + box.h - 22, 14, 4);
-    ctx.fillStyle = COLORS.muted;
-    ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillText("BP", plot.x + 21, box.y + box.h - 17);
-    ctx.fillStyle = COLORS.exact;
-    ctx.fillRect(plot.x + 64, box.y + box.h - 22, 14, 4);
-    ctx.fillStyle = COLORS.muted;
-    ctx.fillText("exact", plot.x + 83, box.y + box.h - 17);
   }
 
   function drawResidual(ctx, box, result) {
