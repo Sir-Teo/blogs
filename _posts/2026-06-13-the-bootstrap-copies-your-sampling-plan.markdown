@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Bootstrap Replays Your Assumption"
+title: "Bootstrap the Assumption, Not the Wish"
 description: "Resampling is not magic. A bootstrap interval works by replaying a data-generating contract, and the wrong contract can be confidently wrong."
 date: 2026-06-13 19:16:00 -0400
 categories: statistics
@@ -304,7 +304,7 @@ resample the unit that nature randomized
 
 That is the part worth remembering.
 
-## Sources
+## Paper Trail
 
 [^efron]: Bradley Efron, ["Bootstrap Methods: Another Look at the Jackknife"](https://sites.stat.washington.edu/courses/stat527/s14/readings/ann_stat1979.pdf), *The Annals of Statistics*, 1979. DOI: [10.1214/aos/1176344552](https://doi.org/10.1214/aos/1176344552).
 
