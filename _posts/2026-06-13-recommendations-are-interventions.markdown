@@ -138,6 +138,13 @@ The chart compares five policies:
 - diversity guardrail, which combines the audit estimate with a category
   exposure cap.
 
+The **Audit** tile is a code contract, not a product endorsement. The lab runs
+20 deterministic checks over parameter bounds, catalog generation, policy
+ledgers, click-rate arithmetic, position-bias attenuation, zero-feedback drift,
+catalog-skew exposure, exploration overlap, and the click-only/diversity
+tradeoff. Those checks keep the toy feedback loop honest enough for the visual
+argument below; they do not make it a calibrated recommender benchmark.
+
 <div class="recommender-lab" data-recommender-lab>
   <div class="recommender-lab__controls">
     <label>
@@ -174,12 +181,12 @@ The chart compares five policies:
     <span><i style="background:#7c3aed"></i> Preference drift</span>
   </div>
   <p class="recommender-lab__note">
-    Deterministic simulation. Latent value scores the shown items against the
-    user's original taste, while click rate is measured under the post-exposure
-    interaction loop.
+    Deterministic simulation. The audit checks simulation contracts. Latent
+    value scores the shown items against the user's original taste, while click
+    rate is measured under the post-exposure interaction loop.
   </p>
 </div>
-<script defer src="{{ '/assets/js/recommender-lab.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/recommender-lab.js?v=20260615a' | relative_url }}"></script>
 
 Try increasing feedback strength and catalog skew. The click-only policy often
 looks better by click rate while losing diversity and drifting farther from the
