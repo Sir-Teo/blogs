@@ -408,7 +408,7 @@ Smoothing is easy to fake. Trust accounting is harder. The Kalman filter earns
 its place because it makes the accounting recursive, inspectable, and honest
 enough to argue with.
 
-## Further Reading
+## Reading Trail
 
 [^kalman]: R. E. Kalman, ["A New Approach to Linear Filtering and Prediction Problems"](https://courses.cs.duke.edu/compsci527/cps274/fall11/papers/Kalman60.pdf), *Transactions of the ASME--Journal of Basic Engineering*, 1960. [ASME record](https://asmedigitalcollection.asme.org/fluidsengineering/article/82/1/35/397706/A-New-Approach-to-Linear-Filtering-and-Prediction).
 
