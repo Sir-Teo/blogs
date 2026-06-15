@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Clock That Can Say Concurrent"
+title: "Clocks Can Say Concurrent"
 description: "Lamport clocks preserve causal order, but scalar timestamps still sort concurrent events. Vector clocks keep the partial order visible instead of inventing certainty."
 date: 2026-06-14 08:42:00 -0400
 categories: computer-science
