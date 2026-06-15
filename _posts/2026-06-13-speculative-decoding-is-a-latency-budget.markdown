@@ -31,7 +31,7 @@ distribution within hardware numerics.[^chen]
 
 The mechanism is beautiful. The production decision is a budget.
 
-## The Tokens Have to Pay Rent
+## Tokens Have to Pay Rent
 
 Suppose a draft proposes $$m$$ tokens and each proposed token is independently
 accepted with probability $$p$$. That independence assumption is fake, but it is
