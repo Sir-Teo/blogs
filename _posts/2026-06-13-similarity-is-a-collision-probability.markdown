@@ -151,6 +151,12 @@ The important sliders are:
    rise;
 3. **Bands** and **Rows per band**: reshape the candidate probability curve.
 
+The audit badge is the same deterministic 79-check suite exported by the
+script. It verifies the shingle-set ledger, exact Jaccard accounting, signature
+agreement, all-row band collisions, LSH probability formula, threshold formula,
+candidate flags, pair-count arithmetic, and a few synthetic smoke cases:
+identical documents, dissimilar documents, and boilerplate pollution.
+
 <div id="minhash-lab" class="minhash-lab" data-minhash-lab>
   <div class="minhash-lab__controls">
     <label>
@@ -191,10 +197,12 @@ The important sliders are:
     Deterministic synthetic experiment. The MinHash rows use compact 32-bit hash
     functions for browser speed. The LSH curve uses the standard independent-row
     approximation: a pair with similarity s becomes a candidate with probability
-    1 - (1 - s^r)^b for b bands of r rows.
+    1 - (1 - s^r)^b for b bands of r rows. The audit badge checks
+    implementation contracts; it does not certify that a 32-bit toy hash family
+    is suitable for adversarial web-scale indexing.
   </p>
 </div>
-<script defer src="{{ '/assets/js/minhash-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/minhash-lab.js?v=20260615a' | relative_url }}"></script>
 
 The default setting has 20 bands and 5 rows per band, so the signature has 100
 rows. The red point on the S-curve is the current near pair. The gray point is
