@@ -9,11 +9,12 @@ excerpt: "A LoRA adapter is small because it makes a claim: the useful task upda
 ---
 
 Fine-tuning used to mean moving the whole model, every large matrix included.
+That is a clean idea until the model is large enough that "move everything"
+becomes a storage plan, a training bill, and a release-management problem.
 
-For a model with billions of parameters, that sentence becomes expensive in
-three different ways. Training stores optimizer state. Deployment stores a copy
-per task. Governance now has to remember which full model belongs to which
-dataset, policy, customer, and evaluation.
+For a model with billions of parameters, training stores optimizer state.
+Deployment stores a copy per task. Governance now has to remember which full
+model belongs to which dataset, policy, customer, and evaluation.
 
 Parameter-efficient fine-tuning changes the object being trained. Instead of
 rewriting every weight, keep the base model fixed and learn a small task-specific
@@ -26,7 +27,7 @@ a bet about which directions the task actually needs.
 
 The adapter is small because it is allowed to miss most directions.
 
-## The Part That Does Not Move
+## Freeze the Big Matrix
 
 Take one pretrained weight matrix $$W_0 \in \mathbb{R}^{d_\text{out} \times
 d_\text{in}}$$. Full fine-tuning learns a dense update $$\Delta W$$, so inference
@@ -104,7 +105,7 @@ small $$r$$ becomes a bottleneck.
 
 This is not only compression. It is regularization with a spectral accent.
 
-## Rank Bench With Noise
+## A Noisy Rank Bench
 
 The lab below is not a language model. It is a controlled spectral toy.
 
@@ -260,7 +261,7 @@ That is the adapter story in miniature:
 rank is capacity, placement is inductive bias, data decides how much capacity is safe
 ```
 
-## Where You Spend Rank
+## Spending Rank Is the Real Budget
 
 LoRA is usually not applied to every possible matrix. The paper studies which
 Transformer weight matrices to adapt under a fixed parameter budget and finds
@@ -287,7 +288,7 @@ more rank where it appears useful.[^adalora]
 The moral is not "always use AdaLoRA." The moral is that rank is a scarce
 resource, and layers do not all spend it equally well.
 
-## A Different Memory Problem
+## QLoRA Pulls a Different Lever
 
 QLoRA often appears in the same conversation, but it solves a different memory
 problem.[^qlora]
@@ -309,7 +310,7 @@ rank is too small, quantizing the base more cleverly will not give the adapter
 missing directions. If training does not fit in memory, increasing rank may make
 the modeling problem easier but the systems problem worse.
 
-## When the Spectrum Refuses
+## When the Spectrum Says No
 
 Low rank fails when the needed motion is not low rank, or when the low-rank
 subspace is placed where the model cannot express the needed change.
@@ -348,7 +349,7 @@ The most dangerous rank is the one chosen because it is popular in a config
 file. Rank should be audited the way hidden size, context length, and retrieval
 depth are audited: as a capacity and systems tradeoff.
 
-## The Bet
+## What the Adapter Is Betting
 
 LoRA is not free fine-tuning.
 
