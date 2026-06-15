@@ -243,11 +243,20 @@ certificate.
   <p class="cuckoo-lab__note">
     Deterministic toy model: two tables, one item per slot, two independent
     candidate slots per key. The exact simulator is in
-    <code>assets/js/cuckoo-core-lab.js</code>.
+    <code>assets/js/cuckoo-core-lab.js</code>, which now exports the same audit
+    used by the visible counter.
   </p>
 </div>
 
-<script src="{{ '/assets/js/cuckoo-core-lab.js?v=20260614a' | relative_url }}"></script>
+<script src="{{ '/assets/js/cuckoo-core-lab.js?v=20260615a' | relative_url }}"></script>
+
+The refreshed audit reads `451/451` at the default setting. It checks hand-built
+tree, unicyclic, parallel-edge, and two-component obstruction graphs; verifies
+that leaf peeling preserves the same excess as the connected-component ledger;
+keeps zero-sized stashes from being normalized away; and replays deterministic
+random graphs across several loads and seeds. The default certificate from the
+prose is part of that audit: stash needed `1`, 2-core `19` edges over `18`
+vertices, and success once the stash can hold one key.
 
 ## A Stash Is a Graph Surgery Budget
 
