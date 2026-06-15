@@ -33,7 +33,7 @@ treat the top scores.
 That can target the wrong people. High response under treatment may simply mean
 "they were going to do well anyway." Uplift is the increment, not the level.
 
-## The Missing Twin Outcome
+## Missing Twin Outcome
 
 Write the two potential outcomes as \(Y(1)\) and \(Y(0)\). The conditional
 average treatment effect is
