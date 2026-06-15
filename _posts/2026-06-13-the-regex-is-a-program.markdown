@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Pattern That Hid a Search Tree"
+title: "Patterns Can Hide Search Trees"
 description: "A regex can look like a declarative shape while the engine underneath is doing a depth-first search through guesses."
 date: 2026-06-13 23:52:00 -0400
 categories: software-engineering
@@ -367,7 +367,7 @@ regex engines and their defenses.
 
 A regex is a tiny program. It deserves a profiler.
 
-## Source Notes
+## Further Reading
 
 [^thompson]: Ken Thompson, "Programming Techniques: Regular expression search algorithm," *Communications of the ACM*, 1968. [ACM](https://dl.acm.org/doi/10.1145/363347.363387), [CACM](https://cacm.acm.org/research/programming-techniques-regular-expression-search-algorithm/).
 
