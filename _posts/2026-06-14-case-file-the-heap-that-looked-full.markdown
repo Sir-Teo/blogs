@@ -387,7 +387,7 @@ jemalloc, for example, emphasizes fragmentation avoidance and scalable
 concurrency, and its production story includes profiling and tuning hooks
 because the allocator has to be observable at scale.[^meta-jemalloc]
 
-## The Bad Autopsy Has One Number
+## Bad Autopsy Has One Number
 
 A bad heap autopsy reports one number:
 
