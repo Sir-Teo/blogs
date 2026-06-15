@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Price Is a Forecast With a Tab"
+title: "Prices Forecast With a Tab"
 description: "Prediction markets and proper scoring rules are the same incentive idea wearing different interfaces. LMSR turns a log score into an always-on market maker with bounded loss."
 date: 2026-06-14 02:57:00 -0400
 categories: quantitative-finance
