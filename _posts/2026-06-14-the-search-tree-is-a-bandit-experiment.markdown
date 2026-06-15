@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tree Spends Experiments"
+title: "Trees Spend Experiments"
 description: "Monte Carlo Tree Search is not just lookahead. It is an adaptive sampling rule: spend simulations where uncertainty and upside are still worth paying for."
 date: 2026-06-14 02:11:00 -0400
 categories: ai-systems
@@ -395,7 +395,7 @@ what uncertainty is the extra compute buying down?
 MCTS has a beautiful answer because it writes the answer into the tree. Every
 edge records how much doubt was worth paying for.
 
-## Where This Came From
+## Further Reading
 
 [^ucb]: Peter Auer, Nicolo Cesa-Bianchi, and Paul Fischer, "Finite-time Analysis of the Multiarmed Bandit Problem," *Machine Learning* 47, 235-256, 2002. [Springer](https://link.springer.com/article/10.1023/A%3A1013689704352), [PDF](https://homes.di.unimi.it/~cesabian/Pubblicazioni/ml-02.pdf).
 
