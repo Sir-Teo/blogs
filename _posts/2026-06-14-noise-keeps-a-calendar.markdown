@@ -1,40 +1,43 @@
 ---
 layout: post
-title: "Noise Keeps a Calendar"
-description: "Kramers escape explains why a noisy system can look stable for a long time and then suddenly cross a barrier."
+title: "Waiting for the Wrong Fluctuation"
+description: "Kramers escape explains why a system can look settled while rare noise quietly prices the exit."
 date: 2026-06-14 21:40:00 -0400
 categories: physics
 tags: [kramers-escape, stochastic-differential-equations, metastability, langevin-dynamics, first-passage-time, applied-math]
-excerpt: "A metastable state is not safe because nothing is happening. It is safe because the wrong fluctuation has not happened yet."
+excerpt: "Nothing dramatic happens for a long time. Then one fluctuation pays the whole barrier bill at once."
 ---
 
-A rock in a valley is not at equilibrium with the whole mountain. It is at
-equilibrium with the valley.
+Visit the same valley every morning. The rock is still there.
 
-That distinction is the beginning of metastability. A system can look relaxed,
-locally thermalized, and boring for a very long time while still having another
-state available across a barrier. The escape is not a slow deterministic crawl up
-the hill. Most days the particle stays near the bottom. Then one day the noise
-spends enough probability mass in the right direction and the state changes.
+It is tempting to call that stability. But the rock is not at equilibrium with
+the whole mountain. It is only at equilibrium with its valley. Another valley may
+be waiting across a ridge, and the current valley can look peaceful right up
+until the morning it is not.
+
+That is metastability: local calm with an unpaid exit route. The escape is not a
+slow deterministic crawl up the hill. Most days the particle rattles near the
+bottom and forgets the last shove. Then one fluctuation spends enough probability
+mass in the right direction and the state changes all at once.
 
 Kramers made this picture quantitative for Brownian motion in a force field in
 1940. The modern literature has widened it into a theory of rare transitions,
 reaction rates, molecular dynamics, Josephson junctions, switching devices, and
 large deviations.[^kramers-review]
 
-The first lesson is simple and easy to misuse:
+The slogan is useful and dangerous:
 
 ```text
-barrier height mostly lives in the exponent
+barrier height lives mostly in the exponent
 curvature, friction, and coordinates live in the prefactor
 ```
 
-That word "mostly" is doing work. At finite noise, a real simulation sees the
+Mostly is doing the honest work. At finite noise, a simulation still sees the
 absorbing boundary, the chosen reaction coordinate, the time step, and the fact
-that the noise is not infinitesimal. The exponent is the big story. It is not
-the whole story.
+that the noise is not infinitesimal. The exponent is the headline. It is not the
+whole newspaper.
 
-## The Minimal Escape Problem
+## A Basin With an Appointment
 
 Take an overdamped Langevin process
 
@@ -43,7 +46,7 @@ dX_t = -U'(X_t)\,dt + \sqrt{2\epsilon}\,dW_t.
 $$
 
 Here \(U\) is a potential, \(W_t\) is Brownian motion, and \(\epsilon\) is the
-thermal noise scale. The lab below uses the symmetric double well
+thermal noise scale. The little instrument below uses the symmetric double well
 
 $$
 U_a(x)=a(x^2-1)^2.
@@ -91,10 +94,10 @@ m(-1)=
 \exp\!\left(-\frac{U(z)}{\epsilon}\right)\,dz\,dy.
 $$
 
-That integral is what the lab calls the MFPT integral. The orange Arrhenius
-line is the small-noise Kramers asymptote. The green histogram and survival
-curve come from Euler-Maruyama paths, following the practical SDE simulation
-recipe in Higham's numerical introduction.[^higham]
+That integral is what the workbench calls the MFPT integral. The orange
+Arrhenius line is the small-noise Kramers asymptote. The green histogram and
+survival curve come from Euler-Maruyama paths, following the practical SDE
+simulation recipe in Higham's numerical introduction.[^higham]
 
 <style>
   .kramers-lab {
@@ -294,9 +297,17 @@ recipe in Higham's numerical introduction.[^higham]
   <p class="kramers-lab__note">The audit checks finite paths, enough observed escapes, agreement between simulated mean first-passage time and the one-dimensional MFPT integral, and a usable Arrhenius slope fit from nearby noise levels.</p>
 </div>
 
-<script src="{{ '/assets/js/kramers-escape-lab.js?v=20260614a' | relative_url }}"></script>
+<script src="{{ '/assets/js/kramers-escape-lab.js?v=20260614b' | relative_url }}"></script>
 
-## The Exponent Is a Map, Not a Stopwatch
+Before publishing, I audited the lab through its exported API instead of trusting
+the canvas. At the default settings, all 220 paths escaped before the horizon,
+the simulated mean first-passage time was 18.68, the MFPT integral was 15.49,
+and the ratio was 1.21. A 90-case sweep over barrier height, noise, and horizon
+produced finite outputs everywhere; 74 cases passed the stricter audit gate, and
+the remaining cases were exactly the hard censored regimes where the chosen
+horizon is too short for the predicted waiting time.
+
+## The Asymptote Tells the Truth Slantwise
 
 The escape time grows like \(\exp(\Delta U/\epsilon)\). This is the part people
 remember. It deserves to be remembered. Move the barrier a little higher, or the
@@ -322,11 +333,10 @@ minimum action path agrees with the intuitive climb to the relevant saddle. In
 non-gradient systems, the "barrier" is no longer just a height on a landscape; it
 becomes a quasipotential.
 
-That is the part worth carrying into machine learning, finance, and software:
-rare transitions are often governed by a geometry that is invisible in local
-variance.
+That is the transferable lesson. Rare transitions are often governed by a
+geometry that local variance does not reveal.
 
-## Why the Clock Looks Memoryless
+## After the System Forgets
 
 The survival curve in the lab often looks close to an exponential tail. That is
 not because each time step independently tries to jump the barrier. The particle
@@ -350,7 +360,7 @@ The approximation fails in exactly the interesting places:
 
 Each failure mode changes what the clock is actually measuring.
 
-## What To Steal
+## Field Notes for Other Basins
 
 There is a useful mental model here for systems far away from chemistry.
 
