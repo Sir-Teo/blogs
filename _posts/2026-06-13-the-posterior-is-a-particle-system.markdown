@@ -44,7 +44,7 @@ location is carrying. The method is not trying to make the posterior Gaussian.
 It is trying to keep enough weighted hypotheses alive that the posterior shape
 can be approximated numerically.
 
-## The Recursion Under the Crowd
+## Recursion Under the Crowd
 
 In a hidden Markov model, the latent state evolves by:
 
