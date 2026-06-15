@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Regression Discontinuity Lives at the Cutoff"
-description: "Regression discontinuity turns a hard rule into a narrow causal comparison. The useful question is not whether the rule is sharp, but whether anything else jumps there."
+title: "The Threshold Only Speaks Nearby"
+description: "Regression discontinuity turns a hard rule into a narrow causal comparison. The useful question is not whether the rule is sharp, but whether anything else jumps at the same line."
 date: 2026-06-14 13:15:00 -0400
 categories: statistics
 tags: [regression-discontinuity, causal-inference, econometrics, bandwidth, local-linear-regression, diagnostics]
@@ -103,6 +103,15 @@ The manipulation slider is the trapdoor. Raise it and some high-ability units
 just left of the threshold sort to the right. The outcome jump may still look
 clean, but the diagnostic panels start to complain: the density of the running
 variable jumps and a pretreatment covariate jumps too.
+
+I audited the lab before rewriting. The default local-linear estimate is 1.049
+with standard error 0.118, against a planted cutoff effect of 1.00; the local
+mean gap is 1.140 and the naive all-data gap is 1.394. With manipulation at
+70%, 34 units sort across the line, the density log jump rises to 0.569, and
+the covariate jump rises to 0.303. A 2,187-case sweep over bandwidth, curvature,
+effect size, manipulation, noise, sample size, and seed produced finite local
+fits with enough observations on both sides in every case. I also fixed the lab
+to export through `module.exports`, matching the other audited labs.
 
 <style>
   .rd-lab {
@@ -281,7 +290,7 @@ variable jumps and a pretreatment covariate jumps too.
     inference procedure.
   </p>
 </div>
-<script defer src="{{ '/assets/js/regression-discontinuity-lab.js?v=20260614a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/regression-discontinuity-lab.js?v=20260614b' | relative_url }}"></script>
 
 The lab is intentionally simple enough to inspect. In
 [`assets/js/regression-discontinuity-lab.js`]({{ '/assets/js/regression-discontinuity-lab.js' | relative_url }}),
@@ -418,7 +427,7 @@ donut holes, multiple thresholds, and specification search can all break a
 vanilla standard error. The visual jump can be real while the inferential story
 is underbuilt.
 
-## Where This Belongs In ML Systems
+## Where This Belongs in ML Systems
 
 Modern ML systems are full of discontinuities wearing product clothing.
 
@@ -453,7 +462,7 @@ is explicitly local.
 Then the threshold becomes a tiny natural experiment left behind by the
 engineering rule.
 
-## The Line Is Not The Evidence
+## The Line Is Not the Evidence
 
 The line is where you look.
 

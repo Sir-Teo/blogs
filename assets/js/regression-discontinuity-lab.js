@@ -599,7 +599,7 @@
     root.document.querySelectorAll("[data-regression-discontinuity-lab]").forEach(init);
   }
 
-  root.RegressionDiscontinuityLab = {
+  var api = {
     cleanParams: cleanParams,
     densityJump: densityJump,
     evaluate: evaluate,
@@ -607,6 +607,9 @@
     localLinear: localLinear,
     localMean: localMean
   };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.RegressionDiscontinuityLab = api;
 
   if (root.document) {
     if (root.document.readyState === "loading") {
