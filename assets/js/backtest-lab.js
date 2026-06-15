@@ -1,4 +1,6 @@
-(function () {
+(function (global) {
+  "use strict";
+
   var COLORS = {
     backtest: "#0f766e",
     live: "#b45309",
@@ -8,6 +10,38 @@
     muted: "#5d6872",
     rule: "#d7dee5"
   };
+
+  var DEFAULTS = {
+    strategies: 400,
+    years: 6,
+    edgeRate: 4,
+    edgeSharpe: 70,
+    correlation: 35,
+    liveDrag: 20
+  };
+
+  var AUDIT_CACHE = null;
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function numberParam(raw, key) {
+    var value = Number(raw && raw[key]);
+    return Number.isFinite(value) ? value : DEFAULTS[key];
+  }
+
+  function cleanParams(raw) {
+    raw = raw || {};
+    return {
+      strategies: Math.round(clamp(numberParam(raw, "strategies"), 20, 2000)),
+      years: Math.round(clamp(numberParam(raw, "years"), 2, 20)),
+      edgeRate: Math.round(clamp(numberParam(raw, "edgeRate"), 0, 25)),
+      edgeSharpe: Math.round(clamp(numberParam(raw, "edgeSharpe"), 20, 140)),
+      correlation: Math.round(clamp(numberParam(raw, "correlation"), 0, 80)),
+      liveDrag: Math.round(clamp(numberParam(raw, "liveDrag"), 0, 80))
+    };
+  }
 
   function rng(seed) {
     var state = seed >>> 0;
@@ -26,10 +60,6 @@
     while (u === 0) u = rand();
     while (v === 0) v = rand();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
   }
 
   function normalCdf(x) {
@@ -60,6 +90,7 @@
   }
 
   function makeCandidate(rand, params, shocks, index) {
+    params = cleanParams(params);
     var edgeRate = params.edgeRate / 100;
     var edgeSharpe = params.edgeSharpe / 100;
     var liveDrag = params.liveDrag / 100;
@@ -157,6 +188,7 @@
   }
 
   function evaluate(params) {
+    params = cleanParams(params);
     var campaigns = 260;
     var q = 0.10;
     var seed = 20260613
@@ -209,6 +241,7 @@
     var holdout = summary[4];
 
     return {
+      params: params,
       campaigns: campaigns,
       policies: summary,
       headline: {
@@ -220,6 +253,103 @@
         holdoutSelection: holdout.selectedRate
       }
     };
+  }
+
+  function close(actual, expected, tolerance) {
+    return Math.abs(actual - expected) <= tolerance;
+  }
+
+  function finiteNumber(value) {
+    return Number.isFinite(value);
+  }
+
+  function policyRowsValid(result) {
+    return result.policies.every(function (row) {
+      return row.selectedRate >= 0 &&
+        row.selectedRate <= 1 &&
+        row.falseRate >= 0 &&
+        row.falseRate <= 1 &&
+        ["backtest", "live", "bestSeen"].every(function (key) { return finiteNumber(row[key]); });
+    });
+  }
+
+  function byKey(result, key) {
+    for (var i = 0; i < result.policies.length; i += 1) {
+      if (result.policies[i].key === key) return result.policies[i];
+    }
+    return null;
+  }
+
+  function runAudit() {
+    var checks = [];
+    function check(name, passed, detail) {
+      checks.push({ name: name, passed: Boolean(passed), detail: detail || "" });
+    }
+
+    var clamped = cleanParams({ strategies: 9999, years: -4, edgeRate: 99, edgeSharpe: -7, correlation: 99, liveDrag: 99 });
+    check("parameter clamps", clamped.strategies === 2000 && clamped.years === 2 && clamped.edgeRate === 25 && clamped.edgeSharpe === 20 && clamped.correlation === 80 && clamped.liveDrag === 80);
+
+    var fallback = cleanParams({ strategies: "x", years: "x", edgeRate: "x", edgeSharpe: "x", correlation: "x", liveDrag: "x" });
+    check("default fallbacks", Object.keys(DEFAULTS).every(function (key) { return fallback[key] === DEFAULTS[key]; }));
+
+    check("normal CDF symmetry", close(normalCdf(0), 0.5, 1e-8) && close(normalCdf(1.2), 1 - normalCdf(-1.2), 1e-8));
+    check("one-sided p monotonicity", oneSidedP(2) < oneSidedP(1) && oneSidedP(-1) > oneSidedP(0));
+
+    var bhRows = [{ p: 0.001 }, { p: 0.02 }, { p: 0.03 }, { p: 0.20 }];
+    check("BH step-up cutoff", bhDiscoveries(bhRows, 0.05).length === 3 && bhDiscoveries(bhRows, 0.01).length === 1);
+
+    var defaultA = evaluate(DEFAULTS);
+    var defaultB = evaluate(DEFAULTS);
+    check("deterministic replay", JSON.stringify(defaultA) === JSON.stringify(defaultB));
+    check("campaign count", defaultA.campaigns === 260);
+    check("policy set complete", ["best", "nominal", "bonferroni", "bh", "holdout"].every(function (key) { return byKey(defaultA, key); }));
+    check("policy rows are finite ledgers", policyRowsValid(defaultA));
+
+    var best = byKey(defaultA, "best");
+    var nominal = byKey(defaultA, "nominal");
+    var bonferroni = byKey(defaultA, "bonferroni");
+    var bh = byKey(defaultA, "bh");
+    var holdout = byKey(defaultA, "holdout");
+    check("headline matches policies", close(defaultA.headline.bestBacktest, best.backtest, 1e-12) && close(defaultA.headline.bestLive, best.live, 1e-12) && close(defaultA.headline.holdoutLive, holdout.live, 1e-12));
+    check("best backtest is optimistic", best.backtest > best.live + 0.9 && best.falseRate > 0.1);
+    check("corrections select less often", bonferroni.selectedRate <= nominal.selectedRate && bh.selectedRate <= nominal.selectedRate && holdout.selectedRate <= 1);
+    check("holdout improves live relative to best", holdout.live > best.live);
+
+    var smallNull = evaluate({ strategies: 20, years: 6, edgeRate: 0, edgeSharpe: 70, correlation: 35, liveDrag: 20 });
+    var largeNull = evaluate({ strategies: 2000, years: 6, edgeRate: 0, edgeSharpe: 70, correlation: 35, liveDrag: 20 });
+    check("search family inflates winners", byKey(largeNull, "best").backtest > byKey(smallNull, "best").backtest + 0.55);
+    check("null search has negative live after drag", byKey(largeNull, "best").live < 0 && byKey(smallNull, "best").live < 0);
+
+    var shortSample = evaluate({ strategies: 400, years: 2, edgeRate: 0, edgeSharpe: 70, correlation: 35, liveDrag: 20 });
+    var longSample = evaluate({ strategies: 400, years: 20, edgeRate: 0, edgeSharpe: 70, correlation: 35, liveDrag: 20 });
+    check("longer samples shrink selected noise", byKey(shortSample, "best").backtest > byKey(longSample, "best").backtest);
+
+    var noEdge = evaluate({ strategies: 400, years: 6, edgeRate: 0, edgeSharpe: 70, correlation: 35, liveDrag: 20 });
+    var manyEdges = evaluate({ strategies: 400, years: 6, edgeRate: 25, edgeSharpe: 140, correlation: 35, liveDrag: 0 });
+    check("real edge improves expected live", byKey(manyEdges, "best").live > byKey(noEdge, "best").live + 0.45);
+    check("real edge lowers false discoveries", byKey(manyEdges, "best").falseRate < byKey(noEdge, "best").falseRate);
+
+    var noDrag = evaluate({ strategies: 400, years: 6, edgeRate: 4, edgeSharpe: 70, correlation: 35, liveDrag: 0 });
+    var highDrag = evaluate({ strategies: 400, years: 6, edgeRate: 4, edgeSharpe: 70, correlation: 35, liveDrag: 80 });
+    check("live drag lowers live Sharpe", byKey(highDrag, "best").live < byKey(noDrag, "best").live - 0.5 && byKey(highDrag, "best").falseRate > byKey(noDrag, "best").falseRate);
+
+    var independent = evaluate({ strategies: 400, years: 6, edgeRate: 0, edgeSharpe: 70, correlation: 0, liveDrag: 20 });
+    var correlated = evaluate({ strategies: 400, years: 6, edgeRate: 0, edgeSharpe: 70, correlation: 80, liveDrag: 20 });
+    check("correlation reduces effective search", byKey(independent, "best").backtest > byKey(correlated, "best").backtest);
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function metric(label, value) {
@@ -389,6 +519,7 @@
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       params[input.getAttribute("data-param")] = Number(input.value);
     });
+    params = cleanParams(params);
 
     var result = evaluate(params);
     var values = {
@@ -406,6 +537,7 @@
     });
 
     var metrics = root.querySelector("[data-metrics]");
+    var audit = cachedAudit();
     if (metrics) {
       metrics.innerHTML = [
         metric("Best backtest SR", formatSharpe(result.headline.bestBacktest)),
@@ -413,7 +545,8 @@
         metric("Best false discoveries", formatPercent(result.headline.bestFalse)),
         metric("Bonferroni selection", formatPercent(result.headline.bonferroniSelection)),
         metric("Holdout live SR", formatSharpe(result.headline.holdoutLive)),
-        metric("Holdout selection", formatPercent(result.headline.holdoutSelection))
+        metric("Holdout selection", formatPercent(result.headline.holdoutSelection)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
 
@@ -422,6 +555,8 @@
   }
 
   function init(root) {
+    if (root.__backtestLabReady) return;
+    root.__backtestLabReady = true;
     var redraw = function () { render(root); };
     root.querySelectorAll("input[data-param]").forEach(function (input) {
       input.addEventListener("input", redraw);
@@ -430,7 +565,25 @@
     redraw();
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-backtest-lab]").forEach(init);
-  });
-}());
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-backtest-lab]").forEach(init);
+      });
+    } else {
+      document.querySelectorAll("[data-backtest-lab]").forEach(init);
+    }
+  }
+
+  global.BacktestLab = {
+    cleanParams: cleanParams,
+    evaluate: evaluate,
+    normalCdf: normalCdf,
+    oneSidedP: oneSidedP,
+    runAudit: runAudit
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = global.BacktestLab;
+  }
+}(typeof window !== "undefined" ? window : globalThis));
