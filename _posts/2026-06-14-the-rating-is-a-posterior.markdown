@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Ladder Needs Error Bars"
+title: "Ladders Need Error Bars"
 description: "Elo-like ratings are not prizes. They are online estimates of latent skill from noisy pairwise comparisons, and the dangerous omission is uncertainty."
 date: 2026-06-14 00:55:00 -0400
 categories: gaming
