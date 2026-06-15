@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Pager Starts Drumming"
+title: "Pager Starts Drumming"
 description: "A Hawkes process notices when an event is also fuel for the next event. The mean rate can look harmless while the clock is carrying aftershocks."
 date: 2026-06-14 11:27:00 -0400
 categories: quantitative-finance
