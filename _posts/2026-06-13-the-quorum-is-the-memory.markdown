@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Cluster Remembers by Overlap"
+title: "Clusters Remember by Overlap"
 description: "Replicas do not remember because they agree in spirit. They remember when the next decision is forced to meet the last one."
 date: 2026-06-13 19:00:00 -0400
 categories: computer-science
@@ -292,7 +292,7 @@ If the next decision can walk around the previous decision without touching it,
 the system may still be fast, available, and useful. But it is not remembering
 the thing you thought it remembered.
 
-## Source Notes
+## Primary Sources
 
 [^gifford]: David K. Gifford, ["Weighted Voting for Replicated Data"](https://dl.acm.org/doi/10.1145/800215.806583), *Proceedings of the Seventh Symposium on Operating System Principles*, 1979. A course-hosted PDF is available from [Cornell](https://www.cs.cornell.edu/courses/cs614/2003sp/papers/Gif79.pdf).
 
