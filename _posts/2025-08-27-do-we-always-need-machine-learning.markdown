@@ -1,14 +1,14 @@
 ---
 layout: post
-title: "The 3 AM Cache That Outruns a Model"
-description: "A production pattern for sparse, long-tailed estimates: robust rollups, partial pooling, observable fallback levels, and the discipline to ask for ML last."
+title: "At 3 AM, Ask the Cache"
+description: "A production pattern for sparse, long-tailed estimates: robust rollups, partial pooling, visible fallback levels, and the discipline to ask for ML last."
 date: 2025-08-27 10:00:00 -0400
 categories: ai-systems
 tags: [machine-learning, statistics, data-systems, sql, robust-statistics]
-excerpt: "When a pricing system needs a defensible answer during an outage, the best first model may be a humble cache with medians, rollups, shrinkage, and receipts."
+excerpt: "When a pricing system needs a defensible answer during an outage, the best first model may be a cache with medians, rollups, shrinkage, and receipts."
 ---
 
-The pager does not care that a neural network would be elegant.
+The pager does not care that the neural network would have been elegant.
 
 Imagine a pricing service going dark during close. Someone still has to quote a
 number. Not the perfect number. Not the number a future research plan might have
@@ -36,7 +36,7 @@ room.
   behavior.
 </div>
 
-## First, Survive the Row
+## Incident First, Model Later
 
 A naive cache says: group by the fields we care about, take the average, and
 join back at prediction time. That fails quickly.
@@ -62,12 +62,12 @@ The third failure is staleness. Old data are not wrong in the same way noisy
 data are wrong. They may describe a different world. A good fallback cache has
 to say what time window it represents and how often it is rebuilt.
 
-The resulting design goal sounds modest and then eats an afternoon:
+The resulting design goal sounds modest, then quietly eats an afternoon:
 
 > Always return the most specific estimate that passes a statistical quality
 > check, while making the chosen fallback level observable.
 
-## The Ladder
+## A Ladder of Less-Specific Truths
 
 Think of the cache as a hierarchy of reference classes. At the top is a narrow
 cell: same carrier, same cabin, same route, same flight. Below it are broader
@@ -169,7 +169,7 @@ Second, make `cache_level` a first-class output. A fallback cache that only
 returns a number is hard to debug. A fallback cache that returns both the number
 and the level that served it can be monitored, audited, and tuned.
 
-## A Contract the Cache Can Keep
+## Write Down the Promise
 
 The lookup contract is:
 
@@ -206,7 +206,7 @@ same practical instinct behind empirical Bayes and hierarchical modeling:
 separate estimates are noisy, and related groups can borrow strength from one
 another.[^efron-morris], [^gelman]
 
-## The Lab: Make the Data Worse
+## Make the Toy Worse on Purpose
 
 The simulator below creates a synthetic surcharge world with carriers, cabins,
 routes, and flights. Training data are sparse and contaminated by occasional
@@ -257,7 +257,7 @@ The lesson is that the baseline is strong and legible. If a learned model cannot
 beat this under a fair time split, with comparable latency and better monitoring,
 then the model is probably solving a problem we do not yet have.
 
-## Serving Path, Boring on Purpose
+## Keep the Serving Path Dull
 
 At serving time, the simplest implementation is a cascade of left joins. The
 first non-null estimate wins:
@@ -308,7 +308,7 @@ FROM yq_fallback_cache_ready
 WHERE lookup_key = :normalized_lookup_key;
 ```
 
-## The Dashboard Is Part of the Algorithm
+## Dashboards Are Control Surfaces
 
 The cache is only trustworthy if you can see how it behaves. I would ship it
 with four dashboard panels:
@@ -327,7 +327,7 @@ fallback hierarchy is stable but systematically biased for known feature
 interactions, a model may help. If error is mostly from missing recent data, a
 model may only make the failure less obvious.
 
-## Where the Cache Loses
+## Where This Baseline Deserves to Lose
 
 This is not an argument against machine learning. It is an argument against
 using it before the baseline has a spine.
