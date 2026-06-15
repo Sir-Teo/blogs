@@ -474,7 +474,7 @@
       var value = Number(input.value);
       return isFinite(value) ? value : fallback;
     }
-    return cleanParams({
+    return {
       seed: number("seed", 19),
       samples: number("samples", 256),
       lightAngle: number("lightAngle", 34),
@@ -483,7 +483,7 @@
       environment: number("environment", 11) / 100,
       lobeAngle: number("lobeAngle", 24),
       roughness: number("roughness", 18)
-    });
+    };
   }
 
   function updateOutputs(lab, params) {
@@ -504,9 +504,10 @@
   }
 
   function render(lab) {
-    var params = readParams(lab);
+    var rawParams = readParams(lab);
+    var params = cleanParams(rawParams);
     updateOutputs(lab, params);
-    var run = summarize(params);
+    var run = summarize(rawParams);
     var mis = run.methods.filter(function (method) { return method.key === "mis"; })[0];
     var metrics = lab.querySelector("[data-metrics]");
     if (metrics) {
