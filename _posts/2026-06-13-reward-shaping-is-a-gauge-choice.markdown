@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Good Reward Hint Cancels on the Loop"
+title: "Good Reward Hints Cancel on the Loop"
 description: "Potential-based reward shaping can make reinforcement learning easier without changing the task. Arbitrary hints can quietly create a new game."
 date: 2026-06-13 22:10:00 -0400
 categories: machine-learning
@@ -333,7 +333,7 @@ The gauge is.
 
 ---
 
-## Sources
+## Reading Trail
 
 [^ng]: Andrew Y. Ng, Daishi Harada, and Stuart Russell, ["Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping"](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf), ICML 1999.
 
