@@ -297,13 +297,13 @@ simulation recipe in Higham's numerical introduction.[^higham]
   <p class="kramers-lab__note">The audit checks finite paths, enough observed escapes, agreement between simulated mean first-passage time and the one-dimensional MFPT integral, and a usable Arrhenius slope fit from nearby noise levels.</p>
 </div>
 
-<script src="{{ '/assets/js/kramers-escape-lab.js?v=20260614b' | relative_url }}"></script>
+<script src="{{ '/assets/js/kramers-escape-lab.js?v=20260614c' | relative_url }}"></script>
 
 Before publishing, I audited the lab through its exported API instead of trusting
 the canvas. At the default settings, all 220 paths escaped before the horizon,
 the simulated mean first-passage time was 18.68, the MFPT integral was 15.49,
 and the ratio was 1.21. A 90-case sweep over barrier height, noise, and horizon
-produced finite outputs everywhere; 74 cases passed the stricter audit gate, and
+produced finite outputs everywhere; 77 cases passed the stricter audit gate, and
 the remaining cases were exactly the hard censored regimes where the chosen
 horizon is too short for the predicted waiting time.
 

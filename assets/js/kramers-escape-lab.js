@@ -523,7 +523,15 @@
   function drawHistogram(ctx, box, result) {
     drawPanel(ctx, box, "first-passage clock", "many quiet waits, then a crossing");
     var plot = { x: box.x + 46, y: box.y + 58, w: box.w - 66, h: box.h - 92 };
-    var maxCount = Math.max.apply(null, result.ensemble.histogram.concat([1]));
+    var density = [];
+    for (var k = 0; k <= 100; k += 1) {
+      var t = result.params.horizon * k / 100;
+      var expected = result.ensemble.escaped.length * (result.params.horizon / result.ensemble.histogram.length) *
+        Math.exp(-t / result.mfpt) / Math.max(1e-9, result.mfpt);
+      density.push([t, expected]);
+    }
+    var maxDensity = Math.max.apply(null, density.map(function (point) { return point[1]; }).concat([1]));
+    var maxCount = Math.max.apply(null, result.ensemble.histogram.concat([maxDensity, 1]));
     var sx = scale({ min: 0, max: result.params.horizon }, { min: plot.x, max: plot.x + plot.w });
     var sy = scale({ min: 0, max: maxCount * 1.15 }, { min: plot.y + plot.h, max: plot.y });
     drawGrid(ctx, plot, 4, 4);
@@ -534,13 +542,6 @@
       ctx.fillStyle = "rgba(15, 118, 110, 0.72)";
       ctx.fillRect(x + 1, y, Math.max(1, binW - 2), plot.y + plot.h - y);
     });
-    var density = [];
-    for (var k = 0; k <= 100; k += 1) {
-      var t = result.params.horizon * k / 100;
-      var expected = result.ensemble.escaped.length * (result.params.horizon / result.ensemble.histogram.length) *
-        Math.exp(-t / result.mfpt) / Math.max(1e-9, result.mfpt);
-      density.push([t, expected]);
-    }
     drawLine(ctx, density, sx, sy, COLORS.theory, 2.2);
     var mx = sx(Math.min(result.params.horizon, result.mfpt));
     ctx.strokeStyle = COLORS.theory;
