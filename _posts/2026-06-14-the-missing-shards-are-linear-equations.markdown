@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Missing Shards Are Equations"
+title: "Missing Shards Are Equations"
 description: "Reed-Solomon erasure coding is not backup magic. It is the promise that any k honest surviving shards contain enough GF(256) equations to rebuild the stripe."
 date: 2026-06-14 11:18:00 -0400
 categories: data-systems
