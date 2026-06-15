@@ -70,7 +70,7 @@ The lab below verifies that identity numerically with random query and key
 vectors. In the default run, the relative-identity error is `1.57e-13`, which is
 just floating-point noise.
 
-## A Microscope for Phase
+## Microscope for Phase
 
 The lab uses a simple diagnostic kernel:
 
