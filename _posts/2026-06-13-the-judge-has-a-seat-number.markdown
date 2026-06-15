@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Leaderboard Has a Seating Chart"
+title: "Leaderboards Have Seating Charts"
 description: "LLM-as-judge evaluation is not just a model call. It is a measurement protocol with position effects, verbosity effects, calibration choices, and sampling uncertainty."
 date: 2026-06-13 09:06:00 -0400
 categories: machine-learning
