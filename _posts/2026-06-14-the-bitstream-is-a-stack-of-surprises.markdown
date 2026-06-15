@@ -40,7 +40,7 @@ each symbol. Let the whole message share the fractional accounting.
 
 This post is about where those fractional bits go.
 
-## The Three Bills on the Table
+## Three Bills on the Table
 
 A useful way to look at a compressor is to put three bills on the table.
 
