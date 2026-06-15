@@ -63,7 +63,7 @@ This is not a hack in the pejorative sense. It is a modeling choice that says:
 when links stop giving enough information, inject attention from this boundary
 ```
 
-## The Restart Vector Has Opinions
+## Restart Vector Has Opinions
 
 Uniform teleportation says every page is equally plausible as a restart. That
 is a clean default, but it is not neutral in every application. A medical search
