@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Normalizer Hides in the Path"
+title: "Normalizers Hide in the Path"
 description: "Annealed importance sampling estimates a partition function by walking through easier distributions and averaging the resulting path weights."
 date: 2026-06-14 20:15:00 -0400
 categories: applied-math
