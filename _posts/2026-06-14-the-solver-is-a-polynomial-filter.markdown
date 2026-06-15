@@ -44,7 +44,7 @@ Once you see that, several solver superstitions become ordinary facts:
 The solver is not just walking through coordinate space. It is spending
 polynomial degrees on the spectrum.
 
-## The Bowl Is Not Round
+## Bowl Is Not Round
 
 Steepest descent is honest. At each step, it follows the negative gradient of
 the quadratic. If the bowl is round, this is fine. If the bowl is a long skinny
