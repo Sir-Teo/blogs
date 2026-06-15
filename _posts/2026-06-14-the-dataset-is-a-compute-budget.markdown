@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Next FLOP Has to Choose"
+title: "Next FLOP Has to Choose"
 description: "Scaling laws are not just a slogan about bigger models. Under a fixed training budget, parameters and tokens trade off, and data scarcity bends the frontier."
 date: 2026-06-14 15:55:00 -0400
 categories: ai-systems
