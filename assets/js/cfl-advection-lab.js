@@ -61,10 +61,12 @@
   function fmt(value, digits) {
     if (!Number.isFinite(value)) return "n/a";
     var d = digits == null ? 3 : digits;
+    if (value === 0) return value.toFixed(d);
     if (Math.abs(value) >= 1000) return value.toFixed(0);
     if (Math.abs(value) >= 100) return value.toFixed(1);
     if (Math.abs(value) >= 10) return value.toFixed(2);
     if (Math.abs(value) >= 1) return value.toFixed(d);
+    if (Math.abs(value) >= 0.1) return value.toFixed(d);
     if (Math.abs(value) >= 0.01) return value.toFixed(d + 1);
     return value.toExponential(2);
   }
