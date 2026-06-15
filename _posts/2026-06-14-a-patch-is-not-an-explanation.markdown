@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Heatmap Is Not the Circuit"
+title: "Heatmaps Are Not Circuits"
 description: "Activation patching can be a real causal intervention, but a restored logit is evidence about a contrast, a metric, and a site, not an explanation by itself."
 date: 2026-06-14 13:58:00 -0400
 categories: machine-learning
