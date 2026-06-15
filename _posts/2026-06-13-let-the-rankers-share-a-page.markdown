@@ -415,7 +415,7 @@ Let the rankers share a page when the question is ranking preference.
 
 Then make them face the whole product when the question is shipping.
 
-## Further Reading
+## Reading Trail
 
 [^joachims-2002]: Thorsten Joachims, "Optimizing Search Engines using Clickthrough Data," *KDD*, 2002. [PDF](https://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf), [ACM](https://dl.acm.org/doi/10.1145/775047.775067).
 
