@@ -423,7 +423,7 @@ The sketch does not know the spectrum. It only asks noisy questions.
 But if there is a room in the matrix where the norm keeps echoing, the sketch
 usually hears it before it has searched the whole building.
 
-## Where This Came From
+## Paper Trail
 
 [^eckart-young]: Carl Eckart and Gale Young, "The approximation of one matrix by another of lower rank," *Psychometrika*, 1936. [Springer](https://link.springer.com/article/10.1007/BF02288367).
 
