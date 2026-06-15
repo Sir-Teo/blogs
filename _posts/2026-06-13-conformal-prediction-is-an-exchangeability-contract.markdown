@@ -306,7 +306,7 @@ Uncertainty is not a number you attach to a prediction.
 
 It is a promise about the world that produced the evidence.
 
-## References
+## Paper Trail
 
 [^vovk]: Vladimir Vovk, Alexander Gammerman, and Glenn Shafer, [*Algorithmic Learning in a Random World*](https://www.alrw.net/), Springer, 2005; second edition, 2022.
 
