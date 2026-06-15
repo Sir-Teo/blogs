@@ -326,7 +326,7 @@
   function setupCanvas(canvas) {
     var rect = canvas.getBoundingClientRect();
     var width = Math.max(320, rect.width || 900);
-    var height = width < 560 ? 980 : 760;
+    var height = width < 760 ? 980 : 760;
     var dpr = global.devicePixelRatio || 1;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -508,7 +508,7 @@
       ctx.fillRect(x - barW / 2, plot.y + plot.h - h, barW, h);
       if (i % 2 === 0) label(ctx, String(row.overhead), x, plot.y + plot.h + 13, { align: "center", color: COLORS.muted, size: 9 });
     });
-    label(ctx, "overhead %", plot.x + plot.w, box.y + box.h - 18, { align: "right", color: COLORS.muted, size: 10 });
+    label(ctx, "overhead %", plot.x + plot.w, plot.y - 14, { align: "right", color: COLORS.muted, size: 10 });
   }
 
   function draw(canvas, result) {
@@ -519,7 +519,7 @@
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
-    if (width < 560) {
+    if (width < 760) {
       var gap = 14;
       var h1 = 360;
       var h2 = 190;
