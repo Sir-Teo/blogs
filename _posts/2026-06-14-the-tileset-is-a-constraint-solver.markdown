@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "Wave Function Collapse as Constraint Propagation"
-description: "Wave Function Collapse looks like procedural magic, but the useful version is a constraint solver with a texture memory: local patterns, entropy choice, propagation, and restarts."
+title: "Every Tile Starts as a Maybe"
+description: "Wave Function Collapse looks like procedural magic, but the useful version is a constraint solver with a texture memory: local patterns, entropy choice, propagation, contradictions, and restarts."
 date: 2026-06-14 16:24:00 -0400
 categories: gaming
 tags: [wave-function-collapse, procedural-generation, constraint-solving, games, entropy, tilemaps]
-excerpt: "A small sample can generate a large map because every output cell is carrying a set of possible local patterns. Collapse one cell, propagate the consequences, and watch the uncertainty drain through the grid."
+excerpt: "A small sample can generate a large map because every output cell begins as a bundle of possible local patterns. Collapse one cell, propagate the consequences, and watch the uncertainty drain through the grid."
 ---
 
 The name is too theatrical.
@@ -69,6 +69,14 @@ default seed, one early attempt contradicts, the next solves the 24x24 field in
 16 observations after banning 39,744 pattern states. Those counts are not a
 benchmark. They are an autopsy: most of the work is not drawing tiles, it is
 deleting impossible worlds.
+
+I audited the lab before rewriting. The default run uses restart attempt 1,
+solves all 576 cells, and every one of the 484 possible 3x3 output windows is a
+pattern copied from the source sample. A 729-case sweep over sample, pattern
+order, output size, sample bias, restart budget, and seed produced 408 solved
+fields and 321 honest partial failures; every solved field had zero invalid
+local windows, every run stayed inside its restart budget, and the domain
+summary always accounted for all cells.
 
 <style>
   .wfc-lab {
@@ -353,7 +361,7 @@ often strongest as a local constraint engine inside a larger system: combine it
 with global reachability checks, designer pins, repair passes, search, or a
 separate objective for playability.
 
-## The Generator As A Debuggable Object
+## The Generator as a Debuggable Object
 
 The reason I like this algorithm is not that it makes pretty maps. Lots of
 things make pretty maps.
