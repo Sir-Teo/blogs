@@ -258,10 +258,12 @@ queries for candidate keys; it does not by itself enumerate all candidates.
     verification, but the sketches see only hashed updates. The epsilon*N line is
     the classic Count-Min point-query error scale using epsilon = e / width.
     Conservative update is shown as an engineering comparison; the displayed
-    epsilon/delta contract is the standard Count-Min contract.
+    epsilon/delta contract is the standard Count-Min contract. The exported audit
+    checks one-sided estimates, conservative-update dominance, heavy-key
+    containment, table shape, memory accounting, and error-budget arithmetic.
   </p>
 </div>
-<script defer src="{{ '/assets/js/count-min-sketch-lab.js?v=20260614b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/count-min-sketch-lab.js?v=20260615a' | relative_url }}"></script>
 
 The default stream has `50,000` events over a `2,000` key vocabulary with a
 moderate Zipf skew. The sixth-ranked key appears `1,067` times. The classic
@@ -269,6 +271,13 @@ Count-Min estimate is `1,145`; conservative update lands exactly on `1,067` for
 this seed. That does not mean conservative update is exact. It means the
 least-contaminated counters for this key were protected from some unnecessary
 increments.
+
+The refreshed audit now runs `12 / 12` deterministic configurations over width,
+depth, query-rank, seed, skew, and vocabulary changes. It verifies that classic
+Count-Min and conservative update remain upper bounds on exact counts in the
+positive stream, that conservative update is never above the classic estimate
+for this implementation, that enumerated true heavy keys are not missed, and
+that memory and $$\epsilon N$$ budget arithmetic match the displayed controls.
 
 Raise **Width**. Buckets get less crowded, so the p95 overcount and false
 positive count usually fall. Lower it to `32` and the threshold panel becomes a
