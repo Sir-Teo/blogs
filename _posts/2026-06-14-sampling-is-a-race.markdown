@@ -408,7 +408,7 @@ useful engineering pattern because search code can exploit structure, pruning,
 bounds, and batching, while the perturbation gives the result a sampling
 interpretation.
 
-## The Trick Still Has a Boundary
+## Trick Still Has a Boundary
 
 Gumbel-max is exact when the candidates you perturb are exactly the domain you
 want to sample from. If you only perturb local factors in a structured model,
