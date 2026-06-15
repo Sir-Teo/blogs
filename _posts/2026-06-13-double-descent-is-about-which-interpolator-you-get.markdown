@@ -214,7 +214,7 @@ Double descent is not a license to ignore overfitting. It is a warning that the
 old vocabulary was too small. In modern ML, "fits the training data" is a weak
 description. The real sentence begins after it: fits the training data how?
 
-## Sources
+## Works Cited
 
 [^zhang]: Chiyuan Zhang, Samy Bengio, Moritz Hardt, Benjamin Recht, and Oriol Vinyals, "Understanding deep learning requires rethinking generalization," ICLR 2017. [arXiv](https://arxiv.org/abs/1611.03530).
 
