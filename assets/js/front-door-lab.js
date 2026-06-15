@@ -318,9 +318,11 @@
   }
 
   function fmt(value, digits) {
+    digits = digits == null ? 3 : digits;
+    if (Math.abs(value) < 0.5 * Math.pow(10, -digits)) value = 0;
     return Number(value).toLocaleString(undefined, {
-      maximumFractionDigits: digits == null ? 3 : digits,
-      minimumFractionDigits: digits == null ? 3 : digits
+      maximumFractionDigits: digits,
+      minimumFractionDigits: digits
     });
   }
 
