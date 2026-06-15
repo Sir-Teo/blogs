@@ -31,6 +31,8 @@
     0.56, 0.60, 0.64, 0.68, 0.72
   ];
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -101,6 +103,33 @@
     }
     return {
       params: p,
+      totalVertices: total,
+      edges: edges,
+      adjacency: adjacency
+    };
+  }
+
+  function graphFromPairs(slots, pairs) {
+    var total = slots * 2;
+    var edges = [];
+    var adjacency = [];
+    for (var v = 0; v < total; v += 1) adjacency.push([]);
+    pairs.forEach(function (pair, id) {
+      var left = clampInt(pair[0], 0, slots - 1);
+      var right = slots + clampInt(pair[1], 0, slots - 1);
+      var edge = { id: id, left: left, right: right };
+      edges.push(edge);
+      adjacency[left].push(id);
+      adjacency[right].push(id);
+    });
+    return {
+      params: {
+        slots: slots,
+        keys: pairs.length,
+        stash: 0,
+        trials: DEFAULTS.trials,
+        seed: DEFAULTS.seed
+      },
       totalVertices: total,
       edges: edges,
       adjacency: adjacency
@@ -266,20 +295,45 @@
     });
   }
 
+  function graphChecks(graph, analysis, core) {
+    var componentEdges = analysis.components.reduce(function (sum, row) {
+      return sum + row.edgeCount;
+    }, 0);
+    var componentVertices = analysis.components.reduce(function (sum, row) {
+      return sum + row.vertexCount;
+    }, 0);
+    var componentExcess = analysis.components.reduce(function (sum, row) {
+      return sum + row.excess;
+    }, 0);
+    var badComponents = analysis.components.filter(function (row) {
+      return row.bad;
+    }).length;
+    var allEdgesAssigned = true;
+    for (var i = 0; i < analysis.componentByEdge.length; i += 1) {
+      if (analysis.componentByEdge[i] < 0) allEdgesAssigned = false;
+    }
+    var peelMonotone = core.snapshots.every(function (row, index, rows) {
+      return index === 0 || (row.edges <= rows[index - 1].edges && row.vertices <= rows[index - 1].vertices);
+    });
+    return {
+      finite: Number.isFinite(analysis.stashNeeded) && Number.isFinite(core.excess),
+      edgeAccounting: componentEdges === graph.edges.length,
+      vertexAccounting: componentVertices === analysis.activeVertices,
+      componentBound: analysis.activeVertices <= graph.totalVertices,
+      componentAssignment: allEdgesAssigned,
+      stashAccounting: core.excess === analysis.stashNeeded && componentExcess === analysis.stashNeeded,
+      badAccounting: badComponents === analysis.badComponents,
+      peelMonotone: peelMonotone,
+      noStashStatus: analysis.noStashSuccess === (analysis.stashNeeded === 0)
+    };
+  }
+
   function evaluate(raw) {
     var graph = makeGraph(raw);
     var analysis = analyzeGraph(graph);
     var core = peelCore(graph);
     var p = graph.params;
-    var componentEdges = analysis.components.reduce(function (sum, row) {
-      return sum + row.edgeCount;
-    }, 0);
-    var checks = {
-      finite: Number.isFinite(analysis.stashNeeded) && Number.isFinite(core.excess),
-      edgeAccounting: componentEdges === p.keys,
-      componentBound: analysis.activeVertices <= graph.totalVertices,
-      stashAccounting: core.excess === analysis.stashNeeded
-    };
+    var checks = graphChecks(graph, analysis, core);
     return {
       params: p,
       graph: graph,
@@ -290,6 +344,102 @@
       load: p.keys / (2 * p.slots),
       successWithStash: analysis.stashNeeded <= p.stash
     };
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    function allChecks(name, graph) {
+      var analysis = analyzeGraph(graph);
+      var core = peelCore(graph);
+      var checks = graphChecks(graph, analysis, core);
+      Object.keys(checks).forEach(function (key) {
+        record(name + " check " + key, checks[key]);
+      });
+      return { analysis: analysis, core: core };
+    }
+
+    record("cleanParams preserves zero stash", cleanParams({ slots: 24, keys: 12, stash: 0, trials: 20, seed: 1 }).stash === 0);
+    record("cleanParams clamps keys to slots*2", cleanParams({ slots: 24, keys: 999, stash: 0, trials: 20, seed: 1 }).keys === 48);
+
+    [
+      {
+        name: "tree component",
+        graph: graphFromPairs(4, [[0, 0], [1, 0], [1, 1]]),
+        stashNeeded: 0,
+        coreExcess: 0,
+        noStash: true
+      },
+      {
+        name: "unicyclic square",
+        graph: graphFromPairs(3, [[0, 0], [0, 1], [1, 0], [1, 1]]),
+        stashNeeded: 0,
+        coreExcess: 0,
+        noStash: true
+      },
+      {
+        name: "parallel overfull pair",
+        graph: graphFromPairs(3, [[0, 0], [0, 0], [0, 0]]),
+        stashNeeded: 1,
+        coreExcess: 1,
+        noStash: false
+      },
+      {
+        name: "two bad components",
+        graph: graphFromPairs(5, [[0, 0], [0, 0], [0, 0], [2, 2], [2, 2], [2, 2]]),
+        stashNeeded: 2,
+        coreExcess: 2,
+        noStash: false
+      }
+    ].forEach(function (item) {
+      var result = allChecks(item.name, item.graph);
+      record(item.name + " stash needed", result.analysis.stashNeeded === item.stashNeeded);
+      record(item.name + " core excess", result.core.excess === item.coreExcess);
+      record(item.name + " no-stash success", result.analysis.noStashSuccess === item.noStash);
+    });
+
+    [24, 48, 72].forEach(function (slots) {
+      [1, 7, 101].forEach(function (seed) {
+        [8, Math.floor(0.45 * 2 * slots), Math.floor(0.62 * 2 * slots), 2 * slots].forEach(function (keys) {
+          var graph = makeGraph({ slots: slots, keys: keys, stash: 2, trials: 20, seed: seed });
+          var result = allChecks("random slots=" + slots + " keys=" + keys + " seed=" + seed, graph);
+          record("random stash bounded " + slots + "." + keys + "." + seed, result.analysis.stashNeeded >= 0 && result.analysis.stashNeeded <= keys);
+          record("random core bounded " + slots + "." + keys + "." + seed, result.core.edges <= keys && result.core.vertices <= graph.totalVertices);
+        });
+      });
+    });
+
+    var defaultResult = evaluate(DEFAULTS);
+    record("default stash repairs placement", defaultResult.analysis.stashNeeded === 1 && defaultResult.successWithStash);
+    record("default core matches prose", defaultResult.core.edges === 19 && defaultResult.core.vertices === 18);
+    record("default checks pass", Object.keys(defaultResult.checks).every(function (key) { return defaultResult.checks[key]; }));
+    record("default sweep length", defaultResult.sweep.length === LOADS.length);
+    record("default sweep probabilities", defaultResult.sweep.every(function (row) {
+      return row.noStash >= 0 && row.noStash <= 1 && row.withStash >= 0 && row.withStash <= 1 && row.withStash >= row.noStash;
+    }));
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function formatPct(value) {
@@ -331,6 +481,7 @@
   function renderMetrics(root, result) {
     var target = root.querySelector("[data-metrics]");
     if (!target) return;
+    var audit = cachedAudit();
     var verdict = result.successWithStash ? "fits with stash" : "rehash";
     if (result.analysis.stashNeeded === 0) verdict = "fits directly";
     var coreText = result.core.edges + " edges / " + result.core.vertices + " vertices";
@@ -340,7 +491,7 @@
       metric("Stash needed", result.analysis.stashNeeded + " keys"),
       metric("Overfull components", result.analysis.badComponents),
       metric("2-core after peeling", coreText),
-      metric("Audit", Object.keys(result.checks).every(function (key) { return result.checks[key]; }) ? "passed" : "check")
+      metric("Audit", audit.passed + "/" + audit.checked)
     ].join("");
   }
 
@@ -650,9 +801,12 @@
 
   var api = {
     cleanParams: cleanParams,
+    graphChecks: graphChecks,
     makeGraph: makeGraph,
+    graphFromPairs: graphFromPairs,
     analyzeGraph: analyzeGraph,
     peelCore: peelCore,
+    runAudit: runAudit,
     sweep: sweep,
     evaluate: evaluate,
     init: init,
