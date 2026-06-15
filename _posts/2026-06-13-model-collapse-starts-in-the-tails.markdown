@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Model Forgets the Weird Stuff First"
+title: "Models Forget the Weird Stuff First"
 description: "Recursive training can look healthy in the average case while sampling, filtering, and reuse quietly sand away rare modes."
 date: 2026-06-13 04:33:00 -0400
 categories: machine-learning
@@ -330,7 +330,7 @@ is recursion.
 Model collapse starts as tail amnesia. If we wait for gibberish, the important
 loss already happened.
 
-## Where This Came From
+## Works Cited
 
 [^shumailov]: Ilia Shumailov, Zakhar Shumaylov, Yiren Zhao, Yarin Gal, Nicolas Papernot, Ross Anderson, "AI models collapse when trained on recursively generated data," *Nature*, 2024. [Nature](https://www.nature.com/articles/s41586-024-07566-y). Earlier version: "The Curse of Recursion: Training on Generated Data Makes Models Forget," 2023. [arXiv](https://arxiv.org/abs/2305.17493).
 
