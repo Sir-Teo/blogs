@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Last Layer Is the Solver"
+title: "Last Layer, Solver Included"
 description: "Diffusion and flow-matching models do not end at the neural network. The path, vector field, and numerical solver decide what distribution appears."
 date: 2026-06-13 03:18:00 -0400
 categories: machine-learning
@@ -386,7 +386,7 @@ It is the one whose continuous story survives discretization.
 
 The sampler is not an accessory. It is the final layer of the generative model.
 
-## Source Notes
+## Works Cited
 
 [^ddpm]: Jonathan Ho, Ajay Jain, and Pieter Abbeel, "Denoising Diffusion Probabilistic Models," NeurIPS 2020. [arXiv](https://arxiv.org/abs/2006.11239).
 
