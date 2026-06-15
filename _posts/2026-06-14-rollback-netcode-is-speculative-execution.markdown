@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Game Guesses the Past"
+title: "Games Guess the Past"
 description: "Rollback netcode does not make packets faster. It lets online games run now, predict missing input, and repair the timeline when reality arrives."
 date: 2026-06-14 00:46:00 -0400
 categories: gaming
