@@ -271,11 +271,12 @@ to sign both histories.
   <p class="bft-quorum-lab__note">
     Deterministic construction. The displayed certificates are worst-case sets:
     they minimize overlap for the chosen \(n\) and \(q\), then spend the
-    Byzantine budget inside that overlap first.
+    Byzantine budget inside that overlap first. The audit counter is computed
+    by the same JavaScript model before the metrics are shown.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/bft-quorum-lab.js?v=20260614b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bft-quorum-lab.js?v=20260615a' | relative_url }}"></script>
 
 At the default setting, \(n=10\), \(f=3\), and \(q=7\). Two certificates must
 overlap in \(2q-n=4\) voters. The adversary can account for at most three of
@@ -289,11 +290,13 @@ can construct red and blue certificates for conflicting histories. Raise \(q\)
 above 7 instead. Safety remains, but liveness can fail because a correct leader
 may need a faulty signature to finish.
 
-Before publishing, I audited the lab through its exported Node API. The default
-case passes finite-output, certificate-size, intersection, safety, and liveness
-checks. An exhaustive grid of 5,327 combinations of \(n\), \(f\), and \(q\)
-passed the same invariants. The ten minimal clusters \(n=3f+1, q=2f+1\) for
-\(1 \le f \le 10\) all land in the safe-and-live window.
+The refreshed lab exports `runAudit()`, and the visible counter should read
+`5634/5634`. The audit checks the default case, the unsafe \(q=6\) witness, the
+stalling \(q=8\) case, every finite row in the UI's \(4 \le n \le 31\) grid,
+and the ten minimal clusters \(n=3f+1, q=2f+1\) for \(1 \le f \le 10\). It also
+checks the edge case \(f=0\), which is easy to mishandle in UI normalization:
+zero faults should remain zero faults, not silently turn into the default
+Byzantine budget.
 
 ## Protocols Add Locks, Timing, and View Changes
 
