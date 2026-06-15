@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Side Deal Is the Bug"
+title: "Side Deals Are the Bug"
 description: "Deferred acceptance is not a sorting algorithm. It is a way to remove every mutually tempting off-book deal while choosing one endpoint of the stable set."
 date: 2026-06-14 06:42:00 -0400
 categories: computer-science
