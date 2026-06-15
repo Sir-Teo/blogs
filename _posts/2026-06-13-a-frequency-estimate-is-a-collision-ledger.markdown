@@ -1,14 +1,15 @@
 ---
 layout: post
-title: "A Sketch That Overcounts on Purpose"
-description: "Count-Min is not a tiny dictionary. It is a deliberate one-sided bargain: lose identities, keep upper bounds, and budget the collision mass."
+title: "Collisions Keep the Receipts"
+description: "Count-Min is not a tiny dictionary. It is a one-sided bargain: lose identities, keep upper bounds, and budget the collision mass."
 date: 2026-06-13 20:30:00 -0400
 categories: computer-science
 tags: [count-min-sketch, heavy-hitters, streaming-algorithms, probabilistic-data-structures, frequency-estimation, data-systems]
 excerpt: "Count-Min estimates stream frequencies by sharing buckets. The useful trick is not avoiding collisions; it is making every error an overcount with a budget."
 ---
 
-Exact counting feels innocent until the keyspace refuses to fit in memory.
+Exact counting feels innocent right up to the moment the keyspace refuses to fit
+in memory.
 
 Then a frequency table becomes a negotiation. Keep every key and pay the memory
 bill, or compress the stream and accept a contract weaker than exactness but
@@ -27,7 +28,7 @@ asks whether at least one row was lucky enough to avoid too much collision mass.
 
 A frequency estimate becomes a receipt for shared buckets.
 
-## The Contract in Counters
+## Counter Contract
 
 Create a table with $$d$$ rows and $$w$$ columns. Each row has its own hash
 function. When item $$x$$ appears with positive increment $$c$$, add $$c$$ to
@@ -321,7 +322,7 @@ If your question is "how many times did this account appear?", Count-Min is a
 natural fit. If your question is "which accounts are the largest?", Count-Min
 needs help remembering candidate names.
 
-## The Shape of the Overcount
+## Anatomy of an Overcount
 
 A Count-Min estimate can be written as
 
@@ -371,7 +372,7 @@ One-sided overcount is excellent for conservative filters. It is awkward for
 billing. It is useful for candidate generation. It is dangerous when a
 thresholded estimate becomes an irreversible enforcement action.
 
-## When Deletions Enter
+## When Deletions Walk In
 
 The Count-Min story above assumes nonnegative updates: events arrive and counts
 increase.
@@ -399,7 +400,7 @@ collisions can cancel, inflate, or deflate
 
 The same table shape does not imply the same promise.
 
-## Before Shipping the Sketch
+## Preflight for the Sketch
 
 Before using Count-Min in a real service, I would want a ledger:
 
