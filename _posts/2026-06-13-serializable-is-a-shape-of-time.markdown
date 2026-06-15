@@ -69,7 +69,7 @@ isolation levels.[^adya]
 Graphs are the right language because the bug is not in one read or one write.
 It is in the cycle.
 
-## The Smallest Bad Histories
+## Smallest Bad Histories
 
 The lab below simulates three small histories:
 
