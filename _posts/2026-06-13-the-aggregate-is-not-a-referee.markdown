@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Average Is a Mixture, Not a Verdict"
+title: "Averages Mix Before They Judge"
 description: "Simpson's paradox is not an arithmetic prank. It appears when a mixture is asked to answer a causal question it was not built to answer."
 date: 2026-06-13 19:36:00 -0400
 categories: statistics
@@ -266,7 +266,7 @@ before asking what the average says, ask what population it averages over
 
 That is where the paradox usually goes to rest.
 
-## Sources
+## Reading Trail
 
 [^simpson]: Edward H. Simpson, ["The Interpretation of Interaction in Contingency Tables"](https://math.bme.hu/~marib/bsmeur/simpson.pdf), *Journal of the Royal Statistical Society, Series B*, 1951. DOI page: [Wiley](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1951.tb00088.x).
 
