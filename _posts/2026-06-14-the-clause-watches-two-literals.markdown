@@ -79,7 +79,7 @@ least two are still not false.
 
 That certificate is two watched literals.
 
-## The Clause Sets Two Alarms
+## Clause Sets Two Alarms
 
 For every clause, pick two literals to watch. Maintain this invariant:
 
