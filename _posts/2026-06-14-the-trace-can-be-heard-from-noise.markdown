@@ -49,7 +49,7 @@ machine learning, graph algorithms, and continuous normalizing flows.
 It is not powerful because it is fancy. It is powerful because a lot of modern
 matrices are easier to multiply by than to inspect.
 
-## The Curtain Is Normal
+## Curtain Is Normal
 
 In a small textbook problem, the matrix is an array.
 
