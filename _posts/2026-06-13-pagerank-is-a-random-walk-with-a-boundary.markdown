@@ -104,6 +104,12 @@ from the ordinary web into the farm. Leak edges let rank escape back out.
 The calculation is exact power iteration on the displayed graph. Dangling pages
 redistribute their mass according to the same teleport vector $$v$$.
 
+The **Audit** tile is produced by the same script that draws the lab. It runs a
+deterministic 25-check suite over probability conservation, teleport-vector
+normalization, dangling-node redistribution, the $$\alpha=0$$ and link-only
+limits, convergence residuals, paid-link monotonicity, leakage draining the
+farm, and topic-biased restarts moving mass away from spam.
+
 <style>
   .pagerank-lab {
     background: #ffffff;
@@ -214,10 +220,12 @@ redistribute their mass according to the same teleport vector $$v$$.
   <p class="pagerank-lab__note">
     The graph is synthetic but the update is the standard damped random-walk
     calculation. The topic-biased teleport vector favors Search, Docs, and Blog
-    while leaving every node with nonzero restart probability.
+    while leaving every node with nonzero restart probability. The audit checks
+    the Markov-chain contracts of the toy system; it cannot decide whether a
+    real edge represents endorsement, traffic, trust, or manipulation.
   </p>
 </div>
-<script defer src="{{ '/assets/js/pagerank-flow-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/pagerank-flow-lab.js?v=20260615a' | relative_url }}"></script>
 
 At the default setting, the spam farm gets real rank because two ordinary pages
 link into it and the farm recycles mass internally. It does not manufacture rank
