@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Matrix Was Never a Requirement"
+title: "Matrices Were Never Required"
 description: "FlashAttention is exact attention scheduled differently: keep the running max, rescale the denominator, and avoid writing the full attention matrix to memory."
 date: 2026-06-14 00:23:00 -0400
 categories: ai-systems
@@ -381,7 +381,7 @@ The matrix was real.
 
 It just did not have to be written down.
 
-## Sources
+## Further Reading
 
 [^attention]: Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, "Attention Is All You Need," NeurIPS 2017. [arXiv](https://arxiv.org/abs/1706.03762), [NeurIPS](https://papers.nips.cc/paper/7181-attention-is-all-you-need).
 
