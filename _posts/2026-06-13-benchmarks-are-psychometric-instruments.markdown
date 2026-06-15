@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Leaderboard Is a Blunt Instrument"
+title: "Leaderboards Make Blunt Instruments"
 description: "AI benchmarks do not just score models. They build measuring instruments with ranges, reliability limits, blind spots, and exposure risks."
 date: 2026-06-13 00:45:00 -0400
 categories: ai-systems
@@ -227,7 +227,7 @@ Benchmarks are how a field looks at itself. If the instrument is blurry, the
 field can mistake saturation for progress, leakage for intelligence, and
 leaderboard motion for measurement.
 
-## References
+## Further Reading
 
 [^rasch]: Georg Rasch, *Probabilistic Models for Some Intelligence and Attainment Tests*, 1960. [ERIC record](https://eric.ed.gov/?id=ED419814).
 
