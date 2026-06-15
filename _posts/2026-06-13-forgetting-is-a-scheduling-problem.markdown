@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Review Queue Is a Memory Budget"
+title: "Review Queues Spend Memory"
 description: "Spaced repetition is not a productivity spell. It is a control problem over memories whose recall probabilities decay at different rates."
 date: 2026-06-13 22:50:00 -0400
 categories: psychology
