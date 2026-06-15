@@ -8,7 +8,8 @@ tags: [power-laws, heavy-tails, statistics, finance, model-diagnostics]
 excerpt: "A log-log line can look wonderfully lawful. Power-law claims still need cutoffs, likelihoods, uncertainty, alternatives, and a mechanism worth believing."
 ---
 
-Here is a reliable way to fool yourself with a graph that looks serious:
+Here is a reliable way to fool yourself with a graph that arrives wearing a
+lab coat:
 
 1. collect a skewed data set;
 2. sort the observations;
@@ -16,7 +17,7 @@ Here is a reliable way to fool yourself with a graph that looks serious:
 4. see something almost straight;
 5. announce a power law.
 
-The ritual is seductive because power laws really are beautiful. If
+The little ceremony is seductive because power laws really are beautiful. If
 $$p(x) \propto x^{-\alpha}$$, scale changes do not change the basic shape. Ten
 times larger is not a new regime; it is the same regime with fewer examples.
 That is why power laws show up in stories about city sizes, wealth, earthquakes,
@@ -45,7 +46,7 @@ Does a plausible non-power-law tail explain the same data?
 What mechanism would make the exponent meaningful?
 ```
 
-The lab below is a small machine for making the suspicion tactile.
+The lab below is a small machine for making that suspicion tactile.
 
 <div class="tail-lab" data-tail-lab>
   <div class="tail-lab__controls">
@@ -101,7 +102,7 @@ the KS distance grows, or the lognormal tail likelihood becomes competitive.
 This is the first lesson of heavy-tail work: finite samples are good actors.
 They can impersonate asymptotic laws without blushing.
 
-## The Ritual I Trust More
+## My Audit Ritual
 
 For continuous data above a chosen lower cutoff $$x_{\min}$$, the maximum
 likelihood estimate for a Pareto density exponent is
@@ -132,7 +133,7 @@ others are not.[^clauset] Their companion page hosts implementations of the
 methods, which is a useful reminder that this is an algorithmic workflow, not a
 plotting style.[^companion]
 
-## Where the Line Gets Expensive
+## When a Line Gets Expensive
 
 Finance is where the distinction between "heavy" and "power" becomes expensive.
 Benoit Mandelbrot's 1963 paper on speculative prices argued against the Gaussian
@@ -175,7 +176,7 @@ Power laws are among the most interesting statistical objects we have because
 they connect measurement, mechanism, and scale. That is exactly why they deserve
 more care. The plot is an invitation. The law has to be earned.
 
-## Works Cited
+## Paper Trail
 
 [^newman]: M. E. J. Newman, "Power laws, Pareto distributions and Zipf's law," *Contemporary Physics*, 2005. [arXiv](https://arxiv.org/abs/cond-mat/0412004).
 
