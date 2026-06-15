@@ -94,7 +94,7 @@ Make `eta` huge and it moves fast, but can overreact to early noise. The
 theorem is not a magic learning-rate oracle. It is a tradeoff written on the
 receipt.
 
-## The Hedge Lab
+## Hedge Lab
 
 The lab below implements the full-information Hedge update with log-weights for
 numerical stability. Each expert receives a synthetic loss every round. The
