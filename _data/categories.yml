@@ -21,6 +21,14 @@ physics:
   name: Physics
   short: Physics
   color: "#6F7C12"
+applied-math:
+  name: Applied math
+  short: Applied
+  color: "#8C6B2F"
+computer-graphics:
+  name: Computer graphics
+  short: Graphics
+  color: "#8B5FBF"
 data-systems:
   name: Data systems
   short: Data
