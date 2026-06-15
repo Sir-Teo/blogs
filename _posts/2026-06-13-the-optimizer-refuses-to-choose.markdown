@@ -407,7 +407,7 @@ Equality saturation pulls them apart.
 
 ---
 
-## Sources
+## Source Notes
 
 [^dershowitz]: Nachum Dershowitz and Jean-Pierre Jouannaud, "Rewrite Systems," in *Handbook of Theoretical Computer Science, Volume B*, 1990. A freely available draft is hosted by Tel Aviv University: [Rewrite Systems](https://www.cs.tau.ac.il/~nachum/papers/survey-draft.pdf).
 
