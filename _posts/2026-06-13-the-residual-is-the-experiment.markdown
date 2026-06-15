@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Experiment Hiding in the Residuals"
+title: "Experiments Hide in the Residuals"
 description: "Double machine learning is not a confounding eraser. It builds a residual score so nuisance-model mistakes have less leverage over the causal number."
 date: 2026-06-13 23:40:00 -0400
 categories: statistics
