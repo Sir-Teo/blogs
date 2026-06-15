@@ -148,7 +148,10 @@ The lab below builds a deterministic synthetic filter, queries inserted and
 absent keys, and compares empirical false positives with the formula. It uses a
 simple 32-bit hash mixer and Kirsch-Mitzenmacher style double hashing to derive
 many positions from two base hashes, which is a standard engineering trick for
-reducing hash work in Bloom filters.[^kirsch]
+reducing hash work in Bloom filters.[^kirsch] The script also exports the same
+88-check audit used by the visible counter: inserted keys must never become
+false negatives, duplicate insert replays must be idempotent, bit accounting has
+to close, and the probability formulas have to stay inside their legal range.
 
 Try three moves:
 
@@ -201,10 +204,11 @@ Try three moves:
     Deterministic browser experiment. It is meant to expose the shape of the
     trade-off, not to certify a production hash family. The exact-set memory
     estimate counts key payload bytes only; real hash tables also pay pointer,
-    allocator, load-factor, and metadata overhead.
+    allocator, load-factor, and metadata overhead. The audit badge reports the
+    deterministic contract checks that passed in this build.
   </p>
 </div>
-<script defer src="{{ '/assets/js/bloom-filter-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bloom-filter-lab.js?v=20260615a' | relative_url }}"></script>
 
 The default setting is deliberately ordinary: 4,000 inserted keys, 10 bits per
 key, 7 hash probes, and 5,000 absent queries. The measured false-positive rate
