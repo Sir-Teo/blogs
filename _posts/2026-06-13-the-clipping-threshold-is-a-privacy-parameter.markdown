@@ -347,7 +347,7 @@ optimizer, and an engineering system are genuinely entangled. The theorem needs
 sensitivity. The optimizer feels clipping. The system must account for every
 release. The clipping threshold is where all three meet.
 
-## Sources
+## Works Cited
 
 [^dwork]: Cynthia Dwork, Frank McSherry, Kobbi Nissim, and Adam Smith, ["Calibrating Noise to Sensitivity in Private Data Analysis"](https://people.csail.mit.edu/asmith/PS/sensitivity-tcc-final.pdf), TCC 2006. See also the [Springer record](https://link.springer.com/chapter/10.1007/11681878_14).
 
