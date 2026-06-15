@@ -14,6 +14,7 @@
     softPurple: "#ede9fe",
     softAmber: "#fef3c7"
   };
+  var AUDIT_CACHE = null;
 
   function clampInt(value, min, max) {
     var number = Number(value);
@@ -275,6 +276,155 @@
     };
   }
 
+  function close(left, right, tolerance) {
+    return Math.abs(left - right) <= tolerance;
+  }
+
+  function histogramTotal(histogram) {
+    return histogram.reduce(function (sum, count) { return sum + count; }, 0);
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    record("alpha m=16", alpha(16) === 0.673);
+    record("alpha m=32", alpha(32) === 0.697);
+    record("alpha m=64", alpha(64) === 0.709);
+    record("alpha asymptotic range", alpha(1024) > 0.71 && alpha(1024) < 0.722);
+    record("rho immediate one", rho(0x18000000, 4) === 1);
+    record("rho one leading zero", rho(0x14000000, 4) === 2);
+    record("rho all remaining zeros", rho(0x10000000, 4) === 29);
+
+    var registers = new Uint8Array(16);
+    addHash(registers, 4, 0x18000000);
+    record("addHash writes selected bucket", registers[1] === 1);
+    addHash(registers, 4, 0x18000000);
+    record("duplicate hash update is idempotent", registers[1] === 1);
+    addHash(registers, 4, 0x10000000);
+    record("register update is monotone max", registers[1] === 29);
+    addHash(registers, 4, 0x18000000);
+    record("smaller rank never decreases register", registers[1] === 29);
+
+    var empty = estimateHll(new Uint8Array(16));
+    record("empty estimate is zero", empty.estimate === 0 && empty.correction === "linear" && empty.zeros === 16);
+    var one = new Uint8Array(16);
+    addHash(one, 4, 0x18000000);
+    var oneEstimate = estimateHll(one);
+    record("small range uses linear correction", oneEstimate.correction === "linear" && oneEstimate.zeros === 15);
+    record("small range estimate finite", Number.isFinite(oneEstimate.estimate) && oneEstimate.estimate > 0);
+
+    var left = Uint8Array.from([1, 3, 0, 5, 2]);
+    var right = Uint8Array.from([2, 1, 4, 0, 2]);
+    var leftRight = Uint8Array.from(left);
+    var rightLeft = Uint8Array.from(right);
+    mergeRegisters(leftRight, right);
+    mergeRegisters(rightLeft, left);
+    record("merge is commutative", sameRegisters(leftRight, rightLeft));
+    var mergedAgain = Uint8Array.from(leftRight);
+    mergeRegisters(mergedAgain, leftRight);
+    record("merge is idempotent", sameRegisters(mergedAgain, leftRight));
+    record("merge takes registerwise maxima", sameRegisters(leftRight, Uint8Array.from([2, 3, 4, 5, 2])));
+
+    function auditScenario(name, params) {
+      var result = simulate(params);
+      var estimate = result.sketch.directEstimate.estimate;
+      var relativeError = (estimate - result.params.uniques) / result.params.uniques;
+      record(name + " expected standard error", close(result.expectedSe, 1.04 / Math.sqrt(result.m), 1e-12));
+      record(name + " memory formula", close(result.hllBytes, result.m * 6 / 8, 1e-12));
+      record(name + " exact memory formula", result.exactBytes === result.params.uniques * result.params.exactBytes);
+      record(name + " stream event ledger", result.streamEvents === result.params.uniques * result.params.duplicates);
+      record(name + " histogram covers registers", histogramTotal(result.histogram) === result.m);
+      record(name + " shard merge equals direct", result.sketch.mergeEqual && sameRegisters(result.sketch.direct, result.sketch.merged));
+      record(name + " merge delta zero", result.sketch.mergeDelta === 0);
+      record(name + " estimate finite", Number.isFinite(estimate) && estimate > 0);
+      record(name + " relative error finite", Number.isFinite(relativeError));
+      record(name + " correction label", result.sketch.directEstimate.correction === "raw" || result.sketch.directEstimate.correction === "linear");
+      record(name + " zero count legal", result.sketch.directEstimate.zeros >= 0 && result.sketch.directEstimate.zeros <= result.m);
+      record(name + " trial count", result.trials.errors.length === result.params.trials);
+      record(name + " trial quantiles ordered", result.trials.p05 <= result.trials.p50 && result.trials.p50 <= result.trials.p95);
+      record(name + " trial errors finite", result.trials.errors.every(Number.isFinite));
+      record(name + " trial spread nonnegative", result.trials.sd >= 0);
+      record(name + " load curve length", result.curve.points.length === 22);
+      record(name + " load curve true count monotone", result.curve.points.every(function (point, index, points) {
+        return index === 0 || point.trueCount >= points[index - 1].trueCount;
+      }));
+      record(name + " bitmap zeros monotone", result.curve.points.every(function (point, index, points) {
+        return index === 0 || point.zeros <= points[index - 1].zeros;
+      }));
+      record(name + " HLL curve finite", result.curve.points.every(function (point) {
+        return Number.isFinite(point.hll) && point.hll >= 0;
+      }));
+      return { relativeError: relativeError, result: result };
+    }
+
+    var base = auditScenario("default", {
+      duplicates: 5,
+      exactBytes: 16,
+      precision: 10,
+      shards: 4,
+      trials: 28,
+      uniques: 50000
+    });
+    record("default accuracy smoke", Math.abs(base.relativeError) < 2 * base.result.expectedSe);
+
+    var lowPrecision = auditScenario("low precision", {
+      duplicates: 1,
+      exactBytes: 8,
+      precision: 4,
+      shards: 16,
+      trials: 8,
+      uniques: 1000
+    });
+    record("low precision accuracy smoke", Math.abs(lowPrecision.relativeError) < 2 * lowPrecision.result.expectedSe);
+
+    var highPrecision = auditScenario("high precision", {
+      duplicates: 20,
+      exactBytes: 48,
+      precision: 14,
+      shards: 8,
+      trials: 8,
+      uniques: 160000
+    });
+    record("high precision accuracy smoke", Math.abs(highPrecision.relativeError) < 2 * highPrecision.result.expectedSe);
+
+    var duplicatesOne = simulate({ duplicates: 1, exactBytes: 16, precision: 10, shards: 4, trials: 8, uniques: 25000 });
+    var duplicatesMany = simulate({ duplicates: 20, exactBytes: 16, precision: 10, shards: 4, trials: 8, uniques: 25000 });
+    record("duplicate passes preserve registers", sameRegisters(duplicatesOne.sketch.direct, duplicatesMany.sketch.direct));
+    record("duplicate passes preserve estimate", duplicatesOne.sketch.directEstimate.estimate === duplicatesMany.sketch.directEstimate.estimate);
+    record("duplicate passes only change stream ledger", duplicatesMany.streamEvents === 20 * duplicatesOne.streamEvents);
+
+    var p10 = simulate({ duplicates: 1, exactBytes: 16, precision: 10, shards: 1, trials: 8, uniques: 50000 });
+    var p12 = simulate({ duplicates: 1, exactBytes: 16, precision: 12, shards: 1, trials: 8, uniques: 50000 });
+    record("more registers reduce expected standard error", p12.expectedSe < p10.expectedSe);
+    record("two more precision bits quadruple memory", close(p12.hllBytes, 4 * p10.hllBytes, 1e-12));
+
+    var zeroSketch = buildSketch(10, 0, 0x20260613, 4);
+    record("zero direct equals merged", zeroSketch.mergeEqual && zeroSketch.directEstimate.estimate === 0 && zeroSketch.mergedEstimate.estimate === 0);
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function formatInt(value) {
     return Math.round(value).toLocaleString("en-US");
   }
@@ -534,6 +684,7 @@
     var params = parseParams(root);
     updateOutputs(root, params);
     var result = simulate(params);
+    var audit = cachedAudit();
     var estimate = result.sketch.directEstimate.estimate;
     var metrics = root.querySelector("[data-metrics]");
     if (metrics) {
@@ -543,7 +694,8 @@
         metric("expected SE", "+/-" + formatPct(result.expectedSe, 2)),
         metric("HLL memory", formatBytes(result.hllBytes)),
         metric("exact set", formatBytes(result.exactBytes)),
-        metric("merge delta", result.sketch.mergeEqual ? "0" : formatPct(result.sketch.mergeDelta, 4))
+        metric("merge delta", result.sketch.mergeEqual ? "0" : formatPct(result.sketch.mergeDelta, 4)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     drawChart(root.querySelector("[data-canvas]"), result);
@@ -579,14 +731,16 @@
     });
   }
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      buildSketch: buildSketch,
-      estimateHll: estimateHll,
-      hash32: hash32,
-      simulate: simulate
-    };
-  }
+  var api = {
+    buildSketch: buildSketch,
+    estimateHll: estimateHll,
+    hash32: hash32,
+    runAudit: runAudit,
+    simulate: simulate
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  if (typeof window !== "undefined") window.HyperLogLogLab = api;
 
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
