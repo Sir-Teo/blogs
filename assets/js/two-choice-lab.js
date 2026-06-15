@@ -15,8 +15,8 @@
   };
 
   var DEFAULTS = {
-    servers: 192,
-    load: 150,
+    servers: 256,
+    load: 200,
     choices: 2,
     reportEvery: 1,
     seed: 41
