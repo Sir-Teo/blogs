@@ -300,7 +300,7 @@ a coordinate system for the noise you promised to handle. When the noise leaves
 that neighborhood, the honest decoder should know the difference between
 correction and refusal.
 
-## Sources
+## Primary Sources
 
 [^hamming]: Richard W. Hamming, ["Error Detecting and Error Correcting Codes"](https://zoo.cs.yale.edu/classes/cs323/doc/Hamming.pdf), *Bell System Technical Journal*, 29(2), 1950. DOI: [10.1002/j.1538-7305.1950.tb00463.x](https://onlinelibrary.wiley.com/doi/10.1002/j.1538-7305.1950.tb00463.x).
 
