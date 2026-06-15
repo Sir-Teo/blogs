@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Blurry Interpreter in Your Compiler"
+title: "Blurry Interpreters Live in Your Compiler"
 description: "Static analysis runs the program in a smaller universe: types, signs, intervals, shapes, effects, or any abstraction cheap enough to compute and sound enough to trust."
 date: 2026-06-13 22:40:00 -0400
 categories: software-engineering
@@ -410,7 +410,7 @@ The most valuable analyzers will not be the ones with the loudest warning list.
 They will be the ones that can explain, with engineering honesty, exactly what
 they forgot.
 
-## Source Notes
+## Further Reading
 
 [^kildall]: Gary A. Kildall, "A Unified Approach to Global Program Optimization," *Proceedings of the 1st ACM Symposium on Principles of Programming Languages*, 1973. [ACM](https://dl.acm.org/doi/10.1145/512927.512945), [PDF copy](https://haoxintu.github.io/files/1-A%20Unified%20Approach%20to%20Global%20Program%20Optimization.pdf).
 
