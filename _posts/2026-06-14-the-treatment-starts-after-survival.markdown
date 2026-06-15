@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Immortal Time Bias Starts Before Treatment"
+title: "The Denominator Learned the Future"
 description: "Immortal time bias is a time-zero bug in causal survival analysis. A treatment can look protective because the treated group had to survive long enough to receive it."
 date: 2026-06-14 14:22:00 -0400
 categories: statistics
@@ -97,6 +97,19 @@ Three estimates are shown:
    that month, classify treatment status by then, and analyze from that point
    onward.
 
+I audited the simulator before rewriting. In the default no-effect cohort, the
+naive ever-treated rate ratio is 0.480, while the time-dependent rate ratio is
+0.991 and the landmark estimate is 0.968. Future-treated subjects contribute
+13,258 months of immortal pre-treatment time and 24,046 months of actual treated
+time, so 35.5% of the naive treated denominator is not treated time at all.
+When the true treatment HR is set to 1.30, the time-dependent estimate is 1.293
+but the naive estimate still looks protective at 0.595. A 3,888-case sweep found
+the expected bias pattern in no-effect settings and many harmful-treatment
+settings where the naive estimate crossed below 1; late landmark settings with
+no treated person-time correctly return no rate ratio. I also fixed the lab UI
+so displayed slider values are synchronized to the cleaned follow-up, landmark,
+and treatment parameters.
+
 <div class="immortal-time-lab" data-immortal-time-lab>
   <div class="immortal-time-lab__controls">
     <label>
@@ -152,7 +165,7 @@ Three estimates are shown:
     benefit from future information.
   </p>
 </div>
-<script defer src="{{ '/assets/js/immortal-time-lab.js?v=20260614a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/immortal-time-lab.js?v=20260614b' | relative_url }}"></script>
 
 Start at the default. The true hazard ratio is 1.00. The time-dependent rate
 ratio is close to 1.00. The naive ever-treated rate ratio is much lower, around

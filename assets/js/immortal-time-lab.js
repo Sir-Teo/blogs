@@ -530,19 +530,46 @@
   }
 
   function updateOutputs(root, params) {
+    var display = {
+      adoptionShare: formatPercent(params.adoptionShare, 0),
+      cohort: String(params.cohort),
+      eventHazard: formatPercent(params.eventHazard, 0),
+      followup: params.followup + " mo",
+      landmark: params.landmark + " mo",
+      medianStart: params.medianStart + " mo",
+      riskSpread: formatPercent(params.riskSpread, 0),
+      selection: (params.selection > 0 ? "+" : "") + formatPercent(params.selection, 0),
+      treatmentHr: formatPercent(params.treatmentHr, 0)
+    };
     root.querySelectorAll("[data-value]").forEach(function (output) {
       var key = output.getAttribute("data-value");
-      if (key === "adoptionShare" || key === "eventHazard" || key === "riskSpread" || key === "treatmentHr") output.textContent = params[key] + "%";
-      else if (key === "selection") output.textContent = (params[key] > 0 ? "+" : "") + params[key] + "%";
-      else if (key === "followup" || key === "landmark" || key === "medianStart") output.textContent = params[key] + " mo";
-      else output.textContent = String(params[key]);
+      output.textContent = display[key] || "";
+    });
+  }
+
+  function updateControls(root, params) {
+    var values = {
+      adoptionShare: Math.round(params.adoptionShare * 100),
+      cohort: params.cohort,
+      eventHazard: Math.round(params.eventHazard * 100),
+      followup: params.followup,
+      landmark: params.landmark,
+      medianStart: params.medianStart,
+      riskSpread: Math.round(params.riskSpread * 100),
+      selection: Math.round(params.selection * 100),
+      treatmentHr: Math.round(params.treatmentHr * 100)
+    };
+    root.querySelectorAll("[data-param]").forEach(function (input) {
+      var key = input.getAttribute("data-param");
+      if (Object.prototype.hasOwnProperty.call(values, key) && String(input.value) !== String(values[key])) input.value = values[key];
     });
   }
 
   function render(root) {
     var raw = parseParams(root);
     var result = evaluate(raw);
-    updateOutputs(root, raw);
+    updateControls(root, result.params);
+    updateOutputs(root, result.params);
     root.querySelector("[data-metrics]").innerHTML = [
       metric("naive rate ratio", formatNumber(result.rates.naive.rateRatio, 2)),
       metric("time-dependent RR", formatNumber(result.rates.td.rateRatio, 2)),
