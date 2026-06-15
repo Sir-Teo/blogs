@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Denominator Learned the Future"
+title: "Denominators Can Learn the Future"
 description: "Immortal time bias is a time-zero bug in causal survival analysis. A treatment can look protective because the treated group had to survive long enough to receive it."
 date: 2026-06-14 14:22:00 -0400
 categories: statistics
