@@ -234,15 +234,19 @@
   }
 
   function roundedFacts(result) {
+    function rounded(value) {
+      var out = Number(value.toFixed(4));
+      return Object.is(out, -0) ? 0 : out;
+    }
     return {
-      trueEffect: Number(result.estimates.trueEffect.toFixed(4)),
-      frontDoorEffect: Number(result.estimates.frontDoorEffect.toFixed(4)),
-      naiveEffect: Number(result.estimates.naiveEffect.toFixed(4)),
-      mediatedEffect: Number(result.estimates.mediatedEffect.toFixed(4)),
-      frontDoorBias: Number(result.estimates.frontDoorBias.toFixed(4)),
-      naiveBias: Number(result.estimates.naiveBias.toFixed(4)),
-      pM1X1: Number(result.obs.pM1X1.toFixed(4)),
-      pM1X0: Number(result.obs.pM1X0.toFixed(4))
+      trueEffect: rounded(result.estimates.trueEffect),
+      frontDoorEffect: rounded(result.estimates.frontDoorEffect),
+      naiveEffect: rounded(result.estimates.naiveEffect),
+      mediatedEffect: rounded(result.estimates.mediatedEffect),
+      frontDoorBias: rounded(result.estimates.frontDoorBias),
+      naiveBias: rounded(result.estimates.naiveBias),
+      pM1X1: rounded(result.obs.pM1X1),
+      pM1X0: rounded(result.obs.pM1X0)
     };
   }
 
