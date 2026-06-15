@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Cost Model Behind Saying No"
+title: "Saying No Needs a Price List"
 description: "A model should not answer because confidence cleared a universal threshold. The stop rule belongs to error costs, abstention costs, and the value of another look."
 date: 2026-06-13 00:25:00 -0400
 categories: ai-systems
@@ -222,7 +222,7 @@ Abstention is sometimes framed as humility. That is emotionally right, but
 technically incomplete. A system abstains well when it has learned the economics
 of being wrong, being silent, and buying one more piece of evidence.
 
-## Further Reading
+## Source Notes
 
 [^chow1957]: C. K. Chow, "An Optimum Character Recognition System Using Decision Functions," *IRE Transactions on Electronic Computers*, 1957. [PDF](https://gwern.net/doc/ai/highleyman/1957-chow.pdf).
 
