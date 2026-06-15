@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Average Loses Its Innocence in 3-D"
+title: "Averages Lose Innocence in 3-D"
 description: "Stein's paradox says the coordinatewise sample mean can be beaten uniformly once you estimate three or more normal means at the same time."
 date: 2026-06-13 22:28:00 -0400
 categories: statistics
@@ -366,7 +366,7 @@ Sometimes the raw average is admissible.
 
 Past dimension two, it has to defend itself.
 
-## Sources
+## Primary Sources
 
 [^stein-1956]: Charles Stein, "Inadmissibility of the Usual Estimator for the Mean of a Multivariate Normal Distribution," *Proceedings of the Third Berkeley Symposium on Mathematical Statistics and Probability*, 1956. [Project Euclid](https://projecteuclid.org/ebooks/berkeley-symposium-on-mathematical-statistics-and-probability/Proceedings-of-the-Third-Berkeley-Symposium-on-Mathematical-Statistics-and/chapter/Inadmissibility-of-the-Usual-Estimator-for-the-Mean-of-a/bsmsp/1200501656), [PDF](https://www.stat.yale.edu/~hz68/619/Stein-1956.pdf).
 
