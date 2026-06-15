@@ -63,6 +63,7 @@
       color: "#2563eb"
     }
   ];
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -200,6 +201,20 @@
     };
   }
 
+  function defaultParams() {
+    return {
+      seed: 17,
+      trials: 360,
+      poisoned: 0.22,
+      retrieval: 0.55,
+      attack: 0.70,
+      confusion: 0.45,
+      toolPower: 0.70,
+      secretReach: 0.55,
+      approval: 0.60
+    };
+  }
+
   function simulatePolicy(params, policy) {
     var rows = [];
     for (var i = 0; i < params.trials; i += 1) {
@@ -236,46 +251,196 @@
       return simulatePolicy(params, policy);
     });
     return {
-      audit: runAudit(),
+      audit: cachedAudit(),
       params: params,
       policies: policies,
       sweep: sweepAttack(params)
     };
   }
 
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function runAudit() {
-    var ok = 0;
-    var cases = 0;
+    var passed = 0;
+    var checked = 0;
+    var failures = [];
+    var defaults = defaultParams();
+    var defaultResult = POLICIES.map(function (policy) {
+      return simulatePolicy(defaults, policy);
+    });
+    var concat = defaultResult[0].summary;
+    var delimited = defaultResult[1].summary;
+    var structured = defaultResult[2].summary;
+    var least = defaultResult[3].summary;
+    var defaultSweep = sweepAttack(defaults);
+    var gridCases = 0;
+    var gridValid = 0;
+
+    function check(name, condition, details) {
+      checked += 1;
+      if (condition) {
+        passed += 1;
+      } else {
+        failures.push({ name: name, details: details || null });
+      }
+    }
+
+    function isProbability(value) {
+      return Number.isFinite(value) && value >= 0 && value <= 1;
+    }
+
+    function summaryIsBounded(summary) {
+      return Object.keys(summary).every(function (key) {
+        return isProbability(summary[key]);
+      });
+    }
+
+    function rowIsConsistent(row) {
+      var statuses = ["breach", "blocked", "hijack", "success", "fail"];
+      return statuses.indexOf(row.status) >= 0 &&
+        row.breach === (row.leaksSecret || row.toolAbuse) &&
+        (!row.breach || row.compromised) &&
+        (!row.blocked || row.followsUntrusted) &&
+        (!row.compromised || row.followsUntrusted) &&
+        (!row.taskSuccess || !row.breach) &&
+        (row.attackRetrieved || (!row.followsUntrusted && !row.compromised && !row.breach && !row.blocked));
+    }
+
+    function seriesIsNondecreasing(points, key) {
+      for (var i = 1; i < points.length; i += 1) {
+        if (points[i][key] + 1e-12 < points[i - 1][key]) return false;
+      }
+      return true;
+    }
+
+    function countRows(policy, params) {
+      return simulatePolicy(params, policy).rows.reduce(function (acc, row) {
+        acc.breach += row.breach ? 1 : 0;
+        acc.blocked += row.blocked ? 1 : 0;
+        acc.compromised += row.compromised ? 1 : 0;
+        return acc;
+      }, { breach: 0, blocked: 0, compromised: 0 });
+    }
+
+    check("policy order is fixed", POLICIES.map(function (p) { return p.key; }).join("|") === "concat|delimited|structured|least");
+    check("policy controls increase authority separation", POLICIES[0].boundary < POLICIES[1].boundary &&
+      POLICIES[1].boundary < POLICIES[2].boundary &&
+      POLICIES[2].boundary <= POLICIES[3].boundary &&
+      POLICIES[3].secretMin > POLICIES[2].secretMin &&
+      POLICIES[3].toolGate > POLICIES[2].toolGate);
+    check("trial context is deterministic", JSON.stringify(trialContext(defaults, 42)) === JSON.stringify(trialContext(defaults, 42)));
+    check("shared sampled contexts match across policies", defaultResult.every(function (entry) {
+      return entry.rows.every(function (row, i) {
+        var first = defaultResult[0].rows[i];
+        return row.attackRetrieved === first.attackRetrieved &&
+          row.hasRelevant === first.hasRelevant &&
+          row.taskNeedsAction === first.taskNeedsAction;
+      });
+    }));
+    check("default summaries are bounded probabilities", defaultResult.every(function (entry) {
+      return summaryIsBounded(entry.summary);
+    }));
+    check("default rows obey status invariants", defaultResult.every(function (entry) {
+      return entry.rows.every(rowIsConsistent);
+    }));
+    check("default sampled facts match the post", concat.attackRetrieved === 0.125 &&
+      Math.abs(concat.breach - 0.08055555555555556) < 1e-12 &&
+      least.breach === 0 &&
+      least.blocked > 0);
+    check("delimiter does not create a hard boundary", delimited.compromised > structured.compromised &&
+      delimited.breach > structured.breach, { delimited: delimited, structured: structured });
+    check("structured channel lowers compromise", structured.compromised < concat.compromised &&
+      structured.followsUntrusted < concat.followsUntrusted, { concat: concat, structured: structured });
+    check("least privilege lowers breach severity", least.breach <= structured.breach &&
+      least.breach <= concat.breach &&
+      least.toolAbuse <= structured.toolAbuse, { concat: concat, structured: structured, least: least });
+    check("least privilege trades some review for gates", least.review > structured.review &&
+      least.blocked > structured.blocked, { structured: structured, least: least });
+    check("zero poison removes untrusted following", POLICIES.every(function (policy) {
+      var summary = simulatePolicy(Object.assign({}, defaults, { poisoned: 0 }), policy).summary;
+      return summary.attackRetrieved === 0 && summary.followsUntrusted === 0 && summary.compromised === 0 && summary.breach === 0;
+    }));
+    check("no tools and no secrets remove breaches", POLICIES.every(function (policy) {
+      return simulatePolicy(Object.assign({}, defaults, { toolPower: 0, secretReach: 0 }), policy).summary.breach === 0;
+    }));
+    check("secret minimization reduces leaks under matched randomness", (function () {
+      var weak = Object.assign({}, POLICIES[2], { key: "weak-secret", secretMin: 0 });
+      var strong = Object.assign({}, POLICIES[2], { key: "strong-secret", secretMin: 1 });
+      return countRows(strong, defaults).breach <= countRows(weak, defaults).breach;
+    })());
+    check("tool gates increase blocked actions under matched randomness", (function () {
+      var open = Object.assign({}, POLICIES[2], { key: "open-tool", toolGate: 0 });
+      var gated = Object.assign({}, POLICIES[2], { key: "gated-tool", toolGate: 1 });
+      return countRows(gated, defaults).blocked >= countRows(open, defaults).blocked &&
+        countRows(gated, defaults).breach <= countRows(open, defaults).breach;
+    })());
+    check("higher attack strength raises breach or compromise in sweeps", defaultSweep.every(function (series) {
+      return seriesIsNondecreasing(series.points, "breach") &&
+        seriesIsNondecreasing(series.points, "compromised");
+    }));
+    check("sweep keeps least-privilege breach below concat", defaultSweep[3].points.every(function (point, i) {
+      return point.breach <= defaultSweep[0].points[i].breach + 1e-12;
+    }));
+    check("approval gates lower least-privilege breach", (function () {
+      var low = simulatePolicy(Object.assign({}, defaults, { approval: 0 }), POLICIES[3]).summary;
+      var high = simulatePolicy(Object.assign({}, defaults, { approval: 1 }), POLICIES[3]).summary;
+      return high.breach <= low.breach && high.blocked >= low.blocked;
+    })());
+    check("sample size controls row counts", [120, 360, 900].every(function (trials) {
+      return simulatePolicy(Object.assign({}, defaults, { trials: trials }), POLICIES[0]).rows.length === trials;
+    }));
+
     [3, 17, 41].forEach(function (seed) {
       [0.05, 0.25, 0.55].forEach(function (poisoned) {
         [0.20, 0.70].forEach(function (retrieval) {
           [0.25, 0.80].forEach(function (attack) {
-            var params = {
-              seed: seed,
-              trials: 90,
-              poisoned: poisoned,
-              retrieval: retrieval,
-              attack: attack,
-              confusion: 0.45,
-              toolPower: 0.65,
-              secretReach: 0.55,
-              approval: 0.60
-            };
-            var result = POLICIES.map(function (policy) { return simulatePolicy(params, policy).summary; });
-            cases += 1;
-            var finite = result.every(function (summary) {
-              return Object.keys(summary).every(function (key) {
-                return Number.isFinite(summary[key]) && summary[key] >= 0 && summary[key] <= 1;
-              });
+            [0.20, 0.75].forEach(function (toolPower) {
+              var params = {
+                seed: seed,
+                trials: 90,
+                poisoned: poisoned,
+                retrieval: retrieval,
+                attack: attack,
+                confusion: 0.45,
+                toolPower: toolPower,
+                secretReach: 0.55,
+                approval: 0.60
+              };
+              var result = POLICIES.map(function (policy) { return simulatePolicy(params, policy).summary; });
+              gridCases += 1;
+              var finite = result.every(summaryIsBounded);
+              var gatedNoWorse = result[3].breach <= result[0].breach + 1e-9;
+              var structuredNoWorse = result[2].compromised <= result[0].compromised + 0.10;
+              if (finite && gatedNoWorse && structuredNoWorse) gridValid += 1;
             });
-            var gatedNoWorse = result[3].breach <= result[0].breach + 1e-9;
-            var structuredNoWorse = result[2].compromised <= result[0].compromised + 0.10;
-            if (finite && gatedNoWorse && structuredNoWorse) ok += 1;
           });
         });
       });
     });
-    return { ok: ok, cases: cases };
+    check("72-case policy grid is numerically valid", gridValid === 72 && gridCases === 72, {
+      valid: gridValid,
+      cases: gridCases
+    });
+
+    return {
+      ok: passed,
+      cases: checked,
+      passed: passed,
+      checked: checked,
+      gridCases: gridCases,
+      failures: failures,
+      defaultFacts: {
+        attackRetrieved: concat.attackRetrieved,
+        concatBreach: concat.breach,
+        leastBreach: least.breach,
+        leastBlocked: least.blocked,
+        leastUtility: least.taskSuccess,
+        structuredCompromised: structured.compromised
+      }
+    };
   }
 
   function syncOutputs(lab, params) {
@@ -482,7 +647,7 @@
         metric("least breach", percent(least.breach, 1)),
         metric("least utility", percent(least.taskSuccess, 0)),
         metric("blocked actions", percent(least.blocked, 0)),
-        metric("audit grid", result.audit.ok + "/" + result.audit.cases)
+        metric("audit", result.audit.passed + "/" + result.audit.checked)
       ].join("");
     }
     var canvas = lab.querySelector("[data-canvas]");
@@ -504,15 +669,20 @@
     render(lab);
   }
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      POLICIES: POLICIES,
-      runAudit: runAudit,
-      simulate: simulate,
-      simulatePolicy: simulatePolicy,
-      simulateTrial: simulateTrial
-    };
-  }
+  var api = {
+    POLICIES: POLICIES,
+    defaultParams: defaultParams,
+    runAudit: runAudit,
+    simulate: simulate,
+    simulatePolicy: simulatePolicy,
+    simulateTrial: simulateTrial,
+    summarize: summarize,
+    sweepAttack: sweepAttack,
+    trialContext: trialContext
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  if (global) global.PromptInjectionLab = api;
 
   if (global && global.document) {
     Array.prototype.slice.call(global.document.querySelectorAll("[data-prompt-injection-lab]")).forEach(init);
