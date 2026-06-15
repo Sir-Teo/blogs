@@ -31,7 +31,7 @@ That is a beautiful statistic. It is also a very particular one.
 
 Read it as a warning label before reading it as a grade.
 
-## The Pair Is the Unit
+## Pair Is the Unit
 
 Suppose every example has a label $$Y \in \{0,1\}$$ and a score $$s(X)$$, where
 larger scores are meant to look more positive. Draw one positive example and one
