@@ -39,15 +39,18 @@ Kajiya's 1986 rendering equation gave computer graphics a compact language for
 global illumination.[^kajiya] In one common surface-scattering form,
 
 $$
+\begin{aligned}
 L_o(x,\omega_o)
-=
-L_e(x,\omega_o)
-+
+&=
+L_e(x,\omega_o) \\
+&\quad+
 \int_{\Omega}
 f_r(x,\omega_i,\omega_o)
-L_i(x,\omega_i)
+L_i(x,\omega_i) \\
+&\qquad\cdot
 (\omega_i \cdot n)
 d\omega_i .
+\end{aligned}
 $$
 
 The symbols are less frightening than they look:
