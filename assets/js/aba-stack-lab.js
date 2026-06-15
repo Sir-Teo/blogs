@@ -630,7 +630,7 @@
     var events = pointerLane.events;
     var left = x + 68;
     var right = x + w - 18;
-    var top = y + 64;
+    var top = y + 78;
     var rowGap = 46;
     var step = (right - left) / Math.max(1, events.length - 1);
     var rows = { T1: top, T2: top + rowGap };
@@ -664,16 +664,14 @@
       ctx.fillStyle = COLORS.ink;
       ctx.font = "700 10px system-ui, sans-serif";
       var labelY = py + (ev.actor === "T1" ? -18 : 25);
-      ctx.save();
-      ctx.translate(px, labelY);
-      ctx.rotate(-0.18);
-      ctx.fillText(ev.label, -Math.min(44, ctx.measureText(ev.label).width / 2), 0);
-      ctx.restore();
+      var textW = ctx.measureText(ev.label).width;
+      var textX = Math.max(x + 12, Math.min(px - textW / 2, x + w - 12 - textW));
+      ctx.fillText(ev.label, textX, labelY);
     });
   }
 
   function drawLaneGrid(ctx, result, x, y, w, h) {
-    var compact = w < 620;
+    var compact = w < 560;
     var gap = 12;
     var cols = compact ? 1 : 2;
     var rows = compact ? 4 : 2;
@@ -687,7 +685,7 @@
   }
 
   function drawLaneCard(ctx, result, x, y, w, h, compact) {
-    panel(ctx, x, y, w, h, result.lane.label, result.verdict.detail);
+    panel(ctx, x, y, w, h, result.lane.label, null);
     ctx.fillStyle = result.verdict.color;
     drawRoundRect(ctx, x + w - 92, y + 12, 76, 24, 6);
     ctx.fill();
@@ -696,23 +694,29 @@
     ctx.fillText(result.verdict.label, x + w - 80, y + 28);
 
     ctx.fillStyle = COLORS.muted;
+    ctx.font = "11px system-ui, sans-serif";
+    wrapText(ctx, result.verdict.detail, x + 12, y + 45, w - 24, 13, 2);
+
+    ctx.fillStyle = COLORS.muted;
     ctx.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
     var compare = "CAS " + (result.casSucceeded ? "ok" : "fail") + ": " + result.comparison.current;
-    ctx.fillText(compare, x + 12, y + 67);
-    ctx.fillText("expected " + result.comparison.expected, x + 12, y + 83);
+    ctx.fillText(compare, x + 12, y + 78);
+    ctx.fillText("expected " + result.comparison.expected, x + 12, y + 94);
 
-    var stackTop = compact ? y + 102 : y + 104;
+    var stackTop = y + 105;
     drawStack(ctx, result.beforeCas, x + 12, stackTop, w - 24, "before T1 resumes");
-    drawStack(ctx, result.final, x + 12, stackTop + (compact ? 72 : 78), w - 24, "after T1 CAS");
+    drawStack(ctx, result.final, x + 12, stackTop + 59, w - 24, "after T1 CAS");
 
-    if (result.final.problems.length) {
-      ctx.fillStyle = COLORS.bad;
-      ctx.font = "700 10px system-ui, sans-serif";
-      wrapText(ctx, result.final.problems.slice(0, 2).join("; "), x + 12, y + h - 29, w - 24, 13, 2);
-    } else {
-      ctx.fillStyle = COLORS.good;
-      ctx.font = "700 10px system-ui, sans-serif";
-      ctx.fillText("live nodes reachable exactly once", x + 12, y + h - 17);
+    if (h > 230) {
+      if (result.final.problems.length) {
+        ctx.fillStyle = COLORS.bad;
+        ctx.font = "700 10px system-ui, sans-serif";
+        wrapText(ctx, result.final.problems.slice(0, 2).join("; "), x + 12, y + h - 22, w - 24, 12, 2);
+      } else {
+        ctx.fillStyle = COLORS.good;
+        ctx.font = "700 10px system-ui, sans-serif";
+        ctx.fillText("live nodes reachable exactly once", x + 12, y + h - 17);
+      }
     }
   }
 
@@ -774,8 +778,8 @@
   function renderCanvas(canvas, result) {
     if (!canvas || !canvas.getContext) return;
     var width = Math.max(320, Math.floor(canvas.getBoundingClientRect().width || 760));
-    var compact = width < 620;
-    var cssHeight = compact ? 1080 : 760;
+    var compact = width < 560;
+    var cssHeight = compact ? 1310 : 880;
     var surface = resizeCanvas(canvas, cssHeight);
     var ctx = surface.ctx;
     var w = surface.width;
@@ -783,8 +787,8 @@
     clear(ctx, w, h);
     var pad = 14;
     drawTimeline(ctx, result, pad, 14, w - pad * 2, compact ? 190 : 170);
-    drawLaneGrid(ctx, result, pad, compact ? 220 : 204, w - pad * 2, compact ? 700 : 390);
-    drawTakeaway(ctx, result, pad, compact ? 940 : 612, w - pad * 2, compact ? 124 : 130);
+    drawLaneGrid(ctx, result, pad, compact ? 220 : 204, w - pad * 2, compact ? 920 : 500);
+    drawTakeaway(ctx, result, pad, compact ? 1160 : 720, w - pad * 2, compact ? 130 : 145);
   }
 
   function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
