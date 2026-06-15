@@ -38,6 +38,12 @@
     return Number.isFinite(value) ? value : fallback;
   }
 
+  function scaledPercent(raw, fallback, lo, hi, decimalCutoff) {
+    var value = finite(raw == null ? fallback : raw, fallback);
+    if (Math.abs(value) <= decimalCutoff) value *= 100;
+    return clamp(Math.round(value), lo, hi) / 100;
+  }
+
   function cleanParams(raw) {
     raw = raw || {};
     var scenario = SCENARIOS.indexOf(raw.scenario) >= 0 ? raw.scenario : DEFAULTS.scenario;
@@ -46,10 +52,10 @@
       probability: clamp(Math.round(finite(raw.probability == null ? DEFAULTS.probability : raw.probability, DEFAULTS.probability)), 1, 95),
       gain: clamp(Math.round(finite(raw.gain == null ? DEFAULTS.gain : raw.gain, DEFAULTS.gain)), 10, 1000),
       loss: clamp(Math.round(finite(raw.loss == null ? DEFAULTS.loss : raw.loss, DEFAULTS.loss)), 1, 1000),
-      alpha: clamp(Math.round(finite(raw.alpha == null ? DEFAULTS.alpha : raw.alpha, DEFAULTS.alpha)), 50, 100) / 100,
-      lambda: clamp(Math.round(finite(raw.lambda == null ? DEFAULTS.lambda : raw.lambda, DEFAULTS.lambda)), 100, 400) / 100,
-      gamma: clamp(Math.round(finite(raw.gamma == null ? DEFAULTS.gamma : raw.gamma, DEFAULTS.gamma)), 35, 100) / 100,
-      delta: clamp(Math.round(finite(raw.delta == null ? DEFAULTS.delta : raw.delta, DEFAULTS.delta)), 35, 100) / 100
+      alpha: scaledPercent(raw.alpha, DEFAULTS.alpha, 50, 100, 1.5),
+      lambda: scaledPercent(raw.lambda, DEFAULTS.lambda, 100, 400, 10),
+      gamma: scaledPercent(raw.gamma, DEFAULTS.gamma, 35, 100, 1.5),
+      delta: scaledPercent(raw.delta, DEFAULTS.delta, 35, 100, 1.5)
     };
   }
 
@@ -279,6 +285,7 @@
 
     var bad = evaluate({ scenario: "bogus", probability: -10, gain: "x", loss: Infinity, alpha: -1 });
     record("bad inputs sanitize", bad.params.scenario === "lottery" && bad.params.probability === 1 && bad.params.gain === DEFAULTS.gain);
+    record("clean params are idempotent", nearly(evaluate(lottery.params).certaintyEquivalent, lottery.certaintyEquivalent, 1e-12));
 
     var probs = normalize([{ x: 1, p: 0.2 }, { x: 2, p: 0.3 }, { x: -1, p: 0.5 }]);
     record("normalization sums to one", nearly(probs.reduce(function (s, row) { return s + row.p; }, 0), 1, 1e-12));
@@ -286,8 +293,8 @@
     record("certainty equivalent is inverse value", nearly(valueOf(lottery.certaintyEquivalent, lottery.params), lottery.cptValue, 1e-8));
 
     AUDIT_CACHE = {
-      passed: 15 - failures.length,
-      checked: 15,
+      passed: 16 - failures.length,
+      checked: 16,
       failures: failures,
       defaultFacts: roundedFacts(lottery)
     };
@@ -333,7 +340,11 @@
       scenario: el.getAttribute("data-scenario") || DEFAULTS.scenario,
       probability: el.getAttribute("data-probability") || DEFAULTS.probability,
       gain: el.getAttribute("data-gain") || DEFAULTS.gain,
-      loss: el.getAttribute("data-loss") || DEFAULTS.loss
+      loss: el.getAttribute("data-loss") || DEFAULTS.loss,
+      alpha: el.getAttribute("data-alpha") || DEFAULTS.alpha,
+      lambda: el.getAttribute("data-lambda") || DEFAULTS.lambda,
+      gamma: el.getAttribute("data-gamma") || DEFAULTS.gamma,
+      delta: el.getAttribute("data-delta") || DEFAULTS.delta
     });
 
     el.innerHTML = [
