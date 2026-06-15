@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The First Digit Lives on a Circle"
+title: "First Digits Live on a Circle"
 description: "Benford's law is not a numerology trick about 1s. It is a statement about logarithmic mantissas, scale invariance, and when a dataset has no preferred unit."
 date: 2026-06-14 19:10:00 -0400
 categories: statistics
