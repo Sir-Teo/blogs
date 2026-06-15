@@ -315,7 +315,7 @@ It is:
 
 That is the unit that should go on the dashboard.
 
-## References
+## Source Notes
 
 [^cot]: Jason Wei et al., ["Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"](https://arxiv.org/abs/2201.11903), NeurIPS 2022.
 
