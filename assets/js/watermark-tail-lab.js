@@ -64,6 +64,15 @@
     return '<div class="watermark-lab__metric"><span>' + label + '</span><strong>' + value + '</strong></div>';
   }
 
+  function baseCache(params) {
+    var key = params.seed + "|" + params.entropy;
+    if (params._baseCacheKey !== key) {
+      Object.defineProperty(params, "_baseCacheKey", { value: key, configurable: true, writable: true });
+      Object.defineProperty(params, "_baseCache", { value: [], configurable: true, writable: true });
+    }
+    return params._baseCache;
+  }
+
   function paramsFromLab(lab) {
     function read(name, fallback) {
       var input = lab.querySelector('[data-param="' + name + '"]');
@@ -84,6 +93,8 @@
   }
 
   function baseDistribution(pos, params) {
+    var cache = baseCache(params);
+    if (cache[pos]) return cache[pos];
     var center = Math.floor(randUnit(params.seed + 311, pos, 0, 0) * V);
     var sharpness = 0.08 + 3.15 * (1 - params.entropy);
     var logits = [];
@@ -97,7 +108,8 @@
     var maxLogit = Math.max.apply(Math, logits);
     var exps = logits.map(function (l) { return Math.exp(l - maxLogit); });
     var total = exps.reduce(function (sum, v) { return sum + v; }, 0);
-    return exps.map(function (v) { return v / total; });
+    cache[pos] = exps.map(function (v) { return v / total; });
+    return cache[pos];
   }
 
   function isGreen(pos, token, params) {
