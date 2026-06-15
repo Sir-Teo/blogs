@@ -56,7 +56,7 @@ amortized update time under the usual randomness assumptions.[^pagh-rodler]
 
 Insertion is the cost of buying that lookup contract.
 
-## The Pigeonhole Theorem Hiding in the Table
+## Pigeonhole Theorem Hiding in the Table
 
 Take any connected component of the cuckoo graph. Suppose it has \(v\) vertices
 and \(e\) edges.
