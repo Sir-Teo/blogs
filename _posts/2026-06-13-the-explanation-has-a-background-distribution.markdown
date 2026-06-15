@@ -24,7 +24,7 @@ what does it mean for a feature to be missing?
 
 That decision can be more important than the model.
 
-## The Plot Is Running a Game
+## Plot Is Running a Game
 
 Shapley introduced a value for cooperative games: if a group of players can
 create value together, how should the total be divided among them?[^shapley]
