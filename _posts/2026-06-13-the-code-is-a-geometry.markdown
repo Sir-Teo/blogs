@@ -196,21 +196,24 @@ the Hamming syndrome directly.
     Exact binary symmetric channel calculation over all error masks. Success
     means the decoded payload equals the transmitted payload. Wrong means the
     decoder accepts an incorrect payload. Erasure means SECDED detected an
-    uncorrectable pattern and refused to deliver a payload.
+    uncorrectable pattern and refused to deliver a payload. The script also
+    runs a deterministic audit over the finite toy code before reporting its
+    check count.
   </p>
 </div>
-<script defer src="{{ '/assets/js/hamming-code-lab.js?v=20260613a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hamming-code-lab.js?v=20260615a' | relative_url }}"></script>
 
 At $$p=3\%$$, raw four-bit transmission has about an 11.5% block error rate:
 one or more payload bits flipped. Hamming(7,4) is much better because all
 single-bit errors in the seven-bit block are corrected. Its wrong-accepted rate
-is about 1.7%, mostly from two or more flips.
+is 1.71%, mostly from two or more flips.
 
 SECDED adds an eighth parity bit. It slightly reduces delivered success because
 some corrupted blocks become erasures, but it sharply reduces wrong accepted
-payloads. That is often the right bargain. In memory systems, storage, and
-transport protocols, "I know this block is bad" can be much safer than a quiet
-wrong answer.
+payloads: at the same 3% bit-flip rate, the lab reports 0.13% silent wrong
+payloads and 2.10% detected erasures. That is often the right bargain. In
+memory systems, storage, and transport protocols, "I know this block is bad" can
+be much safer than a quiet wrong answer.
 
 Repeat-3 does well at low bit error rates, but it spends twelve transmitted bits
 to send four payload bits. Its rate is $$1/3$$, versus $$4/7$$ for Hamming.
@@ -243,6 +246,15 @@ is detected rather than silently "corrected" into nonsense.
 
 That is why the lab separates **wrong** from **erasure**. A low error rate is
 not enough. The kind of error matters.
+
+Because this example is small, the implementation does not need sampling faith.
+Its exported `runAudit()` checks the finite state space directly: all 16 clean
+payload round trips for each scheme, every one-bit Hamming and SECDED correction
+case, every two-bit SECDED detection case, the Hamming two-bit miscorrection
+failure mode, the minimum distances 3 and 4, and probability-mass conservation
+for several channel settings. The visible `1113/1113` audit counter is not a
+claim about every physical channel. It is a promise that the model on the page
+matches the theorem on the page.
 
 ## Shannon Promised Existence, Not a Circuit
 
