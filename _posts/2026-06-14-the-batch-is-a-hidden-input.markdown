@@ -31,7 +31,7 @@ running statistics accumulated during training. Those are not the same
 computation. Usually the difference is harmless or helpful. Sometimes it is the
 entire incident report.
 
-## The Layer Asks the Room
+## Layer Asks the Room
 
 For one activation channel, BatchNorm takes a mini-batch
 $$B=\{x_1,\ldots,x_m\}$$ and computes
