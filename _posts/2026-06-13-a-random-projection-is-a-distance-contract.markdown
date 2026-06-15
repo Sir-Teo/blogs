@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "The Projection Keeps Distances, Not Meaning"
-description: "The Johnson-Lindenstrauss lemma is not a slogan about making data smaller. It is a promise about finite geometry, with margins left for the application to defend."
+title: "Keep the Distances, Audit the Decisions"
+description: "The Johnson-Lindenstrauss lemma is not a slogan about making data smaller. It is a promise about finite geometry, with margins the application still has to defend."
 date: 2026-06-13 19:55:00 -0400
 categories: computer-science
 tags: [random-projection, johnson-lindenstrauss, dimension-reduction, nearest-neighbors, numerical-linear-algebra, ml-systems]
@@ -28,8 +28,7 @@ up to a controlled multiplicative distortion.[^jl]
 That is already extraordinary. It is also much narrower than the folklore
 version people casually repeat in design docs.
 
-The projection is not a semantic compressor. It is a promise about a finite
-geometry.
+The projection is not a semantic compressor. It is a finite-geometry promise.
 
 ## What the Promise Actually Says
 
@@ -64,7 +63,7 @@ JL preserves the geometry of a finite cloud. It does not preserve every vector
 in the original space. It does not preserve labels by magic. It does not promise
 that the nearest neighbor is unchanged when two candidates were nearly tied.
 
-## PCA Is Answering Another Question
+## PCA Has a Different Job
 
 Principal components and random projections are easy to confuse because both
 produce a lower-dimensional representation. They optimize different things.
@@ -265,7 +264,7 @@ a little worse at very small $$k$$, but much cheaper to apply to sparse feature
 vectors. That trade-off is why database-friendly and sparse JL transforms
 matter in systems work.[^achlioptas]
 
-## The Decision Margin Is the Catch
+## Margins Are the Catch
 
 Suppose a retrieval system uses nearest neighbors. JL-style reasoning can tell
 you that every distance is approximately preserved. It does not directly tell
@@ -318,7 +317,7 @@ The mathematical contract stays pairwise distance preservation. The engineering
 problem is how to honor it with acceptable CPU, memory bandwidth, parallelism,
 and implementation complexity.
 
-## When the Invariant Is a Subspace
+## Sometimes the Invariant Is a Subspace
 
 There is a stronger-looking cousin of this idea in randomized numerical linear
 algebra: subspace embeddings.
@@ -367,7 +366,7 @@ The last point is the least glamorous and the most practical. The theorem is
 worst-case over a finite set, but constants and tails matter. Measure the error
 distribution on the data geometry you actually serve.
 
-## The Sentence to Keep
+## One Sentence to Keep
 
 A random projection does not know what your data means.
 
