@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Next Reaction Wins the Race"
+title: "Next Reaction Wins the Race"
 description: "Gillespie's stochastic simulation algorithm samples chemical reaction paths exactly by letting propensities compete as exponential clocks."
 date: 2026-06-14 17:04:00 -0400
 categories: physics
