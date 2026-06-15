@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Button Is a Promise to a Hand"
+title: "Buttons Make Promises to Hands"
 description: "Fitts' law treats pointing as information transmission: distance, width, time pressure, and endpoint scatter decide whether a target is actually usable."
 date: 2026-06-14 16:07:00 -0400
 categories: psychology
