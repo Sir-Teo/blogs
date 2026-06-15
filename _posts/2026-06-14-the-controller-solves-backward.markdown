@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Controller Solves Backward"
+title: "Controllers Solve Backward"
 description: "Finite-horizon LQR turns a future cost into a present feedback law. The Riccati recursion runs backward; the controller runs forward."
 date: 2026-06-14 21:06:00 -0400
 categories: applied-math
@@ -408,7 +408,7 @@ shape remains useful:
 That pattern is older than modern reinforcement learning and still one of its
 clearest mirrors.
 
-## Verification Notes
+## Primary Sources
 
 The JavaScript implementation exports the same evaluator used by the browser.
 The Node audit ran the default case plus cheap-control, expensive-control,
