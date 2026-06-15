@@ -25,8 +25,15 @@
     seed: 23
   };
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function finiteOr(value, fallback) {
+    var numeric = Number(value);
+    return isFinite(numeric) ? numeric : fallback;
   }
 
   function hash32(value, seed) {
@@ -60,12 +67,12 @@
   function cleanParams(raw) {
     raw = raw || {};
     return {
-      certainty: clamp(Number(raw.certainty == null ? DEFAULTS.certainty : raw.certainty), 0, 100),
-      draftCost: clamp(Number(raw.draftCost == null ? DEFAULTS.draftCost : raw.draftCost), 0, 40),
-      gamma: clamp(Math.round(raw.gamma == null ? DEFAULTS.gamma : raw.gamma), 1, 12),
-      length: clamp(Math.round(raw.length == null ? DEFAULTS.length : raw.length), 24, 180),
-      match: clamp(Number(raw.match == null ? DEFAULTS.match : raw.match), 0, 100),
-      seed: clamp(Math.round(raw.seed == null ? DEFAULTS.seed : raw.seed), 1, 999)
+      certainty: clamp(finiteOr(raw.certainty == null ? DEFAULTS.certainty : raw.certainty, DEFAULTS.certainty), 0, 100),
+      draftCost: clamp(finiteOr(raw.draftCost == null ? DEFAULTS.draftCost : raw.draftCost, DEFAULTS.draftCost), 0, 40),
+      gamma: clamp(Math.round(finiteOr(raw.gamma == null ? DEFAULTS.gamma : raw.gamma, DEFAULTS.gamma)), 1, 12),
+      length: clamp(Math.round(finiteOr(raw.length == null ? DEFAULTS.length : raw.length, DEFAULTS.length)), 24, 180),
+      match: clamp(finiteOr(raw.match == null ? DEFAULTS.match : raw.match, DEFAULTS.match), 0, 100),
+      seed: clamp(Math.round(finiteOr(raw.seed == null ? DEFAULTS.seed : raw.seed, DEFAULTS.seed)), 1, 999)
     };
   }
 
@@ -407,6 +414,267 @@
     };
   }
 
+  function distSum(dist) {
+    var sum = 0;
+    for (var i = 0; i < dist.length; i += 1) sum += dist[i];
+    return sum;
+  }
+
+  function isDistribution(dist, tolerance) {
+    if (!dist || !dist.length) return false;
+    for (var i = 0; i < dist.length; i += 1) {
+      if (!isFinite(dist[i]) || dist[i] < -tolerance) return false;
+    }
+    return Math.abs(distSum(dist) - 1) <= tolerance;
+  }
+
+  function arraysEqual(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  function runAudit() {
+    var checks = [];
+    var tolerance = 1e-12;
+    var maxExactTv = 0;
+    var maxAlphaGap = 0;
+    var settings = 0;
+
+    function pass(name, ok, detail) {
+      checks.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+
+    function near(a, b, tol) {
+      return isFinite(a) && isFinite(b) && Math.abs(a - b) <= (tol == null ? tolerance : tol);
+    }
+
+    var defaultParams = cleanParams();
+    pass("defaults are stable", JSON.stringify(defaultParams) === JSON.stringify(DEFAULTS));
+
+    var clamped = cleanParams({
+      certainty: -20,
+      draftCost: 100,
+      gamma: 2.6,
+      length: 182,
+      match: 140,
+      seed: 1.2
+    });
+    pass(
+      "numeric controls clamp and round",
+      clamped.certainty === 0 &&
+        clamped.draftCost === 40 &&
+        clamped.gamma === 3 &&
+        clamped.length === 180 &&
+        clamped.match === 100 &&
+        clamped.seed === 1
+    );
+
+    var recovered = cleanParams({
+      certainty: "bad",
+      draftCost: NaN,
+      gamma: Infinity,
+      length: -Infinity,
+      match: "nope",
+      seed: undefined
+    });
+    pass("non-finite controls recover defaults", JSON.stringify(recovered) === JSON.stringify(DEFAULTS));
+
+    var model = makeModel(DEFAULTS);
+    pass(
+      "model shape matches vocabulary",
+      model.vocab.length === VOCAB.length &&
+        model.target.length === VOCAB.length &&
+        model.draft.length === VOCAB.length &&
+        model.target.every(function (row) { return row.length === VOCAB.length; }) &&
+        model.draft.every(function (row) { return row.length === VOCAB.length; })
+    );
+
+    var distributionOk = true;
+    for (var state = 0; state < model.target.length; state += 1) {
+      distributionOk = distributionOk &&
+        isDistribution(model.target[state], 1e-12) &&
+        isDistribution(model.draft[state], 1e-12);
+    }
+    pass("target and draft rows are probability distributions", distributionOk);
+
+    var p = [0.7, 0.2, 0.1];
+    var q = [0.1, 0.8, 0.1];
+    var residual = residualDistribution(p, q);
+    pass("residual samples only missing target mass", near(residual[0], 1) && near(residual[1], 0) && near(residual[2], 0));
+
+    var contract = oneStepContract(p, q);
+    pass("one-step correction reconstructs target", totalVariation(p, contract.exactOutput) <= 1e-15);
+    pass("target fallback is measurably biased", contract.wrongTv > 0.05);
+
+    var expectedAlpha = p.reduce(function (sum, value, index) {
+      return sum + Math.min(value, q[index]);
+    }, 0);
+    pass(
+      "acceptance mass equals one minus TV distance",
+      near(contract.alpha, expectedAlpha) && near(contract.alpha, 1 - totalVariation(p, q))
+    );
+
+    var alphasOk = true;
+    for (state = 0; state < model.target.length; state += 1) {
+      var stateContract = oneStepContract(model.target[state], model.draft[state]);
+      alphasOk = alphasOk && stateContract.alpha >= -1e-12 && stateContract.alpha <= 1 + 1e-12;
+    }
+    pass("state acceptance probabilities stay in [0, 1]", alphasOk && averageAlpha(model) >= 0 && averageAlpha(model) <= 1);
+
+    pass("expected-token formula handles edges", near(expectedTokens(0, 7), 1) && near(expectedTokens(1, 7), 8));
+
+    var monotoneExpected = true;
+    var previousExpected = expectedTokens(0.7, 1);
+    for (var gamma = 2; gamma <= 12; gamma += 1) {
+      var currentExpected = expectedTokens(0.7, gamma);
+      monotoneExpected = monotoneExpected && currentExpected >= previousExpected;
+      previousExpected = currentExpected;
+    }
+    pass("expected tokens increase with lookahead", monotoneExpected);
+
+    pass("draft cost lowers fixed-depth speedup", speedupFrom(0.82, 5, 0.03) > speedupFrom(0.82, 5, 0.24));
+
+    var curve = speedCurve(averageAlpha(model), DEFAULTS.draftCost / 100);
+    pass(
+      "speed curve has finite depths 1..12",
+      curve.length === 12 &&
+        curve.every(function (row, index) {
+          return row.gamma === index + 1 && isFinite(row.speedup) && row.speedup > 0;
+        })
+    );
+
+    var trace = sampleSpeculativeSequence(model, DEFAULTS);
+    pass(
+      "trace accounting conserves emitted tokens",
+      trace.tokens.length === DEFAULTS.length &&
+        trace.events.length === DEFAULTS.length &&
+        trace.targetCalls > 0 &&
+        trace.targetCalls <= DEFAULTS.length &&
+        trace.tokensPerTargetCall <= DEFAULTS.gamma + 1 + 1e-12
+    );
+
+    var traceAgain = sampleSpeculativeSequence(model, DEFAULTS);
+    pass(
+      "seeded trace is deterministic",
+      arraysEqual(trace.tokens, traceAgain.tokens) &&
+        trace.acceptedDraft === traceAgain.acceptedDraft &&
+        trace.rejectedDraft === traceAgain.rejectedDraft &&
+        trace.bonusTokens === traceAgain.bonusTokens
+    );
+
+    var evaluated = evaluate(DEFAULTS);
+    pass(
+      "default evaluation remains exact and finite",
+      evaluated.contract.exactTv <= 1e-12 &&
+        isFinite(evaluated.theoreticalSpeedup) &&
+        isFinite(evaluated.trace.speedup) &&
+        evaluated.samples.specEmpirical.length === VOCAB.length
+    );
+
+    var legacyParamsSample = {
+      acceptance: 74,
+      draftCost: 12,
+      lookahead: 5,
+      overheadMs: 6,
+      targetMs: 80,
+      verifyTax: 3
+    };
+    var legacy = legacyEvaluate(legacyParamsSample);
+    pass(
+      "legacy latency ledger balances",
+      near(legacy.outputTokens, 1 + legacy.accepted) &&
+        near(legacy.msPerToken, legacy.cycleMs / legacy.outputTokens) &&
+        near(legacy.speedup, legacy.targetMs / legacy.msPerToken)
+    );
+
+    var best = legacyBestLookahead(legacyParamsSample);
+    var bestSpeed = -Infinity;
+    var bestLookahead = 0;
+    for (gamma = 1; gamma <= 12; gamma += 1) {
+      var candidate = legacyEvaluate(legacyParamsSample, gamma);
+      if (candidate.speedup > bestSpeed) {
+        bestSpeed = candidate.speedup;
+        bestLookahead = gamma;
+      }
+    }
+    pass("legacy best lookahead matches brute force", best.lookahead === bestLookahead && near(best.speedup, bestSpeed));
+
+    var gridOk = true;
+    var certaintyValues = [0, 32, 64, 96];
+    var matchValues = [0, 40, 72, 100];
+    var gammaValues = [1, 5, 12];
+    var draftCostValues = [0, 9, 40];
+    var lengthValues = [24, 96, 180];
+    var seedValues = [1, 23, 999];
+
+    certaintyValues.forEach(function (certainty) {
+      matchValues.forEach(function (match) {
+        gammaValues.forEach(function (gridGamma) {
+          draftCostValues.forEach(function (draftCost) {
+            lengthValues.forEach(function (length) {
+              seedValues.forEach(function (seed) {
+                var params = cleanParams({
+                  certainty: certainty,
+                  draftCost: draftCost,
+                  gamma: gridGamma,
+                  length: length,
+                  match: match,
+                  seed: seed
+                });
+                var gridModel = makeModel(params);
+                var gridAlpha = averageAlpha(gridModel);
+                var gridTrace = sampleSpeculativeSequence(gridModel, params);
+                settings += 1;
+
+                for (var gridState = 0; gridState < gridModel.target.length; gridState += 1) {
+                  var gridContract = oneStepContract(gridModel.target[gridState], gridModel.draft[gridState]);
+                  var alphaGap = Math.abs(gridContract.alpha - (1 - gridContract.draftTv));
+                  maxExactTv = Math.max(maxExactTv, gridContract.exactTv);
+                  maxAlphaGap = Math.max(maxAlphaGap, alphaGap);
+                  gridOk = gridOk &&
+                    gridContract.exactTv <= 2e-13 &&
+                    alphaGap <= 2e-13 &&
+                    gridContract.wrongTv >= -1e-12;
+                }
+
+                gridOk = gridOk &&
+                  settings <= 1296 &&
+                  gridAlpha >= -1e-12 &&
+                  gridAlpha <= 1 + 1e-12 &&
+                  isFinite(speedupFrom(gridAlpha, params.gamma, params.draftCost / 100)) &&
+                  isFinite(gridTrace.speedup) &&
+                  gridTrace.tokens.length === params.length &&
+                  gridTrace.events.length === params.length &&
+                  gridTrace.targetCalls > 0 &&
+                  gridTrace.tokensPerTargetCall <= params.gamma + 1 + 1e-12;
+              });
+            });
+          });
+        });
+      });
+    });
+    pass("1296-setting audit grid preserves exactness and accounting", gridOk && settings === 1296);
+
+    var passed = checks.filter(function (check) { return check.ok; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      failures: checks.filter(function (check) { return !check.ok; }),
+      maxAlphaGap: maxAlphaGap,
+      maxExactTv: maxExactTv,
+      passed: passed,
+      settings: settings
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function readState(container, previous) {
     var raw = Object.assign({}, previous || DEFAULTS);
     container.querySelectorAll("[data-param]").forEach(function (input) {
@@ -664,6 +932,7 @@
   }
 
   function updateMetrics(metrics, result) {
+    var audit = cachedAudit();
     metrics.innerHTML = [
       metric("acceptance mass", formatPercent(result.contract.alpha, 1)),
       metric("draft TV bias", formatNumber(result.contract.draftTv, 3)),
@@ -672,11 +941,15 @@
       metric("tokens / verifier", formatNumber(result.trace.tokensPerTargetCall, 2)),
       metric("estimated speedup", formatNumber(result.theoreticalSpeedup, 2) + "x"),
       metric("empirical speedup", formatNumber(result.trace.speedup, 2) + "x"),
-      metric("target calls saved", String(result.params.length - result.trace.targetCalls))
+      metric("target calls saved", String(result.params.length - result.trace.targetCalls)),
+      metric("Audit", audit.passed + "/" + audit.checked)
     ].join("");
   }
 
   function initOne(container) {
+    if (container.__speculativeDecodingLabReady) return;
+    container.__speculativeDecodingLabReady = true;
+
     var state = Object.assign({}, DEFAULTS);
     var canvas = container.querySelector("canvas[data-canvas]");
     var metrics = container.querySelector("[data-metrics]");
@@ -902,19 +1175,24 @@
     var best = legacyBestLookahead(params);
     var metrics = container.querySelector("[data-metrics]");
     if (metrics) {
+      var audit = cachedAudit();
       metrics.innerHTML = [
         metric("Latency speedup", formatNumber(result.speedup, 2) + "x"),
         metric("Expected tokens/call", formatNumber(result.outputTokens, 2)),
         metric("Accepted draft tokens", formatNumber(result.accepted, 2)),
         metric("Wasted draft tokens", formatNumber(result.wastedDrafts, 2)),
         metric("Milliseconds/token", legacyFormatMs(result.msPerToken)),
-        metric("Best static lookahead", String(best.lookahead))
+        metric("Best static lookahead", String(best.lookahead)),
+        metric("Audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     legacyDraw(container.querySelector("canvas[data-canvas]"), params, result, best);
   }
 
   function initLegacyOne(container) {
+    if (container.__speculativeDecodingLegacyReady) return;
+    container.__speculativeDecodingLegacyReady = true;
+
     var timer = null;
     function render() {
       clearTimeout(timer);
@@ -943,6 +1221,7 @@
     makeModel: makeModel,
     oneStepContract: oneStepContract,
     residualDistribution: residualDistribution,
+    runAudit: runAudit,
     sampleSpeculativeSequence: sampleSpeculativeSequence,
     speedupFrom: speedupFrom,
     totalVariation: totalVariation
