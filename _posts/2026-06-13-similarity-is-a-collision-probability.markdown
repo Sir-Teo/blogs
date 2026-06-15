@@ -369,7 +369,7 @@ The exact pairwise comparison does not disappear. It moves to the end, where it
 belongs, after the sketch has made the candidate set small enough for truth to
 be affordable.
 
-## References
+## Primary Sources
 
 [^broder-resemblance]: Andrei Z. Broder, ["On the Resemblance and Containment of Documents"](https://www.cs.princeton.edu/courses/archive/spr05/cos598E/bib/broder97resemblance.pdf), *Compression and Complexity of Sequences*, 1997.
 
