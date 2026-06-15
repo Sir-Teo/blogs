@@ -38,7 +38,7 @@ quotient is the causal claim.
 
 Every term in that sentence can fail.
 
-## The People Who Actually Move
+## People Who Actually Move
 
 Imagine a randomized email encouraging people to use a tutoring service. Some
 people use tutoring whether or not they receive the email. Some never use it.
