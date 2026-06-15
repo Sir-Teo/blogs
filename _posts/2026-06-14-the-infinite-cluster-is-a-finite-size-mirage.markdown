@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Cliff Lives at Infinity"
+title: "Cliffs Live at Infinity"
 description: "Percolation has a clean infinite-lattice threshold, but every experiment sees a rounded finite box. The browser can show the cliff only by watching the S-curve sharpen."
 date: 2026-06-14 16:50:00 -0400
 categories: physics
