@@ -58,8 +58,8 @@
       boundary: 0.76,
       secretMin: 0.72,
       toolGate: 0.86,
-      review: 0.34,
-      utilityCost: 0.075,
+      review: 0.28,
+      utilityCost: 0.05,
       color: "#2563eb"
     }
   ];
