@@ -28,6 +28,8 @@
     seed: 37
   };
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -262,6 +264,71 @@
     };
   }
 
+  function runAudit() {
+    var cases = 0;
+    var ok = 0;
+    var failures = [];
+    var configs = [
+      { events: 50000, vocabulary: 2000, skew: 105, width: 128, depth: 5, threshold: 10, queryRank: 6, seed: 37 },
+      { events: 22000, vocabulary: 900, skew: 0, width: 64, depth: 3, threshold: 14, queryRank: 12, seed: 91 },
+      { events: 75000, vocabulary: 4500, skew: 135, width: 256, depth: 6, threshold: 6, queryRank: 3, seed: 503 },
+      { events: 12000, vocabulary: 250, skew: 70, width: 32, depth: 2, threshold: 25, queryRank: 20, seed: 817 }
+    ];
+
+    configs.forEach(function (cfg, i) {
+      [
+        cfg,
+        Object.assign({}, cfg, { width: Math.min(512, cfg.width * 2), seed: cfg.seed + 17 }),
+        Object.assign({}, cfg, { depth: Math.min(8, cfg.depth + 1), queryRank: Math.max(1, cfg.queryRank - 1), seed: cfg.seed + 31 })
+      ]
+        .forEach(function (params, j) {
+          cases += 1;
+          var result = evaluate(params);
+          var allCmUpper = result.items.every(function (row) { return row.cm >= row.count && row.cmError >= 0; });
+          var allCuUpper = result.items.every(function (row) { return row.cu >= row.count && row.cuError >= 0; });
+          var conservativeNoWorse = result.items.every(function (row) { return row.cu <= row.cm; });
+          var reportedContainsHeavy = result.threshold.cmFalseNegative === 0 && result.threshold.cuFalseNegative === 0;
+          var exactTopSorted = result.items.slice(1).every(function (row, idx) {
+            var prev = result.items[idx];
+            return prev.count > row.count || (prev.count === row.count && prev.item < row.item);
+          });
+          var tableShape = result.data.cm.length === result.params.depth
+            && result.data.cu.length === result.params.depth
+            && result.data.cm.every(function (row) { return row.length === result.params.width; })
+            && result.data.cu.every(function (row) { return row.length === result.params.width; });
+          var budgetScale = Math.abs(result.budget - Math.E * result.params.events / result.params.width) < 1e-8;
+          var checks = [
+            result.checks.bounded,
+            result.checks.finite,
+            result.checks.itemCount,
+            allCmUpper,
+            allCuUpper,
+            conservativeNoWorse,
+            reportedContainsHeavy,
+            exactTopSorted,
+            tableShape,
+            budgetScale,
+            result.memoryBytes === result.params.width * result.params.depth * 4,
+            result.query.item >= 0 && result.query.item < result.params.vocabulary
+          ];
+          var passed = checks.every(Boolean);
+          if (passed) ok += 1;
+          else failures.push({ index: i + ":" + j, params: result.params, checks: checks, threshold: result.threshold });
+        });
+    });
+
+    return {
+      cases: cases,
+      failures: failures.slice(0, 3),
+      ok: ok
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function formatInt(value) {
     return Math.round(value).toLocaleString("en-US");
   }
@@ -313,7 +380,7 @@
   function updateMetrics(root, result) {
     var node = root.querySelector("[data-metrics]");
     if (!node) return;
-    var audit = result.checks.bounded && result.checks.finite && result.checks.noEnumeratedFalseNegatives && result.checks.itemCount ? "pass" : "check";
+    var audit = cachedAudit();
     node.innerHTML = [
       metric("Query key", "item " + (result.query.item + 1)),
       metric("True / CM / CU", formatInt(result.query.count) + " / " + formatInt(result.query.cm) + " / " + formatInt(result.query.cu)),
@@ -322,7 +389,7 @@
       metric("False positives", formatInt(result.threshold.cmFalsePositive) + " / " + formatInt(result.threshold.cuFalsePositive)),
       metric("Sketch memory", formatBytes(result.memoryBytes)),
       metric("Observed keys", formatInt(result.observed)),
-      metric("Audit", audit)
+      metric("Audit", audit.ok + "/" + audit.cases)
     ].join("");
   }
 
@@ -598,7 +665,8 @@
     cleanParams: cleanParams,
     estimate: estimate,
     evaluate: evaluate,
-    hash32: hash32
+    hash32: hash32,
+    runAudit: runAudit
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
