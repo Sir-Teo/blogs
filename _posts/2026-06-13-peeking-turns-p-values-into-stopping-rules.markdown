@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Dashboard Changed the Experiment"
+title: "Dashboards Can Change the Experiment"
 description: "A fixed-horizon p-value is a different object once the team checks it every morning and ships the first good-looking day."
 date: 2026-06-13 04:08:00 -0400
 categories: statistics
@@ -280,7 +280,7 @@ testing. It is a different design problem.
 Peeking does not corrupt an experiment by being curious. It corrupts the
 experiment when curiosity is hidden from the math.
 
-## Sources
+## Paper Trail
 
 [^wald]: Abraham Wald, "Sequential Tests of Statistical Hypotheses," *The Annals of Mathematical Statistics*, 1945. [JSTOR](https://www.jstor.org/stable/2235829).
 
