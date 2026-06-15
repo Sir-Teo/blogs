@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Count That Forgets Names"
+title: "Counting Without Names"
 description: "HyperLogLog is the strange bargain behind large-scale distinct counts: forget identities, keep rare hash patterns, and still estimate how many unique things passed by."
 date: 2026-06-13 07:58:00 -0400
 categories: computer-science
@@ -293,7 +293,7 @@ some mathematical trust.
 
 But in the right place, that is a magnificent trade.
 
-## References
+## Source Notes
 
 [^morris]: Robert Morris, ["Counting Large Numbers of Events in Small Registers"](https://graphics.stanford.edu/courses/cs321/Private/Readings/p840-morris.pdf), *Communications of the ACM*, 1978. Morris's counter estimates event counts rather than distinct counts, but it is a classic ancestor of probabilistic counting with tiny state.
 
