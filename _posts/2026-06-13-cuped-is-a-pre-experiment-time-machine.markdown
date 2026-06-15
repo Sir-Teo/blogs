@@ -341,7 +341,7 @@ smaller standard error. That is what makes the mistake dangerous.
 
 Precision is only useful after validity.
 
-## Where This Came From
+## Reading Trail
 
 [^cuped]: Alex Deng, Ya Xu, Ron Kohavi, and Toby Walker, ["Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data"](https://exp-platform.com/Documents/2013-02-CUPED-ImprovingSensitivityOfControlledExperiments.pdf), *WSDM*, 2013. [ACM record](https://dl.acm.org/doi/10.1145/2433396.2433413).
 
