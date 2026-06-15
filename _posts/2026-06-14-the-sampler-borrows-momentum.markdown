@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "A Momentum Loan for the Posterior"
+title: "Momentum Loans for the Posterior"
 description: "Hamiltonian Monte Carlo proposes by moving like a physical system: conserve energy, preserve volume, then let Metropolis audit the numerical error."
 date: 2026-06-14 17:35:00 -0400
 categories: statistics
