@@ -172,7 +172,13 @@
       t = (i + 1) * DT;
       fillTrace(t, x);
       if (x >= 0) {
-        fillTrace(params.horizon, x);
+        if (trace) {
+          trace.escaped = true;
+          while (nextTrace <= TRACE_STEPS) {
+            trace[nextTrace] = null;
+            nextTrace += 1;
+          }
+        }
         return {
           censored: false,
           time: t,
@@ -181,6 +187,7 @@
       }
     }
     fillTrace(params.horizon, x);
+    if (trace) trace.escaped = false;
     return {
       censored: true,
       time: params.horizon,
@@ -458,7 +465,7 @@
 
     ctx.fillStyle = COLORS.noise;
     ctx.font = "12px system-ui, -apple-system, Segoe UI, sans-serif";
-    ctx.fillText("epsilon", sx(1.08), sy(result.params.noise) - 6);
+    ctx.fillText("eps", sx(0.98), sy(result.params.noise) - 6);
     ctx.fillStyle = COLORS.muted;
     ctx.fillText("U(x)", plot.x - 34, plot.y + 12);
   }
@@ -478,17 +485,25 @@
     ctx.stroke();
     ctx.setLineDash([]);
     result.ensemble.traces.forEach(function (trace, i) {
-      var escaped = trace[trace.length - 1] >= 0;
+      var escaped = Boolean(trace.escaped);
       var color = escaped ? COLORS.escaped : COLORS.sample;
       ctx.globalAlpha = escaped ? 0.76 : 0.5;
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.4;
+      var started = false;
       ctx.beginPath();
       trace.forEach(function (x, g) {
+        if (x == null) {
+          started = false;
+          return;
+        }
         var t = result.params.horizon * g / TRACE_STEPS;
         var px = sx(t);
         var py = sy(x);
-        if (g === 0) ctx.moveTo(px, py);
+        if (!started) {
+          ctx.moveTo(px, py);
+          started = true;
+        }
         else ctx.lineTo(px, py);
       });
       ctx.stroke();
