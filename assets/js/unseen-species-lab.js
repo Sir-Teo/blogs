@@ -299,8 +299,9 @@
       var slot = plot.w / buckets.length;
       var x = plot.x + i * slot + slot * 0.5;
       var h = plot.h * b.value / max;
+      var barW = clamp(slot * 0.52, 5, 24);
       ctx.fillStyle = b.r === 1 ? COLORS.singleton : b.r === 2 ? COLORS.good : COLORS.observed;
-      ctx.fillRect(x - 12, plot.y + plot.h - h, 24, h);
+      ctx.fillRect(x - barW / 2, plot.y + plot.h - h, barW, h);
       text(ctx, b.label, x, plot.y + plot.h + 16, COLORS.muted, 10, 600, "center");
       if (b.value > 0) text(ctx, String(b.value), x, plot.y + plot.h - h - 6, COLORS.text, 10, 600, "center");
     });
@@ -362,14 +363,53 @@
   }
 
   function draw(result, canvas) {
+    var rect = canvas.getBoundingClientRect();
+    var cssWidth = Math.max(280, Math.floor(rect.width || canvas.clientWidth || 900));
+    var narrow = cssWidth < 520;
+    var pad = narrow ? 12 : 18;
+    var gap = narrow ? 14 : 20;
+    var boxes;
+    var cssHeight;
+
+    if (narrow) {
+      var panelW = cssWidth - 2 * pad;
+      var baseH = Math.max(208, Math.round(panelW * 0.72));
+      var discoveryH = Math.max(248, Math.round(panelW * 0.84));
+      var y = pad;
+      boxes = [
+        { x: pad, y: y, w: panelW, h: baseH },
+        { x: pad, y: y + baseH + gap, w: panelW, h: baseH },
+        { x: pad, y: y + 2 * (baseH + gap), w: panelW, h: baseH },
+        { x: pad, y: y + 3 * (baseH + gap), w: panelW, h: discoveryH }
+      ];
+      cssHeight = boxes[3].y + discoveryH + pad;
+    } else {
+      var colW = (cssWidth - 2 * pad - gap) / 2;
+      var rowH = clamp(Math.round(colW * 0.74), 236, 318);
+      boxes = [
+        { x: pad, y: pad, w: colW, h: rowH },
+        { x: pad + colW + gap, y: pad, w: colW, h: rowH },
+        { x: pad, y: pad + rowH + gap, w: colW, h: rowH },
+        { x: pad + colW + gap, y: pad + rowH + gap, w: colW, h: rowH }
+      ];
+      cssHeight = 2 * pad + 2 * rowH + gap;
+    }
+
+    var ratio = Math.max(1, Math.min(2, global.devicePixelRatio || 1));
+    var targetWidth = Math.round(cssWidth * ratio);
+    var targetHeight = Math.round(cssHeight * ratio);
+    canvas.style.height = cssHeight + "px";
+    if (canvas.width !== targetWidth) canvas.width = targetWidth;
+    if (canvas.height !== targetHeight) canvas.height = targetHeight;
     var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawPopulation(ctx, result, { x: 18, y: 18, w: 424, h: 318 });
-    drawOccupancy(ctx, result, { x: 462, y: 18, w: 420, h: 318 });
-    drawMissing(ctx, result, { x: 18, y: 356, w: 424, h: 322 });
-    drawDiscovery(ctx, result, { x: 462, y: 356, w: 420, h: 322 });
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+    drawPopulation(ctx, result, boxes[0]);
+    drawOccupancy(ctx, result, boxes[1]);
+    drawMissing(ctx, result, boxes[2]);
+    drawDiscovery(ctx, result, boxes[3]);
   }
 
   function readParams(lab) {
@@ -424,10 +464,23 @@
   }
 
   function init(lab) {
+    var frame = null;
+    function redrawSoon() {
+      if (frame != null) return;
+      if (!global.requestAnimationFrame) {
+        render(lab);
+        return;
+      }
+      frame = global.requestAnimationFrame(function () {
+        frame = null;
+        render(lab);
+      });
+    }
     Array.prototype.slice.call(lab.querySelectorAll("[data-param]")).forEach(function (input) {
       input.addEventListener("input", function () { render(lab); });
       input.addEventListener("change", function () { render(lab); });
     });
+    if (global.addEventListener) global.addEventListener("resize", redrawSoon);
     render(lab);
   }
 
