@@ -19,6 +19,7 @@
   };
 
   var TC = 2 / Math.log(1 + Math.SQRT2);
+  var LAYOUT_BREAKPOINT = 560;
 
   var DEFAULTS = {
     temp: 227,
@@ -314,7 +315,7 @@
   function setCanvasSize(canvas) {
     var box = canvas.getBoundingClientRect();
     var cssWidth = Math.max(320, Math.round(box.width || canvas.parentNode.clientWidth || 900));
-    var cssHeight = cssWidth < 680 ? 1160 : 780;
+    var cssHeight = cssWidth < LAYOUT_BREAKPOINT ? 1160 : 780;
     var ratio = Math.min(2, global.devicePixelRatio || 1);
     if (canvas.width !== Math.round(cssWidth * ratio) || canvas.height !== Math.round(cssHeight * ratio)) {
       canvas.width = Math.round(cssWidth * ratio);
@@ -517,7 +518,7 @@
     ctx.fillStyle = COLORS.panel;
     ctx.fillRect(0, 0, width, height);
     var pad = 14;
-    if (width < 680) {
+    if (width < LAYOUT_BREAKPOINT) {
       drawFields(ctx, { x: pad, y: pad, w: width - pad * 2, h: 310 }, result);
       drawTrace(ctx, { x: pad, y: 340, w: width - pad * 2, h: 260 }, result);
       drawAcf(ctx, { x: pad, y: 616, w: width - pad * 2, h: 250 }, result);
