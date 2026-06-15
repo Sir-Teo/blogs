@@ -26,6 +26,7 @@
 
   var SCENARIOS = ["run", "overlap", "logs", "dna"];
   var PLANTS = ["none", "sparse", "dense"];
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -156,6 +157,37 @@
     return chain;
   }
 
+  function exactMatches(text, pattern) {
+    var matches = [];
+    if (!pattern.length || pattern.length > text.length) return matches;
+    for (var i = 0; i <= text.length - pattern.length; i += 1) {
+      var ok = true;
+      for (var j = 0; j < pattern.length; j += 1) {
+        if (text[i + j] !== pattern[j]) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) matches.push(i);
+    }
+    return matches;
+  }
+
+  function bruteBorderLength(word) {
+    for (var length = word.length - 1; length > 0; length -= 1) {
+      if (word.slice(0, length) === word.slice(word.length - length)) return length;
+    }
+    return 0;
+  }
+
+  function brutePrefixFunction(pattern) {
+    var pi = [];
+    for (var i = 0; i < pattern.length; i += 1) {
+      pi.push(bruteBorderLength(pattern.slice(0, i + 1)));
+    }
+    return pi;
+  }
+
   function naiveSearch(text, pattern) {
     var comparisons = 0;
     var matches = [];
@@ -276,6 +308,206 @@
     return data;
   }
 
+  function sum(values) {
+    return values.reduce(function (total, value) { return total + value; }, 0);
+  }
+
+  function isStrictlyDescendingToZero(chain) {
+    if (!chain.length || chain[chain.length - 1] !== 0) return false;
+    for (var i = 1; i < chain.length; i += 1) {
+      if (chain[i] >= chain[i - 1]) return false;
+    }
+    return true;
+  }
+
+  function runAudit() {
+    var checks = [];
+    var sweepCases = 0;
+    var kmpWorseCases = 0;
+    var maxKmpPerText = 0;
+
+    function pass(name, ok, detail) {
+      checks.push({ name: name, ok: !!ok, detail: detail || "" });
+    }
+
+    function sameArray(left, right) {
+      return arraysEqual(left, right);
+    }
+
+    var cleaned = cleanParams({
+      scenario: "bogus",
+      textLength: 999,
+      patternLength: 2,
+      plants: "wild",
+      focus: Infinity
+    });
+    pass(
+      "controls clamp and recover defaults",
+      cleaned.scenario === DEFAULTS.scenario &&
+        cleaned.textLength === 360 &&
+        cleaned.patternLength === 5 &&
+        cleaned.plants === DEFAULTS.plants &&
+        cleaned.focus === DEFAULTS.focus
+    );
+
+    var defaultData = evaluate(DEFAULTS);
+    pass(
+      "default near-miss fixture is stable",
+      defaultData.pattern === "aaaaaaaaab" &&
+        sameArray(defaultData.pi, [0, 1, 2, 3, 4, 5, 6, 7, 8, 0]) &&
+        defaultData.naive.comparisons === 2110 &&
+        defaultData.kmp.comparisons === 431 &&
+        defaultData.kmp.fallbacks === 211 &&
+        defaultData.kmp.matches.length === 0
+    );
+
+    pass("classic prefix table matches KMP example", sameArray(prefixFunction("ababaca"), [0, 0, 1, 2, 3, 0, 1]));
+
+    pass(
+      "prefix function equals brute border definition",
+      ["ababaca", "aaaaaaaab", "abcababcab", "ACACACACAGTA", "ERR:CACHE!"].every(function (pattern) {
+        return sameArray(prefixFunction(pattern), brutePrefixFunction(pattern));
+      })
+    );
+
+    pass("fallback chain descends through borders", sameArray(chainFrom(prefixFunction("ababa"), 5), [5, 3, 1, 0]));
+
+    var overlap = "aaaa";
+    var overlapPatternText = "aa";
+    pass(
+      "overlapping matches are emitted",
+      sameArray(naiveSearch(overlap, overlapPatternText).matches, [0, 1, 2]) &&
+        sameArray(kmpSearch(overlap, overlapPatternText).matches, [0, 1, 2])
+    );
+
+    var exactFixture = "ababaabababa";
+    var exactPattern = "ababa";
+    pass(
+      "naive and KMP match exact search",
+      sameArray(naiveSearch(exactFixture, exactPattern).matches, exactMatches(exactFixture, exactPattern)) &&
+        sameArray(kmpSearch(exactFixture, exactPattern).matches, exactMatches(exactFixture, exactPattern))
+    );
+
+    pass(
+      "KMP event accounting balances comparisons",
+      defaultData.kmp.qTrace.length === defaultData.text.length &&
+        sum(defaultData.kmp.perPosition) === defaultData.kmp.comparisons &&
+        defaultData.kmp.events.filter(function (event) { return event.type === "fallback"; }).length === defaultData.kmp.fallbacks
+    );
+
+    pass(
+      "fallback edges follow the prefix table",
+      defaultData.kmp.events.every(function (event) {
+        return event.type !== "fallback" || (event.to === defaultData.pi[event.from - 1] && event.to < event.from);
+      })
+    );
+
+    pass(
+      "text indices only move forward in event trace",
+      defaultData.kmp.events.every(function (event, index, events) {
+        return index === 0 || event.i == null || events[index - 1].i == null || event.i >= events[index - 1].i;
+      })
+    );
+
+    pass(
+      "KMP state stays inside automaton",
+      defaultData.kmp.qTrace.every(function (q) { return q >= 0 && q < defaultData.pattern.length; })
+    );
+
+    pass(
+      "selected fallback highlights a real border",
+      defaultData.summary.fallbackEvent &&
+        defaultData.summary.fallbackEvent.from === 9 &&
+        defaultData.summary.fallbackEvent.to === 8 &&
+        defaultData.pattern.slice(0, 8) === defaultData.pattern.slice(1, 9)
+    );
+
+    var denseOverlap = evaluate({ scenario: "overlap", textLength: 220, patternLength: 10, plants: "dense", focus: 55 });
+    pass(
+      "planted dense overlap fixture reports five matches",
+      sameArray(denseOverlap.kmp.matches, [25, 59, 92, 126, 160]) &&
+        denseOverlap.summary.sameMatches
+    );
+
+    var logs = evaluate({ scenario: "logs", textLength: 220, patternLength: 10, plants: "none", focus: 55 });
+    pass(
+      "low-overlap logs can cost KMP extra comparisons",
+      logs.kmp.comparisons > logs.naive.comparisons &&
+        logs.summary.sameMatches
+    );
+
+    var dna = evaluate({ scenario: "dna", textLength: 220, patternLength: 12, plants: "sparse", focus: 55 });
+    pass(
+      "DNA sparse fixture keeps planted matches",
+      sameArray(dna.kmp.matches, [62, 141]) &&
+        dna.summary.sameMatches
+    );
+
+    var sweepOk = true;
+    SCENARIOS.forEach(function (scenario) {
+      PLANTS.forEach(function (plants) {
+        [120, 220, 340].forEach(function (textLength) {
+          [6, 10, 14, 18].forEach(function (patternLength) {
+            var data = evaluate({
+              focus: 55,
+              patternLength: patternLength,
+              plants: plants,
+              scenario: scenario,
+              textLength: textLength
+            });
+            sweepCases += 1;
+            if (data.kmp.comparisons > data.naive.comparisons) kmpWorseCases += 1;
+            maxKmpPerText = Math.max(maxKmpPerText, data.kmp.comparisons / Math.max(1, data.text.length));
+            sweepOk = sweepOk &&
+              data.summary.sameMatches &&
+              sameArray(data.naive.matches, exactMatches(data.text, data.pattern)) &&
+              sameArray(data.kmp.matches, exactMatches(data.text, data.pattern)) &&
+              data.kmp.comparisons <= 2 * data.text.length &&
+              sum(data.kmp.perPosition) === data.kmp.comparisons &&
+              data.kmp.qTrace.length === data.text.length &&
+              isStrictlyDescendingToZero(data.chain) &&
+              sameArray(data.pi, brutePrefixFunction(data.pattern));
+          });
+        });
+      });
+    });
+    pass("144-scenario sweep preserves exact matches and linear bound", sweepOk && sweepCases === 144);
+    pass("sweep keeps known KMP-overhead cases visible", kmpWorseCases === 12);
+
+    var makeOk = SCENARIOS.every(function (scenario) {
+      return [5, 10, 18].every(function (patternLength) {
+        var made = makeScenario({ scenario: scenario, patternLength: patternLength, textLength: 123, plants: "none" });
+        return made.pattern.length === patternLength && made.text.length === 123;
+      });
+    });
+    pass("scenario builders honor requested lengths", makeOk);
+
+    pass(
+      "saved share and ratio are finite",
+      [defaultData, denseOverlap, logs, dna].every(function (data) {
+        return Number.isFinite(data.summary.savedShare) && Number.isFinite(data.summary.ratio);
+      })
+    );
+
+    pass("KMP comparisons stay below two per text character in sweep", maxKmpPerText <= 2);
+
+    var passed = checks.filter(function (check) { return check.ok; }).length;
+    return {
+      checked: checks.length,
+      checks: checks,
+      failures: checks.filter(function (check) { return !check.ok; }),
+      kmpWorseCases: kmpWorseCases,
+      maxKmpPerText: maxKmpPerText,
+      passed: passed,
+      sweepCases: sweepCases
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function parseParams(root) {
     var raw = {};
     root.querySelectorAll("[data-param]").forEach(function (input) {
@@ -297,13 +529,15 @@
   }
 
   function renderMetrics(root, data) {
+    var audit = cachedAudit();
     var metrics = [
       metric("naive comparisons", compactNumber(data.naive.comparisons)),
       metric("KMP comparisons", compactNumber(data.kmp.comparisons)),
       metric("saved", percent(data.summary.savedShare)),
       metric("matches", compactNumber(data.summary.matchCount)),
       metric("fallback jumps", compactNumber(data.kmp.fallbacks)),
-      metric("longest border", compactNumber(data.summary.longestBorder))
+      metric("longest border", compactNumber(data.summary.longestBorder)),
+      metric("Audit", audit.passed + "/" + audit.checked)
     ].join("");
     var target = root.querySelector("[data-metrics]");
     if (target) target.innerHTML = metrics;
@@ -590,10 +824,12 @@
   var api = {
     cleanParams: cleanParams,
     evaluate: evaluate,
+    exactMatches: exactMatches,
     kmpSearch: kmpSearch,
     makeScenario: makeScenario,
     naiveSearch: naiveSearch,
-    prefixFunction: prefixFunction
+    prefixFunction: prefixFunction,
+    runAudit: runAudit
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
