@@ -1,7 +1,26 @@
 <footer class="site-footer">
-  <div class="wrapper">
+  <div class="wrapper site-footer__inner">
+    <div class="site-footer__brand">
+      <a class="site-footer__title" href="{{ '/' | relative_url }}">{{ site.title | escape }}</a>
+      {%- if site.description %}<p class="site-footer__tagline">{{ site.description | escape }}</p>{% endif -%}
+    </div>
+
+    <nav class="site-footer__col" aria-label="Notebook">
+      <span class="site-footer__h">Notebook</span>
+      <a href="{{ '/' | relative_url }}">All notes</a>
+      <a href="{{ '/tags/' | relative_url }}">Topics</a>
+      <a href="{{ '/about/' | relative_url }}">About</a>
+    </nav>
+
+    <nav class="site-footer__col" aria-label="Elsewhere">
+      <span class="site-footer__h">Elsewhere</span>
+      {%- if site.github_username %}<a href="https://github.com/{{ site.github_username }}" rel="me">GitHub</a>{% endif -%}
+      {%- if site.email %}<a href="mailto:{{ site.email }}">Email</a>{% endif -%}
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+    </nav>
+  </div>
+
+  <div class="wrapper site-footer__base">
     &copy; {{ 'now' | date: '%Y' }} {{ site.author.name | default: site.title | escape }}
-    {%- if site.github_username %} &middot; <a href="https://github.com/{{ site.github_username }}" rel="me">GitHub</a>{% endif -%}
-    {%- if site.email %} &middot; <a href="mailto:{{ site.email }}">Email</a>{% endif -%}
   </div>
 </footer>

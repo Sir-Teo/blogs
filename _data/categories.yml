@@ -1,55 +1,59 @@
 # Canonical category taxonomy.
 # slug -> display name, dot color, and short filter-chip label.
 # Order here is the order chips render in.
+#
+# Colours are spaced deliberately around the hue wheel so the 7px dots stay
+# distinguishable from each other, and every one clears ~3:1 on white and ~4:1
+# on the dark background (#121417). Keep that property if you re-colour.
 machine-learning:
   name: Machine learning
   short: ML
-  color: "#7F77DD"
+  color: "#926AD7"
 ai-systems:
   name: AI systems
   short: Systems
-  color: "#1D9E75"
+  color: "#389F6F"
 computer-science:
   name: Computer science
   short: CS
-  color: "#D4537E"
+  color: "#D25698"
 gaming:
   name: Gaming
   short: Games
-  color: "#6D8A1F"
+  color: "#58983E"
 physics:
   name: Physics
   short: Physics
-  color: "#6F7C12"
+  color: "#849327"
 applied-math:
   name: Applied math
   short: Applied
-  color: "#8C6B2F"
+  color: "#BA693B"
 computer-graphics:
   name: Computer graphics
   short: Graphics
-  color: "#8B5FBF"
+  color: "#B668CA"
 data-systems:
   name: Data systems
   short: Data
-  color: "#2F7D7E"
+  color: "#31989B"
 software-engineering:
   name: Software engineering
   short: Eng
-  color: "#0E9AA7"
+  color: "#318CB9"
 statistics:
   name: Statistics
   short: Statistics
-  color: "#378ADD"
+  color: "#5277CE"
 quantitative-finance:
   name: Quant finance
   short: Finance
-  color: "#BA7517"
+  color: "#B5801F"
 psychology:
   name: Psychology
   short: Psych
-  color: "#B5645D"
+  color: "#D65C6A"
 meta:
   name: Meta
   short: Meta
-  color: "#888780"
+  color: "#7C828D"
