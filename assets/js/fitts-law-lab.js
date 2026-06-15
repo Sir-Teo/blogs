@@ -25,8 +25,25 @@
     trials: 180
   };
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function close(actual, expected, tolerance) {
+    return Math.abs(actual - expected) <= tolerance;
+  }
+
+  function finiteNumber(value) {
+    return Number.isFinite(value);
+  }
+
+  function monotoneNonincreasing(values, tolerance) {
+    for (var i = 1; i < values.length; i += 1) {
+      if (values[i] > values[i - 1] + tolerance) return false;
+    }
+    return true;
   }
 
   function numeric(raw, key) {
@@ -80,6 +97,32 @@
       return sum + (value - m) * (value - m);
     }, 0) / (values.length - 1);
     return Math.sqrt(Math.max(0, variance));
+  }
+
+  function countHits(rows) {
+    return rows.reduce(function (hits, row) { return hits + (row.hit ? 1 : 0); }, 0);
+  }
+
+  function finiteRows(rows) {
+    return rows.every(function (row) {
+      return finiteNumber(row.x) && finiteNumber(row.y) && finiteNumber(row.mt) && typeof row.hit === "boolean";
+    });
+  }
+
+  function correlation(xs, ys) {
+    var xMean = mean(xs);
+    var yMean = mean(ys);
+    var numerator = 0;
+    var xVar = 0;
+    var yVar = 0;
+    xs.forEach(function (x, i) {
+      var dx = x - xMean;
+      var dy = ys[i] - yMean;
+      numerator += dx * dy;
+      xVar += dx * dx;
+      yVar += dy * dy;
+    });
+    return numerator / Math.max(1e-12, Math.sqrt(xVar * yVar));
   }
 
   function movementModel(params) {
@@ -182,6 +225,86 @@
     result.urgencySweep = urgencySweep(result.params);
     result.geometrySweep = geometrySweep(result.params);
     return result;
+  }
+
+  function runAudit() {
+    var checks = [];
+    var tolerance = 1e-9;
+    function check(name, passed, detail) {
+      checks.push({ name: name, passed: Boolean(passed), detail: detail || "" });
+    }
+
+    var clamped = cleanParams({ amplitude: 999, width: -4, urgency: 333, motorNoise: 99, trials: 999 });
+    check("parameter clamps", clamped.amplitude === 760 && clamped.width === 12 && clamped.urgency === 100 && clamped.motorNoise === 28 && clamped.trials === 420);
+
+    var fallback = cleanParams({ amplitude: "x", width: "x", urgency: "x", motorNoise: "x", trials: "x" });
+    check("default fallbacks", fallback.amplitude === DEFAULTS.amplitude && fallback.width === DEFAULTS.width && fallback.urgency === DEFAULTS.urgency && fallback.motorNoise === DEFAULTS.motorNoise && fallback.trials === DEFAULTS.trials);
+
+    check("Shannon ID formula", close(indexOfDifficulty(420, 44), log2(420 / 44 + 1), tolerance));
+    check("ID rises with amplitude", indexOfDifficulty(760, 44) > indexOfDifficulty(120, 44));
+    check("ID falls with width", indexOfDifficulty(420, 12) > indexOfDifficulty(420, 160));
+
+    var defaultA = simulate(DEFAULTS);
+    var defaultB = simulate(DEFAULTS);
+    check("deterministic replay", JSON.stringify(defaultA.summary) === JSON.stringify(defaultB.summary) && JSON.stringify(defaultA.rows.slice(0, 8)) === JSON.stringify(defaultB.rows.slice(0, 8)));
+    check("trial ledger length", defaultA.rows.length === defaultA.params.trials);
+    check("finite trial ledger", finiteRows(defaultA.rows));
+
+    var hits = countHits(defaultA.rows);
+    check("hit count ledger", hits === defaultA.summary.hitCount);
+    check("miss-rate arithmetic", close(defaultA.summary.missRate, 1 - hits / defaultA.params.trials, tolerance));
+    check("effective-width arithmetic", close(defaultA.summary.effectiveWidth, Math.max(1, 4.133 * defaultA.summary.endpointSd), tolerance));
+    check("effective-ID arithmetic", close(defaultA.summary.effectiveId, indexOfDifficulty(defaultA.params.amplitude, defaultA.summary.effectiveWidth), tolerance));
+    check("throughput arithmetic", close(defaultA.summary.throughput, defaultA.summary.effectiveId / (defaultA.summary.meanMt / 1000), tolerance));
+    check("movement-time bounds", defaultA.rows.every(function (row) { return row.mt >= 80 && row.mt <= 1800; }));
+
+    var wide = simulate({ width: 160 });
+    var narrow = simulate({ width: 12 });
+    check("narrow targets are harder", narrow.summary.id > wide.summary.id && narrow.summary.meanMt > wide.summary.meanMt && narrow.summary.missRate > wide.summary.missRate);
+
+    var short = simulate({ amplitude: 120, width: 44 });
+    var long = simulate({ amplitude: 760, width: 44 });
+    check("longer amplitudes are slower", long.summary.id > short.summary.id && long.summary.meanMt > short.summary.meanMt);
+
+    var calm = simulate({ urgency: 0, motorNoise: 6 });
+    var urgent = simulate({ urgency: 100, motorNoise: 6 });
+    check("urgency spends accuracy", urgent.summary.meanMt < calm.summary.meanMt && urgent.summary.endpointSd > calm.summary.endpointSd && urgent.summary.missRate > calm.summary.missRate);
+
+    var noNoise = simulate({ motorNoise: 0 });
+    var highNoise = simulate({ motorNoise: 28 });
+    check("motor noise widens endpoints", highNoise.summary.endpointSd > noNoise.summary.endpointSd && highNoise.summary.missRate > noNoise.summary.missRate && highNoise.summary.throughput < noNoise.summary.throughput);
+
+    var urgencyRows = urgencySweep(DEFAULTS);
+    check("urgency sweep shape", urgencyRows.length === 21 && urgencyRows[0].urgency === 0 && urgencyRows[urgencyRows.length - 1].urgency === 100);
+    check("urgency sweep finite", urgencyRows.every(function (row) {
+      return finiteNumber(row.throughput) && finiteNumber(row.missRate) && finiteNumber(row.meanMt);
+    }));
+    check("urgency sweep shortens movement", monotoneNonincreasing(urgencyRows.map(function (row) { return row.meanMt; }), tolerance));
+    check("urgency endpoint tradeoff", urgencyRows[urgencyRows.length - 1].missRate > urgencyRows[0].missRate);
+
+    var geometryRows = geometrySweep(DEFAULTS);
+    check("geometry sweep shape", geometryRows.length === 25);
+    check("geometry sweep finite", geometryRows.every(function (row) {
+      return finiteNumber(row.amplitude) && finiteNumber(row.width) && finiteNumber(row.id) && finiteNumber(row.mt);
+    }));
+    check("geometry predicts movement time", correlation(
+      geometryRows.map(function (row) { return row.id; }),
+      geometryRows.map(function (row) { return row.mt; })
+    ) > 0.97);
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function formatMs(value) {
@@ -474,13 +597,15 @@
   }
 
   function renderMetrics(root, result) {
+    var audit = cachedAudit();
     var html = [
       metric("nominal ID", formatBits(result.summary.id)),
       metric("mean movement", formatMs(result.summary.meanMt)),
       metric("miss rate", formatPct(result.summary.missRate)),
       metric("effective width", formatPx(result.summary.effectiveWidth)),
       metric("effective ID", formatBits(result.summary.effectiveId)),
-      metric("throughput", result.summary.throughput.toFixed(2) + " bps")
+      metric("throughput", result.summary.throughput.toFixed(2) + " bps"),
+      metric("audit", audit.passed + "/" + audit.checked)
     ].join("");
     var target = root.querySelector("[data-metrics]");
     if (target) target.innerHTML = html;
@@ -531,7 +656,8 @@
   global.FittsLawLab = {
     cleanParams: cleanParams,
     evaluate: evaluate,
-    indexOfDifficulty: indexOfDifficulty
+    indexOfDifficulty: indexOfDifficulty,
+    runAudit: runAudit
   };
 
   if (typeof module !== "undefined" && module.exports) {
