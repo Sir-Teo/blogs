@@ -40,7 +40,7 @@ This post builds a small browser experiment around that idea. It is intentionall
 not a beautiful bird simulator. It is a stripped-down active-matter toy with a
 measuring instrument attached.
 
-## The Minimal Trick
+## Minimal Trick
 
 Craig Reynolds's 1987 boids paper made flocking famous in computer graphics:
 each simulated bird chooses its course from local perception, simple physics,
