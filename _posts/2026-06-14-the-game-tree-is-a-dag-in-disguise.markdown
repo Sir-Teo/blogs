@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Tree Told the Wrong Story"
+title: "Game Trees Tell the Wrong Story"
 description: "Alpha-beta search is drawn as a tree, but repeated positions make the real work a graph. A transposition table is safe only when it stores identity, depth, and bound type."
 date: 2026-06-14 15:20:00 -0400
 categories: gaming
