@@ -24,6 +24,8 @@
     { key: "repetition", label: "repeat-3", rate: 1 / 3, n: 12, color: COLORS.repetition }
   ];
 
+  var AUDIT_CACHE = null;
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -223,16 +225,119 @@
     return -p * Math.log2(p) - (1 - p) * Math.log2(1 - p);
   }
 
-  function minDistanceHamming() {
+  function minDistanceFor(key) {
+    var fns = schemeFns(key);
     var words = [];
-    for (var data = 0; data < 16; data += 1) words.push(bitsToInt(encodeHamming(data)));
-    var min = 7;
+    for (var data = 0; data < 16; data += 1) words.push(bitsToInt(fns.encode(data)));
+    var min = fns.n;
     for (var i = 0; i < words.length; i += 1) {
       for (var j = i + 1; j < words.length; j += 1) {
         min = Math.min(min, hammingWeight(words[i] ^ words[j]));
       }
     }
     return min;
+  }
+
+  function minDistanceHamming() {
+    return minDistanceFor("hamming");
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+    var expectedDistances = { raw: 1, hamming: 3, secded: 4, repetition: 3 };
+    var probabilityPs = [0, 0.03, 0.12, 0.2];
+    var tolerance = 1e-10;
+
+    function record(name, ok, details) {
+      checked += 1;
+      if (ok) {
+        passed += 1;
+      } else if (failures.length < 8) {
+        failures.push({ name: name, details: details || "" });
+      }
+    }
+
+    Object.keys(expectedDistances).forEach(function (key) {
+      var actual = minDistanceFor(key);
+      record(key + " minimum distance", actual === expectedDistances[key], "got " + actual);
+    });
+
+    SCHEMES.forEach(function (scheme) {
+      var fns = schemeFns(scheme.key);
+      for (var data = 0; data < 16; data += 1) {
+        var clean = fns.decode(fns.encode(data));
+        record(scheme.key + " clean round trip " + data, !clean.erasure && clean.data === data);
+      }
+    });
+
+    for (var hData = 0; hData < 16; hData += 1) {
+      var hWord = encodeHamming(hData);
+      for (var hPos = 0; hPos < 7; hPos += 1) {
+        var hDecoded = decodeHamming(applyMask(hWord, 1 << hPos));
+        record(
+          "Hamming single-bit correction data " + hData + " bit " + (hPos + 1),
+          hDecoded.data === hData && hDecoded.syndrome === hPos + 1
+        );
+      }
+      for (var hMask = 0; hMask < 128; hMask += 1) {
+        if (hammingWeight(hMask) !== 2) continue;
+        var hTwo = decodeHamming(applyMask(hWord, hMask));
+        record("Hamming two-bit silent miscorr data " + hData + " mask " + hMask, hTwo.data !== hData);
+      }
+    }
+
+    for (var sData = 0; sData < 16; sData += 1) {
+      var sWord = encodeSecded(sData);
+      for (var sPos = 0; sPos < 8; sPos += 1) {
+        var sDecoded = decodeSecded(applyMask(sWord, 1 << sPos));
+        record(
+          "SECDED single-bit correction data " + sData + " bit " + (sPos + 1),
+          !sDecoded.erasure && sDecoded.data === sData
+        );
+      }
+      for (var sMask = 0; sMask < 256; sMask += 1) {
+        if (hammingWeight(sMask) !== 2) continue;
+        var sTwo = decodeSecded(applyMask(sWord, sMask));
+        record("SECDED two-bit detection data " + sData + " mask " + sMask, sTwo.erasure === true);
+      }
+    }
+
+    probabilityPs.forEach(function (p) {
+      SCHEMES.forEach(function (scheme) {
+        var out = evaluateScheme(scheme.key, p);
+        var sum = out.success + out.wrong + out.erasure;
+        record(
+          scheme.key + " probability mass p=" + p,
+          Math.abs(sum - 1) <= tolerance && out.success >= -tolerance && out.wrong >= -tolerance && out.erasure >= -tolerance,
+          "sum " + sum
+        );
+      });
+    });
+
+    var defaultP = 0.03;
+    var raw = evaluateScheme("raw", defaultP);
+    var hamming = evaluateScheme("hamming", defaultP);
+    var secded = evaluateScheme("secded", defaultP);
+    var repetition = evaluateScheme("repetition", defaultP);
+    record("raw formula at p=3%", Math.abs(raw.wrong - (1 - Math.pow(1 - defaultP, 4))) <= tolerance);
+    record("Hamming improves wrong-accepted rate", hamming.wrong < raw.wrong);
+    record("SECDED lowers silent wrongs", secded.wrong < hamming.wrong);
+    record("repeat-3 lowers silent wrongs", repetition.wrong < raw.wrong);
+    record("BSC capacity is finite", isFinite(1 - h2(defaultP)) && 1 - h2(defaultP) >= 0 && 1 - h2(defaultP) <= 1);
+
+    return {
+      checked: checked,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function paramsFromRoot(root) {
@@ -258,7 +363,8 @@
       var p = params.sweepMax * i / 30;
       var row = { capacity: 1 - h2(p), p: p };
       SCHEMES.forEach(function (scheme) {
-        row[scheme.key] = evaluateScheme(scheme.key, p).wrong + evaluateScheme(scheme.key, p).erasure;
+        var out = evaluateScheme(scheme.key, p);
+        row[scheme.key] = out.wrong + out.erasure;
       });
       rows.push(row);
     }
@@ -477,6 +583,7 @@
 
   function render(root) {
     var result = simulate(paramsFromRoot(root));
+    var audit = cachedAudit();
     var values = {
       data: result.params.data.toString(2).padStart(4, "0"),
       mask: result.params.mask.toString(2).padStart(7, "0"),
@@ -495,7 +602,8 @@
         metric("SECDED erasure", formatPercent(result.outcomes.secded.erasure * 100, 3)),
         metric("repeat-3 wrong", formatPercent(result.outcomes.repetition.wrong * 100, 3)),
         metric("BSC capacity", formatNumber(result.capacity, 3)),
-        metric("syndrome", result.word.syndrome ? String(result.word.syndrome) : "0")
+        metric("syndrome", result.word.syndrome ? String(result.word.syndrome) : "0"),
+        metric("audit", audit.passed + "/" + audit.checked)
       ].join("");
     }
     var canvas = root.querySelector("canvas[data-canvas]");
@@ -521,6 +629,10 @@
     decodeSecded: decodeSecded,
     encodeHamming: encodeHamming,
     encodeSecded: encodeSecded,
+    evaluateScheme: evaluateScheme,
+    minDistanceFor: minDistanceFor,
+    minDistanceHamming: minDistanceHamming,
+    runAudit: runAudit,
     simulate: simulate,
     syndrome: syndrome
   };
