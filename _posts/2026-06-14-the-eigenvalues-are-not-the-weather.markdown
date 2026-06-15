@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Eigenvalues Are Not the Weather"
+title: "Eigenvalues Are Not Weather"
 description: "A stable matrix can amplify disturbances before it damps them. The missing diagnostic is not another eigenvalue, but the geometry of the eigenvectors and the pseudospectrum around them."
 date: 2026-06-14 19:20:17 -0400
 categories: applied-math
