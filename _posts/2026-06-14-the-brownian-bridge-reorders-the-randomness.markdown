@@ -348,7 +348,7 @@ Monte Carlo is robust because it does not need the plumbing to be beautiful.
 
 Quasi-Monte Carlo is fast when you can give it one.
 
-## Sources
+## Further Reading
 
 [^caflisch]: Russel E. Caflisch, "Monte Carlo and quasi-Monte Carlo methods," *Acta Numerica*, 1998. [Cambridge Core](https://www.cambridge.org/core/journals/acta-numerica/article/monte-carlo-and-quasimonte-carlo-methods/FE7C779B350CFEA45DB2A4CCB2DA9B5C), [PDF](https://www.math.ucla.edu/~caflisch/Pubs/Pubs1995-1999/actaNumerica1998.pdf).
 
