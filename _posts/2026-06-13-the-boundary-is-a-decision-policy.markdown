@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Button Press Has a Clock"
+title: "Button Presses Carry Clocks"
 description: "A drift-diffusion model treats a decision as noisy evidence accumulating until it crosses a threshold. The boundary prices time, mistakes, and uncertainty."
 date: 2026-06-13 18:00:00 -0400
 categories: psychology
@@ -306,7 +306,7 @@ review trigger, a stop-loss, a diagnostic threshold, a beam-search termination
 rule, a confidence gate. The question is not whether there is a threshold. The
 question is what cost function taught it to stand there.
 
-## Sources
+## Source Notes
 
 [^ratcliff-1978]: Roger Ratcliff, ["A theory of memory retrieval"](https://doi.org/10.1037/0033-295X.85.2.59), *Psychological Review*, 1978.
 
