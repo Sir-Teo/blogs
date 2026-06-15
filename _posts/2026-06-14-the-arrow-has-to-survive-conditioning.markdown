@@ -62,7 +62,7 @@ good clue to such structure when the temporal ordering, measurement process, and
 conditioning set are right. It can also be fooled by the oldest enemy in causal
 inference: a common cause.
 
-## The Thermometer Problem
+## Thermometer Problem
 
 Imagine a hidden driver $$H$$.
 
