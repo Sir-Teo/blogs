@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Rare Target Teaches You to Quit"
+title: "Rare Targets Teach You to Quit"
 description: "Low-prevalence visual search is not ordinary perception with fewer positives. Rarity changes item criteria, quitting thresholds, and mistakes."
 date: 2026-06-14 00:36:00 -0400
 categories: psychology
