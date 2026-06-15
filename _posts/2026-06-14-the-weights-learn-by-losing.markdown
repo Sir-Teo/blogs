@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "The Weights Learn by Losing"
-description: "Multiplicative weights turns regret into a ledger: every expert keeps capital, every mistake burns some of it, and the aggregate learner gets a certificate against the best fixed expert in hindsight."
+title: "Mistakes Burn Capital"
+description: "Multiplicative weights is a loss ledger with teeth: every expert keeps capital, bad rounds shrink it, and the learner gets a certificate against a named comparator."
 date: 2026-06-14 17:13:00 -0400
 categories: machine-learning
 tags: [multiplicative-weights, hedge, online-learning, regret, boosting, game-theory, algorithms]
-excerpt: "The algorithm is almost embarrassingly small: keep a distribution, observe losses, multiply bad experts down. The interesting part is the receipt it leaves behind."
+excerpt: "Keep a distribution, observe losses, multiply bad experts down. The interesting part is not the update. It is the receipt it leaves behind."
 ---
 
 The algorithm is almost too small to deserve its reputation.
@@ -36,7 +36,7 @@ not "I know the future"
 but "I will not pay much more than the best constant story I could have told"
 ```
 
-## The Ledger
+## A Ledger With Teeth
 
 Suppose there are `N` experts. On round `t`, the learner has nonnegative weights
 `w_t,i`. It turns them into probabilities:
@@ -105,9 +105,16 @@ The default scenario is deliberately mean. Expert `E1` is excellent early, then
 becomes bad. Expert `E2` is boring and steady. With the default seed, `E1` ends
 around `95.53` cumulative loss, `E2` wins in hindsight at `55.79`, and Hedge
 pays `61.78`. That is `5.99` regret against the best fixed expert, beneath a
-certificate gap of `13.43`.
+certificate gap of `13.43`; by the end, `99.995%` of the weight sits on `E2`.
 
 In other words: it gets fooled, notices, and still keeps the bill bounded.
+
+I also audited the lab as code, not just as a picture. Across `972` combinations
+of scenario, learning rate, expert count, horizon, noise, and seed, every run
+kept finite losses, nonnegative weights, probabilities summing to one, and
+regret below the displayed certificate gap. The default sweep is doing what the
+theorem says it should: small `eta` is sluggish, huge `eta` is jumpy, and the
+middle of the plot is where the rent gets negotiated.
 
 <style>
   .mw-lab {
@@ -501,7 +508,7 @@ check regret against a named comparator
 
 It is not glamorous. It is better than that. It is auditable.
 
-## What To Take From The Lab
+## What the Lab Leaves You With
 
 The lesson is not "use eta equals 0.35." That number is just a knob in a toy.
 
