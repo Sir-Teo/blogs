@@ -389,7 +389,7 @@ solutions on small instances.
 
 The lab's red panel is the small-instance audit.
 
-## The Heuristic Belongs in the Spec
+## Heuristic Belongs in the Spec
 
 It is tempting to think of a heuristic as a performance detail.
 
