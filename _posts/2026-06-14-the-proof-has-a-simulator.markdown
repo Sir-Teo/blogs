@@ -35,7 +35,7 @@ language, it is a Sigma protocol: commit, challenge, respond.
 Three messages. Three properties. A surprising amount of cryptography packed
 into something you can still do on a napkin.
 
-## The Claim on the Table
+## Claim on the Table
 
 Work in a cyclic group of prime order $$q$$ with generator $$g$$. The prover
 knows a secret
