@@ -10,49 +10,158 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
-  <div class="searchbar">
-    <svg class="searchbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-    <input type="search" class="searchbar__input" id="postsearch" placeholder="Search notes…" aria-label="Search notes" autocomplete="off" spellcheck="false">
-    <span class="searchbar__kbd" aria-hidden="true">/</span>
+  {%- assign lab_count = 0 -%}
+  {%- for post in site.posts -%}
+    {%- if post.content contains 'data-' -%}
+      {%- if post.content contains '-lab' -%}
+        {%- assign lab_count = lab_count | plus: 1 -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+
+  <div class="archive-tools" data-archive-tools>
+    <div class="searchbar">
+      <svg class="searchbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" class="searchbar__input" id="postsearch" placeholder="Search notes…" aria-label="Search notes" autocomplete="off" spellcheck="false">
+      <span class="searchbar__kbd" aria-hidden="true">/</span>
+    </div>
+
+    <div class="viewbar" role="group" aria-label="Archive view">
+      <button type="button" class="archive-view is-active" data-view="latest" aria-pressed="true">Latest</button>
+      <button type="button" class="archive-view" data-view="topics" aria-pressed="false">Topics</button>
+      <button type="button" class="archive-view" data-view="series" aria-pressed="false">Series</button>
+      <button type="button" class="archive-view" data-view="labs" aria-pressed="false">Labs<span class="archive-view__count">{{ lab_count }}</span></button>
+    </div>
+
+    <div class="chipbar" role="group" aria-label="Filter posts by topic">
+      <button type="button" class="chip is-active" data-filter="all" aria-pressed="true">All<span class="chip__count">{{ site.posts.size }}</span></button>
+      {%- for cat in site.data.categories -%}
+        {%- assign slug = cat[0] -%}
+        {%- assign meta = cat[1] -%}
+        {%- assign incat = site.categories[slug] -%}
+        {%- if incat and incat.size > 0 -%}
+        <button type="button" class="chip" data-filter="{{ slug }}" aria-pressed="false" title="{{ meta.name }}"><span class="chip__dot" style="background: {{ meta.color }}"></span>{{ meta.short | default: meta.name }}<span class="chip__count">{{ incat.size }}</span></button>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
   </div>
 
-  <div class="chipbar" role="group" aria-label="Filter posts by topic">
-    <button type="button" class="chip is-active" data-filter="all" aria-pressed="true">All<span class="chip__count">{{ site.posts.size }}</span></button>
+  <p class="postlist__status" aria-live="polite"><span id="postcount">{{ site.posts.size }}</span> <span id="postnoun">notes</span></p>
+
+  <section class="archive-panel is-active" data-archive-panel="latest">
+    <ul class="postlist">
+      {%- for post in site.posts -%}
+      {%- assign slug = post.categories.first -%}
+      {%- assign meta = site.data.categories[slug] -%}
+      {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+      {%- assign s_meta = nil -%}
+      {%- if post.series -%}{%- assign s_meta = site.data.series[post.series] -%}{%- endif -%}
+      {%- assign has_lab = false -%}
+      {%- if post.content contains 'data-' -%}{%- if post.content contains '-lab' -%}{%- assign has_lab = true -%}{%- endif -%}{%- endif -%}
+      {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }} {{ meta.short }}{% endif %}{% if s_meta %} {{ s_meta.name }}{% endif %}{% if has_lab %} lab interactive{% endif %}{%- endcapture -%}
+      <li class="postlist__item archive-item" data-category="{{ slug }}" data-lab="{{ has_lab }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
+        <a class="postlist__link" href="{{ post.url | relative_url }}">
+          <span class="postlist__meta">
+            {%- if meta -%}
+            <span class="postlist__cat"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.short | default: meta.name }}</span>
+            {%- else -%}
+            <span class="postlist__cat"></span>
+            {%- endif -%}
+            {%- if has_lab -%}<span class="postlist__badge">Lab</span>{%- endif -%}
+          </span>
+          <span class="postlist__title">{{ post.title | escape }}</span>
+          {%- if desc and desc != "" -%}
+          <span class="postlist__desc">{{ desc | truncate: 150 | escape }}</span>
+          {%- endif -%}
+        </a>
+      </li>
+      {%- endfor -%}
+    </ul>
+  </section>
+
+  <section class="archive-panel" data-archive-panel="topics" hidden>
     {%- for cat in site.data.categories -%}
       {%- assign slug = cat[0] -%}
       {%- assign meta = cat[1] -%}
       {%- assign incat = site.categories[slug] -%}
       {%- if incat and incat.size > 0 -%}
-      <button type="button" class="chip" data-filter="{{ slug }}" aria-pressed="false"><span class="chip__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}<span class="chip__count">{{ incat.size }}</span></button>
+      <section class="archive-group" data-archive-group>
+        <h2 class="archive-group__h"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}<span class="archive-group__count">{{ incat.size }}</span></h2>
+        <ul class="compact-list">
+          {%- for post in incat -%}
+          {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+          {%- assign s_meta = nil -%}
+          {%- if post.series -%}{%- assign s_meta = site.data.series[post.series] -%}{%- endif -%}
+          {%- assign has_lab = false -%}
+          {%- if post.content contains 'data-' -%}{%- if post.content contains '-lab' -%}{%- assign has_lab = true -%}{%- endif -%}{%- endif -%}
+          {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }} {{ meta.name }} {{ meta.short }}{% if s_meta %} {{ s_meta.name }}{% endif %}{% if has_lab %} lab interactive{% endif %}{%- endcapture -%}
+          <li class="compact-list__item archive-item" data-category="{{ slug }}" data-lab="{{ has_lab }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
+            <a class="compact-list__link" href="{{ post.url | relative_url }}"><span>{{ post.title | escape }}</span>{% if has_lab %}<span class="postlist__badge">Lab</span>{% endif %}</a>
+          </li>
+          {%- endfor -%}
+        </ul>
+      </section>
       {%- endif -%}
     {%- endfor -%}
-  </div>
+  </section>
 
-  <p class="postlist__status" aria-live="polite"><span id="postcount">{{ site.posts.size }}</span> notes</p>
-
-  <ul class="postlist">
-    {%- for post in site.posts -%}
-    {%- assign slug = post.categories.first -%}
-    {%- assign meta = site.data.categories[slug] -%}
-    {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
-    {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }}{% endif %}{%- endcapture -%}
-    <li class="postlist__item" data-category="{{ slug }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
-      <a class="postlist__link" href="{{ post.url | relative_url }}">
-        <span class="postlist__meta">
-          {%- if meta -%}
-          <span class="postlist__cat"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.name }}</span>
-          {%- else -%}
-          <span class="postlist__cat"></span>
-          {%- endif -%}
-        </span>
-        <span class="postlist__title">{{ post.title | escape }}</span>
-        {%- if desc and desc != "" -%}
-        <span class="postlist__desc">{{ desc | truncate: 150 | escape }}</span>
-        {%- endif -%}
-      </a>
-    </li>
+  <section class="archive-panel" data-archive-panel="series" hidden>
+    {%- for s in site.data.series -%}
+      {%- assign s_slug = s[0] -%}
+      {%- assign s_meta = s[1] -%}
+      {%- assign s_posts = site.posts | where: "series", s_slug | sort: "date" -%}
+      {%- if s_posts.size > 0 -%}
+      <section class="archive-group" data-archive-group>
+        <h2 class="archive-group__h"><a href="{{ '/tags/' | relative_url }}#series-{{ s_slug }}">{{ s_meta.name }}</a><span class="archive-group__count">{{ s_posts.size }}</span></h2>
+        {%- if s_meta.blurb %}<p class="archive-group__desc">{{ s_meta.blurb }}</p>{% endif -%}
+        <ol class="compact-list compact-list--numbered">
+          {%- for post in s_posts -%}
+          {%- assign slug = post.categories.first -%}
+          {%- assign meta = site.data.categories[slug] -%}
+          {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+          {%- assign has_lab = false -%}
+          {%- if post.content contains 'data-' -%}{%- if post.content contains '-lab' -%}{%- assign has_lab = true -%}{%- endif -%}{%- endif -%}
+          {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }} {{ meta.short }}{% endif %} {{ s_meta.name }}{% if has_lab %} lab interactive{% endif %}{%- endcapture -%}
+          <li class="compact-list__item archive-item" data-category="{{ slug }}" data-lab="{{ has_lab }}" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
+            <a class="compact-list__link" href="{{ post.url | relative_url }}"><span>{{ post.title | escape }}</span>{% if has_lab %}<span class="postlist__badge">Lab</span>{% endif %}</a>
+          </li>
+          {%- endfor -%}
+        </ol>
+      </section>
+      {%- endif -%}
     {%- endfor -%}
-  </ul>
+  </section>
+
+  <section class="archive-panel" data-archive-panel="labs" hidden>
+    <ul class="postlist">
+      {%- for post in site.posts -%}
+      {%- assign has_lab = false -%}
+      {%- if post.content contains 'data-' -%}{%- if post.content contains '-lab' -%}{%- assign has_lab = true -%}{%- endif -%}{%- endif -%}
+      {%- if has_lab -%}
+      {%- assign slug = post.categories.first -%}
+      {%- assign meta = site.data.categories[slug] -%}
+      {%- assign desc = post.description | default: post.excerpt | strip_html | normalize_whitespace -%}
+      {%- assign s_meta = nil -%}
+      {%- if post.series -%}{%- assign s_meta = site.data.series[post.series] -%}{%- endif -%}
+      {%- capture searchblob -%}{{ post.title }} {{ desc }} {{ post.tags | join: " " }}{% if meta %} {{ meta.name }} {{ meta.short }}{% endif %}{% if s_meta %} {{ s_meta.name }}{% endif %} lab interactive{%- endcapture -%}
+      <li class="postlist__item archive-item" data-category="{{ slug }}" data-lab="true" data-search="{{ searchblob | normalize_whitespace | downcase | escape }}">
+        <a class="postlist__link" href="{{ post.url | relative_url }}">
+          <span class="postlist__meta">
+            {%- if meta -%}
+            <span class="postlist__cat"><span class="postlist__dot" style="background: {{ meta.color }}"></span>{{ meta.short | default: meta.name }}</span>
+            {%- endif -%}
+            <span class="postlist__badge">Lab</span>
+          </span>
+          <span class="postlist__title">{{ post.title | escape }}</span>
+          {%- if desc and desc != "" -%}
+          <span class="postlist__desc">{{ desc | truncate: 150 | escape }}</span>
+          {%- endif -%}
+        </a>
+      </li>
+      {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </section>
   <p class="postlist__empty" hidden>No notes match your search.</p>
   {%- endif -%}
 </div>

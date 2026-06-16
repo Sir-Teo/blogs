@@ -7,7 +7,13 @@ permalink: /tags/
 <div class="topics">
   <p class="topics__intro">Browse the notebook by series, category, or tag.</p>
 
-  <h2 class="topics__h">By series</h2>
+  <nav class="topics__nav" aria-label="Topics sections">
+    <a href="#series">Series</a>
+    <a href="#categories">Categories</a>
+    <a href="#tags">Tags</a>
+  </nav>
+
+  <h2 class="topics__h" id="series">Series</h2>
   <div class="topics__series">
     {%- for s in site.data.series -%}
       {%- assign s_slug = s[0] -%}
@@ -27,7 +33,7 @@ permalink: /tags/
     {%- endfor -%}
   </div>
 
-  <h2 class="topics__h">By category</h2>
+  <h2 class="topics__h" id="categories">Categories</h2>
   <div class="topics__cats">
     {%- for cat in site.data.categories -%}
       {%- assign slug = cat[0] -%}
@@ -46,7 +52,7 @@ permalink: /tags/
     {%- endfor -%}
   </div>
 
-  <h2 class="topics__h">By tag</h2>
+  <h2 class="topics__h" id="tags">Tags</h2>
   {%- assign sorted_tags = site.tags | sort -%}
   <div class="topics__taglist">
     {%- for tag in sorted_tags -%}

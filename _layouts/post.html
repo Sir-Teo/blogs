@@ -56,6 +56,33 @@ layout: default
   </ul>
   {%- endif -%}
 
+  {%- if page.series and s_posts.size > 1 -%}
+  {%- assign series_prev_pos = s_idx | minus: 1 -%}
+  {%- assign series_next_pos = s_idx | plus: 1 -%}
+  {%- capture series_steps -%}
+    {%- for sp in s_posts -%}
+      {%- if forloop.index == series_prev_pos -%}
+      <a class="series-next__link" href="{{ sp.url | relative_url }}">
+        <span class="series-next__dir">Previous in series</span>
+        <span class="series-next__title">{{ sp.title | escape }}</span>
+      </a>
+      {%- endif -%}
+      {%- if forloop.index == series_next_pos -%}
+      <a class="series-next__link" href="{{ sp.url | relative_url }}">
+        <span class="series-next__dir">Next in series</span>
+        <span class="series-next__title">{{ sp.title | escape }}</span>
+      </a>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- if series_steps contains "series-next__link" -%}
+  <nav class="series-next" aria-label="Continue this series">
+    <h2 class="related__h">Continue series</h2>
+    <div class="series-next__links">{{ series_steps }}</div>
+  </nav>
+  {%- endif -%}
+  {%- endif -%}
+
   {%- comment -%}
     Related posts: gather other posts that share a tag, in tag order then
     recency, de-duplicated, capped at 5. Built at compile time.
