@@ -396,9 +396,10 @@
         ]
       }
     ];
-    var rowH = box.h / rows.length;
+    var footerH = 24;
+    var rowH = (box.h - footerH) / rows.length;
     rows.forEach(function (row, rowIndex) {
-      var y = box.y + rowIndex * rowH + 16;
+      var y = box.y + rowIndex * rowH + 13;
       var x = box.x + 70;
       var w = box.w - 82;
       ctx.fillStyle = COLORS.text;
@@ -421,7 +422,7 @@
     ctx.fillStyle = COLORS.muted;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText(result.rejectedKeys.length + " rejected keys go to backup", box.x + 8, box.y + box.h - 8);
+    ctx.fillText(result.rejectedKeys.length + " rejected keys in backup", box.x + 8, box.y + box.h - 8);
   }
 
   function drawSweepPanel(ctx, result, box) {
@@ -515,7 +516,7 @@
     ctx.fillStyle = COLORS.muted;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("blue keys; red lookalike nonkeys; ocher keys need backup", box.x + 8, box.y + 8);
+    ctx.fillText("blue keys; red nonkeys; ocher backup", box.x + 8, box.y + 8);
   }
 
   function drawChart(canvas, result) {
