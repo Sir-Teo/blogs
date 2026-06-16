@@ -520,12 +520,24 @@
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.lineWidth = 1;
-    [
+    var marks = [
       { sigma: result.sweep.selectedSigma, color: COLORS.selected, label: "chosen" },
       { sigma: result.sweep.medianSigma, color: COLORS.median, label: "median" }
-    ].forEach(function (mark) {
-      if (mark.sigma < points[0].sigma || mark.sigma > points[points.length - 1].sigma) return;
-      var x = sx(mark.sigma);
+    ].filter(function (mark) {
+      return mark.sigma >= points[0].sigma && mark.sigma <= points[points.length - 1].sigma;
+    }).map(function (mark) {
+      mark.x = sx(mark.sigma);
+      return mark;
+    }).sort(function (a, b) {
+      return a.x - b.x;
+    });
+    marks.forEach(function (mark, index) {
+      var x = mark.x;
+      var row = 0;
+      for (var previous = 0; previous < index; previous += 1) {
+        if (Math.abs(x - marks[previous].x) < 52) row = Math.max(row, marks[previous].row + 1);
+      }
+      mark.row = row;
       ctx.strokeStyle = mark.color;
       ctx.beginPath();
       ctx.moveTo(x, inner.y);
@@ -534,7 +546,7 @@
       ctx.fillStyle = mark.color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(mark.label, x, inner.y + inner.h + 7);
+      ctx.fillText(mark.label, clamp(x, inner.x + 24, inner.x + inner.w - 24), inner.y + 6 + row * 14);
     });
     ctx.fillStyle = COLORS.muted;
     ctx.textAlign = "left";
