@@ -608,7 +608,7 @@
     ctx.fillStyle = COLORS.muted;
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText("gray: full attention; purple: retained by observation vote", box.x + 8, box.y + box.h - 5);
+    ctx.fillText("gray: full; purple: observed", box.x + 8, box.y + box.h - 5);
   }
 
   function drawChart(canvas, result) {
