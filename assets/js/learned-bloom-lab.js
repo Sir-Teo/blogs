@@ -559,7 +559,7 @@
       var value = Number(input.value);
       if (Number.isFinite(value)) params[key] = value;
     });
-    return defaultParams(params);
+    return params;
   }
 
   function updateOutputs(root, result) {
