@@ -414,7 +414,11 @@
       resultType = infer(state, env, preset.expr);
       resultType = applySubst(resultType, state.subst);
       finalScheme = principalScheme(state, env, resultType);
-      logEvent(state, state.recursiveBindings.length ? "bad" : "bind", "final type", formatScheme(finalScheme));
+      if (state.recursiveBindings.length) {
+        logEvent(state, "bad", "recursive result", state.recursiveBindings[0]);
+      } else {
+        logEvent(state, "bind", "final type", formatScheme(finalScheme));
+      }
     } catch (err) {
       state.error = err.message;
       logEvent(state, "bad", "type error", err.message);
@@ -538,9 +542,12 @@
 
   function renderMetrics(root, result) {
     var statusAccent = result.state.error ? "bad" : (result.state.recursiveBindings.length ? "warn" : "good");
+    var resultText = result.state.error
+      ? result.state.error
+      : (result.state.recursiveBindings.length ? result.state.recursiveBindings[0] : formatScheme(result.scheme));
     var html = [
       metric("status", result.stats.status, statusAccent),
-      metric("principal result", result.state.error ? result.state.error : formatScheme(result.scheme), statusAccent),
+      metric(result.state.recursiveBindings.length ? "recursive equation" : "principal result", resultText, statusAccent),
       metric("unifications", result.stats.unifications),
       metric("substitutions", result.stats.substitutions),
       metric("instantiations", result.stats.instantiations),
@@ -716,7 +723,9 @@
       ctx.fill();
       ctx.globalAlpha = 1;
       label(ctx, entry.label, box.x + 24, y, color, "left", "700 12px system-ui, sans-serif");
-      var text = local.state.error ? local.state.error : formatScheme(local.scheme);
+      var text = local.state.error
+        ? local.state.error
+        : (local.state.recursiveBindings.length ? local.state.recursiveBindings[0] : formatScheme(local.scheme));
       label(ctx, clipText(ctx, text, box.w - 126), box.x + 106, y, COLORS.text, "left", "12px ui-monospace, Menlo, monospace");
       label(ctx, local.stats.unifications + " unifies", box.x + 106, y + 18, COLORS.muted, "left", "11px system-ui, sans-serif");
     });
