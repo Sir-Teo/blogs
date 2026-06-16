@@ -551,9 +551,9 @@
       label(ctx, "cap", plot.x + plot.w - 22, syDepth(result.params.queueLimit) - 5, COLORS.cap);
     }
 
-    label(ctx, "backlog", plot.x, plot.y + 14, COLORS.loop, "left", "700 12px system-ui, sans-serif");
-    label(ctx, "ready I/O", plot.x + 76, plot.y + 14, COLORS.io, "left", "700 12px system-ui, sans-serif");
-    label(ctx, "slow CPU", plot.x + 156, plot.y + 14, COLORS.blocker, "left", "700 12px system-ui, sans-serif");
+    label(ctx, "backlog", plot.x, plot.y - 8, COLORS.loop, "left", "700 11px system-ui, sans-serif");
+    label(ctx, "ready I/O", plot.x + 72, plot.y - 8, COLORS.io, "left", "700 11px system-ui, sans-serif");
+    label(ctx, "slow CPU", plot.x + 148, plot.y - 8, COLORS.blocker, "left", "700 11px system-ui, sans-serif");
     label(ctx, "time", plot.x + plot.w - 25, plot.y + plot.h + 25);
   }
 
