@@ -17,7 +17,7 @@
   };
 
   var DEFAULTS = {
-    correlation: 78,
+    correlation: 80,
     extendedStats: 0,
     factRows: 8,
     indexTemptation: 78,
@@ -519,9 +519,9 @@
       ctx.globalAlpha = 1;
       label(ctx, dim.key, left + 8, y + 1, launch ? COLORS.hidden : COLORS.muted, "left", "700 12px system-ui, sans-serif");
       label(ctx, dim.label, left + 30, y + 1, COLORS.text);
-      label(ctx, "marg " + (dim.marginal * 100).toFixed(1) + "%", box.x + box.w - 112, y + 1, COLORS.estimate);
-      if (launch) label(ctx, "hidden " + (cond.high * 100).toFixed(1) + "%", box.x + box.w - 52, y + 1, COLORS.hidden);
-      else label(ctx, "indep", box.x + box.w - 52, y + 1, COLORS.muted);
+      label(ctx, "m " + (dim.marginal * 100).toFixed(1) + "%", box.x + box.w - 82, y + 1, COLORS.estimate, "right");
+      if (launch) label(ctx, "h " + (cond.high * 100).toFixed(1) + "%", box.x + box.w - 14, y + 1, COLORS.hidden, "right");
+      else label(ctx, "indep", box.x + box.w - 14, y + 1, COLORS.muted, "right");
     });
   }
 
@@ -560,7 +560,7 @@
   }
 
   function drawError(ctx, result, box) {
-    panel(ctx, box, "Error propagation", "log10(estimated / actual) by prefix");
+    panel(ctx, box, "Error propagation", "negative bars mean underestimates");
     var plot = { x: box.x + 42, y: box.y + 54, w: box.w - 66, h: box.h - 84 };
     var maxAbs = Math.max(0.5, result.chosenSteps.reduce(function (best, step) {
       return Math.max(best, Math.abs(step.signedError));
@@ -580,8 +580,6 @@
       ctx.globalAlpha = 1;
       label(ctx, DIMS[step.dim].key, cx, plot.y + plot.h + 18, COLORS.text, "center", "700 11px system-ui, sans-serif");
     });
-    label(ctx, "over", plot.x, plot.y - 8, COLORS.estimate);
-    label(ctx, "under", plot.x, plot.y + plot.h + 34, COLORS.bad);
   }
 
   function drawSweep(ctx, result, box) {
