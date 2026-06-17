@@ -854,6 +854,10 @@
     }, {});
   }
 
+  function emptyAuditLedger() {
+    return { accepted: 0, corrections: 0, dropped: 0, exact: 0, lateEmissions: 0, onTimeEmissions: [] };
+  }
+
   function audit() {
     var checked = 0;
     function check(condition, message) {
@@ -874,6 +878,21 @@
       var onTimeSum = state.windows.reduce(function (sum, win) { return sum + win.onTimeCount; }, 0);
       var correctionSum = state.windows.reduce(function (sum, win) { return sum + win.corrections; }, 0);
       var counts = statusCounts(state.steps);
+      var ledger = {};
+      state.steps.forEach(function (step) {
+        var key = windowKey(step.windowStart);
+        if (!ledger[key]) ledger[key] = emptyAuditLedger();
+        ledger[key].exact += 1;
+        if (step.status === "dropped") ledger[key].dropped += 1;
+        else ledger[key].accepted += 1;
+        if (step.status === "correction") ledger[key].corrections += 1;
+      });
+      state.emissions.forEach(function (emission) {
+        var key = windowKey(emission.windowStart);
+        if (!ledger[key]) ledger[key] = emptyAuditLedger();
+        if (emission.type === "late") ledger[key].lateEmissions += 1;
+        if (emission.type === "on-time") ledger[key].onTimeEmissions.push(emission);
+      });
       check(state.steps.length === events.length, label + " should produce one step per event");
       check(exactSum === events.length, label + " exact windows should partition the stream");
       check(acceptedSum === state.summary.accepted, label + " accepted window sum should match summary");
@@ -894,6 +913,19 @@
       check(state.windows.every(function (win) { return win.accepted + win.dropped === win.exact; }), label + " each window should reconcile exact = accepted + dropped");
       check(state.windows.every(function (win) { return win.exact === 0 || win.onTimeFired; }), label + " nonempty windows should fire an on-time pane by final flush");
       check(state.windows.every(function (win) { return win.finalized; }), label + " all windows should be finalized by final flush");
+      state.windows.forEach(function (win) {
+        var key = windowKey(win.start);
+        var entry = ledger[key] || emptyAuditLedger();
+        check(entry.exact === win.exact, label + " window " + key + " exact count should match event ledger");
+        check(entry.accepted === win.accepted, label + " window " + key + " accepted count should match event ledger");
+        check(entry.dropped === win.dropped, label + " window " + key + " dropped count should match event ledger");
+        check(entry.corrections === win.corrections, label + " window " + key + " correction count should match event ledger");
+        check(entry.lateEmissions === win.corrections, label + " window " + key + " late emissions should match corrections");
+        check(entry.onTimeEmissions.length === (win.exact > 0 ? 1 : 0), label + " window " + key + " should have exactly one on-time emission when nonempty");
+        if (win.exact > 0) {
+          check(entry.onTimeEmissions[0].accepted === win.onTimeCount, label + " window " + key + " on-time emission should match first pane count");
+        }
+      });
       check(state.steps.every(function (step, index) { return index === 0 || step.processingTime + 1e-9 >= state.steps[index - 1].processingTime; }), label + " processing time should be nondecreasing");
       check(state.steps.every(function (step) {
         if (step.status === "dropped") return step.watermarkBefore + 1e-9 >= step.windowEnd + params.allowedLateness;
@@ -945,6 +977,7 @@
               for (var i = 1; i < curve.length; i += 1) {
                 check(curve[i].delay > curve[i - 1].delay, scenario + " frontier delay should increase");
                 check(curve[i].dropped <= curve[i - 1].dropped, scenario + " dropped events should not increase with more delay");
+                check(curve[i].avgLatency + 1e-9 >= curve[i - 1].avgLatency, scenario + " average pane latency should not decrease with more delay");
                 check(curve[i].finalError === curve[i].dropped, scenario + " frontier error should equal dropped events");
                 check(curve[i].onTimeCompleteness >= 0 && curve[i].onTimeCompleteness <= 1, scenario + " frontier completeness should be a fraction");
               }
