@@ -72,11 +72,12 @@ deleting impossible worlds.
 
 I audited the lab before rewriting. The default run uses restart attempt 1,
 solves all 576 cells, and every one of the 484 possible 3x3 output windows is a
-pattern copied from the source sample. A 729-case sweep over sample, pattern
-order, output size, sample bias, restart budget, and seed produced 408 solved
-fields and 321 honest partial failures; every solved field had zero invalid
-local windows, every run stayed inside its restart budget, and the domain
-summary always accounted for all cells.
+pattern copied from the source sample. The visible Audit tile runs the same
+JavaScript: 9 deterministic checks, including a 144-case sweep over sample,
+pattern order, output size, sample bias, restart budget, and seed. That sweep
+currently produces 78 solved fields and 66 honest partial failures; every solved
+field has zero invalid local windows, every run stays inside its restart budget,
+and the domain summary accounts for all cells.
 
 <style>
   .wfc-lab {
@@ -261,10 +262,12 @@ summary always accounted for all cells.
     This is a deterministic browser experiment, not a production WFC library.
     Solved outputs have every local order-N patch copied from the sample. Partial
     outputs show the best failed attempt after the restart budget is exhausted.
+    The Audit tile checks the default run, reciprocal overlaps, local windows,
+    and a 144-case restart grid.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/wfc-constraint-lab.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/wfc-constraint-lab.js?v=20260617a' | relative_url }}"></script>
 
 Try three things.
 

@@ -89,6 +89,8 @@
     restarts: 8
   };
 
+  var AUDIT_CACHE = null;
+
   var DIRS = [
     { name: "north", dx: 0, dy: -1, opposite: 2 },
     { name: "east", dx: 1, dy: 0, opposite: 3 },
@@ -487,6 +489,40 @@
     });
   }
 
+  function patternKeySet(context) {
+    var keys = Object.create(null);
+    context.patterns.forEach(function (pattern) {
+      keys[pattern.key] = true;
+    });
+    return keys;
+  }
+
+  function localWindowAudit(rows, context) {
+    var keys = patternKeySet(context);
+    var windows = 0;
+    var invalid = 0;
+    var order = context.order;
+    for (var y = 0; y <= rows.length - order; y += 1) {
+      for (var x = 0; x <= rows[0].length - order; x += 1) {
+        windows += 1;
+        if (!keys[keyFor(patternAt(rows, x, y, order))]) invalid += 1;
+      }
+    }
+    return {
+      invalid: invalid,
+      valid: windows - invalid,
+      windows: windows
+    };
+  }
+
+  function domainSummaryAccounts(summary, cells, patternCount) {
+    return summary.decided + summary.unresolved + summary.zeros === cells &&
+      summary.meanChoices >= 0 &&
+      summary.meanChoices <= patternCount &&
+      summary.minChoices >= 0 &&
+      summary.minChoices <= patternCount;
+  }
+
   function evaluate(raw) {
     var params = cleanParams(raw);
     var sample = SAMPLES[params.sample];
@@ -510,6 +546,7 @@
     }
     var finalSummary = summarizeDomains(best.state.domains, best.state.counts);
     var rows = outputRows(best.state, context);
+    var windowAudit = localWindowAudit(rows, context);
     return {
       attempts: attempts,
       context: {
@@ -527,6 +564,7 @@
         checks: best.checks,
         contradiction: best.contradiction,
         entropyTrace: best.trace,
+        localWindows: windowAudit,
         observations: best.observations,
         outputRows: rows,
         summary: finalSummary
@@ -534,9 +572,158 @@
     };
   }
 
+  function runAudit() {
+    var checks = [];
+    function check(name, passed, details) {
+      checks.push({ name: name, passed: !!passed, details: details || null });
+    }
+
+    var dirty = cleanParams({
+      sample: "missing",
+      order: 99,
+      size: -1,
+      seed: 0,
+      bias: 999,
+      restarts: "many"
+    });
+    check("parameter cleanup clamps bad controls", dirty.sample === DEFAULTS.sample &&
+      dirty.order === 4 &&
+      dirty.size === 14 &&
+      dirty.seed === 1 &&
+      dirty.bias === 100 &&
+      dirty.restarts === DEFAULTS.restarts, dirty);
+
+    var context = extractPatterns(SAMPLES.coast.rows, 3, 72);
+    check("default pattern extraction is stable", context.patterns.length === 70 &&
+      context.order === 3 &&
+      context.width === 12 &&
+      context.height === 12);
+    check("compatibility table is reciprocal", context.patterns.every(function (_, i) {
+      return context.patterns.every(function (_, j) {
+        return DIRS.every(function (dir, d) {
+          return context.compat[d][i][j] === context.compat[dir.opposite][j][i];
+        });
+      });
+    }));
+
+    var defaultRun = evaluate(DEFAULTS);
+    check("default run headline is stable", defaultRun.context.patternCount === 70 &&
+      defaultRun.result.attempt === 1 &&
+      defaultRun.result.observations === 16 &&
+      defaultRun.result.bans === 39744 &&
+      !defaultRun.result.contradiction, {
+      patterns: defaultRun.context.patternCount,
+      attempt: defaultRun.result.attempt,
+      observations: defaultRun.result.observations,
+      bans: defaultRun.result.bans
+    });
+    check("default output satisfies local sample windows", defaultRun.result.localWindows.windows === 484 &&
+      defaultRun.result.localWindows.invalid === 0 &&
+      defaultRun.result.summary.decided === DEFAULTS.size * DEFAULTS.size);
+    check("default domain summary accounts for all cells", domainSummaryAccounts(
+      defaultRun.result.summary,
+      DEFAULTS.size * DEFAULTS.size,
+      defaultRun.context.patternCount
+    ));
+
+    var tracksHard = evaluate({ sample: "tracks", order: 4, size: 24, seed: 31, restarts: 8 });
+    check("hard tracks setting reports an honest partial", tracksHard.result.contradiction &&
+      tracksHard.attempts.length === 9 &&
+      tracksHard.result.attempt <= tracksHard.params.restarts &&
+      tracksHard.attempts.every(function (attempt) { return attempt.contradiction; }) &&
+      tracksHard.result.summary.zeros > 0);
+
+    var rooms = evaluate({ sample: "rooms", order: 3, size: 24, seed: 31, restarts: 8 });
+    check("rooms sample solves with valid windows", !rooms.result.contradiction &&
+      rooms.result.localWindows.invalid === 0 &&
+      rooms.result.summary.decided === rooms.params.size * rooms.params.size);
+
+    var gridCases = 0;
+    var solvedFields = 0;
+    var partialFailures = 0;
+    var gridOk = 0;
+    ["coast", "rooms", "tracks"].forEach(function (sample) {
+      [2, 3, 4].forEach(function (order) {
+        [14, 24].forEach(function (size) {
+          [0, 100].forEach(function (bias) {
+            [0, 8].forEach(function (restarts) {
+              [7, 31].forEach(function (seed) {
+                var item = evaluate({
+                  sample: sample,
+                  order: order,
+                  size: size,
+                  bias: bias,
+                  restarts: restarts,
+                  seed: seed
+                });
+                var cells = size * size;
+                var expectedWindows = (size - order + 1) * (size - order + 1);
+                var ok = item.params.sample === sample &&
+                  item.params.order === order &&
+                  item.params.size === size &&
+                  item.params.bias === bias &&
+                  item.params.restarts === restarts &&
+                  item.params.seed === seed &&
+                  item.result.outputRows.length === size &&
+                  item.result.outputRows.every(function (row) { return row.length === size; }) &&
+                  item.result.localWindows.windows === expectedWindows &&
+                  item.attempts.length <= restarts + 1 &&
+                  item.result.attempt <= restarts &&
+                  domainSummaryAccounts(item.result.summary, cells, item.context.patternCount);
+                if (item.result.contradiction) {
+                  partialFailures += 1;
+                  ok = ok && item.attempts.length === restarts + 1 &&
+                    item.attempts.every(function (attempt) { return attempt.contradiction; });
+                } else {
+                  solvedFields += 1;
+                  ok = ok &&
+                    item.result.summary.decided === cells &&
+                    item.result.summary.zeros === 0 &&
+                    item.result.localWindows.invalid === 0;
+                }
+                gridCases += 1;
+                if (ok) gridOk += 1;
+              });
+            });
+          });
+        });
+      });
+    });
+    check("144-case restart grid is stable", gridCases === 144 &&
+      gridOk === 144 &&
+      solvedFields === 78 &&
+      partialFailures === 66, {
+      gridCases: gridCases,
+      gridOk: gridOk,
+      solvedFields: solvedFields,
+      partialFailures: partialFailures
+    });
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      gridCases: gridCases,
+      solvedFields: solvedFields,
+      partialFailures: partialFailures,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
+  }
+
   function formatNumber(value, digits) {
     if (!isFinite(value)) return "n/a";
     return value.toFixed(digits == null ? 2 : digits);
+  }
+
+  function formatInt(value) {
+    return Math.round(value).toLocaleString();
   }
 
   function formatPct(value) {
@@ -773,15 +960,19 @@
 
   function renderMetrics(root, evaluation) {
     var summary = evaluation.result.summary;
+    var audit = cachedAudit();
     var cells = evaluation.params.size * evaluation.params.size;
     var status = evaluation.result.contradiction ? "partial" : "solved";
+    var windows = evaluation.result.localWindows;
     var html = [
       metric("status", status),
-      metric("patterns", String(evaluation.context.patternCount)),
-      metric("observations", String(evaluation.result.observations)),
-      metric("banned patterns", String(evaluation.result.bans)),
+      metric("patterns", formatInt(evaluation.context.patternCount)),
+      metric("observations", formatInt(evaluation.result.observations)),
+      metric("banned patterns", formatInt(evaluation.result.bans)),
+      metric("local windows", windows.valid + "/" + windows.windows),
       metric("resolved", formatPct(summary.decided / cells)),
-      metric("restarts used", String(evaluation.result.attempt))
+      metric("restarts used", formatInt(evaluation.result.attempt)),
+      metric("Audit", audit.passed + "/" + audit.checked)
     ].join("");
     var target = root.querySelector("[data-metrics]");
     if (target) target.innerHTML = html;
@@ -832,7 +1023,8 @@
   global.WFCConstraintLab = {
     cleanParams: cleanParams,
     evaluate: evaluate,
-    extractPatterns: extractPatterns
+    extractPatterns: extractPatterns,
+    runAudit: runAudit
   };
 
   if (typeof module !== "undefined" && module.exports) {
