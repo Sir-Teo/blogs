@@ -28,9 +28,14 @@
 
   var ORDERINGS = ["helpful", "natural", "hostile"];
   var VERIFY = ["yes", "no"];
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function close(actual, expected, tolerance) {
+    return Math.abs(actual - expected) <= tolerance;
   }
 
   function nearest(value, allowed, fallback) {
@@ -436,6 +441,63 @@
     return { occupied: occupied, depths: depths };
   }
 
+  function factorial(n) {
+    var out = 1;
+    for (var i = 2; i <= n; i += 1) out *= i;
+    return out;
+  }
+
+  function boundedCompositionCount(total, parts, cap) {
+    var dp = new Array(total + 1).fill(0);
+    dp[0] = 1;
+    for (var p = 0; p < parts; p += 1) {
+      var next = new Array(total + 1).fill(0);
+      for (var used = 0; used <= total; used += 1) {
+        if (!dp[used]) continue;
+        for (var add = 0; add <= cap && used + add <= total; add += 1) {
+          next[used + add] += dp[used];
+        }
+      }
+      dp = next;
+    }
+    return dp[total] || 0;
+  }
+
+  function boundedSequenceCount(total, parts, cap) {
+    var totalFactorial = factorial(total);
+    var count = 0;
+    function visit(index, remaining, denominator) {
+      if (index === parts) {
+        if (remaining === 0) count += totalFactorial / denominator;
+        return;
+      }
+      for (var used = 0; used <= Math.min(cap, remaining); used += 1) {
+        visit(index + 1, remaining - used, denominator * factorial(used));
+      }
+    }
+    visit(0, total, 1);
+    return Math.round(count);
+  }
+
+  function searchValuesAgree(a, b) {
+    return close(a.value, b.value, 1e-12);
+  }
+
+  function finiteSearch(search) {
+    return Number.isFinite(search.value) &&
+      Number.isFinite(search.stats.nodes) &&
+      Number.isFinite(search.stats.leaves) &&
+      search.stats.nodes >= search.stats.leaves &&
+      search.stats.nodes > 0;
+  }
+
+  function moveValuesSorted(rows) {
+    for (var i = 1; i < rows.length; i += 1) {
+      if (rows[i].value > rows[i - 1].value + 1e-12) return false;
+    }
+    return true;
+  }
+
   function evaluate(raw) {
     var params = cleanParams(raw || {});
     var frontier = frontierRows(params);
@@ -454,6 +516,168 @@
       rootError: rootError,
       bestError: bestError
     };
+  }
+
+  function runAudit() {
+    var checks = [];
+    function check(name, passed, details) {
+      checks.push({ name: name, passed: !!passed, details: details || null });
+    }
+
+    var dirty = cleanParams({
+      piles: 99,
+      stones: -5,
+      depth: 999,
+      ordering: "sideways",
+      tableSize: 70,
+      keyBits: "wide",
+      verify: "maybe"
+    });
+    check("parameter cleanup clamps and snaps", dirty.piles === 6 &&
+      dirty.stones === 2 &&
+      dirty.depth === 12 &&
+      dirty.ordering === DEFAULTS.ordering &&
+      dirty.tableSize === 64 &&
+      dirty.keyBits === DEFAULTS.keyBits &&
+      dirty.verify === DEFAULTS.verify, dirty);
+
+    var small = cleanParams({ piles: 4, stones: 3, depth: 5 });
+    var root = rootState(small);
+    var child = applyMove(root, 2);
+    check("root state and moves are immutable", root.length === 4 &&
+      sumState(root) === 12 &&
+      legalMoves(root).join(",") === "0,1,2,3" &&
+      child[2] === 2 &&
+      root[2] === 3);
+
+    var z = makeZobrist(small);
+    var keyA = zobristKey(root, 1, z);
+    var keyB = zobristKey(root, 1, z);
+    var keyOtherSide = zobristKey(root, -1, z);
+    check("zobrist keys are deterministic and side-sensitive", keyA === keyB &&
+      keyA !== keyOtherSide &&
+      truncateKey(keyA, 8) >= 0 &&
+      truncateKey(keyA, 8) < 256);
+
+    var defaultParams = cleanParams(DEFAULTS);
+    var rows = frontierRows(defaultParams);
+    var lastRow = rows[rows.length - 1];
+    check("frontier row count matches depth", rows.length === defaultParams.depth + 1);
+    check("default frontier headline is stable", lastRow.paths === 8166900 && lastRow.unique === 381, lastRow);
+    check("frontier unique counts match bounded compositions", rows.every(function (row) {
+      return row.unique === boundedCompositionCount(row.ply, defaultParams.piles, defaultParams.stones);
+    }));
+    check("frontier path counts match bounded sequence counts", rows.every(function (row) {
+      return row.paths === boundedSequenceCount(row.ply, defaultParams.piles, defaultParams.stones);
+    }));
+
+    var result = evaluate(DEFAULTS);
+    check("default searches return finite ledgers", finiteSearch(result.noTable) &&
+      finiteSearch(result.full) &&
+      finiteSearch(result.limited));
+    check("full table preserves alpha-beta value", searchValuesAgree(result.noTable, result.full));
+    check("verified limited table preserves full-table value", searchValuesAgree(result.full, result.limited) &&
+      result.rootError === 0 &&
+      !result.bestError);
+    check("default node-count headline is stable", result.noTable.stats.nodes === 58626 &&
+      result.full.stats.nodes === 3740 &&
+      result.limited.stats.nodes === 5820, {
+      alphaBeta: result.noTable.stats.nodes,
+      full: result.full.stats.nodes,
+      limited: result.limited.stats.nodes
+    });
+    check("transposition tables reduce default work", result.full.stats.nodes < result.noTable.stats.nodes &&
+      result.limited.stats.nodes < result.noTable.stats.nodes);
+    check("verified default rejects key collisions", result.limited.stats.falseHits === 0 &&
+      result.limited.stats.verificationRejects === result.limited.stats.keyCollisions);
+    check("root move ledger is complete and sorted", result.full.moveValues.length === defaultParams.piles &&
+      result.limited.moveValues.length === defaultParams.piles &&
+      moveValuesSorted(result.full.moveValues) &&
+      moveValuesSorted(result.limited.moveValues));
+
+    var verifiedCollision = evaluate({ tableSize: 64, keyBits: 8, verify: "yes" });
+    check("state verification converts collisions into misses", verifiedCollision.limited.stats.keyCollisions > 0 &&
+      verifiedCollision.limited.stats.falseHits === 0 &&
+      verifiedCollision.limited.stats.verificationRejects === verifiedCollision.limited.stats.keyCollisions &&
+      verifiedCollision.rootError === 0 &&
+      !verifiedCollision.bestError);
+
+    var unsafeCollision = evaluate({ tableSize: 64, keyBits: 8, verify: "no" });
+    check("unverified tiny keys can corrupt search", unsafeCollision.limited.stats.falseHits > 0 &&
+      unsafeCollision.rootError > 0 &&
+      !searchValuesAgree(unsafeCollision.full, unsafeCollision.limited), {
+      falseHits: unsafeCollision.limited.stats.falseHits,
+      rootError: unsafeCollision.rootError
+    });
+
+    var gridCases = 0;
+    var gridOk = 0;
+    [3, 4, 5].forEach(function (piles) {
+      [2, 3].forEach(function (stones) {
+        [4, 6].forEach(function (depth) {
+          ["helpful", "natural", "hostile"].forEach(function (ordering) {
+            [64, 256].forEach(function (tableSize) {
+              [8, 16].forEach(function (keyBits) {
+                ["yes", "no"].forEach(function (verify) {
+                  var item = evaluate({
+                    piles: piles,
+                    stones: stones,
+                    depth: depth,
+                    ordering: ordering,
+                    tableSize: tableSize,
+                    keyBits: keyBits,
+                    verify: verify
+                  });
+                  var end = item.frontier[item.frontier.length - 1];
+                  var ok = item.params.piles === piles &&
+                    item.params.stones === stones &&
+                    item.params.depth === depth &&
+                    item.params.tableSize === tableSize &&
+                    item.params.keyBits === keyBits &&
+                    item.params.verify === verify &&
+                    finiteSearch(item.noTable) &&
+                    finiteSearch(item.full) &&
+                    finiteSearch(item.limited) &&
+                    searchValuesAgree(item.noTable, item.full) &&
+                    item.noTable.stats.nodes >= item.full.stats.nodes &&
+                    item.limited.slots.length === tableSize &&
+                    end.unique === boundedCompositionCount(depth, piles, stones) &&
+                    end.paths === boundedSequenceCount(depth, piles, stones);
+                  if (verify === "yes") {
+                    ok = ok &&
+                      searchValuesAgree(item.full, item.limited) &&
+                      item.limited.stats.falseHits === 0 &&
+                      item.rootError === 0 &&
+                      !item.bestError;
+                  }
+                  gridCases += 1;
+                  if (ok) gridOk += 1;
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+    check("288-case parameter grid is stable", gridCases === 288 && gridOk === 288, {
+      gridCases: gridCases,
+      gridOk: gridOk
+    });
+
+    var failures = checks.filter(function (item) { return !item.passed; });
+    return {
+      ok: failures.length === 0,
+      passed: checks.length - failures.length,
+      checked: checks.length,
+      gridCases: gridCases,
+      failures: failures,
+      checks: checks
+    };
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function formatInt(value) {
@@ -590,12 +814,23 @@
     var barH = 24;
     rows.forEach(function (row, i) {
       var y = top + i * 48;
+      var barWidth = Math.max(2, row.value / max * (box.w - 140));
+      var valueText = formatInt(row.value) + " nodes";
+      var valueX = left + barWidth + 6;
+      var valueColor = COLORS.muted;
+      var valueAlign = "left";
       label(ctx, row.label, box.x + 14, y + 16, "left", COLORS.text, "700 11px system-ui, sans-serif");
       ctx.fillStyle = row.color;
       ctx.globalAlpha = 0.78;
-      ctx.fillRect(left, y, Math.max(2, row.value / max * (box.w - 140)), barH);
+      ctx.fillRect(left, y, barWidth, barH);
       ctx.globalAlpha = 1;
-      label(ctx, formatInt(row.value) + " nodes", left + Math.max(2, row.value / max * (box.w - 140)) + 6, y + 16);
+      ctx.font = "11px system-ui, -apple-system, sans-serif";
+      if (valueX + ctx.measureText(valueText).width > box.x + box.w - 14 && barWidth > ctx.measureText(valueText).width + 14) {
+        valueX = left + barWidth - 7;
+        valueColor = COLORS.white;
+        valueAlign = "right";
+      }
+      label(ctx, valueText, valueX, y + 16, valueAlign, valueColor);
     });
     var reuse = 1 - result.full.stats.nodes / Math.max(1, result.noTable.stats.nodes);
     label(ctx, "full-table reduction " + formatPct(Math.max(0, reuse)), box.x + 14, box.y + box.h - 18, "left", COLORS.dag);
@@ -687,6 +922,7 @@
 
   function renderMetrics(root, result) {
     var s = result.limited.stats;
+    var audit = cachedAudit();
     var hitRate = s.ttHits / Math.max(1, s.ttHits + s.ttMisses);
     var html = [
       metric("full table nodes", formatInt(result.full.stats.nodes)),
@@ -694,7 +930,8 @@
       metric("limited hit rate", formatPct(hitRate)),
       metric("hash overwrites", formatInt(s.overwrites), s.overwrites ? "warn" : ""),
       metric("false hits", formatInt(s.falseHits), s.falseHits ? "bad" : ""),
-      metric("best move", moveName(result.limited.bestMove), result.bestError ? "bad" : "good")
+      metric("best move", moveName(result.limited.bestMove), result.bestError ? "bad" : "good"),
+      metric("Audit", audit.passed + "/" + audit.checked, audit.ok ? "good" : "bad")
     ].join("");
     var target = root.querySelector("[data-metrics]");
     if (target) target.innerHTML = html;
@@ -728,6 +965,7 @@
     renderMetrics(root, result);
     var canvas = root.querySelector("[data-canvas]");
     if (canvas) drawCanvas(canvas, result);
+    root.__transpositionLabLast = result;
   }
 
   function initOne(root) {
@@ -764,6 +1002,7 @@
     evaluate: evaluate,
     frontierRows: frontierRows,
     rootEvaluation: rootEvaluation,
+    runAudit: runAudit,
     zobristKey: zobristKey
   };
 
