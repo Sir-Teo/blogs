@@ -724,7 +724,86 @@
     if (!condition) throw new Error(message);
   }
 
+  function near(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function finite(value) {
+    return Number.isFinite(value);
+  }
+
+  function cycleClosed(cycle) {
+    if (!cycle || !cycle.edges || !cycle.edges.length) return false;
+    for (var i = 0; i < cycle.edges.length; i += 1) {
+      var edge = cycle.edges[i];
+      var next = cycle.edges[(i + 1) % cycle.edges.length];
+      if (edge.to !== next.from) return false;
+    }
+    return cycle.edges[cycle.edges.length - 1].to === cycle.edges[0].from;
+  }
+
   function audit() {
+    var checked = 0;
+    var maxLedgerError = 0;
+    var maxZeroCostMargin = 0;
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+    function checkMarket(market, label) {
+      check(market.edges.length === CURRENCIES.length * (CURRENCIES.length - 1), label + " should build a complete directed quote graph");
+      market.edges.forEach(function (edge) {
+        check(edge.from !== edge.to, label + " should not include self edges");
+        check(edge.rate > 0 && finite(edge.rate), label + " executable rates should be positive and finite");
+        check(finite(edge.weight) && near(edge.weight, -Math.log(edge.rate), 1e-12), label + " edge weight should equal -log(rate)");
+        check(market.byPair[edge.from + "|" + edge.to] === edge, label + " pair lookup should point to the edge");
+      });
+    }
+    function checkState(state, label) {
+      checkMarket(state.market, label);
+      check(state.bestCycle && state.bestCycle.edges.length >= 2, label + " should expose a best cycle");
+      check(cycleClosed(state.bestCycle), label + " best cycle should be closed and ordered");
+      check(state.bestCycle.edges.length <= CURRENCIES.length, label + " best cycle should be simple");
+      var product = 1;
+      var sumWeight = 0;
+      state.bestCycle.edges.forEach(function (edge) {
+        product *= edge.rate;
+        sumWeight += edge.weight;
+      });
+      var ledgerError = Math.max(
+        Math.abs(product - state.bestCycle.product),
+        Math.abs(sumWeight - state.bestCycle.sumWeight),
+        Math.abs(state.bestCycle.product - Math.exp(-state.bestCycle.sumWeight))
+      );
+      maxLedgerError = Math.max(maxLedgerError, ledgerError);
+      check(ledgerError < 1e-9, label + " product and negative-log ledgers should agree");
+      check(near(state.bestCycle.marginBps, (state.bestCycle.product - 1) * 10000, 1e-9), label + " margin should be product minus one in basis points");
+      check(near(state.proceeds, state.params.size * state.bestCycle.product, 1e-8), label + " proceeds should use selected cycle product");
+      check(near(state.profit, state.proceeds - state.params.size, 1e-8), label + " profit ledger should reconcile proceeds and start size");
+      check(state.cycles.every(function (cycle, index) {
+        return index === 0 || cycle.marginBps <= state.cycles[index - 1].marginBps + 1e-12;
+      }), label + " brute-force cycles should be sorted by margin");
+      var bruteHasArb = state.bestCycle.marginBps > 1e-7;
+      check(state.status === (bruteHasArb ? "arbitrage" : "clean"), label + " status should follow best cycle margin");
+      check(state.bellmanFord.passes.length === CURRENCIES.length, label + " Bellman-Ford should run V passes");
+      var lastPass = state.bellmanFord.passes[state.bellmanFord.passes.length - 1];
+      check(state.bellmanFord.hasNegativeCycle === bruteHasArb, label + " Bellman-Ford should agree with brute-force cycle enumeration");
+      check((lastPass.updates > 0) === state.bellmanFord.hasNegativeCycle, label + " last pass updates should be the negative-cycle signal");
+      if (state.bellmanFord.cycle) {
+        check(cycleClosed(state.bellmanFord.cycle), label + " extracted Bellman-Ford cycle should be closed");
+        check(state.bellmanFord.cycle.sumWeight < -1e-9, label + " extracted cycle should be negative");
+        check(state.bellmanFord.cycle.product > 1, label + " extracted cycle should multiply above one");
+        check(Math.abs(state.bellmanFord.cycle.product - Math.exp(-state.bellmanFord.cycle.sumWeight)) < 1e-9, label + " extracted cycle should satisfy log/product identity");
+      }
+      check(state.frontier.length > 0, label + " frontier should have points");
+      state.frontier.forEach(function (point, index) {
+        check(finite(point.marginBps), label + " frontier margins should be finite");
+        if (index > 0) {
+          check(point.gapBps > state.frontier[index - 1].gapBps, label + " frontier gaps should increase");
+          check(point.marginBps >= state.frontier[index - 1].marginBps - 1e-9, label + " larger quote gaps should not reduce best margin");
+        }
+      });
+    }
     var summary = {};
     Object.keys(SCENARIOS).forEach(function (scenario) {
       var cases = 0;
@@ -742,35 +821,52 @@
               seed: seed,
               size: 10000
             });
-            var best = state.bestCycle;
-            var bruteHasArb = best.marginBps > 1e-7;
-            assert(state.bellmanFord.hasNegativeCycle === bruteHasArb, scenario + " Bellman-Ford should agree with brute-force cycle enumeration");
-            assert(Math.abs(best.product - Math.exp(-best.sumWeight)) < 1e-9, scenario + " log/product identity");
-            if (state.bellmanFord.cycle) {
-              assert(state.bellmanFord.cycle.sumWeight < 0, scenario + " extracted cycle should be negative");
-              assert(state.bellmanFord.cycle.product > 1, scenario + " extracted cycle should multiply above one");
-            }
+            checkState(state, scenario);
             if (scenario === "clean") {
-              assert(!state.bellmanFord.hasNegativeCycle, "clean sheet should not contain arbitrage");
+              check(!state.bellmanFord.hasNegativeCycle, "clean sheet should not contain arbitrage");
             }
-            margins.push(best.marginBps);
-            if (bruteHasArb) detected += 1;
+            margins.push(state.bestCycle.marginBps);
+            if (state.bestCycle.marginBps > 1e-7) detected += 1;
             cases += 1;
           });
           for (var i = 1; i < margins.length; i += 1) {
-            assert(margins[i] <= margins[i - 1] + 1e-9, scenario + " higher costs should not improve the best cycle");
+            check(margins[i] <= margins[i - 1] + 1e-9, scenario + " higher costs should not improve the best cycle");
           }
         });
         var curve = frontier(cleanParams({ scenario: scenario, seed: seed, gapBps: 42, costBps: 6, impactBps: 2, size: 10000 }));
         previousMargins = null;
         curve.forEach(function (point) {
-          if (previousMargins != null) assert(point.marginBps >= previousMargins - 1e-9, scenario + " larger quote gaps should not reduce best margin");
+          check(finite(point.marginBps), scenario + " frontier margin should be finite");
+          if (previousMargins != null) check(point.marginBps >= previousMargins - 1e-9, scenario + " larger quote gaps should not reduce best margin");
           previousMargins = point.marginBps;
         });
       });
       summary[scenario] = { cases: cases, detected: detected };
     });
-    return { ok: true, summary: summary };
+    Object.keys(SCENARIOS).forEach(function (scenario) {
+      var zero = evaluate({ costBps: 0, gapBps: 0, impactBps: 0, scenario: scenario, seed: 37, size: 10000 });
+      maxZeroCostMargin = Math.max(maxZeroCostMargin, Math.abs(zero.bestCycle.marginBps));
+      check(Math.abs(zero.bestCycle.marginBps) < 1e-8, scenario + " zero-cost zero-gap sheet should have zero best margin");
+      check(!zero.bellmanFord.hasNegativeCycle, scenario + " zero-cost zero-gap sheet should not contain strict arbitrage");
+    });
+    var defaults = evaluate(DEFAULTS);
+    check(defaults.status === "arbitrage", "default state should remain an arbitrage example");
+    check(cycleName(defaults.bestCycle) === "USD -> EUR -> JPY -> USD", "default best cycle should match the article");
+    check(near(defaults.bestCycle.marginBps, 16.65369745969869, 1e-9), "default margin should match the article");
+    check(near(defaults.profit, 16.65369745969838, 1e-8), "default modeled profit should match the article");
+    var sanitized = cleanParams({ costBps: -3, gapBps: 999, impactBps: -8, scenario: "ghost", seed: NaN, size: 12345 });
+    check(sanitized.costBps === 0, "sanitizer should clamp cost");
+    check(sanitized.gapBps === 120, "sanitizer should clamp gap");
+    check(sanitized.impactBps === 0, "sanitizer should clamp impact");
+    check(sanitized.scenario === DEFAULTS.scenario, "sanitizer should fall back to default scenario");
+    check(sanitized.size === 12000, "sanitizer should snap size");
+    return {
+      checked: checked,
+      maxLedgerError: maxLedgerError,
+      maxZeroCostMargin: maxZeroCostMargin,
+      ok: true,
+      summary: summary
+    };
   }
 
   var api = {

@@ -302,7 +302,7 @@ For a larger graph, you would not enumerate everything in the hot path.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/fx-negative-cycle-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fx-negative-cycle-lab.js?v=20260617b' | relative_url }}"></script>
 
 With the default settings, the best cycle is:
 
@@ -477,20 +477,30 @@ Bellman-Ford predecessor recovery
 brute-force simple-cycle enumeration for audit
 ```
 
-The audit checks:
+The current Node audit runs `28,489` checks across clean, stale-cross,
+dealer-gap, and funding-loop sheets. It checks:
 
 ```text
+every quote sheet is a complete directed graph with no self edges
+each edge weight equals -log(executable_rate)
+the pair lookup points back to the same edge object
+best cycles are ordered, closed, and simple
 clean sheets have no negative cycles
 Bellman-Ford agrees with brute-force cycle enumeration
+the final Bellman-Ford pass is exactly the negative-cycle signal
 extracted Bellman-Ford cycles multiply above one
 product-rate and negative-log ledgers agree
 higher per-leg costs do not improve the best cycle
 larger injected quote gaps do not reduce the best margin
+zero-cost zero-gap sheets round-trip to one
+the default article example remains USD -> EUR -> JPY -> USD
+UI parameter cleaning clamps costs, gaps, impact, scenario, and size
 ```
 
-That last pair matters. If costs make an "arbitrage detector" more excited, or
-a bigger quote gap makes it less excited in this controlled setup, the bug is in
-the detector.
+The worst product/log ledger discrepancy in the audit is about
+`1.3e-15`. That last pair of monotonic checks matters. If costs make an
+"arbitrage detector" more excited, or a bigger quote gap makes it less excited
+in this controlled setup, the bug is in the detector.
 
 [^princeton]: Kevin Wayne and Robert Sedgewick, ["Shortest Paths"](https://www.cs.princeton.edu/courses/archive/spr04/cos226/lectures/shortest-path.4up.pdf), COS 226 lecture notes, Princeton. The notes include Bellman-Ford relaxation, negative cycles, and a currency-arbitrage example.
 
