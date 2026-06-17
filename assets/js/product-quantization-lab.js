@@ -563,40 +563,136 @@
     return true;
   }
 
+  function assert(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+
+  function near(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function finiteArray(values) {
+    return values.every(function (value) { return Number.isFinite(value); });
+  }
+
+  function sortedByDistance(rows) {
+    for (var i = 1; i < rows.length; i += 1) {
+      if (rows[i].distance < rows[i - 1].distance - 1e-12) return false;
+      if (near(rows[i].distance, rows[i - 1].distance, 1e-12) && rows[i].index < rows[i - 1].index) return false;
+    }
+    return true;
+  }
+
   function audit() {
-    var cases = [
-      { codewords: 8, geometry: "spiky", points: 280, rotation: "raw", seed: 11, subquantizers: 2 },
-      { codewords: 16, geometry: "spiky", points: 320, rotation: "spread", seed: 17, subquantizers: 4 },
-      { codewords: 8, geometry: "ring", points: 300, rotation: "spread", seed: 23, subquantizers: 8 }
-    ];
-    var reports = cases.map(function (params) {
-      var result = evaluate(params, { frontier: false });
-      var codesInRange = result.pq.codes.every(function (code) {
-        return code.length === result.params.subquantizers && code.every(function (value) {
-          return value >= 0 && value < result.params.codewords;
+    var cases = [];
+    ["spiky", "entangled", "ring"].forEach(function (geometry) {
+      ["raw", "spread"].forEach(function (rotation) {
+        [
+          { codewords: 8, points: 280, seed: 11, subquantizers: 2 },
+          { codewords: 16, points: 320, seed: 17, subquantizers: 4 },
+          { codewords: 8, points: 300, seed: 23, subquantizers: 8 }
+        ].forEach(function (base) {
+          cases.push({
+            codewords: base.codewords,
+            geometry: geometry,
+            points: base.points,
+            rotation: rotation,
+            seed: base.seed,
+            subquantizers: base.subquantizers
+          });
         });
       });
-      var historiesOk = result.pq.histories.every(historyNonIncreasing);
+    });
+
+    var checked = 0;
+    var maxIdentityError = 0;
+    var maxRelRmse = 0;
+    var minRecallAt10 = 1;
+    var maxExactTopRankInApprox = 0;
+    var reports = cases.map(function (params) {
+      var result = evaluate(params, { frontier: false });
+      var expectedBits = result.params.subquantizers * Math.ceil(Math.log(result.params.codewords) / Math.log(2));
+      assert(result.dataset.vectors.length === result.params.points, "dataset should honor sanitized point count");
+      assert(result.pq.codebooks.length === result.params.subquantizers, "one codebook per subquantizer");
+      assert(result.table.length === result.params.subquantizers, "distance table should have one row per subquantizer");
+      assert(result.table.every(function (row) { return row.length === result.params.codewords && finiteArray(row); }), "distance table rows should be finite and have codeword width");
+      assert(result.pq.codes.length === result.params.points, "one product code per database vector");
+      result.pq.codes.forEach(function (code) {
+        assert(code.length === result.params.subquantizers, "code length should equal subquantizer count");
+        code.forEach(function (value) {
+          assert(value >= 0 && value < result.params.codewords, "code index should stay inside codebook");
+        });
+        checked += code.length;
+      });
+      assert(result.pq.histories.every(historyNonIncreasing), "k-means distortion histories should not increase after assignment");
+      assert(result.usage.every(function (counts) {
+        return counts.reduce(function (sum, count) { return sum + count; }, 0) === result.params.points;
+      }), "code usage counts should sum to database size");
+      assert(sortedByDistance(result.exact), "exact ranking should be distance sorted");
+      assert(sortedByDistance(result.approx), "ADC ranking should be distance sorted");
+      assert(result.approx.every(function (row) {
+        return near(row.distance, adcDistance(result.pq.codes[row.index], result.table), 1e-10);
+      }), "ADC ranking distances should match table lookups");
+      assert(result.codeBits === expectedBits, "code bit ledger");
+      assert(near(result.infoBytes, expectedBits / 8, 1e-12), "code byte ledger");
+      assert(result.rawBytes === DIMS * 4, "raw byte ledger");
+      assert(near(result.compression, result.rawBytes / result.infoBytes, 1e-12), "compression should be raw bytes divided by code bytes");
+      assert(result.codebookBytes === result.params.subquantizers * result.params.codewords * result.pq.subDim * 4, "codebook byte ledger");
       var identityError = maxAbsAdcIdentity(result, 80);
+      assert(identityError < 1e-8, "ADC should equal distance to reconstructed vector");
+      assert(result.recallAt10 >= 0 && result.recallAt10 <= 1, "recall should be a fraction");
+      assert(result.exactTopRankInApprox >= 1 && result.exactTopRankInApprox <= result.params.points, "exact top rank should be finite");
+      assert(result.recon.relRmse >= 0 && result.recon.relRmse < 1.2, "relative RMSE should be finite and bounded");
+      assert(result.tableWorkRatio > 0, "work ratio should be positive");
+      checked += 14;
+      maxIdentityError = Math.max(maxIdentityError, identityError);
+      maxRelRmse = Math.max(maxRelRmse, result.recon.relRmse);
+      minRecallAt10 = Math.min(minRecallAt10, result.recallAt10);
+      maxExactTopRankInApprox = Math.max(maxExactTopRankInApprox, result.exactTopRankInApprox);
       return {
-        codesInRange: codesInRange,
-        historiesOk: historiesOk,
         identityError: identityError,
         params: result.params,
         recallAt10: result.recallAt10,
         relRmse: result.recon.relRmse
       };
     });
-    var ok = reports.every(function (report) {
-      return report.codesInRange &&
-        report.historiesOk &&
-        report.identityError < 1e-8 &&
-        report.recallAt10 >= 0 &&
-        report.recallAt10 <= 1 &&
-        report.relRmse >= 0 &&
-        report.relRmse < 1.2;
+
+    var defaultResult = evaluate(DEFAULTS);
+    var frontier = defaultResult.frontier.slice().sort(function (a, b) {
+      if (a.m !== b.m) return a.m - b.m;
+      return a.codewords - b.codewords;
     });
-    return { ok: ok, reports: reports };
+    var byM = {};
+    frontier.forEach(function (point) {
+      if (!byM[point.m]) byM[point.m] = [];
+      byM[point.m].push(point);
+      assert(point.recallAt10 >= 0 && point.recallAt10 <= 1, "frontier recall should be a fraction");
+      assert(point.relRmse >= 0 && point.relRmse < 1.2, "frontier RMSE should be bounded");
+      assert(near(point.compression, defaultResult.rawBytes / (point.m * Math.ceil(Math.log(point.codewords) / Math.log(2)) / 8), 1e-12), "frontier compression ledger");
+      checked += 3;
+    });
+    Object.keys(byM).forEach(function (m) {
+      var rows = byM[m];
+      for (var i = 1; i < rows.length; i += 1) {
+        assert(rows[i].compression < rows[i - 1].compression, "more codewords should spend more bytes at fixed subquantizer count");
+        assert(rows[i].relRmse <= rows[i - 1].relRmse + 1e-9, "more codewords should not worsen deterministic frontier RMSE");
+        checked += 2;
+      }
+    });
+
+    return {
+      checked: checked,
+      frontier: {
+        points: frontier.length,
+        rawBytes: defaultResult.rawBytes
+      },
+      maxExactTopRankInApprox: maxExactTopRankInApprox,
+      maxIdentityError: maxIdentityError,
+      maxRelRmse: maxRelRmse,
+      minRecallAt10: minRecallAt10,
+      ok: true,
+      reports: reports
+    };
   }
 
   function canvasSize(canvas) {

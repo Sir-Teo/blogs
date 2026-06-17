@@ -156,6 +156,10 @@ and the subspace codebooks.[^opq]
     margin-bottom: 1rem;
   }
 
+  .pq-lab__controls > * {
+    min-width: 0;
+  }
+
   .pq-lab label {
     color: #39444e;
     display: grid;
@@ -164,6 +168,7 @@ and the subspace codebooks.[^opq]
     font-weight: 650;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
   }
 
   .pq-lab output {
@@ -179,6 +184,8 @@ and the subspace codebooks.[^opq]
     appearance: none;
     background: transparent;
     height: 1.35rem;
+    margin: 0;
+    min-width: 0;
     width: 100%;
   }
 
@@ -445,7 +452,7 @@ and the subspace codebooks.[^opq]
   <p class="pq-lab__note" data-role="note"></p>
 </div>
 
-<script src="{{ '/assets/js/product-quantization-lab.js?v=20260617a' | relative_url }}"></script>
+<script src="{{ '/assets/js/product-quantization-lab.js?v=20260617b' | relative_url }}"></script>
 
 ## The Table Has A Failure Mode
 
@@ -533,7 +540,24 @@ piece the implementation must get exactly right. The rest is the statistical
 question: whether those reconstructed vectors are good enough for the search
 job.
 
-[^pq]: Hervé Jégou, Matthijs Douze, and Cordelia Schmid, ["Product Quantization for Nearest Neighbor Search"](https://dl.acm.org/doi/10.1109/TPAMI.2010.57), IEEE TPAMI, 2011. An open HAL record is also available [here](https://inria.hal.science/inria-00514462v2/document).
+The artifact ships with that invariant as executable code. In the console or in
+Node, `ProductQuantizationLab.audit()` trains 18 small PQ machines across three
+synthetic geometries, two coordinate systems, and three code budgets. The audit
+checks the product-code ranges, the distance-table shape, the non-increasing
+$$k$$-means distortion history, exact and ADC ranking order, byte accounting for
+codes and codebooks, and the frontier compression ledger. On the current build
+it performs 25,746 checks; the largest ADC identity error is
+$$2.84 \times 10^{-14}$$, which is numerical roundoff rather than a search
+claim.
+
+That distinction matters. A passing audit says the distance table is doing the
+mathematics claimed in the article. It does not say this synthetic quantizer is
+production-good, or that PQ alone is enough for a retrieval product. The
+engineering question remains empirical: once the compressed codes enter a real
+index, what shortlist recall, latency, memory footprint, and failure cases do
+you actually measure?
+
+[^pq]: Hervé Jégou, Matthijs Douze, and Cordelia Schmid, ["Product Quantization for Nearest Neighbor Search"](https://dl.acm.org/doi/10.1109/TPAMI.2010.57), IEEE TPAMI, 2011. A PubMed record for the same paper is available [here](https://pubmed.ncbi.nlm.nih.gov/21088323/).
 
 [^faiss-library]: Matthijs Douze et al., ["The Faiss Library"](https://arxiv.org/html/2401.08281v4), arXiv, 2024. See the sections on compression levels, vector codecs, ADC, and recall/resource metrics.
 
