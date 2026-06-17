@@ -468,15 +468,19 @@
     var scenarioNode = root.querySelector('[data-param="scenario"]');
     var leftNode = root.querySelector('[data-param="left"]');
     var rightNode = root.querySelector('[data-param="right"]');
-    var observed = [];
-    root.querySelectorAll('[data-observed]:checked').forEach(function (node) {
-      observed.push(node.value);
+    var scenario = scenarioNode && scenarioNode.value;
+    var previous = root.__dSeparationState && root.__dSeparationState.params;
+    var scenarioChanged = previous && scenario && scenario !== previous.scenario;
+    var observedInputs = root.querySelectorAll("[data-observed]");
+    var observed = observedInputs.length && !scenarioChanged ? [] : undefined;
+    root.querySelectorAll("[data-observed]:checked").forEach(function (node) {
+      if (observed) observed.push(node.value);
     });
     return {
       left: leftNode && leftNode.value,
       observed: observed,
       right: rightNode && rightNode.value,
-      scenario: scenarioNode && scenarioNode.value
+      scenario: scenario
     };
   }
 
