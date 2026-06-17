@@ -106,6 +106,21 @@
     return powMod(G, k);
   }
 
+  var PUBLIC_Y = rFromK(SECRET_X);
+
+  function publicKeyMatches(x) {
+    return Number.isInteger(x) && rFromK(mod(x)) === PUBLIC_Y;
+  }
+
+  function publicCandidateMatches(sig, k, x) {
+    return Number.isInteger(k) &&
+      k > 0 &&
+      k < Q &&
+      publicKeyMatches(x) &&
+      rFromK(k) === sig.r &&
+      mulMod(sig.s, k) === mod(sig.h + mulMod(sig.r, x));
+  }
+
   function nonceFor(index, params) {
     if (params.mode === "reuse") return 31117;
     if (params.mode === "small") {
@@ -150,9 +165,12 @@
         if (a.r !== b.r || a.s === b.s) continue;
         var k = mulMod(mod(a.h - b.h), invMod(mod(a.s - b.s)));
         var x = mulMod(mod(mulMod(a.s, k) - a.h), invMod(a.r));
+        var publicValidated = publicCandidateMatches(a, k, x) && publicCandidateMatches(b, k, x);
         return {
           evidence: [a.i, b.i],
           kind: "reuse",
+          publicKeyOk: publicKeyMatches(x),
+          publicValidated: publicValidated,
           recoveredK: k,
           recoveredX: x,
           success: x === SECRET_X
@@ -172,13 +190,16 @@
       for (var k = 1; k < limit; k += 1) {
         if (rFromK(k) === sig.r) {
           var x = mulMod(mod(mulMod(sig.s, k) - sig.h), invMod(sig.r));
-          matches.push({ k: k, x: x });
+          matches.push({ k: k, publicKeyOk: publicKeyMatches(x), publicValidated: publicCandidateMatches(sig, k, x), x: x });
         }
       }
-      if (matches.length && recovered == null) recovered = matches[0];
+      if (matches.length && recovered == null) {
+        recovered = matches.filter(function (match) { return match.publicValidated; })[0] || matches[0];
+      }
       rows.push({
         i: sig.i,
         matches: matches.length,
+        publicValidated: matches.some(function (match) { return match.publicValidated; }),
         recoveredK: matches.length ? matches[0].k : null,
         recoveredX: matches.length ? matches[0].x : null,
         tested: limit - 1
@@ -188,6 +209,8 @@
       hits: rows.reduce(function (sum, row) { return sum + row.matches; }, 0),
       kind: "small",
       limit: limit,
+      publicKeyOk: Boolean(recovered && recovered.publicKeyOk),
+      publicValidated: Boolean(recovered && recovered.publicValidated),
       recoveredK: recovered && recovered.k,
       recoveredX: recovered && recovered.x,
       rows: rows,
@@ -219,13 +242,14 @@
         var k0 = solution.y;
         var valid = signatures.every(function (sig) {
           var predictedK = mod(k0 + sig.i * params.step) || 1;
-          var predictedX = solution.x;
-          return predictedK === sig.k && verifySignature(sig, predictedX);
+          return publicCandidateMatches(sig, predictedK, solution.x);
         });
         if (valid) {
           return {
             evidence: [a.i, b.i],
             kind: "linear",
+            publicKeyOk: publicKeyMatches(solution.x),
+            publicValidated: valid,
             recoveredK0: k0,
             recoveredX: solution.x,
             success: solution.x === SECRET_X
@@ -245,6 +269,8 @@
       hits: small.hits,
       kind: "fresh",
       limit: small.limit,
+      publicKeyOk: false,
+      publicValidated: false,
       recoveredX: small.recoveredX,
       rows: small.rows,
       success: false
@@ -258,6 +284,7 @@
     return {
       attack: result,
       params: params,
+      publicY: PUBLIC_Y,
       q: Q,
       secretX: SECRET_X,
       signatures: signatures,
@@ -523,6 +550,7 @@
         metric("prime order q", String(Q)),
         metric("attack verdict", attackInfo.success ? "key recovered" : "not recovered", attackInfo.success ? "bad" : "good"),
         metric("recovered x", fmt(attackInfo.recoveredX), attackInfo.success ? "bad" : ""),
+        metric("public key check", attackInfo.publicValidated ? "passed" : "not applicable", attackInfo.publicValidated ? "good" : ""),
         metric("signature audit", state.verified ? "passed" : "failed", state.verified ? "good" : "bad")
       ].join("");
     }
@@ -587,6 +615,7 @@
 
     function checkSignatureState(state, label) {
       check(state.q === Q, label + " should expose the toy prime");
+      check(state.publicY === PUBLIC_Y, label + " should expose the toy public key");
       check(state.secretX === SECRET_X, label + " should expose the toy private key for audit");
       check(state.signatures.length === state.params.signatures, label + " should generate the requested number of signatures");
       check(state.verified, label + " signatures should verify");
@@ -601,6 +630,7 @@
         maxEquationResidue = Math.max(maxEquationResidue, residue);
         check(residue === 0, label + " signature equation should close");
         check(verifySignature(sig, SECRET_X), label + " verifier should accept the true key");
+        check(publicCandidateMatches(sig, sig.k, SECRET_X), label + " public candidate check should accept the true key and nonce");
         check(recoveredXFrom(sig, sig.k) === SECRET_X, label + " known nonce should recover x from one row");
       });
     }
@@ -610,6 +640,8 @@
       check(duplicateRCount(state.signatures) === state.signatures.length - 1, label + " reused mode should repeat every r");
       check(state.attack.kind === "reuse", label + " attack kind should be reuse");
       check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " reuse should recover the private key");
+      check(state.attack.publicKeyOk, label + " reuse recovery should match the public key");
+      check(state.attack.publicValidated, label + " reuse recovery should validate from public rows");
       check(state.attack.recoveredK === state.signatures[0].k, label + " reuse should recover the shared nonce");
       var a = state.signatures[state.attack.evidence[0]];
       var b = state.signatures[state.attack.evidence[1]];
@@ -619,6 +651,7 @@
       check(a.s !== b.s, label + " reuse evidence should have different s values");
       check(k === state.attack.recoveredK, label + " reuse formula should reproduce recovered k");
       check(x === state.attack.recoveredX, label + " reuse formula should reproduce recovered x");
+      check(publicCandidateMatches(a, k, x) && publicCandidateMatches(b, k, x), label + " reuse formula should pass public validation");
     }
 
     function checkSmall(state, label) {
@@ -628,6 +661,8 @@
       check(state.attack.limit === limit, label + " dictionary limit should match bit count");
       check(state.attack.rows.length === state.signatures.length, label + " dictionary rows should align with signatures");
       check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " small nonce space should recover the private key");
+      check(state.attack.publicKeyOk, label + " small-space recovery should match the public key");
+      check(state.attack.publicValidated, label + " small-space recovery should validate from public rows");
       check(state.attack.hits >= state.signatures.length, label + " small nonce space should hit every generated r");
       maxDictionaryHits = Math.max(maxDictionaryHits, state.attack.hits);
       state.attack.rows.forEach(function (row, index) {
@@ -635,6 +670,7 @@
         check(row.i === sig.i, label + " dictionary row index should match signature");
         check(row.tested === limit - 1, label + " dictionary tested count should match nonce space");
         check(row.matches >= 1, label + " each tiny nonce should be found by dictionary search");
+        check(row.publicValidated, label + " each tiny nonce row should pass public validation");
         check(row.recoveredK === sig.k, label + " dictionary should recover the actual nonce");
         check(row.recoveredX === SECRET_X, label + " dictionary row should recover the private key");
         check(sig.k < limit, label + " tiny-mode nonce should live inside the advertised space");
@@ -646,6 +682,8 @@
       check(duplicateRCount(state.signatures) === 0, label + " linear mode should not rely on repeated r");
       check(state.attack.kind === "linear", label + " attack kind should be linear");
       check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " linear relation should recover the private key");
+      check(state.attack.publicKeyOk, label + " linear recovery should match the public key");
+      check(state.attack.publicValidated, label + " linear recovery should validate from public rows");
       check(state.attack.recoveredK0 === 12017, label + " linear attack should recover the starting nonce");
       state.signatures.forEach(function (sig) {
         check(mod(state.attack.recoveredK0 + sig.i * state.params.step) === sig.k, label + " recovered k0 should predict each nonce");
@@ -667,6 +705,8 @@
       check(duplicateRCount(state.signatures) === 0, label + " fresh mode should not repeat r");
       check(state.attack.kind === "fresh", label + " attack kind should be fresh");
       check(!state.attack.success, label + " fresh mode should not recover the key under this attack model");
+      check(!state.attack.publicKeyOk, label + " fresh mode should not claim a public key match");
+      check(!state.attack.publicValidated, label + " fresh mode should not claim public validation");
       check(state.attack.hits === 0, label + " fresh nonces should not match the tiny dictionary");
       check(state.attack.limit === limit, label + " fresh dictionary limit should match bit count");
       state.signatures.forEach(function (sig) {
@@ -680,6 +720,10 @@
     [0, 1, Q, Q + 1, -1, -Q - 3].forEach(function (value) {
       check(range(mod(value), 0, Q - 1), "mod should return a field element");
     });
+    check(powMod(G, Q - 1) === 1, "generator should satisfy Fermat order");
+    check(powMod(G, (Q - 1) / 2) === Q - 1, "generator should have full order in the toy group");
+    check(publicKeyMatches(SECRET_X), "toy public key should match the private key");
+    check(!publicKeyMatches(SECRET_X + 1), "neighboring private key should not match the public key");
 
     var reuse = evaluate({ mode: "reuse", signatures: 3 });
     var small = evaluate({ mode: "small", bits: 8, signatures: 4 });
@@ -723,12 +767,15 @@
 
   var api = {
     MODES: MODES,
+    PUBLIC_Y: PUBLIC_Y,
     Q: Q,
     SECRET_X: SECRET_X,
     audit: audit,
     cleanParams: cleanParams,
     evaluate: evaluate,
     invMod: invMod,
+    publicCandidateMatches: publicCandidateMatches,
+    publicKeyMatches: publicKeyMatches,
     rFromK: rFromK,
     recoverFromReuse: recoverFromReuse,
     recoverLinear: recoverLinear,

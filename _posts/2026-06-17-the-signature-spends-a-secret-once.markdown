@@ -98,6 +98,10 @@ with their actual group operation. The algebraic failure is the same shape.
 The lab deliberately reveals the hidden `k` values in the table so the
 experiment can be audited. A real verifier would not see them.
 
+The recovery routines do not have to trust that hidden table. The toy signer
+also publishes `y = g^x mod q`, so a recovered candidate key is checked against
+the public key and against the public signature equations.
+
 <style>
   .nonce-lab {
     background: #ffffff;
@@ -276,12 +280,12 @@ experiment can be audited. A real verifier would not see them.
   </div>
   <p class="nonce-lab__note">
     Deterministic toy signature experiment over q = 65537. The Node audit runs
-    1,148 checks: field arithmetic, signature equations, repeated-r recovery,
-    tiny-nonce dictionary hits, linear-system recovery, fresh-nonce controls,
-    and parameter sanitization.
+    1,317 checks: field arithmetic, public-key validation, signature equations,
+    repeated-r recovery, tiny-nonce dictionary hits, linear-system recovery,
+    fresh-nonce controls, and parameter sanitization.
   </p>
 </div>
-<script defer src="{{ '/assets/js/signature-nonce-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/signature-nonce-lab.js?v=20260617c' | relative_url }}"></script>
 
 Try four modes.
 
