@@ -566,6 +566,7 @@
       metric("sweep wins", result.sweep.wins + "/" + result.sweep.total)
     ].join("");
     drawChart(canvas, result);
+    root.__stochasticRoundingState = result;
   }
 
   function init() {
@@ -589,18 +590,84 @@
   }
 
   function audit() {
+    var checked = 0;
     var unbiased = 0;
-    var unbiasedTotal = 0;
+    var optimizerWins = 0;
+    var roundingCases = 0;
+
+    function check(condition, message) {
+      checked += 1;
+      if (!condition) throw new Error(message);
+    }
+
+    function approx(a, b, tolerance) {
+      return Math.abs(a - b) <= tolerance;
+    }
+
+    var sanitized = defaultParams({
+      batch: 0,
+      learningRate: Infinity,
+      microStep: 999,
+      noise: -12,
+      paths: 1,
+      quantum: -1,
+      seed: -5,
+      steps: 2
+    });
+    check(sanitized.batch === 1, "batch should clamp to at least one");
+    check(sanitized.learningRate === 0.16, "learning rate should clamp to implementation max");
+    check(sanitized.microStep === 90, "micro update should clamp to 90 percent");
+    check(sanitized.noise === 0, "noise should clamp to zero");
+    check(sanitized.paths === 16, "paths should clamp to at least sixteen");
+    check(sanitized.quantum === 0.01, "quantum should clamp to implementation min");
+    check(sanitized.seed === 1, "seed should clamp to at least one");
+    check(sanitized.steps === 30, "steps should clamp to at least thirty");
+
+    check(roundNearest(0.024, 0.05, -1, 1) === 0, "nearest should round below midpoint down");
+    check(roundNearest(0.026, 0.05, -1, 1) === 0.05, "nearest should round above midpoint up");
+    check(roundNearest(5, 0.05, -1, 1) === 1, "nearest should respect upper clamp");
+    check(roundNearest(-5, 0.05, -1, 1) === -1, "nearest should respect lower clamp");
+    check(expectedStochasticRound(5, 0.05, -1, 1) === 1, "expected stochastic round should clip high inputs");
+    check(expectedStochasticRound(-5, 0.05, -1, 1) === -1, "expected stochastic round should clip low inputs");
+    check(roundStochastic(5, 0.05, function () { return 0; }, -1, 1) === 1, "stochastic round should clip high inputs");
+    check(roundStochastic(-5, 0.05, function () { return 0; }, -1, 1) === -1, "stochastic round should clip low inputs");
+
     [0.02, 0.05, 0.125].forEach(function (q) {
       for (var i = 1; i < 20; i += 1) {
-        var x = 0.7 + q * i / 20;
-        unbiasedTotal += 1;
-        if (Math.abs(expectedStochasticRound(x, q, -2, 2) - x) < 1e-12) unbiased += 1;
+        var x = 0.713 + q * i / 23;
+        var lower = Math.floor(x / q) * q;
+        var upper = lower + q;
+        var pUp = (x - lower) / (upper - lower);
+        roundingCases += 1;
+        check(approx(expectedStochasticRound(x, q, -2, 2), x, 1e-12), "expected SR should be locally unbiased for q=" + q + " i=" + i);
+        check(approx(roundStochastic(x, q, function () { return 0; }, -2, 2), upper, 1e-15), "SR should choose upper for zero draw");
+        check(approx(roundStochastic(x, q, function () { return pUp / 2; }, -2, 2), upper, 1e-15), "SR should choose upper below probability threshold");
+        check(approx(roundStochastic(x, q, function () { return (pUp + 1) / 2; }, -2, 2), lower, 1e-15), "SR should choose lower above probability threshold");
+        check(approx(roundStochastic(x, q, function () { return pUp; }, -2, 2), lower, 1e-15), "SR threshold should be strict");
+        unbiased += 1;
       }
     });
 
-    var optimizer = 0;
-    var optimizerTotal = 0;
+    var defaults = simulateAll({});
+    var defaultMean = defaults.stochastic.mean[defaults.stochastic.mean.length - 1];
+    var defaultAccMean = defaults.accumulator.stochastic.mean[defaults.accumulator.stochastic.mean.length - 1];
+    check(approx(defaults.exact.final, 0.9977324693113462, 1e-15), "default exact final should be deterministic");
+    check(approx(defaults.nearest.final, 0.35, 1e-12), "default nearest final should match article");
+    check(defaults.nearest.stuckAt === 9, "default nearest should report the first stuck step");
+    check(approx(defaultMean, 0.9990625, 1e-12), "default SR mean should match seeded ensemble");
+    check(defaults.nearest.gap > Math.abs(defaultMean - 1) + 0.6, "default SR mean should beat nearest by a wide margin");
+    check(approx(defaults.accumulator.exact.final, 1.98, 1e-12), "default accumulator exact total should match article");
+    check(defaults.accumulator.nearest.final === 0, "default accumulator nearest path should stagnate at zero");
+    check(approx(defaultAccMean, 1.9496875, 1e-12), "default accumulator SR mean should match seeded ensemble");
+    check(defaults.sweep.cells.length === defaults.sweep.total, "sweep cell count should match total");
+    check(defaults.sweep.total === 42, "default sweep should have a 7 by 6 grid");
+    check(defaults.sweep.wins === defaults.sweep.total, "default sweep should mark every cell as an SR win");
+
+    var repeat = simulateAll({});
+    check(repeat.nearest.final === defaults.nearest.final, "nearest simulation should be deterministic");
+    check(repeat.stochastic.mean[repeat.stochastic.mean.length - 1] === defaultMean, "SR ensemble should be deterministic under seeded RNG");
+    check(repeat.accumulator.stochastic.mean[repeat.accumulator.stochastic.mean.length - 1] === defaultAccMean, "accumulator ensemble should be deterministic under seeded RNG");
+
     [0.025, 0.05, 0.08, 0.11].forEach(function (q) {
       [0.02, 0.035, 0.05].forEach(function (lr) {
         var result = simulateAll({
@@ -613,32 +680,57 @@
           seed: 29,
           steps: 220
         }, true);
-        var srGap = Math.abs(result.stochastic.mean[result.stochastic.mean.length - 1] - 1);
-        optimizerTotal += 1;
-        if (srGap + q * 0.75 < result.nearest.gap) optimizer += 1;
+        var srFinal = result.stochastic.mean[result.stochastic.mean.length - 1];
+        var srGap = Math.abs(srFinal - 1);
+        var closedForm = 1 - Math.pow(1 - lr, 220);
+        optimizerWins += srGap + q * 0.75 < result.nearest.gap ? 1 : 0;
+        check(approx(result.exact.final, closedForm, 1e-12), "precise quadratic path should match closed form q=" + q + " lr=" + lr);
+        check(result.nearest.gap <= q / (2 * lr) + q, "nearest final should lie within the deterministic dead-zone radius q=" + q + " lr=" + lr);
+        check(srGap + q * 0.75 < result.nearest.gap, "SR mean should beat nearest in dead-zone sweep q=" + q + " lr=" + lr);
+        check(srGap < 0.015, "SR mean should remain close to target q=" + q + " lr=" + lr);
+        check(result.stochastic.finalValues.length === 256, "SR sweep should keep requested path count q=" + q + " lr=" + lr);
       });
     });
 
+    [1, 5, 22, 50, 90].forEach(function (microStep) {
+      var params = defaultParams({ microStep: microStep, noise: 0, paths: 256, quantum: 0.05, seed: 41, steps: 180 });
+      var acc = summarizeAccumulator(params);
+      var exactTotal = params.quantum * params.microStep / 100 * params.steps;
+      var mean = acc.stochastic.mean[acc.stochastic.mean.length - 1];
+      var clippedTotal = Math.min(6, exactTotal);
+      check(approx(acc.exact.final, exactTotal, 1e-12), "accumulator exact total should equal repeated micro updates " + microStep);
+      check(Math.abs(mean - clippedTotal) < Math.max(0.03, clippedTotal * 0.08), "SR accumulator mean should track clipped exact total " + microStep);
+      if (microStep < 50) check(acc.nearest.final === 0, "nearest accumulator should stagnate for sub-half-grid updates " + microStep);
+      else if (microStep === 50) check(acc.nearest.final > 0 && acc.nearest.final < acc.exact.final, "nearest accumulator tie case should move but still lag exact total");
+      else check(acc.nearest.final >= acc.exact.final * 0.95 || acc.nearest.final === 6, "nearest accumulator should move for larger-than-half-grid updates " + microStep);
+    });
+
     return {
-      optimizer: optimizer,
-      optimizerTotal: optimizerTotal,
-      passed: unbiased + optimizer,
-      total: unbiasedTotal + optimizerTotal,
-      unbiased: unbiased,
-      unbiasedTotal: unbiasedTotal
+      checked: checked,
+      defaultNearestFinal: defaults.nearest.final,
+      defaultSrMean: defaultMean,
+      ok: true,
+      optimizerWins: optimizerWins,
+      roundingCases: roundingCases,
+      sweepCells: defaults.sweep.total,
+      unbiasedCases: unbiased
     };
   }
 
+  var api = {
+    audit: audit,
+    defaultParams: defaultParams,
+    expectedStochasticRound: expectedStochasticRound,
+    roundNearest: roundNearest,
+    roundStochastic: roundStochastic,
+    simulateAll: simulateAll
+  };
+
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      audit: audit,
-      defaultParams: defaultParams,
-      expectedStochasticRound: expectedStochasticRound,
-      roundNearest: roundNearest,
-      roundStochastic: roundStochastic,
-      simulateAll: simulateAll
-    };
+    module.exports = api;
   }
+
+  if (typeof window !== "undefined") window.StochasticRoundingLab = api;
 
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
