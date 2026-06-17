@@ -272,6 +272,36 @@
     return (1n << BigInt(varCount + 1)) - 1n;
   }
 
+  function expectedNodeCount(bits, fn, orderKind) {
+    var paired = orderKind === "paired" || orderKind === "yfirst" || orderKind === "shuffled";
+    if (fn === "eq") return paired ? 3 * bits : 3 * (1 << bits) - 3;
+    return paired ? 2 * bits : (1 << (bits + 1)) - 2;
+  }
+
+  function assignmentValue(bits, fn, mask) {
+    if (fn === "eq") {
+      for (var i = 0; i < bits; i += 1) {
+        if (((mask >> i) & 1) !== ((mask >> (bits + i)) & 1)) return false;
+      }
+      return true;
+    }
+    for (var j = 0; j < bits; j += 1) {
+      if (((mask >> j) & 1) && ((mask >> (bits + j)) & 1)) return true;
+    }
+    return false;
+  }
+
+  function bddValue(built, mask) {
+    var id = built.root;
+    while (!built.manager.nodes[id].terminal) {
+      var node = built.manager.nodes[id];
+      var bit = Number(node.name.slice(1));
+      var offset = node.name[0] === "x" ? bit : built.bits + bit;
+      id = ((mask >> offset) & 1) ? node.high : node.low;
+    }
+    return built.manager.nodes[id].value;
+  }
+
   function fmtBig(value) {
     value = BigInt(value);
     var text = value.toString();
@@ -634,27 +664,94 @@
   }
 
   function audit() {
-    var eqPaired = buildFunction(6, "eq", "paired");
-    var eqGrouped = buildFunction(6, "eq", "grouped");
-    var eqYfirst = buildFunction(6, "eq", "yfirst");
+    var checked = 0;
+    var truthTableCases = 0;
+    var orders = ["paired", "grouped", "yfirst", "shuffled"];
+    var fns = ["eq", "pairOr"];
+
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    function checkPermutation(bits, kind) {
+      var names = orderNames(bits, kind);
+      var expected = variableNames(bits).sort();
+      var actual = names.slice().sort();
+      check(names.length === 2 * bits, kind + " order should have 2n variables for n=" + bits);
+      check(actual.join("|") === expected.join("|"), kind + " order should be a permutation for n=" + bits);
+    }
+
+    function checkBuilt(built) {
+      var reachable = built.manager.reachable(built.root);
+      var nonterminals = reachable.filter(function (id) { return id > 1; });
+      var triples = {};
+      check(built.nodeCount === nonterminals.length, built.fn + " " + built.orderKind + " n=" + built.bits + ": nodeCount should count reachable nonterminals");
+      check(built.widths.reduce(function (sum, value) { return sum + value; }, 0) === built.nodeCount, built.fn + " " + built.orderKind + " n=" + built.bits + ": widths should sum to node count");
+      check(built.satCount === exactSat(built.bits, built.fn), built.fn + " " + built.orderKind + " n=" + built.bits + ": sat count should match closed form");
+      check(built.nodeCount === expectedNodeCount(built.bits, built.fn, built.orderKind), built.fn + " " + built.orderKind + " n=" + built.bits + ": node count should match closed form");
+      check(built.manager.satCount(0) === 0n && built.manager.satCount(1) === (1n << BigInt(2 * built.bits)), built.fn + " " + built.orderKind + " n=" + built.bits + ": terminal sat counts should account for skipped variables");
+      nonterminals.forEach(function (id) {
+        var node = built.manager.nodes[id];
+        var key = node.level + "|" + node.low + "|" + node.high;
+        check(node.low !== node.high, built.fn + " " + built.orderKind + " n=" + built.bits + ": no reachable redundant tests");
+        check(triples[key] == null, built.fn + " " + built.orderKind + " n=" + built.bits + ": no duplicate reachable triples");
+        triples[key] = id;
+        [node.low, node.high].forEach(function (childId) {
+          var child = built.manager.nodes[childId];
+          check(child.terminal || child.level > node.level, built.fn + " " + built.orderKind + " n=" + built.bits + ": child levels should increase");
+        });
+      });
+      if (built.bits <= 5) {
+        var total = 1 << (2 * built.bits);
+        var accepted = 0n;
+        for (var mask = 0; mask < total; mask += 1) {
+          var expected = assignmentValue(built.bits, built.fn, mask);
+          var actual = bddValue(built, mask);
+          truthTableCases += 1;
+          check(actual === expected, built.fn + " " + built.orderKind + " n=" + built.bits + ": BDD should match truth table mask " + mask);
+          if (actual) accepted += 1n;
+        }
+        check(accepted === built.satCount, built.fn + " " + built.orderKind + " n=" + built.bits + ": enumerated count should match satCount");
+      }
+    }
+
+    [2, 3, 4, 5, 6, 8, 10].forEach(function (bits) {
+      orders.forEach(function (order) { checkPermutation(bits, order); });
+      fns.forEach(function (fn) {
+        var paired = buildFunction(bits, fn, "paired");
+        var yfirst = buildFunction(bits, fn, "yfirst");
+        var shuffled = buildFunction(bits, fn, "shuffled");
+        var grouped = buildFunction(bits, fn, "grouped");
+        [paired, grouped, yfirst, shuffled].forEach(checkBuilt);
+        check(yfirst.nodeCount === paired.nodeCount, fn + " n=" + bits + ": y-first paired order should match paired size");
+        check(shuffled.nodeCount === paired.nodeCount, fn + " n=" + bits + ": outer-first order should match paired size for independent pairs");
+        check(grouped.nodeCount > paired.nodeCount, fn + " n=" + bits + ": grouped order should be larger than paired");
+        check(grouped.nodeCount / paired.nodeCount >= (bits < 4 ? 1 : 3), fn + " n=" + bits + ": grouped order should show an order tax");
+      });
+    });
+
+    var dirtyParams = cleanParams({ bits: Infinity, fn: "wat", order: "wat" });
+    check(dirtyParams.bits === DEFAULTS.bits && dirtyParams.fn === DEFAULTS.fn && dirtyParams.order === DEFAULTS.order, "invalid params should fall back to defaults");
+    var clampedLow = cleanParams({ bits: -10, fn: "pairOr", order: "grouped" });
+    check(clampedLow.bits === 2 && clampedLow.fn === "pairOr" && clampedLow.order === "grouped", "low bits should clamp while valid options remain");
+    var clampedHigh = cleanParams({ bits: 99, fn: "eq", order: "shuffled" });
+    check(clampedHigh.bits === 10 && clampedHigh.fn === "eq" && clampedHigh.order === "shuffled", "high bits should clamp while valid options remain");
+
     var eqState = evaluate({ bits: 6, fn: "eq", order: "grouped" });
     var pairOr = evaluate({ bits: 6, fn: "pairOr", order: "paired" });
     var pairOrGrouped = evaluate({ bits: 6, fn: "pairOr", order: "grouped" });
-    assert(eqPaired.satCount === exactSat(6, "eq"), "equality sat count should be 2^n");
-    assert(eqGrouped.satCount === exactSat(6, "eq"), "grouped equality sat count should match");
-    assert(eqPaired.nodeCount < eqGrouped.nodeCount, "paired equality order should be smaller than grouped");
-    assert(eqYfirst.nodeCount === eqPaired.nodeCount, "swapping each pair should preserve equality size");
-    assert(eqGrouped.nodeCount >= eqPaired.nodeCount * 4, "grouped equality should show an exponential tax by six bits");
-    assert(pairOr.current.satCount === exactSat(6, "pairOr"), "pairwise-hit sat count should match complement formula");
-    assert(pairOrGrouped.current.satCount === exactSat(6, "pairOr"), "grouped pairwise-hit sat count should match");
-    assert(pairOrGrouped.current.nodeCount > pairOr.current.nodeCount, "grouped pairwise-hit should be larger than paired");
-    assert(eqState.fullTree > BigInt(eqGrouped.nodeCount), "reduced diagram should be smaller than full tree");
+    check(eqState.current.nodeCount === 189 && eqState.best.nodeCount === 18, "six-bit equality headline counts should remain stable");
+    check(pairOr.current.nodeCount === 12 && pairOrGrouped.current.nodeCount === 126, "six-bit pairwise-hit headline counts should remain stable");
+    check(eqState.fullTree > BigInt(eqState.current.nodeCount), "reduced diagram should be smaller than the full decision tree");
     return {
-      eqGroupedNodes: eqGrouped.nodeCount,
-      eqPairedNodes: eqPaired.nodeCount,
+      checked: checked,
+      eqGroupedNodes: eqState.current.nodeCount,
+      eqPairedNodes: eqState.best.nodeCount,
       ok: true,
       pairOrGroupedNodes: pairOrGrouped.current.nodeCount,
-      pairOrPairedNodes: pairOr.current.nodeCount
+      pairOrPairedNodes: pairOr.current.nodeCount,
+      truthTableCases: truthTableCases
     };
   }
 
@@ -662,9 +759,12 @@
     FUNCTIONS: FUNCTIONS,
     ORDERS: ORDERS,
     audit: audit,
+    assignmentValue: assignmentValue,
+    bddValue: bddValue,
     buildFunction: buildFunction,
     cleanParams: cleanParams,
     evaluate: evaluate,
+    expectedNodeCount: expectedNodeCount,
     exactSat: exactSat,
     makeManager: makeManager,
     orderNames: orderNames

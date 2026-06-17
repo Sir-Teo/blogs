@@ -264,12 +264,14 @@ Move the order selector first. Then move the bit slider.
   <div class="bdd-lab__metrics" data-metrics></div>
   <canvas data-canvas width="940" height="760" aria-label="ROBDD variable-ordering lab showing width by level, order-tax curve, accepted assignments, and reduction ledger"></canvas>
   <p class="bdd-lab__note">
-    Counts are reachable nonterminal ROBDD nodes from the final root. The builder also
-    checks the exact number of satisfying assignments against a closed-form count.
+    Counts are reachable nonterminal ROBDD nodes from the final root. The
+    41,530-assertion audit checks closed-form node counts, reduction invariants,
+    exact BigInt model counts, parameter sanitization, and 10,880 truth-table
+    evaluations for small diagrams.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/bdd-order-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bdd-order-lab.js?v=20260617c' | relative_url }}"></script>
 
 ## What the Bad Order Is Remembering
 
@@ -376,6 +378,10 @@ nodeCount counts reachable nonterminal nodes from the final root
 The lab tests equality against the closed-form count `2^n`, and tests the
 pairwise-hit function against the complement count `4^n - 3^n`: each pair has
 four assignments, and exactly three assignments avoid `x_i = y_i = 1`.
+The audit also checks the closed-form reachable-node counts used by this toy
+family: paired equality has `3n` nonterminal nodes, grouped equality has
+`3*2^n - 3`, paired pairwise-hit has `2n`, and grouped pairwise-hit has
+`2^(n+1) - 2`.
 
 [^bryant-1986]: Randal E. Bryant, ["Graph-Based Algorithms for Boolean Function Manipulation"](https://www.cs.cmu.edu/~bryant/pubdir/ieeetc86.pdf), *IEEE Transactions on Computers*, 1986.
 
