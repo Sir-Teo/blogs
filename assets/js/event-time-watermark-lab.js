@@ -734,7 +734,7 @@
   function setupCanvas(canvas) {
     var rect = canvas.getBoundingClientRect();
     var cssW = Math.max(320, rect.width || canvas.width || 960);
-    var cssH = Math.max(680, cssW * 0.78);
+    var cssH = cssW >= 760 ? Math.max(680, cssW * 0.78) : (cssW < 460 ? 980 : 940);
     var dpr = Math.min(2, global.devicePixelRatio || 1);
     if (canvas.width !== Math.round(cssW * dpr)) canvas.width = Math.round(cssW * dpr);
     if (canvas.height !== Math.round(cssH * dpr)) canvas.height = Math.round(cssH * dpr);
