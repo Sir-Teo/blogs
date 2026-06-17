@@ -46,7 +46,7 @@
   }
 
   function litName(lit, names) {
-    return (lit < 0 ? "¬" : "") + varName(Math.abs(lit), names);
+    return (lit < 0 ? "~" : "") + varName(Math.abs(lit), names);
   }
 
   function clauseName(lits, names) {
@@ -302,7 +302,7 @@
       record("case " + index + " final clause has one current literal", countAtLevel(result.analysis.finalClause, result.run.assigns, result.run.decisionLevel) === 1);
       record("case " + index + " backjump skips detours", result.analysis.levelsSkipped === result.params.detours);
       record("case " + index + " learned clause is asserting", result.analysis.unitAfterBackjump);
-      record("case " + index + " asserting literal is negated final decision", litName(result.analysis.assertingLit, names) === "¬c");
+      record("case " + index + " asserting literal is negated final decision", litName(result.analysis.assertingLit, names) === "~c");
     });
     var defaultRun = evaluate(DEFAULTS);
     var ok = checks.every(function (check) { return check.ok; });
@@ -339,11 +339,11 @@
     if (!el) return;
     el.innerHTML = [
       metric("Learned clause", clauseName(result.analysis.finalClause, result.formula.names), "cdcl-lab__metric--good"),
-      metric("Backjump level", String(result.analysis.backjump), ""),
-      metric("Skipped levels", String(result.analysis.levelsSkipped), result.analysis.levelsSkipped ? "cdcl-lab__metric--good" : ""),
-      metric("Resolution steps", String(result.analysis.steps.length - 1), ""),
-      metric("Asserting literal", litName(result.analysis.assertingLit, result.formula.names), "cdcl-lab__metric--warn"),
-      metric("After backjump", result.analysis.unitAfterBackjump ? "unit" : "open", result.analysis.unitAfterBackjump ? "cdcl-lab__metric--good" : "cdcl-lab__metric--warn")
+      metric("Backjump", String(result.analysis.backjump), ""),
+      metric("Skipped", String(result.analysis.levelsSkipped), result.analysis.levelsSkipped ? "cdcl-lab__metric--good" : ""),
+      metric("Proof steps", String(result.analysis.steps.length - 1), ""),
+      metric("Assert", litName(result.analysis.assertingLit, result.formula.names), "cdcl-lab__metric--warn"),
+      metric("After jump", result.analysis.unitAfterBackjump ? "unit" : "open", result.analysis.unitAfterBackjump ? "cdcl-lab__metric--good" : "cdcl-lab__metric--warn")
     ].join("");
   }
 
@@ -520,8 +520,10 @@
     var left = box.x + 20;
     var right = box.x + box.w - 24;
     var top = box.y + 64;
-    var gap = 12;
-    var barH = 24;
+    var bottomReserve = 46;
+    var available = Math.max(80, box.y + box.h - bottomReserve - top);
+    var gap = clamp(Math.floor(available / Math.max(1, maxLevel) * 0.18), 4, 10);
+    var barH = clamp(Math.floor((available - gap * (maxLevel - 1)) / Math.max(1, maxLevel)), 12, 24);
     for (var level = 1; level <= maxLevel; level += 1) {
       var y = top + (level - 1) * (barH + gap);
       var skipped = level > result.analysis.backjump && level < maxLevel;
@@ -533,8 +535,9 @@
       label(ctx, current ? "conflict level" : (skipped ? "skipped by clause" : "kept"), right - 8, y + barH / 2, COLORS.muted, 10, 700, "right");
     }
     var clause = clauseName(result.analysis.finalClause, result.formula.names);
-    label(ctx, "learned: " + clause, left, box.y + box.h - 38, COLORS.text, 11, 800);
-    label(ctx, "asserts " + litName(result.analysis.assertingLit, result.formula.names) + " at L" + result.analysis.backjump, left, box.y + box.h - 18, COLORS.assert, 11, 800);
+    var textY = Math.min(box.y + box.h - 30, top + maxLevel * (barH + gap) + 12);
+    label(ctx, "learned: " + clause, left, textY, COLORS.text, 11, 800);
+    label(ctx, "asserts " + litName(result.analysis.assertingLit, result.formula.names) + " at L" + result.analysis.backjump, left, textY + 18, COLORS.assert, 11, 800);
   }
 
   function drawCanvas(canvas, result) {
@@ -549,8 +552,8 @@
     var gap = 12;
     if (w < 720) {
       var a = Math.round(h * 0.22);
-      var b = Math.round(h * 0.30);
-      var c = Math.round(h * 0.25);
+      var b = Math.round(h * 0.28);
+      var c = Math.round(h * 0.23);
       drawTrail(ctx, { x: 0, y: 0, w: w, h: a }, result);
       drawGraph(ctx, { x: 0, y: a + gap, w: w, h: b }, result);
       drawResolution(ctx, { x: 0, y: a + b + 2 * gap, w: w, h: c }, result);
