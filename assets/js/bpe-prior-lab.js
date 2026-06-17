@@ -308,6 +308,64 @@
     };
   }
 
+  function audit() {
+    var checks = [];
+    function record(name, ok, detail) {
+      checks.push({ name: name, ok: !!ok, detail: detail || null });
+    }
+
+    var clamped = cleanParams({
+      codeShare: 103,
+      numberShare: -7,
+      merges: 181,
+      probe: "missing",
+      customText: "x".repeat(220)
+    });
+    record("parameters snap and clamp", clamped.codeShare === 100 && clamped.numberShare === 0 && clamped.merges === 180 && clamped.probe === DEFAULTS.probe);
+    record("custom text is bounded", clamped.customText.length === 180);
+
+    [
+      { codeShare: 75, numberShare: 25, merges: 96, probe: "code" },
+      { codeShare: 20, numberShare: 85, merges: 96, probe: "market" },
+      { codeShare: 10, numberShare: 10, merges: 44, probe: "rare" }
+    ].forEach(function (params, index) {
+      var result = evaluate(params);
+      record("case " + index + " general tokens preserve text", result.generalTokens.join("") === result.text);
+      record("case " + index + " domain tokens preserve text", result.domainTokens.join("") === result.text);
+      record("case " + index + " merge budget respected", result.domain.merges.length <= result.params.merges && result.general.merges.length <= result.params.merges);
+      record("case " + index + " finite token scores", isFinite(result.generalScore.bytesPerToken) && isFinite(result.domainScore.bytesPerToken));
+    });
+
+    var codeFocused = evaluate({ codeShare: 90, numberShare: 10, merges: 96, probe: "code" });
+    var numberFocused = evaluate({ codeShare: 10, numberShare: 90, merges: 96, probe: "market" });
+    var shortBudget = evaluate({ codeShare: 70, numberShare: 50, merges: 32, probe: "code" });
+    var longBudget = evaluate({ codeShare: 70, numberShare: 50, merges: 128, probe: "code" });
+    record("code-focused tokenizer shortens code probe", codeFocused.domainScore.tokens <= codeFocused.generalScore.tokens, {
+      general: codeFocused.generalScore.tokens,
+      domain: codeFocused.domainScore.tokens
+    });
+    record("number-focused tokenizer shortens market probe", numberFocused.domainScore.tokens <= numberFocused.generalScore.tokens, {
+      general: numberFocused.generalScore.tokens,
+      domain: numberFocused.domainScore.tokens
+    });
+    record("more merges do not increase weighted corpus tokens", longBudget.domain.corpusTokenCount <= shortBudget.domain.corpusTokenCount, {
+      short: shortBudget.domain.corpusTokenCount,
+      long: longBudget.domain.corpusTokenCount
+    });
+    record("attention proxy is token count squared", codeFocused.domainScore.attentionProxy === codeFocused.domainScore.tokens * codeFocused.domainScore.tokens);
+
+    return {
+      checks: checks,
+      ok: checks.every(function (check) { return check.ok; }),
+      sample: {
+        codeProbe: codeFocused.generalScore.tokens + " -> " + codeFocused.domainScore.tokens,
+        marketProbe: numberFocused.generalScore.tokens + " -> " + numberFocused.domainScore.tokens,
+        mergeBudget: longBudget.domain.merges.length,
+        suiteAverage: formatNumber(codeFocused.suiteGeneral, 1) + " -> " + formatNumber(codeFocused.suiteDomain, 1)
+      }
+    };
+  }
+
   function tokenText(token) {
     if (token === " ") return "[space]";
     return token.replace(/ /g, "[space]");
@@ -600,6 +658,7 @@
   }
 
   var api = {
+    audit: audit,
     buildCorpus: buildCorpus,
     cleanParams: cleanParams,
     encode: encode,
