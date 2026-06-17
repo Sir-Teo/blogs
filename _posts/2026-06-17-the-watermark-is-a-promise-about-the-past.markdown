@@ -311,7 +311,7 @@ arrive after the allowed-lateness horizon and are dropped.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/event-time-watermark-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/event-time-watermark-lab.js?v=20260617c' | relative_url }}"></script>
 
 With the default seed, the lab generates `190` mobile events. A 12-minute
 watermark delay and 8 minutes of allowed lateness produce an early answer for
@@ -497,12 +497,21 @@ accepted + dropped = processed
 final batch count error = dropped records
 watermarks are monotone
 on-time panes fire only after watermark >= window end
+late panes fire only before garbage collection
+event statuses agree with the pre-arrival watermark
+per-window exact = accepted + dropped
+nonempty windows fire and finalize by the final flush
 a sufficiently slow watermark drops no data
 dropped records do not increase as watermark delay grows
 ```
 
 That last assertion is the point of the experiment. More waiting is not free,
 but it should not make this simple single-input policy less complete.
+
+The current audit runs 38,076 checks across all three scenarios, three seeds,
+three disorder levels, two window sizes, and three allowed-lateness settings.
+It also pins the default story in the text: `190` generated records, `53`
+dropped late records, and a first-pane completeness of about `70%`.
 
 In production, I would want the same shape of audit next to every important
 stream:

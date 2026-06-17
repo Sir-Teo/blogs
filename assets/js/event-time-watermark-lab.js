@@ -843,15 +843,71 @@
     if (!condition) throw new Error(message);
   }
 
-  function assertMonotoneWatermark(state, label) {
-    var last = -Infinity;
-    state.watermarkPath.forEach(function (point) {
-      assert(point.watermark + 1e-9 >= last, label + " watermark should be monotone");
-      last = Math.max(last, point.watermark);
-    });
+  function finite(value) {
+    return Number.isFinite(value);
+  }
+
+  function statusCounts(steps) {
+    return steps.reduce(function (counts, step) {
+      counts[step.status] = (counts[step.status] || 0) + 1;
+      return counts;
+    }, {});
   }
 
   function audit() {
+    var checked = 0;
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+    function checkMonotoneWatermark(state, label) {
+      var last = -Infinity;
+      state.watermarkPath.forEach(function (point) {
+        check(point.watermark + 1e-9 >= last, label + " watermark should be monotone");
+        last = Math.max(last, point.watermark);
+      });
+    }
+    function checkState(state, events, params, label) {
+      var exactSum = state.windows.reduce(function (sum, win) { return sum + win.exact; }, 0);
+      var acceptedSum = state.windows.reduce(function (sum, win) { return sum + win.accepted; }, 0);
+      var droppedSum = state.windows.reduce(function (sum, win) { return sum + win.dropped; }, 0);
+      var onTimeSum = state.windows.reduce(function (sum, win) { return sum + win.onTimeCount; }, 0);
+      var correctionSum = state.windows.reduce(function (sum, win) { return sum + win.corrections; }, 0);
+      var counts = statusCounts(state.steps);
+      check(state.steps.length === events.length, label + " should produce one step per event");
+      check(exactSum === events.length, label + " exact windows should partition the stream");
+      check(acceptedSum === state.summary.accepted, label + " accepted window sum should match summary");
+      check(droppedSum === state.summary.dropped, label + " dropped window sum should match summary");
+      check(onTimeSum === state.summary.onTimeEvents, label + " on-time pane sum should match summary");
+      check(correctionSum === state.summary.corrections, label + " correction window sum should match summary");
+      check(state.summary.processed === events.length, label + " processed count should match events");
+      check(state.summary.accepted + state.summary.dropped === events.length, label + " accepted plus dropped should match events");
+      check(state.summary.exactTotal === events.length, label + " exact total should equal event count");
+      check(state.summary.finalError === state.summary.dropped, label + " count error should equal dropped events");
+      check((counts.dropped || 0) === state.summary.dropped, label + " dropped step count should match summary");
+      check((counts.correction || 0) === state.summary.corrections, label + " correction step count should match summary");
+      check((counts.behind || 0) === state.summary.behindWatermark, label + " behind-watermark count should match summary");
+      check((counts["on-time"] || 0) + (counts.behind || 0) + (counts.correction || 0) + (counts.dropped || 0) === events.length, label + " statuses should partition events");
+      check(state.summary.onTimeCompleteness >= 0 && state.summary.onTimeCompleteness <= 1, label + " completeness should be a fraction");
+      check(state.summary.avgLatency >= 0 && finite(state.summary.avgLatency), label + " average latency should be finite");
+      check(state.summary.maxDisorder >= 0 && finite(state.summary.maxDisorder), label + " max disorder should be finite");
+      check(state.windows.every(function (win) { return win.accepted + win.dropped === win.exact; }), label + " each window should reconcile exact = accepted + dropped");
+      check(state.windows.every(function (win) { return win.exact === 0 || win.onTimeFired; }), label + " nonempty windows should fire an on-time pane by final flush");
+      check(state.windows.every(function (win) { return win.finalized; }), label + " all windows should be finalized by final flush");
+      check(state.steps.every(function (step, index) { return index === 0 || step.processingTime + 1e-9 >= state.steps[index - 1].processingTime; }), label + " processing time should be nondecreasing");
+      check(state.steps.every(function (step) {
+        if (step.status === "dropped") return step.watermarkBefore + 1e-9 >= step.windowEnd + params.allowedLateness;
+        if (step.status === "correction") return step.watermarkBefore + 1e-9 >= step.windowEnd;
+        if (step.status === "behind") return step.watermarkBefore > step.eventTime + 1e-9 && step.watermarkBefore < step.windowEnd + 1e-9;
+        return step.watermarkBefore <= step.eventTime + 1e-9;
+      }), label + " statuses should match watermark position");
+      check(state.emissions.every(function (emission) {
+        if (emission.type === "on-time") return emission.watermark + 1e-9 >= emission.windowEnd;
+        if (emission.type === "late") return emission.watermark + 1e-9 >= emission.windowEnd && emission.watermark < emission.windowEnd + params.allowedLateness + 1e-9;
+        return false;
+      }), label + " emissions should obey on-time and late-pane boundaries");
+      checkMonotoneWatermark(state, label);
+    }
     var summary = {};
     Object.keys(SCENARIOS).forEach(function (scenario) {
       var cases = 0;
@@ -872,17 +928,7 @@
               });
               var events = generateEvents(params);
               var state = simulateEvents(events, params);
-              var exactSum = state.windows.reduce(function (sum, win) { return sum + win.exact; }, 0);
-              assert(exactSum === events.length, scenario + " exact windows should partition the stream");
-              assert(state.summary.processed === events.length, scenario + " processed count should match events");
-              assert(state.summary.accepted + state.summary.dropped === events.length, scenario + " accepted plus dropped should match events");
-              assert(state.summary.finalError === state.summary.dropped, scenario + " count error should equal dropped events");
-              assertMonotoneWatermark(state, scenario);
-              state.emissions.forEach(function (emission) {
-                if (emission.type === "on-time") {
-                  assert(emission.watermark + 1e-9 >= emission.windowEnd, scenario + " on-time pane should fire after window end");
-                }
-              });
+              checkState(state, events, params, scenario);
               var slowParams = {
                 allowedLateness: 0,
                 disorder: params.disorder,
@@ -893,10 +939,14 @@
                 windowSize: params.windowSize
               };
               var slow = simulateEvents(events, slowParams);
-              assert(slow.summary.dropped === 0, scenario + " sufficiently slow watermark should not drop data");
+              check(slow.summary.dropped === 0, scenario + " sufficiently slow watermark should not drop data");
               var curve = frontier(events, params);
+              check(curve.length > 0, scenario + " frontier should have points");
               for (var i = 1; i < curve.length; i += 1) {
-                assert(curve[i].dropped <= curve[i - 1].dropped, scenario + " dropped events should not increase with more delay");
+                check(curve[i].delay > curve[i - 1].delay, scenario + " frontier delay should increase");
+                check(curve[i].dropped <= curve[i - 1].dropped, scenario + " dropped events should not increase with more delay");
+                check(curve[i].finalError === curve[i].dropped, scenario + " frontier error should equal dropped events");
+                check(curve[i].onTimeCompleteness >= 0 && curve[i].onTimeCompleteness <= 1, scenario + " frontier completeness should be a fraction");
               }
               cases += 1;
               totalDropped += state.summary.dropped;
@@ -911,7 +961,14 @@
         totalDropped: totalDropped
       };
     });
-    return { ok: true, summary: summary };
+    var defaultState = evaluate(DEFAULTS);
+    check(defaultState.summary.processed === 190, "default scenario should generate 190 records");
+    check(defaultState.summary.dropped === 53, "default scenario should preserve documented dropped count");
+    check(Math.round(defaultState.summary.onTimeCompleteness * 100) === 70, "default scenario should preserve documented on-time completeness");
+    check(cleanParams({ allowedLateness: -4, disorder: 222, events: 1, scenario: "unknown", seed: NaN, watermarkDelay: 999, windowSize: 17 }).scenario === DEFAULTS.scenario, "sanitizer should fall back to default scenario");
+    check(cleanParams({ allowedLateness: -4, disorder: 222, events: 1, scenario: "unknown", seed: NaN, watermarkDelay: 999, windowSize: 17 }).allowedLateness === 0, "sanitizer should clamp allowed lateness");
+    check(cleanParams({ allowedLateness: -4, disorder: 222, events: 1, scenario: "unknown", seed: NaN, watermarkDelay: 999, windowSize: 17 }).events === 80, "sanitizer should clamp event count");
+    return { checked: checked, ok: true, summary: summary };
   }
 
   var api = {
