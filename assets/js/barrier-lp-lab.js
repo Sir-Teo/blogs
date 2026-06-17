@@ -327,6 +327,57 @@
     };
   }
 
+  function stationarityResidual(problem, c, lambdas) {
+    var residual = [c[0], c[1]];
+    problem.constraints.forEach(function (con, index) {
+      residual[0] += lambdas[index] * con.a[0];
+      residual[1] += lambdas[index] * con.a[1];
+    });
+    return residual;
+  }
+
+  function infNorm2(v) {
+    return Math.max(Math.abs(v[0]), Math.abs(v[1]));
+  }
+
+  function complementaritySpread(slacks, lambdas, t) {
+    var values = slacks.map(function (s, index) {
+      return s * lambdas[index] * t;
+    });
+    return {
+      max: Math.max.apply(null, values),
+      min: Math.min.apply(null, values)
+    };
+  }
+
+  function finiteDifferenceCheck(problem, c, t, x) {
+    var ss = slacks(problem, x);
+    var eps = Math.max(1e-7, Math.min(1e-5, minValue(ss) * 0.025));
+    var analytic = barrierDerivatives(problem, c, t, x);
+    var grad = analytic.grad;
+    var h = analytic.h;
+    var maxGradError = 0;
+    var maxHessianError = 0;
+    for (var k = 0; k < 2; k += 1) {
+      var step = k === 0 ? [eps, 0] : [0, eps];
+      var plus = add(x, step);
+      var minus = add(x, scale(step, -1));
+      var fPlus = barrierValue(problem, c, t, plus);
+      var fMinus = barrierValue(problem, c, t, minus);
+      var numericGrad = (fPlus - fMinus) / (2 * eps);
+      maxGradError = Math.max(maxGradError, Math.abs(numericGrad - grad[k]));
+
+      var gradPlus = barrierDerivatives(problem, c, t, plus).grad;
+      var gradMinus = barrierDerivatives(problem, c, t, minus).grad;
+      for (var j = 0; j < 2; j += 1) {
+        var numericH = (gradPlus[j] - gradMinus[j]) / (2 * eps);
+        var analyticH = j === 0 && k === 0 ? h[0] : (j === 1 && k === 1 ? h[2] : h[1]);
+        maxHessianError = Math.max(maxHessianError, Math.abs(numericH - analyticH));
+      }
+    }
+    return { eps: eps, maxGradError: maxGradError, maxHessianError: maxHessianError };
+  }
+
   function fmt(value, digits) {
     if (!isFinite(value)) return String(value);
     if (Math.abs(value) >= 10000 || (Math.abs(value) > 0 && Math.abs(value) < 0.001)) return value.toExponential(2);
@@ -724,24 +775,81 @@
   }
 
   function audit() {
+    var checked = 0;
+    var cases = 0;
     var summary = {};
+    var worst = {
+      complementarity: 0,
+      gapRatio: 0,
+      gradientError: 0,
+      hessianError: 0,
+      stationarity: 0
+    };
+
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
     Object.keys(SCENARIOS).forEach(function (scenario) {
-      var low = evaluate({ scenario: scenario, tilt: 0, logT: 8, growth: 30 });
-      var high = evaluate({ scenario: scenario, tilt: 0, logT: 30, growth: 30 });
-      assert(low.polygon.length >= 3, scenario + " should have a polygon");
-      assert(high.current.minSlack > 0, scenario + " central path should stay strictly feasible");
-      assert(high.current.regret <= high.current.gap * 1.05 + 1e-7, scenario + " regret should be bounded by m/t");
-      assert(high.current.regret < low.current.regret, scenario + " regret should fall as t grows");
-      assert(high.scheduleCurrent.totalNewton > 0, scenario + " should spend Newton steps");
-      summary[scenario] = {
-        highRegret: high.current.regret,
-        highGap: high.current.gap,
-        lowRegret: low.current.regret,
-        newtonSteps: high.scheduleCurrent.totalNewton,
-        vertices: high.polygon.length
+      var previousRegret = Infinity;
+      var scenarioSummary = {
+        maxRegret: 0,
+        minSlack: Infinity,
+        newtonSteps: 0,
+        vertices: 0
       };
+      [-30, -15, 0, 15, 30].forEach(function (tilt) {
+        previousRegret = Infinity;
+        [4, 10, 20, 30].forEach(function (logT) {
+          var state = evaluate({ scenario: scenario, tilt: tilt, logT: logT, growth: 30 });
+          var residual = stationarityResidual(state.problem, state.c, state.lambdas);
+          var residualNorm = infNorm2(residual);
+          var comp = complementaritySpread(state.current.slacks, state.lambdas, state.tMax);
+          var compError = Math.max(Math.abs(comp.min - 1), Math.abs(comp.max - 1));
+          var fdPoint = add(scale(state.start, 0.5), scale(state.current.point, 0.5));
+          var fd = finiteDifferenceCheck(state.problem, state.c, state.tMax, fdPoint);
+          var gapRatio = state.current.regret / Math.max(1e-12, state.current.gap);
+
+          cases += 1;
+          worst.stationarity = Math.max(worst.stationarity, residualNorm);
+          worst.complementarity = Math.max(worst.complementarity, compError);
+          worst.gradientError = Math.max(worst.gradientError, fd.maxGradError);
+          worst.hessianError = Math.max(worst.hessianError, fd.maxHessianError);
+          worst.gapRatio = Math.max(worst.gapRatio, gapRatio);
+          scenarioSummary.maxRegret = Math.max(scenarioSummary.maxRegret, state.current.regret);
+          scenarioSummary.minSlack = Math.min(scenarioSummary.minSlack, state.current.minSlack);
+          scenarioSummary.newtonSteps = Math.max(scenarioSummary.newtonSteps, state.scheduleCurrent.totalNewton);
+          scenarioSummary.vertices = Math.max(scenarioSummary.vertices, state.polygon.length);
+
+          check(state.polygon.length >= 3, scenario + " should have a polygon");
+          state.polygon.forEach(function (v) {
+            check(isFeasible(state.problem, v, 1e-8), scenario + " vertex should be feasible");
+            check(dot(state.c, state.optimum.point) <= dot(state.c, v) + 1e-8, scenario + " optimum should dominate every vertex");
+          });
+          check(minValue(slacks(state.problem, state.start)) > 0, scenario + " analytic center proxy should be strictly feasible");
+          check(state.current.minSlack > 0, scenario + " central path should stay strictly feasible");
+          check(state.current.regret >= -1e-8, scenario + " regret should be nonnegative");
+          check(state.current.regret <= state.current.gap * 1.05 + 1e-7, scenario + " regret should be bounded by m/t");
+          check(state.current.regret <= previousRegret + 1e-6, scenario + " regret should not rise as t grows");
+          check(residualNorm < 2e-6, scenario + " stationarity residual should be small");
+          check(compError < 1e-12, scenario + " complementarity products should equal 1/t");
+          check(minValue(slacks(state.problem, fdPoint)) > 0, scenario + " finite-difference probe should be strictly feasible");
+          check(fd.maxGradError < 2e-5, scenario + " interior-probe gradient should match finite differences");
+          check(fd.maxHessianError < 3e-3, scenario + " interior-probe Hessian should match finite differences");
+          check(state.scheduleCurrent.totalNewton > 0, scenario + " should spend Newton steps");
+          previousRegret = state.current.regret;
+        });
+      });
+      summary[scenario] = scenarioSummary;
     });
-    return { ok: true, summary: summary };
+
+    var lowClamp = cleanParams({ scenario: "wat", tilt: -100, logT: -3, growth: 0 });
+    var highClamp = cleanParams({ scenario: "blend", tilt: 100, logT: 99, growth: 99 });
+    check(lowClamp.scenario === DEFAULTS.scenario && lowClamp.tilt === -30 && lowClamp.logT === 0 && lowClamp.growth === 15, "low and invalid params should sanitize");
+    check(highClamp.scenario === "blend" && highClamp.tilt === 30 && highClamp.logT === 30 && highClamp.growth === 60, "high params should sanitize");
+
+    return { cases: cases, checked: checked, ok: true, summary: summary, worst: worst };
   }
 
   var api = {
@@ -749,7 +857,9 @@
     audit: audit,
     cleanParams: cleanParams,
     evaluate: evaluate,
+    finiteDifferenceCheck: finiteDifferenceCheck,
     solveBarrier: solveBarrier,
+    stationarityResidual: stationarityResidual,
     vertices: vertices
   };
 

@@ -300,13 +300,13 @@ path-following and predictor-corrector algorithms.[^wright]
   <div class="barrier-lab__metrics" data-metrics></div>
   <canvas data-canvas width="940" height="760" aria-label="Interior-point barrier method lab showing feasible polygon, central path, gap ledger, slack prices, and centering schedule"></canvas>
   <p class="barrier-lab__note">
-    Toy 2D inequality-only LP solver. It uses damped Newton steps on the
-    logarithmic-barrier objective and audits regret against the exact vertex
-    optimum, not against another numerical optimizer.
+    Toy 2D inequality-only LP solver. Its 60-case audit checks exact vertex
+    optima, strict feasibility, stationarity, complementarity, finite-difference
+    derivatives, and the displayed m/t regret bound.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/barrier-lp-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/barrier-lp-lab.js?v=20260617c' | relative_url }}"></script>
 
 ## The Strange Part Is the Middle
 
@@ -407,13 +407,21 @@ lambda_i         = 1 / (t slack_i)
 gap bound        = m / t
 ```
 
-The lab's self-test runs all three scenarios and verifies:
+The lab's self-test runs 60 parameter cases across all three scenarios and
+performs 1,282 local checks:
 
 ```text
 the feasible polygon has at least three vertices
+every enumerated vertex is feasible
+the exact vertex optimum dominates every other vertex
+the warm-start point is strictly feasible
 the central-path point stays strictly feasible
-high-t regret is below the displayed m/t gap
-regret decreases when t is increased
+regret is nonnegative and below the displayed m/t gap
+regret decreases as t is increased
+lambda_i slack_i t = 1 for every inequality
+||c + A^T lambda||_infinity is small at the solved point
+finite-difference gradients and Hessians match at an interior probe
+parameter sanitization clamps invalid UI input
 Newton work is nonzero under the warm-start schedule
 ```
 
