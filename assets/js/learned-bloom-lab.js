@@ -16,9 +16,15 @@
     model: "#14b8a6",
     front: "#8b5cf6"
   };
+  var AUDIT_CACHE = null;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function finite(value, fallback) {
+    value = Number(value);
+    return Number.isFinite(value) ? value : fallback;
   }
 
   function rng(seed) {
@@ -54,14 +60,14 @@
         params[key] = input[key];
       });
     }
-    params.adversary = clamp(Number(params.adversary), 0, 80);
-    params.frontShare = clamp(Number(params.frontShare), 0, 70);
-    params.keyCount = Math.round(clamp(Number(params.keyCount), 400, 1800));
-    params.modelBits = Math.round(clamp(Number(params.modelBits), 0, 3600));
-    params.negativeOverlap = clamp(Number(params.negativeOverlap), 0, 80);
-    params.seed = Math.round(clamp(Number(params.seed), 1, 999));
-    params.threshold = clamp(Number(params.threshold), 5, 95) / 100;
-    params.totalBits = Math.round(clamp(Number(params.totalBits), 3000, 18000));
+    params.adversary = clamp(finite(params.adversary, 4), 0, 80);
+    params.frontShare = clamp(finite(params.frontShare, 40), 0, 70);
+    params.keyCount = Math.round(clamp(finite(params.keyCount, 1000), 400, 1800));
+    params.modelBits = Math.round(clamp(finite(params.modelBits, 1100), 0, 3600));
+    params.negativeOverlap = clamp(finite(params.negativeOverlap, 12), 0, 80);
+    params.seed = Math.round(clamp(finite(params.seed, 19), 1, 999));
+    params.threshold = clamp(finite(params.threshold, 84), 5, 95) / 100;
+    params.totalBits = Math.round(clamp(finite(params.totalBits, 7000), 3000, 18000));
     if (params.modelBits > params.totalBits - 256) params.modelBits = Math.max(0, params.totalBits - 256);
     params.queryCount = 5000;
     return params;
@@ -299,6 +305,11 @@
 
   function metric(label, value) {
     return '<div class="learned-bloom-lab__metric"><span>' + label + '</span><strong>' + value + '</strong></div>';
+  }
+
+  function cachedAudit() {
+    if (!AUDIT_CACHE) AUDIT_CACHE = runAudit();
+    return AUDIT_CACHE;
   }
 
   function panel(ctx, box, title, subtitle) {
@@ -576,6 +587,7 @@
 
   function render(root) {
     var result = compute(paramsFromRoot(root));
+    var audit = cachedAudit();
     updateOutputs(root, result);
     root.querySelector("[data-metrics]").innerHTML = [
       metric("classic FPR", formatPercent(result.classicFpr, 2)),
@@ -583,7 +595,8 @@
       metric("sandwich FPR", formatPercent(result.sandwichFpr, 2)),
       metric("classifier FPR", formatPercent(result.classifierFpr, 2)),
       metric("backup keys", formatNumber(result.rejectedKeys.length)),
-      metric("false negatives", result.learnedFn + "/" + result.data.keys.length)
+      metric("false negatives", result.learnedFn + "/" + result.data.keys.length),
+      metric("Audit", audit.passed + "/" + audit.total)
     ].join("");
     drawChart(root.querySelector("[data-canvas]"), result);
   }
@@ -610,43 +623,225 @@
     });
   }
 
-  function audit() {
-    var checks = [];
-    [0, 20, 45, 70].forEach(function (overlap) {
-      [0.35, 0.55, 0.75].forEach(function (threshold) {
-        var result = evaluateAt({ negativeOverlap: overlap, threshold: threshold * 100, keyCount: 720, totalBits: 5400, modelBits: 900, seed: 31 }, threshold, 40);
-        checks.push(["classic no false negatives " + overlap + " " + threshold, result.classicFn === 0]);
-        checks.push(["learned no false negatives " + overlap + " " + threshold, result.learnedFn === 0]);
-        checks.push(["sandwich no false negatives " + overlap + " " + threshold, result.sandwichFn === 0]);
-        checks.push(["backup exactly rejected keys " + overlap + " " + threshold, result.rejectedKeys.length + result.acceptedKeyCount === result.data.keys.length]);
-        checks.push(["rates bounded " + overlap + " " + threshold, [result.classicFpr, result.learnedFpr, result.sandwichFpr, result.classifierFpr].every(function (x) {
-          return x >= 0 && x <= 1;
-        })]);
-      });
+  function recomputeCounts(result) {
+    var counts = {
+      classicFp: 0,
+      learnedFp: 0,
+      sandwichFp: 0,
+      classifierFp: 0,
+      acceptedKeys: 0,
+      rejectedKeys: 0,
+      classicFn: 0,
+      learnedFn: 0,
+      sandwichFn: 0
+    };
+    result.data.nonkeys.forEach(function (item) {
+      var modelAccepts = item.score >= result.params.threshold;
+      if (modelAccepts) counts.classifierFp += 1;
+      if (result.classic.has(item.id)) counts.classicFp += 1;
+      if (modelAccepts || result.backup.has(item.id)) counts.learnedFp += 1;
+      if (result.front.has(item.id) && (modelAccepts || result.sandwichBackup.has(item.id))) counts.sandwichFp += 1;
     });
-    var defaultResult = compute({});
-    checks.push(["default naive learned can lose to classic", defaultResult.learnedFpr > defaultResult.classicFpr]);
-    checks.push(["default sandwich beats classic", defaultResult.sandwichFpr < defaultResult.classicFpr]);
-    checks.push(["default sandwich beats learned", defaultResult.sandwichFpr <= defaultResult.learnedFpr]);
-    var low = evaluateAt({}, 0.25, 40, defaultResult.data);
-    var high = evaluateAt({}, 0.78, 40, defaultResult.data);
-    checks.push(["higher threshold sends more keys to backup", high.rejectedKeys.length > low.rejectedKeys.length]);
-    checks.push(["higher threshold lowers classifier false positives", high.classifierFpr < low.classifierFpr]);
-    var passed = checks.filter(function (row) { return row[1]; }).length;
-    return { passed: passed, total: checks.length, checks: checks };
+    result.data.keys.forEach(function (item) {
+      var modelAccepts = item.score >= result.params.threshold;
+      if (modelAccepts) counts.acceptedKeys += 1;
+      else counts.rejectedKeys += 1;
+      if (!result.classic.has(item.id)) counts.classicFn += 1;
+      if (!(modelAccepts || result.backup.has(item.id))) counts.learnedFn += 1;
+      if (!(result.front.has(item.id) && (modelAccepts || result.sandwichBackup.has(item.id)))) counts.sandwichFn += 1;
+    });
+    return counts;
   }
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      BloomFilter: BloomFilter,
-      audit: audit,
-      compute: compute,
-      defaultParams: defaultParams,
-      evaluateAt: evaluateAt,
-      makeData: makeData,
-      scoreFor: scoreFor,
-      sweep: sweep
+  function uniqueCount(items) {
+    var seen = Object.create(null);
+    items.forEach(function (item) { seen[item.id] = true; });
+    return Object.keys(seen).length;
+  }
+
+  function runAudit() {
+    var checked = 0;
+    var passed = 0;
+    var failures = [];
+    var gridCases = 0;
+
+    function check(name, condition, details) {
+      checked += 1;
+      if (condition) passed += 1;
+      else failures.push({ name: name, details: details || null });
+    }
+
+    function checkClose(name, actual, expected, tolerance) {
+      check(name, Math.abs(actual - expected) <= tolerance, {
+        actual: actual,
+        expected: expected,
+        tolerance: tolerance
+      });
+    }
+
+    function checkProbability(name, value) {
+      check(name, Number.isFinite(value) && value >= 0 && value <= 1, { value: value });
+    }
+
+    function checkResult(name, result) {
+      gridCases += 1;
+      var counts = recomputeCounts(result);
+      check(name + " key count matches params", result.data.keys.length === result.params.keyCount);
+      check(name + " query count matches params", result.data.nonkeys.length === result.params.queryCount);
+      check(name + " key ids are unique", uniqueCount(result.data.keys) === result.data.keys.length);
+      check(name + " nonkey ids are unique", uniqueCount(result.data.nonkeys) === result.data.nonkeys.length);
+      check(name + " key scores are bounded", result.data.keys.every(function (item) { return item.x >= 0 && item.x <= 1 && item.score >= 0 && item.score <= 1; }));
+      check(name + " nonkey scores are bounded", result.data.nonkeys.every(function (item) { return item.x >= 0 && item.x <= 1 && item.score >= 0 && item.score <= 1; }));
+      check(name + " model and backup bits add to total", result.modelBits + result.filterBits === result.totalBits);
+      check(name + " sandwich bits add to filter budget", result.frontBits + result.sandwichBackupBits === result.filterBits);
+      check(name + " backup bit count equals filter budget", result.backupBits === result.filterBits);
+      check(name + " Bloom probe counts are positive", result.classic.k > 0 && result.backup.k > 0 && result.front.k > 0 && result.sandwichBackup.k > 0);
+      check(name + " Bloom fill ratios are bounded", [result.classic, result.backup, result.front, result.sandwichBackup].every(function (filter) {
+        var ratio = filter.fillRatio();
+        return Number.isFinite(ratio) && ratio >= 0 && ratio <= 1;
+      }));
+      check(name + " classic has no false negatives", result.classicFn === 0 && counts.classicFn === 0);
+      check(name + " learned has no false negatives", result.learnedFn === 0 && counts.learnedFn === 0);
+      check(name + " sandwich has no false negatives", result.sandwichFn === 0 && counts.sandwichFn === 0);
+      check(name + " rejected plus accepted keys is the key set", result.rejectedKeys.length + result.acceptedKeyCount === result.data.keys.length);
+      check(name + " rejected key count recomputes", counts.rejectedKeys === result.rejectedKeys.length);
+      check(name + " accepted key count recomputes", counts.acceptedKeys === result.acceptedKeyCount);
+      check(name + " rejected keys are in backup", result.rejectedKeys.every(function (item) { return result.backup.has(item.id); }));
+      check(name + " all keys are in front and classic filters", result.data.keys.every(function (item) {
+        return result.front.has(item.id) && result.classic.has(item.id);
+      }));
+      checkClose(name + " classic FPR recomputes", result.classicFpr, counts.classicFp / result.data.nonkeys.length, 1e-15);
+      checkClose(name + " learned FPR recomputes", result.learnedFpr, counts.learnedFp / result.data.nonkeys.length, 1e-15);
+      checkClose(name + " sandwich FPR recomputes", result.sandwichFpr, counts.sandwichFp / result.data.nonkeys.length, 1e-15);
+      checkClose(name + " classifier FPR recomputes", result.classifierFpr, counts.classifierFp / result.data.nonkeys.length, 1e-15);
+      [result.classicFpr, result.learnedFpr, result.sandwichFpr, result.classifierFpr].forEach(function (rate, index) {
+        checkProbability(name + " rate " + index + " is bounded", rate);
+      });
+    }
+
+    var dirty = defaultParams({
+      adversary: Infinity,
+      frontShare: -40,
+      keyCount: "bad",
+      modelBits: 999999,
+      negativeOverlap: NaN,
+      seed: -1,
+      threshold: "x",
+      totalBits: 3000
+    });
+    check("bad adversary input falls back before clamping", dirty.adversary === 4);
+    check("bad front share input clamps low", dirty.frontShare === 0);
+    check("bad key count input falls back", dirty.keyCount === 1000);
+    check("model bits leave room for backup filter", dirty.modelBits === 2744);
+    check("bad overlap input falls back", dirty.negativeOverlap === 12);
+    check("bad seed input clamps low", dirty.seed === 1);
+    check("bad threshold input falls back to default", dirty.threshold === 0.84);
+
+    var randomA = rng(123);
+    var randomB = rng(123);
+    for (var r = 0; r < 12; r += 1) checkClose("rng is deterministic draw " + r, randomA(), randomB(), 0);
+
+    [0.002, 0.18, 0.36, 0.61, 0.82, 0.998].forEach(function (x) {
+      checkProbability("score is bounded at " + x, scoreFor(x, 19));
+    });
+    check("center score exceeds nearby shoulder", scoreFor(0.18, 19) > scoreFor(0.25, 19));
+
+    [16, 128, 2048].forEach(function (bits) {
+      var filter = new BloomFilter(bits, 12, bits ^ 17);
+      var items = [];
+      for (var i = 0; i < 12; i += 1) items.push({ id: "bf:" + bits + ":" + i });
+      items.forEach(function (item) { filter.add(item.id); });
+      check("Bloom filter has no false negatives at " + bits + " bits", items.every(function (item) { return filter.has(item.id); }));
+      check("Bloom filter index count matches k at " + bits + " bits", filter._indexes(items[0].id).length === filter.k);
+      check("Bloom filter fill ratio bounded at " + bits + " bits", filter.fillRatio() >= 0 && filter.fillRatio() <= 1);
+    });
+
+    var defaultResult = compute({});
+    checkResult("default", defaultResult);
+    checkClose("default classic FPR matches prose", defaultResult.classicFpr, 0.0396, 1e-15);
+    checkClose("default learned FPR matches prose", defaultResult.learnedFpr, 0.0898, 1e-15);
+    checkClose("default sandwich FPR matches prose", defaultResult.sandwichFpr, 0.039, 1e-15);
+    check("default rejected-key count matches prose", defaultResult.rejectedKeys.length === 565);
+    check("default naive learned can lose to classic", defaultResult.learnedFpr > defaultResult.classicFpr);
+    check("default sandwich beats classic", defaultResult.sandwichFpr < defaultResult.classicFpr);
+    check("default sandwich beats learned", defaultResult.sandwichFpr <= defaultResult.learnedFpr);
+    var low = evaluateAt({}, 0.25, 40, defaultResult.data);
+    var high = evaluateAt({}, 0.78, 40, defaultResult.data);
+    check("higher threshold sends more keys to backup", high.rejectedKeys.length > low.rejectedKeys.length);
+    check("higher threshold lowers classifier false positives", high.classifierFpr < low.classifierFpr);
+
+    [3, 19, 211].forEach(function (seed) {
+      [0, 30, 70].forEach(function (overlap) {
+        [0, 20, 60].forEach(function (adversary) {
+          [0, 40].forEach(function (frontShare) {
+            [0.25, 0.55, 0.84, 0.92].forEach(function (threshold) {
+              checkResult("grid s" + seed + " o" + overlap + " a" + adversary + " f" + frontShare + " t" + threshold,
+                evaluateAt({
+                  negativeOverlap: overlap,
+                  adversary: adversary,
+                  threshold: threshold * 100,
+                  keyCount: 650,
+                  totalBits: 5600,
+                  modelBits: adversary >= 60 ? 1200 : 800,
+                  seed: seed
+                }, threshold, frontShare));
+            });
+          });
+        });
+      });
+    });
+
+    [1, 19, 97].forEach(function (seed) {
+      var params = defaultParams({ keyCount: 650, totalBits: 5600, modelBits: 800, seed: seed, negativeOverlap: 30, adversary: 20 });
+      var data = makeData(params);
+      var points = sweep(params, data);
+      check("sweep has 25 threshold points for seed " + seed, points.length === 25);
+      for (var i = 1; i < points.length; i += 1) {
+        check("sweep thresholds increase for seed " + seed + " row " + i, points[i].threshold > points[i - 1].threshold);
+        check("sweep backup keys are nondecreasing for seed " + seed + " row " + i, points[i].backupKeys >= points[i - 1].backupKeys);
+        check("sweep classifier FPR is nonincreasing for seed " + seed + " row " + i, points[i].classifierFpr <= points[i - 1].classifierFpr + 1e-15);
+        checkClose("sweep classic FPR is threshold-invariant for seed " + seed + " row " + i, points[i].classicFpr, points[0].classicFpr, 1e-15);
+        [points[i].classicFpr, points[i].learnedFpr, points[i].sandwichFpr, points[i].classifierFpr].forEach(function (rate, j) {
+          checkProbability("sweep rate bounded seed " + seed + " row " + i + " rate " + j, rate);
+        });
+      }
+    });
+
+    return {
+      passed: passed,
+      total: checked,
+      checked: checked,
+      gridCases: gridCases,
+      failures: failures,
+      defaultFacts: {
+        classicFpr: defaultResult.classicFpr,
+        learnedFpr: defaultResult.learnedFpr,
+        sandwichFpr: defaultResult.sandwichFpr,
+        classifierFpr: defaultResult.classifierFpr,
+        rejectedKeys: defaultResult.rejectedKeys.length,
+        falseNegatives: defaultResult.learnedFn
+      }
     };
+  }
+
+  var api = {
+    BloomFilter: BloomFilter,
+    audit: runAudit,
+    compute: compute,
+    defaultParams: defaultParams,
+    evaluateAt: evaluateAt,
+    makeData: makeData,
+    runAudit: runAudit,
+    scoreFor: scoreFor,
+    sweep: sweep
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+
+  if (typeof window !== "undefined") {
+    window.LearnedBloomLab = api;
   }
 
   if (typeof document !== "undefined") {
