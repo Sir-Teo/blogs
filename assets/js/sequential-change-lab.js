@@ -357,7 +357,8 @@
     var rect = canvas.getBoundingClientRect();
     var width = Math.max(320, Math.round(rect.width || canvas.width || 760));
     var ratio = Number(canvas.getAttribute("data-ratio")) || 0.72;
-    var height = Math.max(360, Math.round(width * ratio));
+    var minHeight = width < 680 ? 740 : 360;
+    var height = Math.max(minHeight, Math.round(width * ratio));
     var dpr = global.devicePixelRatio || 1;
     if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
       canvas.width = Math.round(width * dpr);
@@ -550,16 +551,17 @@
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, w, h);
     var gap = 12;
-    var topH = Math.max(180, Math.round(h * 0.43));
     var half = (w - gap) / 2;
     if (w < 680) {
+      var topH = Math.max(190, Math.round((h - 2 * gap) * 0.31));
       drawStream(ctx, { x: 0, y: 0, w: w, h: topH }, result);
       drawStats(ctx, { x: 0, y: topH + gap, w: w, h: topH }, result);
       drawFrontier(ctx, { x: 0, y: 2 * topH + 2 * gap, w: w, h: h - 2 * topH - 2 * gap }, result);
     } else {
-      drawStream(ctx, { x: 0, y: 0, w: half, h: topH }, result);
-      drawStats(ctx, { x: half + gap, y: 0, w: half, h: topH }, result);
-      drawFrontier(ctx, { x: 0, y: topH + gap, w: w, h: h - topH - gap }, result);
+      var topHWide = Math.max(180, Math.round(h * 0.43));
+      drawStream(ctx, { x: 0, y: 0, w: half, h: topHWide }, result);
+      drawStats(ctx, { x: half + gap, y: 0, w: half, h: topHWide }, result);
+      drawFrontier(ctx, { x: 0, y: topHWide + gap, w: w, h: h - topHWide - gap }, result);
     }
   }
 
