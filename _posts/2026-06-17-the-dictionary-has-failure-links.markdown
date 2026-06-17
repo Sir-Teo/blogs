@@ -27,9 +27,9 @@ and the stream says:
 ushers
 ```
 
-At the `s` in `ushers`, both `she` and `he` are alive in different ways. At the
-`r`, `hers` is still alive. A naive matcher can try every pattern at every
-position and discover these facts by repetition.
+At the `e` in `ushers`, both `she` and `he` have ended. At the `r`, `hers` is
+still alive. A naive matcher can try every pattern at every position and
+discover these facts by repetition.
 
 Aho-Corasick stores the repetition.
 
@@ -80,13 +80,14 @@ Reaching a node does not necessarily mean there is only one output.
 In a dictionary such as:
 
 ```text
-GAT
-GATA
-TATA
+he
+she
 ```
 
-one ending position can report several patterns, because shorter patterns may
-be suffixes of longer ones. The automaton's output function has to include:
+one ending position can report several patterns, because `he` is a suffix of
+`she`. In a dictionary such as `GAT` and `GATA`, the shorter pattern is instead
+a prefix of the longer one, so standard all-matches search reports both facts
+at adjacent endpoints. The automaton's output function has to include:
 
 ```text
 patterns that end at this trie node
@@ -297,7 +298,7 @@ industrial stack.[^hyperscan]
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/aho-corasick-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/aho-corasick-lab.js?v=20260617c' | relative_url }}"></script>
 
 ## What the Failure Link Buys
 
@@ -313,6 +314,12 @@ the root. That sounds like it could be expensive, but the stream-position does
 not move backward. The state can only fall after it previously climbed through
 matched characters. The usual amortized story is the same kind of story that
 makes KMP linear.
+
+The original paper separates recognition cost from output cost: before printing
+matches, the machine makes one forward transition per input character and fewer
+than twice as many total state transitions as input characters.[^aho-acm] That
+caveat matters, because a dictionary can be constructed so many patterns end at
+nearly every position. Reporting facts is still work.
 
 A dense DFA makes a different bargain. It asks, ahead of time:
 
@@ -431,8 +438,14 @@ The self-test runs `135` generated cases:
 3 dictionaries * 5 seeds * 3 stream lengths * 3 overlap settings
 ```
 
-For each case, it verifies that Aho-Corasick and the naive scan report the same
-`(start, end, pattern)` triples.
+It also pins three hand-checkable overlaps: `she`, `ushers`, and `GATA`.
+
+For every generated case, it verifies that Aho-Corasick and the naive scan
+report the same `(start, end, pattern)` triples. It also checks that failure
+links point to proper suffix states, inherited outputs are suffixes of the
+current state word, the dense DFA table agrees with the sparse failure-walk
+transition function, and generated streams stay under the
+two-transitions-per-character recognition bound.
 
 [^aho-acm]: Alfred V. Aho and Margaret J. Corasick, ["Efficient string matching: an aid to bibliographic search"](https://dl.acm.org/doi/10.1145/360825.360855), *Communications of the ACM*, 1975. A PDF is mirrored at [cr.yp.to](https://cr.yp.to/bib/1975/aho.pdf).
 

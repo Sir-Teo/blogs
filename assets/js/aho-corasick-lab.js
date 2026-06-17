@@ -259,6 +259,15 @@
     return patterns.map(function (p) { return { count: counts[p] || 0, pattern: p }; });
   }
 
+  function wordForState(machine, id) {
+    var chars = [];
+    while (id > 0) {
+      chars.push(machine.nodes[id].char);
+      id = machine.nodes[id].parent;
+    }
+    return chars.reverse().join("");
+  }
+
   function evaluate(rawParams) {
     var params = cleanParams(rawParams);
     var dict = DICTIONARIES[params.dictionary];
@@ -622,29 +631,99 @@
     if (!condition) throw new Error(message);
   }
 
+  function auditMachine(machine, alphabet, label) {
+    machine.nodes.forEach(function (node) {
+      var word = wordForState(machine, node.id);
+      if (node.id === 0) {
+        assert(node.fail === 0, label + " root should fail to root");
+      } else {
+        var failWord = wordForState(machine, node.fail);
+        assert(machine.nodes[node.fail].depth < node.depth, label + " failure link should reduce depth");
+        assert(word.slice(word.length - failWord.length) === failWord, label + " failure link should name a suffix");
+      }
+      node.out.forEach(function (out) {
+        assert(word.slice(word.length - out.pattern.length) === out.pattern, label + " output should be a suffix of state word");
+      });
+      alphabet.forEach(function (ch) {
+        var sparse = nextSparse(machine, node.id, ch).state;
+        assert(sparse >= 0 && sparse < machine.nodes.length, label + " sparse transition should land in machine");
+      });
+    });
+  }
+
+  function auditDfa(machine, alphabet, dfa, label) {
+    machine.nodes.forEach(function (node) {
+      alphabet.forEach(function (ch) {
+        assert(dfa[node.id][ch] === nextSparse(machine, node.id, ch).state, label + " dense DFA should match sparse failure walk");
+      });
+    });
+  }
+
+  function auditKnownExamples() {
+    var classic = buildAutomaton(DICTIONARIES.classic.patterns);
+    var she = scanAC(classic, "she");
+    var ushers = scanAC(classic, "ushers");
+    var dna = buildAutomaton(DICTIONARIES.dna.patterns);
+    var gata = scanAC(dna, "GATA");
+
+    assert(sameMatches(she.matches, [
+      { start: 0, end: 2, pattern: "she" },
+      { start: 1, end: 2, pattern: "he" }
+    ]), "classic example should stack she and he at one endpoint");
+    assert(sameMatches(ushers.matches, [
+      { start: 1, end: 3, pattern: "she" },
+      { start: 2, end: 3, pattern: "he" },
+      { start: 2, end: 5, pattern: "hers" }
+    ]), "ushers should report overlapping textbook matches");
+    assert(sameMatches(gata.matches, [
+      { start: 0, end: 2, pattern: "GAT" },
+      { start: 0, end: 3, pattern: "GATA" }
+    ]), "standard semantics should preserve prefix-overlap DNA matches");
+
+    return {
+      gata: gata.matches.length,
+      she: she.matches.length,
+      ushers: ushers.matches.length
+    };
+  }
+
   function audit() {
+    var known = auditKnownExamples();
     var summary = {};
     Object.keys(DICTIONARIES).forEach(function (key) {
       var totalMatches = 0;
+      var maxFailSteps = 0;
       var maxRatio = 0;
+      var maxSparseRatio = 0;
       var cases = 0;
       [1, 9, 17, 91, 403].forEach(function (seed) {
         [48, 96, 180].forEach(function (length) {
           [0, 50, 90].forEach(function (overlap) {
             var state = evaluate({ dictionary: key, length: length, overlap: overlap, seed: seed });
             assert(state.ok, key + " matches should agree with naive scan");
+            auditMachine(state.machine, state.alphabet, key);
+            auditDfa(state.machine, state.alphabet, state.dfa, key);
             assert(state.machine.nodes.length <= 1 + state.dict.patterns.join("").length, key + " trie state bound");
             assert(state.denseEntries >= state.explicitTransitions, key + " dense table should dominate sparse edges");
             assert(state.ac.steps >= state.text.length, key + " sparse scan reads at least one step per char");
+            assert(state.ac.failSteps <= state.text.length, key + " failure transitions should amortize under one per character");
             totalMatches += state.ac.matches.length;
+            maxFailSteps = Math.max(maxFailSteps, state.ac.failSteps);
             maxRatio = Math.max(maxRatio, state.naive.comparisons / Math.max(1, state.ac.steps));
+            maxSparseRatio = Math.max(maxSparseRatio, state.ac.steps / Math.max(1, state.text.length));
             cases += 1;
           });
         });
       });
-      summary[key] = { cases: cases, maxRatio: maxRatio, totalMatches: totalMatches };
+      summary[key] = {
+        cases: cases,
+        maxFailSteps: maxFailSteps,
+        maxNaiveToSparseRatio: maxRatio,
+        maxSparseStepsPerChar: maxSparseRatio,
+        totalMatches: totalMatches
+      };
     });
-    return { ok: true, summary: summary };
+    return { knownExamples: known, ok: true, summary: summary };
   }
 
   var api = {
