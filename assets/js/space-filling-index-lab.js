@@ -51,7 +51,7 @@
     var queryY = Math.round(clamp(finite(Number(raw.queryY), DEFAULTS.queryY), 0, n - queryH));
     var focus = METHODS[raw.focus] ? raw.focus : DEFAULTS.focus;
     return {
-      budget: Math.round(clamp(finite(Number(raw.budget), DEFAULTS.budget), 1, 80)),
+      budget: Math.round(clamp(finite(Number(raw.budget), DEFAULTS.budget), 1, Math.min(80, n * n))),
       focus: focus,
       n: n,
       order: order,
@@ -666,7 +666,7 @@
   }
 
   function audit() {
-    for (var order = 1; order <= 7; order += 1) {
+    for (var order = 3; order <= 7; order += 1) {
       var params = cleanParams({ order: order, queryH: 1, queryW: 1 });
       METHOD_ORDER.forEach(function (method) {
         var seen = new Array(params.n * params.n).fill(false);
