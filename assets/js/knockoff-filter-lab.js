@@ -476,41 +476,136 @@
     return out;
   }
 
+  function assert(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+
+  function near(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function finiteArray(values) {
+    return values.every(function (value) { return Number.isFinite(value); });
+  }
+
+  function selectedFromThreshold(w, threshold) {
+    return w.map(function (value, index) {
+      return { index: index, value: value };
+    }).filter(function (item) {
+      return item.value >= threshold;
+    }).map(function (item) { return item.index; });
+  }
+
+  function thresholdRatio(w, threshold, offset) {
+    if (threshold === Infinity) return null;
+    var left = w.filter(function (value) { return value <= -threshold; }).length;
+    var right = w.filter(function (value) { return value >= threshold; }).length;
+    return (offset + left) / Math.max(1, right);
+  }
+
+  function subset(a, b) {
+    var seen = {};
+    b.forEach(function (value) { seen[value] = true; });
+    return a.every(function (value) { return seen[value]; });
+  }
+
   function audit() {
-    var params = cleanParams({ effect: 1.2, features: 10, mode: "plus", n: 160, noise: 1, q: 0.15, rho: 0.35, seed: 19, signals: 3 });
-    var run = evaluate(params, { frontier: false });
-    var sigmaRecon = matMul(cholesky(run.sigma), transpose(cholesky(run.sigma)));
-    var sigmaError = maxAbsDiff(sigmaRecon, run.sigma);
-    var condChol = cholesky(run.knock.conditionalCov);
-    var joint = buildJointCovariance(run.sigma, run.knock.s);
-    var swapError = maxAbsDiff(joint, swapPair(joint, 2, params.features));
-    var w = run.scores.w.slice();
-    var swappedW = w.slice();
-    swappedW[1] = Math.max(run.scores.z[1], run.scores.zKnock[1]) * (run.scores.zKnock[1] >= run.scores.z[1] ? 1 : -1);
-    var signFlip = Math.abs(swappedW[1] + w[1]) < 1e-12 && swappedW.every(function (value, j) {
-      return j === 1 || Math.abs(value - w[j]) < 1e-12;
-    });
-    var thresholdOk = run.threshold === Infinity || run.ratio <= params.q + 1e-12;
-    var bounds = [run.summary.fdr, run.summary.power, run.summary.naiveFdr, run.summary.naivePower].every(function (value) {
-      return value >= 0 && value <= 1;
+    var checked = 0;
+    var maxSigmaError = 0;
+    var maxInverseError = 0;
+    var maxSwapError = 0;
+    var maxSignFlipError = 0;
+    var finiteThresholds = 0;
+    var cases = [
+      { effect: 1.2, features: 10, mode: "plus", n: 160, noise: 1, q: 0.15, rho: 0.35, seed: 19, signals: 3 },
+      { effect: 1.7, features: 14, mode: "original", n: 220, noise: 0.7, q: 0.2, rho: 0.55, seed: 23, signals: 5 },
+      { effect: 0.8, features: 12, mode: "plus", n: 140, noise: 1.4, q: 0.1, rho: 0.72, seed: 41, signals: 3 }
+    ];
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+    function checkRun(raw) {
+      var params = cleanParams(raw);
+      var run = evaluate(params, { frontier: false });
+      var chol = cholesky(run.sigma);
+      var sigmaRecon = matMul(chol, transpose(chol));
+      var sigmaError = maxAbsDiff(sigmaRecon, run.sigma);
+      var sigmaInv = inverse(run.sigma);
+      var inverseError = maxAbsDiff(matMul(run.sigma, sigmaInv), identity(params.features));
+      var condChol = cholesky(run.knock.conditionalCov);
+      var joint = buildJointCovariance(run.sigma, run.knock.s);
+      var jointChol = cholesky(joint);
+      check(run.params.features === params.features && run.params.n === params.n, "run should honor sanitized dimensions");
+      check(run.beta.length === params.features, "beta length should match feature count");
+      check(run.beta.filter(function (value) { return value !== 0; }).length === params.signals, "beta should contain requested sparse signals");
+      check(run.scores.w.length === params.features && run.scores.z.length === params.features && run.scores.zKnock.length === params.features, "score arrays should match feature count");
+      check(finiteArray(run.scores.w) && finiteArray(run.scores.z) && finiteArray(run.scores.zKnock), "scores should be finite");
+      check(run.knock.knockoffs.length === params.n && run.knock.knockoffs.every(function (row) { return row.length === params.features && finiteArray(row); }), "knockoff rows should have finite n by p shape");
+      check(run.knock.conditionalCov.length === params.features && run.knock.conditionalCov.every(function (row) { return row.length === params.features && finiteArray(row); }), "conditional covariance should have finite p by p shape");
+      check(!!condChol, "conditional knockoff covariance should be positive definite");
+      check(!!jointChol, "joint Gaussian knockoff covariance should be positive definite");
+      check(sigmaError < 1e-10, "Cholesky should reconstruct sigma");
+      check(inverseError < 1e-9, "matrix inverse should reconstruct identity");
+      check(run.knock.s > 0 && run.knock.s <= 1, "shadow strength should stay in valid range");
+      var selected = selectedFromThreshold(run.scores.w, run.threshold);
+      check(selected.join(",") === run.knockStats.selected.join(","), "selection should equal W >= threshold");
+      check(run.ratio === thresholdRatio(run.scores.w, run.threshold, MODES[params.mode].offset), "stored threshold ratio should match W counts");
+      check(run.threshold === Infinity || run.ratio <= params.q + 1e-12, "finite threshold should satisfy knockoff ratio");
+      check(run.threshold !== Infinity || run.knockStats.selected.length === 0, "infinite threshold should select nothing");
+      check(run.knockStats.fdp >= 0 && run.knockStats.fdp <= 1 && run.knockStats.power >= 0 && run.knockStats.power <= 1, "one-run stats should be fractions");
+      check(run.naiveStats.fdp >= 0 && run.naiveStats.fdp <= 1 && run.naiveStats.power >= 0 && run.naiveStats.power <= 1, "naive stats should be fractions");
+      check(run.summary.avgSelected >= 0 && run.summary.avgSelected <= params.features, "Monte Carlo average selections should be bounded");
+      check([run.summary.fdr, run.summary.power, run.summary.naiveFdr, run.summary.naivePower].every(function (value) {
+        return value >= 0 && value <= 1;
+      }), "Monte Carlo summary should contain fractions");
+      for (var j = 0; j < params.features; j += 1) {
+        var swapError = maxAbsDiff(joint, swapPair(joint, j, params.features));
+        maxSwapError = Math.max(maxSwapError, swapError);
+        check(swapError < 1e-12, "joint covariance should be invariant to feature/knockoff swap");
+        var flipped = Math.max(run.scores.z[j], run.scores.zKnock[j]) * (run.scores.zKnock[j] >= run.scores.z[j] ? 1 : -1);
+        var flipError = Math.abs(flipped + run.scores.w[j]);
+        maxSignFlipError = Math.max(maxSignFlipError, flipError);
+        check(flipError < 1e-12 || Math.abs(run.scores.z[j] - run.scores.zKnock[j]) < 1e-12, "W should flip sign when a pair is swapped");
+      }
+      maxSigmaError = Math.max(maxSigmaError, sigmaError);
+      maxInverseError = Math.max(maxInverseError, inverseError);
+      if (run.threshold !== Infinity) finiteThresholds += 1;
+      return {
+        fdr: run.summary.fdr,
+        mode: params.mode,
+        power: run.summary.power,
+        selected: run.knockStats.selected.length,
+        shadowS: run.knock.s,
+        threshold: run.threshold === Infinity ? "Infinity" : run.threshold
+      };
+    }
+    var reports = cases.map(checkRun);
+    var craftedW = [4, 3, 2, -1, -2, 0.5];
+    var originalT = knockoffThreshold(craftedW, 0.5, MODES.original.offset);
+    var plusT = knockoffThreshold(craftedW, 0.5, MODES.plus.offset);
+    check(near(originalT, 0.5, 1e-12), "crafted original knockoff threshold");
+    check(near(plusT, 3, 1e-12), "crafted knockoff+ threshold");
+    check(plusT >= originalT, "knockoff+ threshold should be no smaller than original threshold for fixed W");
+    check(subset(selectedFromThreshold(craftedW, plusT), selectedFromThreshold(craftedW, originalT)), "knockoff+ selections should be a subset for fixed W");
+    var frontier = makeFrontier(cleanParams({ effect: 1.1, features: 8, mode: "plus", n: 110, noise: 1.1, q: 0.12, rho: 0.25, seed: 7, signals: 2 }));
+    check(frontier.length === 8, "frontier should evaluate eight q values");
+    frontier.forEach(function (row, index) {
+      check(index === 0 || row.q > frontier[index - 1].q, "frontier q values should be sorted");
+      check([row.fdr, row.power, row.naiveFdr, row.naivePower].every(function (value) {
+        return value >= 0 && value <= 1;
+      }), "frontier values should be fractions");
+      check(row.avgSelected >= 0 && row.avgSelected <= 8, "frontier average selections should be bounded");
     });
     return {
-      checks: {
-        conditionalCovariancePsd: !!condChol,
-        knockoffThresholdRatio: thresholdOk,
-        monteCarloBounds: bounds,
-        sigmaCholeskyError: sigmaError,
-        swapInvarianceError: swapError,
-        wSignFlip: signFlip
-      },
-      ok: !!condChol && thresholdOk && bounds && sigmaError < 1e-10 && swapError < 1e-12 && signFlip,
-      sample: {
-        fdr: run.summary.fdr,
-        power: run.summary.power,
-        selected: run.knockStats.selected,
-        shadowS: run.knock.s,
-        threshold: run.threshold
-      }
+      checked: checked,
+      finiteThresholds: finiteThresholds,
+      maxInverseError: maxInverseError,
+      maxSigmaError: maxSigmaError,
+      maxSignFlipError: maxSignFlipError,
+      maxSwapError: maxSwapError,
+      ok: true,
+      reports: reports
     };
   }
 

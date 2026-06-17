@@ -158,6 +158,10 @@ length.
     margin-bottom: 1rem;
   }
 
+  .knockoff-lab__controls > * {
+    min-width: 0;
+  }
+
   .knockoff-lab label {
     color: #39444e;
     display: grid;
@@ -166,6 +170,7 @@ length.
     font-weight: 650;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
   }
 
   .knockoff-lab output {
@@ -193,6 +198,8 @@ length.
     appearance: none;
     background: transparent;
     height: 1.3rem;
+    margin: 0;
+    min-width: 0;
     width: 100%;
   }
 
@@ -378,7 +385,7 @@ length.
   <p class="knockoff-lab__note" data-role="note"></p>
 </div>
 
-<script src="{{ '/assets/js/knockoff-filter-lab.js?v=20260617a' | relative_url }}"></script>
+<script src="{{ '/assets/js/knockoff-filter-lab.js?v=20260617b' | relative_url }}"></script>
 
 ## What The Shadow Can And Cannot Promise
 
@@ -425,10 +432,16 @@ not one column name.
 weaker shadows are too similar to compete. The diagonal matrix $$S$$ is an
 engineering parameter, not a footnote.
 
-The lab's audit checks the small version of that ledger: Cholesky reconstruction
-of the Gaussian covariance, positive semidefiniteness of the conditional
-knockoff covariance, exact swap invariance of the theoretical joint covariance,
-the sign-flip property of $$W_j$$, and the threshold ratio used by the filter.
+The lab's audit checks the small version of that ledger. `KnockoffFilterLab.audit()`
+runs three deterministic regimes across different dimensions, correlations,
+effect sizes, noise levels, and knockoff rules. It verifies Cholesky
+reconstruction of the Gaussian covariance, inverse consistency, positive
+definiteness of the conditional and joint knockoff covariances, exact swap
+invariance for every feature-shadow pair, the sign-flip property of $$W_j$$,
+threshold ratios, selected-set reconstruction, Monte Carlo bounds, and the
+frontier plotted in the lab. The current run performs 161 checks; the largest
+observed swap-invariance and sign-flip errors are exactly zero in double
+precision.
 
 The useful mental model is not "knockoffs find the true features."
 
@@ -440,6 +453,6 @@ every feature has to beat a synthetic negative control that had the same friends
 
 That is a beautifully concrete demand.
 
-[^barber-candes]: Rina Foygel Barber and Emmanuel Candes, ["Controlling the false discovery rate via knockoffs"](https://projecteuclid.org/journals/annals-of-statistics/volume-43/issue-5/Controlling-the-false-discovery-rate-via-knockoffs/10.1214/15-AOS1337.short), *Annals of Statistics* 43(5):2055-2085, 2015. [arXiv](https://arxiv.org/abs/1404.5609).
+[^barber-candes]: Rina Foygel Barber and Emmanuel Candes, ["Controlling the false discovery rate via knockoffs"](https://arxiv.org/abs/1404.5609), *Annals of Statistics* 43(5):2055-2085, 2015. DOI: [10.1214/15-AOS1337](https://doi.org/10.1214/15-AOS1337).
 
 [^modelx]: Emmanuel Candes, Yingying Fan, Lucas Janson, and Jinchi Lv, ["Panning for Gold: Model-X Knockoffs for High Dimensional Controlled Variable Selection"](https://academic.oup.com/jrsssb/article/80/3/551/7048447), *Journal of the Royal Statistical Society: Series B* 80(3):551-577, 2018. [arXiv](https://arxiv.org/abs/1610.02351).
