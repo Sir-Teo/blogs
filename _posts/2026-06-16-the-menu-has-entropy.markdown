@@ -246,10 +246,11 @@ an extra stage.
   <p class="hick-lab__note">
     Deterministic browser experiment. The histogram simulates noisy trials from
     the displayed expected-time model; it is a visualization of assumptions, not
-    a measurement of new participants.
+    a measurement of new participants. The code audit checks the entropy
+    conservation identity, model receipt, and simulated-trial accounting.
   </p>
 </div>
-<script defer src="{{ '/assets/js/hick-hyman-lab.js?v=20260616a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hick-hyman-lab.js?v=20260616b' | relative_url }}"></script>
 
 Three useful switches:
 
@@ -260,6 +261,30 @@ Three useful switches:
 3. Push Compatibility upward. The slope drops, so the entropy term matters less.
    That matches the HCI critique: familiar spatial mappings can make
    choice-reaction time almost constant for ordinary command selection.[^liu]
+
+## The Lab Keeps Its Receipts
+
+The executable artifact is
+[`assets/js/hick-hyman-lab.js`]({{ '/assets/js/hick-hyman-lab.js' | relative_url }}).
+
+The current Node audit runs `9,613` checks across menu sizes, skews,
+compatibility settings, and shortcut cutoffs. It verifies:
+
+```text
+probabilities sum to one
+entropy stays below the uniform log2(n) ceiling
+More-stage entropy obeys the chain rule
+flat, uniform, and shortcut time formulas reconcile
+histograms count every simulated trial
+top-path and tail-path hits partition the trials
+skew reduces entropy and flat-menu time in the sweep
+compatibility lowers the Hick-Hyman slope
+the default numbers in the text stay pinned
+```
+
+The largest chain-rule discrepancy in the audit is about `1.8e-15`. That is the
+point of the simulator: a More button can move entropy between receipts, but the
+expected information charge is conserved unless some other line item changes.
 
 ## Why The Usual Design Advice Is Too Crude
 

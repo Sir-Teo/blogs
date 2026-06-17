@@ -256,14 +256,106 @@
     };
   }
 
+  function assert(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+
+  function near(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
   function audit() {
+    var checked = 0;
+    var maxChainError = 0;
+    var maxProbabilityError = 0;
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+    function checkResult(result, label) {
+      var params = result.params;
+      var probs = result.probs;
+      var probabilitySum = probs.reduce(function (sum, p) { return sum + p; }, 0);
+      var stats = result.times.shortcutStats;
+      var chain = stats.firstEntropy + stats.tailMass * stats.tailEntropy;
+      var flatFormula = result.times.base + result.times.slope * result.times.h + visualCost(params, params.choices);
+      var uniformFormula = result.times.base + result.times.slope * result.times.uniformH + visualCost(params, params.choices);
+      var shortcutFormula = result.times.base
+        + result.times.slope * stats.firstEntropy
+        + visualCost(params, stats.firstVisible)
+        + stats.tailMass * (params.stageCost + result.times.slope * stats.tailEntropy + visualCost(params, stats.tailVisible));
+      maxProbabilityError = Math.max(maxProbabilityError, Math.abs(probabilitySum - 1));
+      maxChainError = Math.max(maxChainError, Math.abs(chain - result.times.h));
+      check(probs.length === params.choices, label + " distribution should have one probability per choice");
+      check(probs.every(function (p) { return p >= 0 && p <= 1 && Number.isFinite(p); }), label + " probabilities should be valid");
+      check(near(probabilitySum, 1, 1e-12), label + " probabilities should sum to one");
+      check(result.times.h >= 0 && result.times.h <= result.times.uniformH + 1e-12, label + " entropy should stay between zero and uniform entropy");
+      check(near(chain, result.times.h, 1e-12), label + " staged menu should obey entropy chain rule");
+      check(near(result.times.flatEntropy, flatFormula, 1e-12), label + " flat learned-time formula should reconcile");
+      check(near(result.times.flatUniform, uniformFormula, 1e-12), label + " flat uniform-time formula should reconcile");
+      check(near(result.times.shortcut, shortcutFormula, 1e-12), label + " shortcut-time formula should reconcile");
+      check(result.hist.flat.reduce(function (sum, count) { return sum + count; }, 0) === params.trials, label + " flat histogram should count every trial");
+      check(result.hist.shortcut.reduce(function (sum, count) { return sum + count; }, 0) === params.trials, label + " shortcut histogram should count every trial");
+      check(result.trials.topHits + result.trials.tailHits === params.trials, label + " simulated route hits should partition trials");
+      check(result.trials.flatP90 >= result.trials.flatMean, label + " flat p90 should be above mean");
+      check(result.trials.shortcutP90 >= result.trials.shortcutMean, label + " shortcut p90 should be above mean");
+      result.sweep.forEach(function (row, index) {
+        check(Number.isFinite(row.entropy) && Number.isFinite(row.flatEntropy) && Number.isFinite(row.shortcut), label + " sweep rows should be finite");
+        if (index > 0) {
+          check(row.skew > result.sweep[index - 1].skew, label + " sweep skew should increase");
+          check(row.entropy <= result.sweep[index - 1].entropy + 1e-12, label + " entropy should not increase as skew grows");
+          check(row.flatEntropy <= result.sweep[index - 1].flatEntropy + 1e-12, label + " flat time should not increase as skew grows");
+        }
+      });
+    }
+
+    [3, 12, 24, 32].forEach(function (choices) {
+      [0, 35, 85].forEach(function (compatibility) {
+        [0, 30, 58, 90].forEach(function (skew) {
+          [0, 3, Math.max(0, Math.min(choices - 1, 5)), choices - 1].forEach(function (shortcuts) {
+            var result = evaluate({
+              choices: choices,
+              compatibility: compatibility,
+              search: 12,
+              seed: 17 + choices + shortcuts,
+              shortcuts: shortcuts,
+              skew: skew,
+              stageCost: 120,
+              trials: 400
+            });
+            checkResult(result, "choices " + choices + " skew " + skew + " shortcuts " + shortcuts);
+          });
+        });
+      });
+    });
+
+    [0, 30, 60, 95].forEach(function (compatibility, index, values) {
+      var result = evaluate(Object.assign({}, DEFAULTS, { compatibility: compatibility }));
+      if (index > 0) {
+        var previous = evaluate(Object.assign({}, DEFAULTS, { compatibility: values[index - 1] }));
+        check(result.times.slope <= previous.times.slope + 1e-12, "compatibility should not increase Hick-Hyman slope");
+        check(result.times.flatEntropy <= previous.times.flatEntropy + 1e-12, "compatibility should not increase flat menu time");
+      }
+    });
+
     var result = evaluate(DEFAULTS);
     var uniform = evaluate(Object.assign({}, DEFAULTS, { skew: 0 }));
     var noSearch = evaluate(Object.assign({}, DEFAULTS, { search: 0 }));
+    check(Math.round(result.times.flatEntropy) === 897, "default flat learned-time should match article");
+    check(Math.round(result.times.flatUniform) === 968, "default uniform-time should match article");
+    check(Math.round(result.times.shortcut) === 877, "default shortcut time should match article");
+    check(Math.round(noSearch.times.shortcut - noSearch.times.flatEntropy) === 31, "no-search shortcut penalty should match article");
+    check(cleanParams({ choices: 99, shortcuts: 99, trials: 255, search: -4, skew: 999, compatibility: -9, stageCost: 999, seed: -4 }).choices === 32, "sanitizer should clamp choices");
+    check(cleanParams({ choices: 99, shortcuts: 99, trials: 255, search: -4, skew: 999, compatibility: -9, stageCost: 999, seed: -4 }).shortcuts === 31, "sanitizer should clamp shortcuts under choices");
+    check(cleanParams({ choices: 99, shortcuts: 99, trials: 255, search: -4, skew: 999, compatibility: -9, stageCost: 999, seed: -4 }).trials === 300, "sanitizer should snap trials");
     return {
+      checked: checked,
       entropyBits: Number(result.times.h.toFixed(3)),
       flatEntropyMs: Math.round(result.times.flatEntropy),
       flatUniformMs: Math.round(result.times.flatUniform),
+      maxChainError: maxChainError,
+      maxProbabilityError: maxProbabilityError,
+      ok: true,
       shortcutFasterWithSearch: result.times.shortcut < result.times.flatEntropy,
       shortcutMs: Math.round(result.times.shortcut),
       skewReducesEntropy: result.times.h < result.times.uniformH,
