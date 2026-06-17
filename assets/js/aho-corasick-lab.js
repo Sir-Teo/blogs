@@ -480,10 +480,11 @@
     ];
     var max = Math.max.apply(null, rows.map(function (r) { return r.value; }).concat([1]));
     var x = box.x + 18;
-    var y = box.y + 82;
+    var y = box.y + 78;
     var w = box.w - 36;
+    var rowGap = Math.min(36, (box.h - 104) / rows.length);
     rows.forEach(function (row, i) {
-      var yy = y + i * 36;
+      var yy = y + i * rowGap;
       label(ctx, row.label, x, yy, COLORS.muted, 12, 650);
       roundRect(ctx, x, yy + 18, w - 76, 10, 5);
       ctx.fillStyle = COLORS.fill;
@@ -494,7 +495,9 @@
       label(ctx, fmtInt(row.value), box.x + box.w - 18, yy + 11, row.color, 12, 800, "right");
     });
     var speedup = state.naive.comparisons / Math.max(1, state.ac.steps);
-    label(ctx, "comparison ratio: " + fmt(speedup, 1) + "x", x, box.y + box.h - 34, speedup > 2 ? COLORS.ac : COLORS.gold, 12, 800);
+    if (box.h > 300) {
+      label(ctx, "comparison ratio: " + fmt(speedup, 1) + "x", x, box.y + box.h - 34, speedup > 2 ? COLORS.ac : COLORS.gold, 12, 800);
+    }
   }
 
   function drawMatches(ctx, state, box) {
