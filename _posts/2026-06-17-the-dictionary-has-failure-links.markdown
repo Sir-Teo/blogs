@@ -292,13 +292,13 @@ industrial stack.[^hyperscan]
   <div class="ac-lab__metrics" data-metrics></div>
   <canvas data-canvas width="940" height="760" aria-label="Aho-Corasick lab showing trie edges, failure links, one-pass stream trace, work ledger, and output counts"></canvas>
   <p class="ac-lab__note">
-    Exact substring matching only. The audit compares every Aho-Corasick match
-    against a naive all-pattern scan across generated classic, log, and DNA
-    streams.
+    Exact substring matching only. The 145,384-check audit compares sparse AC,
+    dense DFA, and naive all-pattern scans across generated streams plus 1,875
+    exhaustive short strings.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/aho-corasick-lab.js?v=20260617c' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/aho-corasick-lab.js?v=20260617d' | relative_url }}"></script>
 
 ## What the Failure Link Buys
 
@@ -432,19 +432,23 @@ a dense transition table for memory comparison
 a naive all-pattern scanner for audit
 ```
 
-The self-test runs `135` generated cases:
+The self-test runs `135` generated cases and `1,875` exhaustive short-string
+cases:
 
 ```text
 3 dictionaries * 5 seeds * 3 stream lengths * 3 overlap settings
+2 binary adversarial suites through length 7
+1 DNA suite through length 5
 ```
 
 It also pins three hand-checkable overlaps: `she`, `ushers`, and `GATA`.
 
 For every generated case, it verifies that Aho-Corasick and the naive scan
-report the same `(start, end, pattern)` triples. It also checks that failure
-links point to proper suffix states, inherited outputs are suffixes of the
-current state word, the dense DFA table agrees with the sparse failure-walk
-transition function, and generated streams stay under the
+report the same `(start, end, pattern)` triples. The exhaustive cases also
+compare a dense-DFA scanner against the same naive oracle. The audit checks that
+failure links point to the longest proper suffix state, output lists are exactly
+the patterns that suffix the current state word, the dense DFA table agrees with
+the sparse failure-walk transition function, and streams stay under the
 two-transitions-per-character recognition bound.
 
 [^aho-acm]: Alfred V. Aho and Margaret J. Corasick, ["Efficient string matching: an aid to bibliographic search"](https://dl.acm.org/doi/10.1145/360825.360855), *Communications of the ACM*, 1975. A PDF is mirrored at [cr.yp.to](https://cr.yp.to/bib/1975/aho.pdf).

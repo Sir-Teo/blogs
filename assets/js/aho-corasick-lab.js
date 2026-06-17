@@ -172,7 +172,7 @@
   function alphabetFor(dict, text) {
     var seen = {};
     dict.alphabet.split("").forEach(function (ch) { seen[ch] = true; });
-    text.split("").forEach(function (ch) { if (ch !== " ") seen[ch] = true; });
+    text.split("").forEach(function (ch) { seen[ch] = true; });
     return Object.keys(seen).sort();
   }
 
@@ -222,6 +222,26 @@
     };
   }
 
+  function scanDfa(machine, dfa, text) {
+    var state = 0;
+    var matches = [];
+    var trace = [];
+    for (var i = 0; i < text.length; i += 1) {
+      var ch = text[i];
+      state = dfa[state][ch] == null ? nextSparse(machine, state, ch).state : dfa[state][ch];
+      var emitted = machine.nodes[state].out.map(function (out) {
+        return { end: i, pattern: out.pattern, start: i - out.pattern.length + 1 };
+      });
+      matches = matches.concat(emitted);
+      trace.push({ char: ch, emitted: emitted, index: i, state: state });
+    }
+    return {
+      matches: matches,
+      steps: text.length,
+      trace: trace
+    };
+  }
+
   function scanNaive(patterns, text) {
     var comparisons = 0;
     var matches = [];
@@ -266,6 +286,50 @@
       id = machine.nodes[id].parent;
     }
     return chars.reverse().join("");
+  }
+
+  function outputSignature(outputs) {
+    return outputs.map(function (out) {
+      return out.id + ":" + out.pattern;
+    }).sort().join("|");
+  }
+
+  function prefixStateMap(machine) {
+    var map = { "": 0 };
+    machine.nodes.forEach(function (node) {
+      map[wordForState(machine, node.id)] = node.id;
+    });
+    return map;
+  }
+
+  function expectedFailureState(machine, id, prefixes) {
+    var word = wordForState(machine, id);
+    for (var length = word.length - 1; length >= 0; length -= 1) {
+      var suffix = word.slice(word.length - length);
+      if (prefixes[suffix] != null) return prefixes[suffix];
+    }
+    return 0;
+  }
+
+  function expectedOutputs(machine, word) {
+    var out = [];
+    machine.patterns.forEach(function (pattern, id) {
+      if (word.slice(word.length - pattern.length) === pattern) {
+        out.push({ id: id, pattern: pattern });
+      }
+    });
+    return out;
+  }
+
+  function enumerateStrings(alphabet, maxLength, visit) {
+    function rec(prefix, depth) {
+      visit(prefix);
+      if (depth >= maxLength) return;
+      for (var i = 0; i < alphabet.length; i += 1) {
+        rec(prefix + alphabet[i], depth + 1);
+      }
+    }
+    rec("", 0);
   }
 
   function evaluate(rawParams) {
@@ -631,51 +695,61 @@
     if (!condition) throw new Error(message);
   }
 
-  function auditMachine(machine, alphabet, label) {
+  function auditMachine(machine, alphabet, label, check) {
+    check = check || assert;
+    var prefixes = prefixStateMap(machine);
     machine.nodes.forEach(function (node) {
       var word = wordForState(machine, node.id);
+      check(node.depth === word.length, label + " node depth should equal prefix length");
+      if (node.id > 0) {
+        check(machine.nodes[node.parent].next[node.char] === node.id, label + " parent edge should name child");
+      }
       if (node.id === 0) {
-        assert(node.fail === 0, label + " root should fail to root");
+        check(node.fail === 0, label + " root should fail to root");
       } else {
         var failWord = wordForState(machine, node.fail);
-        assert(machine.nodes[node.fail].depth < node.depth, label + " failure link should reduce depth");
-        assert(word.slice(word.length - failWord.length) === failWord, label + " failure link should name a suffix");
+        check(machine.nodes[node.fail].depth < node.depth, label + " failure link should reduce depth");
+        check(word.slice(word.length - failWord.length) === failWord, label + " failure link should name a suffix");
+        check(node.fail === expectedFailureState(machine, node.id, prefixes), label + " failure link should be the longest prefix suffix");
       }
       node.out.forEach(function (out) {
-        assert(word.slice(word.length - out.pattern.length) === out.pattern, label + " output should be a suffix of state word");
+        check(word.slice(word.length - out.pattern.length) === out.pattern, label + " output should be a suffix of state word");
       });
+      check(outputSignature(node.out) === outputSignature(expectedOutputs(machine, word)), label + " output set should be exactly all suffix patterns");
       alphabet.forEach(function (ch) {
         var sparse = nextSparse(machine, node.id, ch).state;
-        assert(sparse >= 0 && sparse < machine.nodes.length, label + " sparse transition should land in machine");
+        check(sparse >= 0 && sparse < machine.nodes.length, label + " sparse transition should land in machine");
       });
     });
   }
 
-  function auditDfa(machine, alphabet, dfa, label) {
+  function auditDfa(machine, alphabet, dfa, label, check) {
+    check = check || assert;
     machine.nodes.forEach(function (node) {
       alphabet.forEach(function (ch) {
-        assert(dfa[node.id][ch] === nextSparse(machine, node.id, ch).state, label + " dense DFA should match sparse failure walk");
+        check(dfa[node.id][ch] === nextSparse(machine, node.id, ch).state, label + " dense DFA should match sparse failure walk");
       });
     });
   }
 
-  function auditKnownExamples() {
+  function auditKnownExamples(check) {
+    check = check || assert;
     var classic = buildAutomaton(DICTIONARIES.classic.patterns);
     var she = scanAC(classic, "she");
     var ushers = scanAC(classic, "ushers");
     var dna = buildAutomaton(DICTIONARIES.dna.patterns);
     var gata = scanAC(dna, "GATA");
 
-    assert(sameMatches(she.matches, [
+    check(sameMatches(she.matches, [
       { start: 0, end: 2, pattern: "she" },
       { start: 1, end: 2, pattern: "he" }
     ]), "classic example should stack she and he at one endpoint");
-    assert(sameMatches(ushers.matches, [
+    check(sameMatches(ushers.matches, [
       { start: 1, end: 3, pattern: "she" },
       { start: 2, end: 3, pattern: "he" },
       { start: 2, end: 5, pattern: "hers" }
     ]), "ushers should report overlapping textbook matches");
-    assert(sameMatches(gata.matches, [
+    check(sameMatches(gata.matches, [
       { start: 0, end: 2, pattern: "GAT" },
       { start: 0, end: 3, pattern: "GATA" }
     ]), "standard semantics should preserve prefix-overlap DNA matches");
@@ -687,8 +761,44 @@
     };
   }
 
+  function auditExhaustiveShortStrings(check) {
+    var suites = [
+      { alphabet: "ab", label: "unary borders", maxLength: 7, patterns: ["a", "aa", "aaa", "ba", "aba"] },
+      { alphabet: "ab", label: "alternating borders", maxLength: 7, patterns: ["ab", "bab", "baba", "abab"] },
+      { alphabet: "ACGT", label: "short dna", maxLength: 5, patterns: ["A", "AC", "GTA", "TAC", "CG"] }
+    ];
+    var totalCases = 0;
+    var totalMatches = 0;
+    suites.forEach(function (suite) {
+      var machine = buildAutomaton(suite.patterns);
+      var alphabet = suite.alphabet.split("");
+      var dfa = buildDfa(machine, alphabet);
+      auditMachine(machine, alphabet, suite.label, check);
+      auditDfa(machine, alphabet, dfa, suite.label, check);
+      enumerateStrings(suite.alphabet, suite.maxLength, function (text) {
+        var ac = scanAC(machine, text);
+        var dfaScan = scanDfa(machine, dfa, text);
+        var naive = scanNaive(suite.patterns, text);
+        check(sameMatches(ac.matches, naive.matches), suite.label + " AC should match naive text=" + text);
+        check(sameMatches(dfaScan.matches, naive.matches), suite.label + " DFA should match naive text=" + text);
+        check(ac.failSteps <= text.length, suite.label + " failure steps should amortize text=" + text);
+        check(dfaScan.steps === text.length, suite.label + " DFA should consume one transition per character");
+        totalCases += 1;
+        totalMatches += ac.matches.length;
+      });
+    });
+    return { cases: totalCases, totalMatches: totalMatches };
+  }
+
   function audit() {
-    var known = auditKnownExamples();
+    var checked = 0;
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    var known = auditKnownExamples(check);
+    var exhaustive = auditExhaustiveShortStrings(check);
     var summary = {};
     Object.keys(DICTIONARIES).forEach(function (key) {
       var totalMatches = 0;
@@ -700,13 +810,16 @@
         [48, 96, 180].forEach(function (length) {
           [0, 50, 90].forEach(function (overlap) {
             var state = evaluate({ dictionary: key, length: length, overlap: overlap, seed: seed });
-            assert(state.ok, key + " matches should agree with naive scan");
-            auditMachine(state.machine, state.alphabet, key);
-            auditDfa(state.machine, state.alphabet, state.dfa, key);
-            assert(state.machine.nodes.length <= 1 + state.dict.patterns.join("").length, key + " trie state bound");
-            assert(state.denseEntries >= state.explicitTransitions, key + " dense table should dominate sparse edges");
-            assert(state.ac.steps >= state.text.length, key + " sparse scan reads at least one step per char");
-            assert(state.ac.failSteps <= state.text.length, key + " failure transitions should amortize under one per character");
+            var dfaScan = scanDfa(state.machine, state.dfa, state.text);
+            check(state.ok, key + " matches should agree with naive scan");
+            check(sameMatches(dfaScan.matches, state.naive.matches), key + " dense scan should agree with naive scan");
+            auditMachine(state.machine, state.alphabet, key, check);
+            auditDfa(state.machine, state.alphabet, state.dfa, key, check);
+            check(state.machine.nodes.length <= 1 + state.dict.patterns.join("").length, key + " trie state bound");
+            check(state.denseEntries >= state.explicitTransitions, key + " dense table should dominate sparse edges");
+            check(state.ac.steps >= state.text.length, key + " sparse scan reads at least one step per char");
+            check(state.ac.failSteps <= state.text.length, key + " failure transitions should amortize under one per character");
+            check(dfaScan.steps === state.text.length, key + " dense DFA should use one transition per input character");
             totalMatches += state.ac.matches.length;
             maxFailSteps = Math.max(maxFailSteps, state.ac.failSteps);
             maxRatio = Math.max(maxRatio, state.naive.comparisons / Math.max(1, state.ac.steps));
@@ -723,7 +836,7 @@
         totalMatches: totalMatches
       };
     });
-    return { knownExamples: known, ok: true, summary: summary };
+    return { checked: checked, exhaustive: exhaustive, knownExamples: known, ok: true, summary: summary };
   }
 
   var api = {
@@ -732,6 +845,7 @@
     buildAutomaton: buildAutomaton,
     evaluate: evaluate,
     scanAC: scanAC,
+    scanDfa: scanDfa,
     scanNaive: scanNaive
   };
 
