@@ -365,61 +365,204 @@
   }
 
   function runAudit() {
+    var checked = 0;
     var checks = [];
-    function check(name, passed, detail) {
-      checks.push({ name: name, passed: Boolean(passed), detail: detail || "" });
+    var failures = [];
+
+    function assert(condition, message) {
+      checked += 1;
+      if (!condition) throw new Error(message);
     }
 
-    var clamped = cleanParams({ rtt: 222, jitter: -4, inputDelay: 99, volatility: -8, rollbackWindow: 99, simCost: 2 });
-    check("parameter clamps and snaps", clamped.rtt === 220 && clamped.jitter === 0 && clamped.inputDelay === 8 && clamped.volatility === 0 && clamped.rollbackWindow === 16 && clamped.simCost === 5);
+    function section(name, fn) {
+      var before = checked;
+      try {
+        fn();
+        checks.push({ name: name, passed: true, assertions: checked - before, detail: "" });
+      } catch (error) {
+        var failure = { name: name, passed: false, assertions: checked - before, detail: error.message };
+        checks.push(failure);
+        failures.push(failure);
+      }
+    }
 
-    var fallback = cleanParams({ rtt: "x", jitter: "x", inputDelay: "x", volatility: "x", rollbackWindow: "x", simCost: "x" });
-    check("default fallbacks", Object.keys(DEFAULTS).every(function (key) { return fallback[key] === DEFAULTS[key]; }));
+    function assertParams(actual, expected, name) {
+      Object.keys(expected).forEach(function (key) {
+        assert(actual[key] === expected[key], name + " " + key + " expected " + expected[key] + " got " + actual[key]);
+      });
+    }
+
+    function assertPositions(row, name) {
+      assert(row.inputs.length >= FRAMES, name + " input history length");
+      assert(row.delays.length >= FRAMES, name + " delay history length");
+      assert(row.actual.length === row.inputs.length + 1, name + " actual history length");
+      for (var frame = 0; frame < FRAMES; frame += 1) {
+        assert(row.inputs[frame] === -1 || row.inputs[frame] === 0 || row.inputs[frame] === 1, name + " input alphabet at frame " + frame);
+        assert(row.delays[frame] >= 1 && row.delays[frame] <= 17 && row.delays[frame] % 1 === 0, name + " integer delay frame " + frame);
+        assert(close(row.actual[frame + 1] - row.actual[frame], row.inputs[frame] * SPEED, 1e-9), name + " integrated actual frame " + frame);
+      }
+    }
+
+    function assertLockstep(row, name) {
+      var ls = row.lockstep;
+      var late = 0;
+      var lateDepth = 0;
+      var maxLate = 0;
+      for (var frame = 0; frame < FRAMES; frame += 1) {
+        var excess = Math.max(0, row.delays[frame] - row.params.inputDelay);
+        if (excess > 0) late += 1;
+        lateDepth += excess;
+        maxLate = Math.max(maxLate, excess);
+      }
+      assert(close(ls.inputLatencyMs, row.params.inputDelay * FRAME_MS, 1e-9), name + " lockstep input latency");
+      assert(close(ls.lateShare, late / FRAMES, 1e-12), name + " lockstep late share");
+      assert(close(ls.stallFramesPerMinute, lateDepth * 15, 1e-9), name + " lockstep stall rate");
+      assert(ls.maxLate === maxLate, name + " lockstep max late");
+      assert(late === countLate(row.delays, row.params.inputDelay), name + " lockstep late helper agrees");
+    }
+
+    function assertRollback(row, name) {
+      var rb = row.rollback;
+      var nonHardEvents = rb.events.filter(function (event) { return !event.hard; });
+      var hardEvents = rb.events.filter(function (event) { return event.hard; });
+      var nonHardDepth = sumNonHardDepth(rb.events);
+      var maxDepth = maxNonHardDepth(rb.events);
+      var budgetMisses = nonHardEvents.filter(function (event) {
+        return event.depth * row.params.simCost > 100;
+      }).length;
+      var errors = [];
+
+      assert(rb.frames.length === FRAMES, name + " rollback frame count");
+      assert(close(rb.inputLatencyMs, row.params.inputDelay * FRAME_MS, 1e-9), name + " rollback input latency");
+      assert(rb.totalRollbackFrames === nonHardDepth, name + " non-hard rollback depth sum");
+      assert(rb.maxRollback === maxDepth, name + " max non-hard rollback depth");
+      assert(rb.hardSnaps === hardEvents.length, name + " hard snap count");
+      assert(rb.budgetMisses === budgetMisses, name + " budget miss count");
+      assert(close(rb.rollbackFramesPerMinute, rb.totalRollbackFrames * 15, 1e-9), name + " rollback frame rate");
+      assert(close(rb.rollbackEventsPerMinute, nonHardEvents.length * 15, 1e-9), name + " rollback event rate");
+      assert(rb.predictedShare >= 0 && rb.predictedShare <= 1, name + " predicted share bounds");
+
+      rb.frames.forEach(function (frame, index) {
+        errors.push(frame.absError);
+        assert(frame.frame === index, name + " frame index " + index);
+        assert(frame.visibleFrame === Math.max(0, index - row.params.inputDelay), name + " visible frame " + index);
+        assert(frame.knownThrough <= index, name + " known-through not in future " + index);
+        assert(frame.delay >= 0 && frame.delay <= 17, name + " displayed delay bounds " + index);
+        assert(frame.predictedInput === -1 || frame.predictedInput === 0 || frame.predictedInput === 1, name + " predicted input alphabet " + index);
+        assert(frame.actualInput === -1 || frame.actualInput === 0 || frame.actualInput === 1, name + " actual input alphabet " + index);
+        assert(finiteNumber(frame.predicted) && finiteNumber(frame.actual), name + " finite positions " + index);
+        assert(close(frame.absError, Math.abs(frame.predicted - frame.actual), 1e-9), name + " absolute prediction error " + index);
+        assert(frame.predictedAhead === (frame.knownThrough < frame.visibleFrame), name + " predicted-ahead flag " + index);
+        assert(frame.eventKind === "" || frame.eventKind === "rollback" || frame.eventKind === "snap", name + " event kind " + index);
+        assert(frame.eventDepth >= 0 && frame.eventDepth <= FRAMES, name + " event depth bounds " + index);
+        assert((frame.eventKind === "") === (frame.eventDepth === 0), name + " event kind/depth agreement " + index);
+      });
+
+      rb.events.forEach(function (event, index) {
+        assert(event.frame >= 0 && event.frame < FRAMES, name + " event frame " + index);
+        assert(event.sourceFrame >= 0 && event.sourceFrame < FRAMES, name + " event source frame " + index);
+        assert(event.sourceFrame <= event.frame, name + " event source not after arrival " + index);
+        assert(event.depth >= 1 && event.depth <= FRAMES, name + " event depth range " + index);
+        assert(event.hard ? event.depth > row.params.rollbackWindow : event.depth <= row.params.rollbackWindow, name + " event depth/window relation " + index);
+        assert(rb.frames[event.frame].eventDepth >= event.depth || rb.frames[event.frame].eventKind !== "", name + " frame records event " + index);
+      });
+
+      assert(close(rb.avgError, errors.reduce(function (total, value) { return total + value; }, 0) / errors.length, 1e-12), name + " average prediction error");
+      assert(close(rb.p95Error, percentile(errors, 0.95), 1e-12), name + " p95 prediction error");
+    }
+
+    function assertRow(row, name) {
+      assertPositions(row, name);
+      assertLockstep(row, name);
+      assertRollback(row, name);
+      assert(positionsValid(row), name + " legacy position helper");
+      assert(lockstepLedgerValid(row), name + " legacy lockstep helper");
+      assert(rollbackLedgersValid(row), name + " legacy rollback helper");
+    }
+
+    section("parameter clamps and fallbacks", function () {
+      var clamped = cleanParams({ rtt: 222, jitter: -4, inputDelay: 99, volatility: -8, rollbackWindow: 99, simCost: 2 });
+      assertParams(clamped, { rtt: 220, jitter: 0, inputDelay: 8, volatility: 0, rollbackWindow: 16, simCost: 5 }, "clamped params");
+      var rounded = cleanParams({ rtt: 83, jitter: 14.4, inputDelay: 2.49, volatility: 24.49, rollbackWindow: 7.51, simCost: 18.49 });
+      assertParams(rounded, { rtt: 85, jitter: 14, inputDelay: 2, volatility: 24, rollbackWindow: 8, simCost: 18 }, "rounded params");
+      var fallback = cleanParams({ rtt: "x", jitter: "x", inputDelay: "x", volatility: "x", rollbackWindow: "x", simCost: "x" });
+      assertParams(fallback, DEFAULTS, "fallback params");
+    });
 
     var defaultA = evaluate(DEFAULTS);
     var defaultB = evaluate(DEFAULTS);
-    check("deterministic replay", JSON.stringify(defaultA) === JSON.stringify(defaultB));
-    check("curve covers delay choices", defaultA.curve.length === CURVE_DELAYS.length && defaultA.curve.every(function (row, index) { return row.params.inputDelay === CURVE_DELAYS[index]; }));
-    check("selected row matches chosen delay", JSON.stringify(defaultA.selected.rollback) === JSON.stringify(defaultA.curve[DEFAULTS.inputDelay].rollback));
-    check("actual timeline integrates inputs", positionsValid(defaultA.selected));
-    check("rollback ledgers are consistent", rollbackLedgersValid(defaultA.selected));
-    check("lockstep ledger is consistent", lockstepLedgerValid(defaultA.selected));
-    check("delay-curve ledgers are consistent", defaultA.curve.every(function (row) {
-      return positionsValid(row) && rollbackLedgersValid(row) && lockstepLedgerValid(row);
-    }));
 
-    check("delay lowers lockstep stalls", monotoneNonincreasing(defaultA.curve.map(function (row) { return row.lockstep.stallFramesPerMinute; }), 1e-9));
-    check("delay lowers rollback work", monotoneNonincreasing(defaultA.curve.map(function (row) { return row.rollback.rollbackFramesPerMinute; }), 1e-9));
-    check("delay raises input latency", defaultA.curve[8].rollback.inputLatencyMs > defaultA.curve[0].rollback.inputLatencyMs && defaultA.curve[8].rollback.events.length < defaultA.curve[0].rollback.events.length);
+    section("deterministic replay and curve selection", function () {
+      assert(JSON.stringify(defaultA) === JSON.stringify(defaultB), "default evaluation deterministic");
+      assert(defaultA.curve.length === CURVE_DELAYS.length, "delay curve length");
+      defaultA.curve.forEach(function (row, index) {
+        assert(row.params.inputDelay === CURVE_DELAYS[index], "curve row delay " + index);
+      });
+      assert(JSON.stringify(defaultA.selected.rollback) === JSON.stringify(defaultA.curve[DEFAULTS.inputDelay].rollback), "selected rollback row");
+      assert(JSON.stringify(defaultA.selected.lockstep) === JSON.stringify(defaultA.curve[DEFAULTS.inputDelay].lockstep), "selected lockstep row");
+    });
 
-    var lowVol = evaluate({ volatility: 0 });
-    var highVol = evaluate({ volatility: 100 });
-    check("input volatility hurts prediction", highVol.selected.rollback.events.length > lowVol.selected.rollback.events.length && highVol.selected.rollback.p95Error > lowVol.selected.rollback.p95Error);
+    section("default ledgers", function () {
+      assertRow(defaultA.selected, "default selected");
+      defaultA.curve.forEach(function (row) {
+        assertRow(row, "delay " + row.params.inputDelay);
+      });
+    });
 
-    var lowJitter = evaluate({ jitter: 0 });
-    var highJitter = evaluate({ jitter: 90 });
-    check("jitter increases timing debt", highJitter.selected.lockstep.stallFramesPerMinute > lowJitter.selected.lockstep.stallFramesPerMinute && highJitter.selected.lockstep.maxLate > lowJitter.selected.lockstep.maxLate);
-    check("jitter can force hard correction", highJitter.selected.rollback.hardSnaps > lowJitter.selected.rollback.hardSnaps && highJitter.selected.rollback.budgetMisses > lowJitter.selected.rollback.budgetMisses);
+    section("delay buffer tradeoff", function () {
+      var stalls = defaultA.curve.map(function (row) { return row.lockstep.stallFramesPerMinute; });
+      var rollbackWork = defaultA.curve.map(function (row) { return row.rollback.rollbackFramesPerMinute; });
+      var lateShare = defaultA.curve.map(function (row) { return row.lockstep.lateShare; });
+      var events = defaultA.curve.map(function (row) { return row.rollback.events.length; });
+      assert(monotoneNonincreasing(stalls, 1e-9), "delay lowers lockstep stalls");
+      assert(monotoneNonincreasing(rollbackWork, 1e-9), "delay lowers rollback work");
+      assert(monotoneNonincreasing(lateShare, 1e-12), "delay lowers late share");
+      assert(monotoneNonincreasing(events, 0), "delay lowers correction count");
+      for (var i = 1; i < defaultA.curve.length; i += 1) {
+        assert(defaultA.curve[i].rollback.inputLatencyMs > defaultA.curve[i - 1].rollback.inputLatencyMs, "delay raises input latency " + i);
+      }
+      assert(defaultA.curve[0].rollback.events.length > defaultA.curve[8].rollback.events.length, "buffer reduces corrections end to end");
+    });
 
-    var lowRtt = evaluate({ rtt: 20 });
-    var highRtt = evaluate({ rtt: 220 });
-    check("RTT increases prediction horizon", highRtt.selected.rollback.predictedShare > lowRtt.selected.rollback.predictedShare && highRtt.selected.rollback.rollbackFramesPerMinute > lowRtt.selected.rollback.rollbackFramesPerMinute);
-    check("RTT increases lockstep stalls", highRtt.selected.lockstep.stallFramesPerMinute > lowRtt.selected.lockstep.stallFramesPerMinute);
+    section("volatility, jitter, and RTT stressors", function () {
+      var lowVol = evaluate({ volatility: 0 });
+      var highVol = evaluate({ volatility: 100 });
+      assert(highVol.selected.rollback.events.length > lowVol.selected.rollback.events.length, "volatility raises correction count");
+      assert(highVol.selected.rollback.p95Error > lowVol.selected.rollback.p95Error, "volatility raises p95 error");
+      assert(highVol.selected.rollback.totalRollbackFrames > lowVol.selected.rollback.totalRollbackFrames, "volatility raises rollback work");
 
-    var smallWindow = evaluate({ inputDelay: 0, rollbackWindow: 2 });
-    var largeWindow = evaluate({ inputDelay: 0, rollbackWindow: 16 });
-    check("small rollback windows snap", smallWindow.selected.rollback.hardSnaps > largeWindow.selected.rollback.hardSnaps);
-    check("large rollback windows repair more history", largeWindow.selected.rollback.totalRollbackFrames > smallWindow.selected.rollback.totalRollbackFrames);
+      var lowJitter = evaluate({ jitter: 0 });
+      var highJitter = evaluate({ jitter: 90 });
+      assert(highJitter.selected.lockstep.stallFramesPerMinute > lowJitter.selected.lockstep.stallFramesPerMinute, "jitter raises stalls");
+      assert(highJitter.selected.lockstep.maxLate > lowJitter.selected.lockstep.maxLate, "jitter raises max late");
+      assert(highJitter.selected.rollback.hardSnaps > lowJitter.selected.rollback.hardSnaps, "jitter raises hard corrections");
+      assert(highJitter.selected.rollback.budgetMisses > lowJitter.selected.rollback.budgetMisses, "jitter raises budget misses");
 
-    var cheap = evaluate({ simCost: 5 });
-    var expensive = evaluate({ simCost: 80 });
-    check("re-sim cost only changes budget misses", expensive.selected.rollback.budgetMisses > cheap.selected.rollback.budgetMisses && expensive.selected.rollback.totalRollbackFrames === cheap.selected.rollback.totalRollbackFrames);
+      var lowRtt = evaluate({ rtt: 20 });
+      var highRtt = evaluate({ rtt: 220 });
+      assert(highRtt.selected.rollback.predictedShare > lowRtt.selected.rollback.predictedShare, "RTT raises predicted share");
+      assert(highRtt.selected.rollback.rollbackFramesPerMinute > lowRtt.selected.rollback.rollbackFramesPerMinute, "RTT raises rollback work");
+      assert(highRtt.selected.lockstep.stallFramesPerMinute > lowRtt.selected.lockstep.stallFramesPerMinute, "RTT raises lockstep stalls");
+    });
 
-    var failures = checks.filter(function (item) { return !item.passed; });
+    section("rollback window and re-sim budget", function () {
+      var smallWindow = evaluate({ inputDelay: 0, rollbackWindow: 2 });
+      var largeWindow = evaluate({ inputDelay: 0, rollbackWindow: 16 });
+      assert(smallWindow.selected.rollback.hardSnaps > largeWindow.selected.rollback.hardSnaps, "small windows snap more");
+      assert(largeWindow.selected.rollback.totalRollbackFrames > smallWindow.selected.rollback.totalRollbackFrames, "large windows repair more frames");
+      assert(largeWindow.selected.rollback.hardSnaps === 0, "large window avoids hard snaps in this scenario");
+
+      var cheap = evaluate({ simCost: 5 });
+      var expensive = evaluate({ simCost: 80 });
+      assert(expensive.selected.rollback.budgetMisses > cheap.selected.rollback.budgetMisses, "expensive re-sim misses budget more");
+      assert(expensive.selected.rollback.totalRollbackFrames === cheap.selected.rollback.totalRollbackFrames, "sim cost does not change deterministic timeline");
+      assert(expensive.selected.rollback.events.length === cheap.selected.rollback.events.length, "sim cost does not change correction count");
+    });
+
     return {
       ok: failures.length === 0,
-      passed: checks.length - failures.length,
-      checked: checks.length,
+      passed: checked - failures.length,
+      checked: checked,
       failures: failures,
       checks: checks
     };
