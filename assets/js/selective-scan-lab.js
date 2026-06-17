@@ -218,6 +218,22 @@
     return Math.abs(value - target);
   }
 
+  function assert(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+
+  function near(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
+  function weightedQuery(events, weights) {
+    var total = 0;
+    for (var i = 0; i < events.length; i += 1) {
+      total += weights[i] * events[i].value;
+    }
+    return total;
+  }
+
   function evaluate(raw) {
     var params = cleanParams(raw);
     var sequence = generateSequence(params);
@@ -260,19 +276,93 @@
   }
 
   function audit() {
-    var result = evaluate(DEFAULTS);
+    var checked = 0;
+    var defaultResult = evaluate(DEFAULTS);
+    var left = compose(compose({ a: 0.71, b: 0.13 }, { a: 0.42, b: -0.29 }), { a: 0.83, b: 0.17 });
+    var right = compose({ a: 0.71, b: 0.13 }, compose({ a: 0.42, b: -0.29 }, { a: 0.83, b: 0.17 }));
+    assert(near(left.a, right.a, 1e-12) && near(left.b, right.b, 1e-12), "affine composition should be associative");
+    checked += 1;
+
+    assert(defaultResult.maxScanMismatch <= 1e-12, "default scan should reproduce serial recurrence");
+    assert(defaultResult.selectiveError < defaultResult.fixedError, "default selective gate should beat fixed decay");
+    assert(defaultResult.scanSpan < defaultResult.serialSpan, "balanced scan span should be shorter than serial span");
+    assert(near(weightedQuery(defaultResult.sequence.events, defaultResult.fixedWeights), defaultResult.fixedAtQuery, 1e-12), "fixed query weights should reconstruct query state");
+    assert(near(weightedQuery(defaultResult.sequence.events, defaultResult.selectiveWeights), defaultResult.selectiveAtQuery, 1e-12), "selective query weights should reconstruct query state");
+    checked += 5;
+
+    var sweep = [];
+    var previousError = Infinity;
+    var previousMarkGate = -Infinity;
+    var previousNoiseGate = Infinity;
+    [0, 25, 50, 75, 96, 100].forEach(function (selectivity) {
+      var result = evaluate({ selectivity: selectivity });
+      assert(result.selectiveError <= previousError + 1e-9, "default selective error should not increase as selectivity rises");
+      assert(result.gates.markGate >= previousMarkGate - 1e-12, "mark gate should increase with selectivity");
+      assert(result.gates.noiseGate <= previousNoiseGate + 1e-12, "noise gate should shrink with selectivity");
+      sweep.push({
+        error: Number(result.selectiveError.toFixed(3)),
+        markGate: Number(result.gates.markGate.toFixed(3)),
+        noiseGate: Number(result.gates.noiseGate.toExponential(2)),
+        selectivity: selectivity
+      });
+      previousError = result.selectiveError;
+      previousMarkGate = result.gates.markGate;
+      previousNoiseGate = result.gates.noiseGate;
+      checked += 3;
+    });
+
+    var cases = 0;
+    var maxScanMismatch = 0;
+    var minErrorAdvantage = Infinity;
+    [1, 7, 73, 211, 997].forEach(function (seed) {
+      [64, 128, 192].forEach(function (length) {
+        [8, 24, 52, 96].forEach(function (gap) {
+          [8, 18, 50].forEach(function (halfLife) {
+            var result = evaluate({
+              gap: gap,
+              halfLife: halfLife,
+              length: length,
+              seed: seed,
+              selectivity: 96
+            });
+            assert(result.sequence.target < result.sequence.query, "target should precede query");
+            assert(result.sequence.query - result.sequence.target === result.params.gap, "query gap should match sanitized parameters");
+            assert(result.maxScanMismatch <= 1e-12, "scan should reproduce serial recurrence across grid");
+            assert(result.selectiveError < result.fixedError, "selective gate should beat fixed decay across grid");
+            assert(result.scanSpan < result.serialSpan, "scan span should be smaller across grid");
+            assert(near(weightedQuery(result.sequence.events, result.fixedWeights), result.fixedAtQuery, 1e-12), "fixed influence weights should reconstruct query");
+            assert(near(weightedQuery(result.sequence.events, result.selectiveWeights), result.selectiveAtQuery, 1e-12), "selective influence weights should reconstruct query");
+            maxScanMismatch = Math.max(maxScanMismatch, result.maxScanMismatch);
+            minErrorAdvantage = Math.min(minErrorAdvantage, result.fixedError - result.selectiveError);
+            cases += 1;
+            checked += 7;
+          });
+        });
+      });
+    });
+
     return {
-      fixedError: Number(result.fixedError.toFixed(3)),
-      fixedGate: Number(result.gates.fixedGate.toFixed(3)),
-      gap: result.params.gap,
-      maxScanMismatch: Number(result.maxScanMismatch.toExponential(2)),
-      markGate: Number(result.gates.markGate.toFixed(3)),
-      queryIndex: result.sequence.query,
-      scanSpan: result.scanSpan,
-      selectiveError: Number(result.selectiveError.toFixed(3)),
-      serialSpan: result.serialSpan,
-      targetIndex: result.sequence.target,
-      targetValue: Number(result.sequence.targetValue.toFixed(3))
+      checked: checked,
+      default: {
+        fixedError: Number(defaultResult.fixedError.toFixed(3)),
+        fixedGate: Number(defaultResult.gates.fixedGate.toFixed(3)),
+        gap: defaultResult.params.gap,
+        maxScanMismatch: Number(defaultResult.maxScanMismatch.toExponential(2)),
+        markGate: Number(defaultResult.gates.markGate.toFixed(3)),
+        queryIndex: defaultResult.sequence.query,
+        scanSpan: defaultResult.scanSpan,
+        selectiveError: Number(defaultResult.selectiveError.toFixed(3)),
+        serialSpan: defaultResult.serialSpan,
+        targetIndex: defaultResult.sequence.target,
+        targetValue: Number(defaultResult.sequence.targetValue.toFixed(3))
+      },
+      grid: {
+        cases: cases,
+        maxScanMismatch: Number(maxScanMismatch.toExponential(2)),
+        minErrorAdvantage: Number(minErrorAdvantage.toFixed(3))
+      },
+      ok: true,
+      sweep: sweep
     };
   }
 

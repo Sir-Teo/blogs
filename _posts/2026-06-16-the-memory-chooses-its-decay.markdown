@@ -124,6 +124,8 @@ scan mismatch is exactly `0`.
     font-weight: 650;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .ss-lab output {
@@ -134,7 +136,11 @@ scan mismatch is exactly `0`.
 
   .ss-lab input {
     accent-color: #0f766e;
-    width: 100%;
+    box-sizing: border-box;
+    display: block;
+    max-width: calc(100% - 3px);
+    min-width: 0;
+    width: calc(100% - 3px);
   }
 
   .ss-lab__metrics {
@@ -213,7 +219,7 @@ scan mismatch is exactly `0`.
     higher-dimensional states, fused kernels, and trained readouts.
   </p>
 </div>
-<script defer src="{{ '/assets/js/selective-scan-lab.js?v=20260616a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/selective-scan-lab.js?v=20260617a' | relative_url }}"></script>
 
 Move **Selectivity** down.
 
@@ -304,6 +310,15 @@ sequence. It also forces the model to compress the past. If a task needs exact
 access to many independent old facts, the recurrence has to store enough
 statistics to answer later. Sometimes it can. Sometimes it cannot.
 
+This caveat is not only a practical shrug. Merrill, Petty, and Sabharwal's
+*Illusion of State* paper argues that SSMs share important state-tracking
+limitations with transformers; their formal result places these models inside
+the same broad circuit-complexity family and their experiments show
+Mamba-style models struggling on some exact tracking tasks.[^illusion] That
+does not make selective state useless. It names the boundary: a compressed state
+is powerful when the right sufficient statistics exist, and brittle when the
+task keeps demanding many independent facts.
+
 This is why "linear-time model beats Transformer" is the wrong headline.
 
 The real question is:
@@ -374,6 +389,28 @@ do I erase?
 
 The answer is the memory.
 
+## Audit Trail
+
+The executable artifact is
+[`assets/js/selective-scan-lab.js`]({{ '/assets/js/selective-scan-lab.js' | relative_url }}).
+It exports an `audit()` function that checks the toy recurrence rather than
+only drawing it.
+
+The audit verifies:
+
+```text
+affine-map composition is associative
+serial recurrence and prefix scan produce the same states
+query-time influence weights reconstruct the query state
+raising selectivity increases mark writes and suppresses noise writes
+the selective path beats fixed decay across 180 generated copy tasks
+```
+
+In the current run, the grid covers five seeds, three sequence lengths, four
+query gaps, and three fixed half-lives. The worst scan mismatch is `0`, and the
+smallest fixed-minus-selective error advantage at 96 percent selectivity is
+`0.662`.
+
 ## Paper Trail
 
 [^s4]: Albert Gu, Karan Goel, and Christopher Re, ["Efficiently Modeling Long Sequences with Structured State Spaces"](https://arxiv.org/abs/2111.00396), ICLR 2022.
@@ -389,3 +426,5 @@ The answer is the memory.
 [^mamba3]: Aakash Lahoti, Kevin Y. Li, Berlin Chen, Caitlin Wang, Aviv Bick, J. Zico Kolter, Tri Dao, and Albert Gu, ["Mamba-3: Improved Sequence Modeling using State Space Principles"](https://arxiv.org/abs/2603.15569), ICLR 2026. OpenReview PDF: [Mamba-3](https://openreview.net/pdf?id=HwCvaJOiCj).
 
 [^mamba-repo]: State Spaces, ["Mamba SSM architecture"](https://github.com/state-spaces/mamba). The repository documents Mamba, Mamba-2, SSD minimal code, and Mamba-3 usage.
+
+[^illusion]: William Merrill, Jackson Petty, and Ashish Sabharwal, ["The Illusion of State in State-Space Models"](https://arxiv.org/abs/2404.08819), ICML 2024.
