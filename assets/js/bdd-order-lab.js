@@ -424,7 +424,7 @@
   }
 
   function drawCurve(ctx, state, box) {
-    panel(ctx, box, "Order tax curve", "The same function is rebuilt for each bit width under four fixed orders.");
+    panel(ctx, box, "Order tax curve", "Node counts on a log scale.");
     var rows = state.curve;
     var series = [
       { color: COLORS.good, key: "paired", label: "paired" },
@@ -432,10 +432,25 @@
       { color: COLORS.blue, key: "yfirst", label: "y-first" },
       { color: COLORS.gold, key: "shuffled", label: "outer-first" }
     ];
+    var legendX = box.x + 18;
+    var legendY = box.y + 58;
+    series.forEach(function (s, index) {
+      var col = index % 2;
+      var row = Math.floor(index / 2);
+      var lx = legendX + col * 112;
+      var ly = legendY + row * 16;
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly + 6);
+      ctx.lineTo(lx + 16, ly + 6);
+      ctx.stroke();
+      fillText(ctx, s.label, lx + 21, ly, s.color, 10, 750);
+    });
     var x = box.x + 44;
-    var y = box.y + 82;
+    var y = box.y + 98;
     var w = box.w - 66;
-    var h = box.h - 138;
+    var h = box.h - 154;
     var maxNode = Math.max.apply(null, rows.reduce(function (all, row) {
       return all.concat(series.map(function (s) { return row[s.key]; }));
     }, [1]));
@@ -466,8 +481,6 @@
         else ctx.lineTo(px, py);
       });
       ctx.stroke();
-      var last = rows[rows.length - 1];
-      fillText(ctx, s.label, sx(last.bits) + 6, sy(last[s.key]) - 6, s.color, 10, 750);
     });
     fillText(ctx, "bits", x + w, box.y + box.h - 34, COLORS.muted, 11, 650, "right");
     fillText(ctx, "log(nodes + 1)", x, box.y + box.h - 34, COLORS.muted, 11, 650);
