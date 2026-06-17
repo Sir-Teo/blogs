@@ -335,6 +335,11 @@
     return value.toFixed(digits == null ? 1 : digits);
   }
 
+  function ellipsize(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, Math.max(0, maxLength - 3)) + "...";
+  }
+
   function metric(label, value, tone) {
     return '<div class="sequence-crdt-lab__metric ' + (tone || "") + '">' +
       "<span>" + label + "</span><strong>" + value + "</strong></div>";
@@ -410,7 +415,7 @@
   }
 
   function drawMerged(ctx, box, result) {
-    panel(ctx, box, "same cursor, different addresses", "both methods converge; only one keeps each local phrase together");
+    panel(ctx, box, "same cursor, different addresses", "convergent does not mean readable");
     var x = box.x + 16;
     var w = box.w - 32;
     var size = box.w < 420 ? 20 : 24;
@@ -422,7 +427,7 @@
 
   function drawAddressLadder(ctx, box, result) {
     panel(ctx, box, "address ladder", "tail-biased allocation spends more identifier levels");
-    var plot = { x: box.x + 42, y: box.y + 58, w: box.w - 66, h: box.h - 98 };
+    var plot = { x: box.x + 42, y: box.y + 64, w: box.w - 66, h: box.h - 116 };
     var maxDepth = Math.max(1, result.idStats.maxDepth);
     ctx.strokeStyle = COLORS.grid;
     ctx.lineWidth = 1;
@@ -461,24 +466,23 @@
     ctx.lineTo(plot.x, plot.y + plot.h);
     ctx.lineTo(plot.x + plot.w, plot.y + plot.h);
     ctx.stroke();
-    label(ctx, "identifier levels", plot.x + 2, plot.y - 12, COLORS.muted, 10, 650);
     label(ctx, "local keystroke", plot.x + plot.w, box.y + box.h - 19, COLORS.muted, 10, 650, "right");
     var sample = result.ops.filter(function (op) { return op.actorIndex === 0; }).slice(0, 4);
     var text = sample.map(function (op) { return formatPath(op.path); }).join("  ->  ");
-    label(ctx, "Alice paths: " + text, box.x + 15, box.y + box.h - 43, COLORS.text, 10, 700);
+    label(ctx, "A paths: " + ellipsize(text, box.w < 420 ? 30 : 64), box.x + 15, box.y + box.h - 43, COLORS.text, 10, 700);
   }
 
   function drawRgaTree(ctx, box, result) {
-    panel(ctx, box, "left-origin forest", "each inserted character remembers the character it followed");
-    var x0 = box.x + 30;
-    var y0 = box.y + 68;
-    var rowGap = Math.max(30, (box.h - 106) / result.actors.length);
+    panel(ctx, box, "left-origin forest", "each character remembers its left neighbor");
+    var x0 = box.x + 62;
+    var y0 = box.y + 84;
+    var rowGap = Math.max(30, (box.h - 120) / result.actors.length);
     label(ctx, "HEAD", x0, y0 - 24, COLORS.muted, 11, 800);
     result.actors.forEach(function (actor, actorIndex) {
       var ops = result.ops.filter(function (op) { return op.actorIndex === actorIndex; });
       var y = y0 + actorIndex * rowGap;
       var maxColumns = Math.max(1, ops.length - 1);
-      var step = Math.min(42, (box.w - 94) / maxColumns);
+      var step = Math.min(42, (box.w - 120) / maxColumns);
       ctx.strokeStyle = actor.color;
       ctx.lineWidth = 2;
       ctx.globalAlpha = 0.75;
@@ -503,21 +507,20 @@
         label(ctx, op.char.toUpperCase(), cx, y + 0.5, "#ffffff", 11, 850, "center");
       });
     });
-    label(ctx, "sibling chains under HEAD are ordered by replica id; descendants stay attached", box.x + 15, box.y + box.h - 22, COLORS.muted, 10, 650);
   }
 
   function drawAudit(ctx, box, result) {
-    panel(ctx, box, "shuffle audit", "delivery order changes the inbox, not the final sequence");
+    panel(ctx, box, "shuffle audit", "shuffled delivery, same sequence");
     var rows = [
       { label: "position interleaving", value: result.position.segments.score, color: COLORS.warn, text: pct(result.position.segments.score, 0) },
       { label: "RGA interleaving", value: result.rga.segments.score, color: COLORS.alice, text: pct(result.rga.segments.score, 0) },
       { label: "convergence checks", value: result.convergence.ok ? 1 : 0, color: result.convergence.ok ? COLORS.alice : COLORS.warn, text: result.convergence.ok ? "8/8" : "fail" }
     ];
     var x = box.x + 18;
-    var y = box.y + 62;
+    var y = box.y + 56;
     var w = box.w - 42;
     rows.forEach(function (row, index) {
-      var yy = y + index * 50;
+      var yy = y + index * 42;
       label(ctx, row.label, x, yy, COLORS.text, 11, 750);
       ctx.fillStyle = COLORS.grid;
       roundRect(ctx, x, yy + 14, w, 11, 6);
@@ -527,7 +530,6 @@
       ctx.fill();
       label(ctx, row.text, x + w, yy + 19, COLORS.muted, 10, 700, "right");
     });
-    label(ctx, "RGA buffered " + result.rga.buffered + " causally early messages while replaying seed " + result.params.seed + ".", x, box.y + box.h - 26, COLORS.muted, 10, 650);
   }
 
   function drawCanvas(canvas, result) {
@@ -541,9 +543,9 @@
     ctx.fillRect(0, 0, w, h);
     var gap = 12;
     if (w < 700) {
-      var mergedH = Math.round(h * 0.32);
-      var pathH = Math.round(h * 0.24);
-      var treeH = Math.round(h * 0.25);
+      var mergedH = Math.round(h * 0.30);
+      var pathH = Math.round(h * 0.23);
+      var treeH = Math.round(h * 0.22);
       drawMerged(ctx, { x: 0, y: 0, w: w, h: mergedH }, result);
       drawAddressLadder(ctx, { x: 0, y: mergedH + gap, w: w, h: pathH }, result);
       drawRgaTree(ctx, { x: 0, y: mergedH + pathH + 2 * gap, w: w, h: treeH }, result);
@@ -572,21 +574,21 @@
     var el = root.querySelector("[data-role='metrics']");
     if (!el) return;
     el.innerHTML = [
-      metric("Position-ID interleaving", pct(result.position.segments.score, 0), result.position.segments.score > 0.5 ? "sequence-crdt-lab__metric--warn" : ""),
-      metric("RGA interleaving", pct(result.rga.segments.score, 0), result.rga.segments.score < result.position.segments.score ? "sequence-crdt-lab__metric--good" : ""),
-      metric("Max ID depth", String(result.idStats.maxDepth), result.idStats.maxDepth > 4 ? "sequence-crdt-lab__metric--warn" : ""),
-      metric("Avg ID depth", number(result.idStats.averageDepth, 1), ""),
-      metric("Buffered deliveries", String(result.rga.buffered), ""),
-      metric("Converges", result.convergence.ok ? "yes" : "no", result.convergence.ok ? "sequence-crdt-lab__metric--good" : "sequence-crdt-lab__metric--warn")
+      metric("Position braid", pct(result.position.segments.score, 0), result.position.segments.score > 0.5 ? "sequence-crdt-lab__metric--warn" : ""),
+      metric("RGA braid", pct(result.rga.segments.score, 0), result.rga.segments.score < result.position.segments.score ? "sequence-crdt-lab__metric--good" : ""),
+      metric("Max depth", String(result.idStats.maxDepth), result.idStats.maxDepth > 4 ? "sequence-crdt-lab__metric--warn" : ""),
+      metric("Avg depth", number(result.idStats.averageDepth, 1), ""),
+      metric("Buffered", String(result.rga.buffered), ""),
+      metric("OK", result.convergence.ok ? "yes" : "no", result.convergence.ok ? "sequence-crdt-lab__metric--good" : "sequence-crdt-lab__metric--warn")
     ].join("");
   }
 
   function renderNote(root, result) {
     var el = root.querySelector("[data-role='note']");
     if (!el) return;
-    el.textContent = ALLOCATORS[result.params.allocator].note + " The position-ID merge reads `" +
-      result.position.text + "`, while the left-origin merge reads `" + result.rga.text +
-      "`. Both were replayed through eight deterministic shuffled deliveries.";
+    el.textContent = ALLOCATORS[result.params.allocator].note + " The position-ID merge reads \"" +
+      result.position.text + "\", while the left-origin merge reads \"" + result.rga.text +
+      "\". Both were replayed through eight deterministic shuffled deliveries.";
   }
 
   function readParams(root) {
