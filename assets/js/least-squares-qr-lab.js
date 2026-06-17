@@ -767,9 +767,73 @@
   }
 
   function audit() {
+    var checked = 0;
+
     function assert(condition, message) {
+      checked += 1;
       if (!condition) throw new Error(message);
     }
+
+    function closeRelative(actual, expected, tolerance) {
+      return Math.abs(actual - expected) <= Math.max(1, Math.abs(expected)) * tolerance;
+    }
+
+    function method(result, key) {
+      return result.methods.filter(function (row) { return row.key === key; })[0];
+    }
+
+    function compactNumber(value, digits) {
+      return Number.isFinite(value) ? Number(value.toPrecision(digits || 4)) : "failed";
+    }
+
+    function assertBetween(value, low, high, message) {
+      assert(value >= low && value <= high, message + ": " + value);
+    }
+
+    function assertDataShape(name, result) {
+      var expectedColumns = result.params.degree + 1;
+      assert(result.data.A.length === result.params.rows, name + " row count");
+      assert(result.data.y.length === result.params.rows, name + " response count");
+      assert(result.data.cleanY.length === result.params.rows, name + " clean response count");
+      assert(result.data.coeffs.length === expectedColumns, name + " truth coefficient count");
+      assert(result.data.A[0].length === expectedColumns, name + " design column count");
+      for (var i = 1; i < result.data.x.length; i += 1) {
+        assert(result.data.x[i] >= result.data.x[i - 1], name + " sorted sample locations");
+      }
+    }
+
+    function assertConditionIdentity(name, result) {
+      assert(result.condition.condA >= 1, name + " condition number lower bound");
+      assert(closeRelative(result.condition.condAtA, result.condition.condA * result.condition.condA, 1e-14), name + " condition square identity");
+      assert(result.condition.singularValues.length === result.params.degree + 1, name + " singular value count");
+      result.condition.singularValues.forEach(function (value) {
+        assert(Number.isFinite(value) && value >= 0, name + " finite singular values");
+      });
+      for (var i = 1; i < result.condition.eigenvalues.length; i += 1) {
+        assert(result.condition.eigenvalues[i - 1] >= result.condition.eigenvalues[i] - 1e-10, name + " sorted Gram eigenvalues");
+      }
+    }
+
+    function assertMethodRows(name, result) {
+      assert(result.methods.length === METHODS.length, name + " solver count");
+      result.methods.forEach(function (row) {
+        if (row.failed) {
+          assert(!row.coeffs, name + " failed " + row.key + " has no coefficients");
+        } else {
+          assert(row.coeffs.length === result.params.degree + 1, name + " coefficient length for " + row.key);
+          assert(Number.isFinite(row.coefficientError), name + " finite coefficient error for " + row.key);
+          assert(Number.isFinite(row.predictionError), name + " finite prediction error for " + row.key);
+          assert(Number.isFinite(row.residual), name + " finite residual for " + row.key);
+        }
+      });
+    }
+
+    function assertCase(name, result) {
+      assertDataShape(name, result);
+      assertConditionIdentity(name, result);
+      assertMethodRows(name, result);
+    }
+
     var easy = evaluate({ basis: "chebyshev", cluster: 0, degree: 5, noiseExp: -16, rows: 80, seed: 3 });
     easy.methods.forEach(function (row) {
       assert(row.coefficientError < 1e-9, "well-conditioned case should recover coefficients for " + row.key);
@@ -777,32 +841,86 @@
     });
     assert(easy.condition.condA < 5, "Chebyshev case should be well conditioned");
 
+    var raw = evaluate(DEFAULTS);
+    var centered = evaluate(Object.assign({}, DEFAULTS, { basis: "centered" }));
+    var cheb = evaluate(Object.assign({}, DEFAULTS, { basis: "chebyshev" }));
     var hard = evaluate({ basis: "raw", cluster: 58, degree: 13, noiseExp: -16, rows: 96, seed: 19 });
-    var normal = hard.methods.filter(function (row) { return row.key === "normal"; })[0];
-    var house = hard.methods.filter(function (row) { return row.key === "householder"; })[0];
-    assert(hard.condition.condAtA > hard.condition.condA * hard.condition.condA * 0.99, "normal equations should square the condition number");
-    assert(normal.coefficientError > house.coefficientError * 100 || normal.failed, "normal equations should lose much more than Householder on hard Vandermonde");
 
-    var raw = evaluate({ basis: "raw", cluster: 42, degree: 11, noiseExp: -14, rows: 80, seed: 19 });
-    var cheb = evaluate({ basis: "chebyshev", cluster: 42, degree: 11, noiseExp: -14, rows: 80, seed: 19 });
-    assert(cheb.condition.condA < raw.condition.condA, "Chebyshev basis should improve conditioning over raw powers");
-    [easy, hard, raw, cheb].forEach(function (result) {
-      result.methods.forEach(function (row) {
-        assert(row.failed || row.coeffs.length === result.params.degree + 1, "coefficient length for " + row.key);
-      });
-      assert(result.condition.singularValues.length === result.params.degree + 1, "singular value count");
+    [
+      ["easy Chebyshev", easy],
+      ["default raw", raw],
+      ["default centered", centered],
+      ["default Chebyshev", cheb],
+      ["hard raw", hard]
+    ].forEach(function (pair) {
+      assertCase(pair[0], pair[1]);
     });
 
+    var rawNormal = method(raw, "normal");
+    var rawMgs = method(raw, "mgs");
+    var rawHouse = method(raw, "householder");
+    assertBetween(raw.condition.condA, 1.2e8, 1.35e8, "default raw cond(A) regression");
+    assertBetween(raw.condition.condAtA, 1.5e16, 1.8e16, "default raw cond(A^T A) regression");
+    assertBetween(rawNormal.coefficientError, 9e-2, 1.5e-1, "default normal-equation error regression");
+    assertBetween(rawMgs.coefficientError, 1e-2, 2e-2, "default MGS error regression");
+    assertBetween(rawHouse.coefficientError, 4e-5, 9e-5, "default Householder error regression");
+    assert(rawNormal.coefficientError > rawHouse.coefficientError * 1000, "default normal equations should lose far more coefficient accuracy than Householder");
+    assert(rawNormal.predictionError < rawNormal.coefficientError * 1e-6, "default prediction error should hide coefficient drift");
+
+    assert(centered.condition.condA < raw.condition.condA / 1000, "centering should sharply reduce conditioning");
+    assert(cheb.condition.condA < raw.condition.condA, "Chebyshev basis should improve conditioning over raw powers");
+    assert(cheb.condition.condA < centered.condition.condA / 100, "Chebyshev basis should improve conditioning over centered powers");
+    assert(raw.warningDigits < 0, "raw normal-equation digit budget should be exhausted");
+    assert(cheb.warningDigits > 12, "Chebyshev digit budget should remain healthy");
+
+    var hardNormal = method(hard, "normal");
+    var hardMgs = method(hard, "mgs");
+    var hardHouse = method(hard, "householder");
+    assert(hard.condition.condAtA > hard.condition.condA * hard.condition.condA * 0.99, "normal equations should square the condition number");
+    assert(hardNormal.coefficientError > hardHouse.coefficientError * 100 || hardNormal.failed, "normal equations should lose much more than Householder on hard Vandermonde");
+    assert(hardMgs.coefficientError > 1, "MGS should visibly fail in the hard raw-power case");
+    assert(hardHouse.coefficientError < 1e-5, "Householder should still recover the hard raw-power coefficients");
+    assert(hardHouse.orthogonality < 1e-12, "Householder orthogonality should stay near roundoff");
+    assert(hardMgs.orthogonality > 1e-8, "MGS orthogonality should reveal the hard-case drift");
+
+    var repeat = evaluate(DEFAULTS);
+    assert(method(repeat, "householder").coefficientError === rawHouse.coefficientError, "deterministic default evaluation");
+
+    var cleaned = cleanParams({ basis: "not-a-basis", cluster: -10, degree: 99, noiseExp: 0, rows: 4, seed: 2000 });
+    assert(cleaned.basis === DEFAULTS.basis, "invalid basis falls back to default");
+    assert(cleaned.cluster === 0, "cluster clamps low");
+    assert(cleaned.degree === 17, "degree clamps high");
+    assert(cleaned.noiseExp === -4, "noise exponent clamps high");
+    assert(cleaned.rows === 24, "rows clamp low");
+    assert(cleaned.seed === 997, "seed clamps high");
+
     return {
+      basisCond: {
+        centered: Number(centered.condition.condA.toPrecision(4)),
+        chebyshev: Number(cheb.condition.condA.toPrecision(4)),
+        raw: Number(raw.condition.condA.toPrecision(4))
+      },
       chebyshevCond: Number(cheb.condition.condA.toPrecision(4)),
+      checked: checked,
+      defaultErrors: {
+        householder: compactNumber(rawHouse.coefficientError, 3),
+        mgs: compactNumber(rawMgs.coefficientError, 3),
+        normal: compactNumber(rawNormal.coefficientError, 3)
+      },
       hard: hard.methods.map(function (row) {
-        return [row.key, Number(row.coefficientError.toPrecision(4)), Number(row.residual.toPrecision(4))];
+        return {
+          coefficientError: compactNumber(row.coefficientError, 4),
+          method: row.key,
+          residual: compactNumber(row.residual, 4)
+        };
       }),
+      ok: true,
       rawCond: Number(raw.condition.condA.toPrecision(4))
     };
   }
 
   var api = {
+    DEFAULTS: DEFAULTS,
     audit: audit,
     cleanParams: cleanParams,
     evaluate: evaluate,

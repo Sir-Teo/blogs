@@ -208,9 +208,10 @@ algorithm.
     Deterministic browser experiment. The simulator knows the generating
     coefficients. The solvers see only the design matrix and response vector.
     The condition estimate is computed from the Gram matrix for visualization.
+    The same JavaScript file exposes a deterministic audit for the claims below.
   </p>
 </div>
-<script defer src="{{ '/assets/js/least-squares-qr-lab.js?v=20260616a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/least-squares-qr-lab.js?v=20260616b' | relative_url }}"></script>
 
 The default setting is intentionally mean but not exotic: degree 11, raw powers,
 clustered points, and tiny response noise.
@@ -232,6 +233,14 @@ normal equations          1.18e-1
 modified Gram-Schmidt     1.46e-2
 Householder QR            6.32e-5
 ```
+
+The reproducibility hook is deliberately part of the artifact rather than a
+separate notebook. Running `LeastSquaresQrLab.audit()` under Node executes 652
+deterministic checks: shape invariants, the displayed
+$$\kappa(A^T A)=\kappa(A)^2$$ identity, the default error regression above, the
+basis-conditioning drop, a hard raw-power case where Cholesky fails, and input
+clamping. If a future edit changes the numerical story, the audit should fail
+before the post ships.
 
 Push **Cluster near 1** higher and raise **Degree**. In the harder audit case,
 the normal-equation Cholesky factorization fails, modified Gram-Schmidt returns
