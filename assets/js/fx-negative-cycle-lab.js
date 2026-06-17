@@ -138,6 +138,12 @@
     return names.join(" -> ");
   }
 
+  function scenarioNodes(scenario) {
+    var cycle = (scenario && scenario.cycle ? scenario.cycle : []).slice();
+    if (cycle.length > 1 && cycle[0] === cycle[cycle.length - 1]) cycle.pop();
+    return cycle.map(function (name) { return CURRENCIES.indexOf(name); }).filter(function (index) { return index >= 0; });
+  }
+
   function buildMarket(rawParams) {
     var params = cleanParams(rawParams);
     var scenario = SCENARIOS[params.scenario];
@@ -204,6 +210,17 @@
       shockBps: shockBps,
       sumWeight: sumWeight
     };
+  }
+
+  function namedScenarioCycle(market) {
+    var nodes = scenarioNodes(market.scenario);
+    var edges = [];
+    nodes.forEach(function (from, index) {
+      var to = nodes[(index + 1) % nodes.length];
+      var edge = market.byPair[from + "|" + to];
+      if (edge) edges.push(edge);
+    });
+    return multiplyCycle(edges);
   }
 
   function enumerateCycles(market) {
@@ -323,6 +340,7 @@
     var best = cycles[0];
     var bf = bellmanFord(market);
     var chosen = best || bf.cycle || null;
+    var namedCycle = namedScenarioCycle(market);
     var status = chosen && chosen.marginBps > 1e-6 ? "arbitrage" : "clean";
     var product = chosen ? chosen.product : 1;
     var proceeds = market.params.size * product;
@@ -333,6 +351,8 @@
       cycles: cycles,
       frontier: sweep,
       market: market,
+      namedBreakEvenGapBps: namedCycle.costBps,
+      namedCycle: namedCycle,
       params: market.params,
       proceeds: proceeds,
       profit: proceeds - market.params.size,
@@ -693,6 +713,7 @@
         metric("margin", fmt(state.bestCycle.marginBps, 2) + " bps", tone),
         metric("product", fmt(state.bestCycle.product, 6), tone),
         metric("profit", fmtMoney(state.profit), state.profit > 0 ? "bad" : "good"),
+        metric("gap threshold", state.params.scenario === "clean" ? "n/a" : fmt(state.namedBreakEvenGapBps, 1) + " bps", state.params.gapBps > state.namedBreakEvenGapBps ? "bad" : "good"),
         metric("BF witness", state.bellmanFord.hasNegativeCycle ? "yes" : "no", state.bellmanFord.hasNegativeCycle ? "bad" : "good"),
         metric("passes", String(state.bellmanFord.passes.length))
       ].join("");
@@ -761,9 +782,20 @@
     }
     function checkState(state, label) {
       checkMarket(state.market, label);
+      var expectedNodes = scenarioNodes(state.scenario);
       check(state.bestCycle && state.bestCycle.edges.length >= 2, label + " should expose a best cycle");
       check(cycleClosed(state.bestCycle), label + " best cycle should be closed and ordered");
       check(state.bestCycle.edges.length <= CURRENCIES.length, label + " best cycle should be simple");
+      check(state.namedCycle && state.namedCycle.edges.length === expectedNodes.length, label + " named scenario cycle should use every scenario edge once");
+      check(cycleClosed(state.namedCycle), label + " named scenario cycle should be closed and ordered");
+      check(near(state.namedCycle.product, Math.exp((state.namedCycle.shockBps - state.namedCycle.costBps) / 10000), 1e-12), label + " named cycle product should match analytic gap-cost formula");
+      check(near(state.namedCycle.sumWeight, (state.namedCycle.costBps - state.namedCycle.shockBps) / 10000, 1e-12), label + " named cycle weight should match analytic cost-gap formula");
+      check(near(state.namedBreakEvenGapBps, state.namedCycle.costBps, 1e-12), label + " named break-even gap should equal executable costs");
+      if (state.params.scenario === "clean") {
+        check(near(state.namedCycle.shockBps, 0, 1e-12), label + " clean sheet should not inject quote-gap shock");
+      } else {
+        check(near(state.namedCycle.shockBps, state.params.gapBps, 1e-12), label + " named cycle shock should sum to the quote-gap knob");
+      }
       var product = 1;
       var sumWeight = 0;
       state.bestCycle.edges.forEach(function (edge) {

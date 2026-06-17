@@ -297,12 +297,12 @@ For a larger graph, you would not enumerate everything in the hot path.
   <p class="fx-cycle-lab__note">
     Toy executable quote sheet, not a trading system. It ignores queue position,
     rejected fills, credit limits, last-look, settlement risk, inventory, and
-    venue-specific latency. The audit checks the graph identity and the detector,
-    not market feasibility.
+    venue-specific latency. The audit checks the graph identity, detector, and
+    analytic quote-gap threshold, not market feasibility.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/fx-negative-cycle-lab.js?v=20260617b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fx-negative-cycle-lab.js?v=20260617c' | relative_url }}"></script>
 
 With the default settings, the best cycle is:
 
@@ -312,7 +312,8 @@ USD -> EUR -> JPY -> USD
 
 The executable product is about `1.001665`, or roughly `16.65` basis points
 before any risks outside the toy model. Starting with `$10,000`, that is about
-`$16.65` in modeled profit.
+`$16.65` in modeled profit. The named loop's displayed break-even gap is about
+`25.4` basis points: below that, its own costs damp the injected quote gap.
 
 Move **trade cost** upward and the red loop disappears. Move **quote gap**
 downward and it disappears too. Switch to **arbitrage-free sheet** and the gap
@@ -475,9 +476,10 @@ optional quote-gap shocks along a named cycle
 negative-log graph weights
 Bellman-Ford predecessor recovery
 brute-force simple-cycle enumeration for audit
+analytic break-even gap for the named injected loop
 ```
 
-The current Node audit runs `28,489` checks across clean, stale-cross,
+The current Node audit runs `29,353` checks across clean, stale-cross,
 dealer-gap, and funding-loop sheets. It checks:
 
 ```text
@@ -490,6 +492,8 @@ Bellman-Ford agrees with brute-force cycle enumeration
 the final Bellman-Ford pass is exactly the negative-cycle signal
 extracted Bellman-Ford cycles multiply above one
 product-rate and negative-log ledgers agree
+the named loop product equals exp((gap - costs) / 10000)
+the named loop's displayed threshold equals its executable costs
 higher per-leg costs do not improve the best cycle
 larger injected quote gaps do not reduce the best margin
 zero-cost zero-gap sheets round-trip to one
