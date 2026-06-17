@@ -604,7 +604,8 @@
       ["strength", params.strength + "%"],
       ["threshold", formatNumber(params.threshold, 2)],
       ["trials", params.trials],
-      ["huberDelta", formatNumber(params.huberDelta, 2)]
+      ["huberDelta", formatNumber(params.huberDelta, 2)],
+      ["seed", params.seed]
     ].forEach(function (pair) {
       var node = root.querySelector('[data-value="' + pair[0] + '"]');
       if (node) node.textContent = String(pair[1]);
