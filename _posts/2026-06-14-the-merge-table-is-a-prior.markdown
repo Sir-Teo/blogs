@@ -1,44 +1,46 @@
 ---
 layout: post
-title: "Tokenizers Set the Cover Charge"
-description: "A tokenizer is not a neutral parser. A BPE merge table spends vocabulary on strings that were common in its reference corpus, changing the computational price of future text."
+title: "The Tokenizer Comes With a Phrasebook"
+description: "A BPE merge table is a learned phrasebook from a reference corpus. It gives familiar strings short names and leaves unfamiliar strings to spell themselves out."
 date: 2026-06-14 01:24:00 -0400
 categories: ai-systems
 tags: [tokenization, bpe, language-models, compression, tokenizer-free-models, representation-learning]
-excerpt: "Subword tokenization solved the open-vocabulary problem by making rare strings decomposable. It also made a quieter bargain: familiar strings get cheap coordinates, unfamiliar strings pay in more tokens."
+excerpt: "Subword tokenization keeps rare strings representable, but the merge table still decides which future strings get compact names."
 ---
 
-The first hidden model in a language model is often not a neural network.
+Before the transformer reads a sentence, another learned object has already
+made a decision.
 
-It is the tokenizer.
+It decides which spans are familiar enough to name.
 
-We usually talk about tokenization as preprocessing, a little piece of plumbing
-before the serious part begins. Text goes in, token ids come out, the transformer
-does the learning. This is a useful engineering boundary. It is also a bad
-mental boundary.
+That object is the tokenizer.
 
-A tokenizer is a learned representation of a corpus. Its vocabulary says which
-strings deserve their own coordinates. Its merge table says which adjacent
-patterns were common enough to be fused into larger units. When a prompt arrives
-later, the tokenizer does not merely "parse" it. It prices it.
+We often describe tokenization as preprocessing: text goes in, token ids come
+out, and the model begins. As an engineering boundary, that is useful. As a
+mental boundary, it hides too much.
+
+A tokenizer is a phrasebook learned from a corpus. Its vocabulary says which
+strings have compact names. Its merge table says which adjacent patterns were
+common enough to be fused. When a future prompt arrives, the tokenizer does not
+only parse it. It asks whether the phrasebook already knows how to say it.
 
 ```text
 same characters
 different merge table
 different sequence length
-different computational bill
+different route through the model
 ```
 
-That is the sense in which the merge table is a prior. Not a prior over truth,
-and not a semantic theory of language. It is a prior over the strings that the
-model will see cheaply.
+That is the sense in which the merge table is a prior. It is not a prior over
+truth, and it is not a full semantic theory of language. It is a prior over
+which strings get compact coordinates.
 
-## A Compression Trick Became a Doorway
+## How the Phrasebook Is Written
 
 Byte pair encoding started life as a compression algorithm. Philip Gage's 1994
 algorithm repeatedly replaced a frequent adjacent byte pair with a new symbol,
 recording a table so the original data could be reconstructed.[^gage] The
-principle is almost embarrassingly local:
+principle is local:
 
 ```text
 find a frequent pair
@@ -47,8 +49,8 @@ repeat
 ```
 
 For compression, this is a way to trade a dictionary for a shorter message. For
-language models, the trade is stranger. The dictionary becomes an embedding
-table. The shorter message becomes a shorter sequence of neural computation.
+language models, the dictionary becomes an embedding table, and the shorter
+message becomes a shorter sequence of neural computation.
 
 Sennrich, Haddow, and Birch adapted BPE-style subword units to neural machine
 translation to address the open-vocabulary problem.[^sennrich] A word-level
@@ -63,14 +65,22 @@ language-specific tokenization rules are not neutral either. If the point is an
 end-to-end text model, the text boundary itself deserves suspicion.
 
 The success of subword tokenization is real. It made fixed-vocabulary neural
-models more robust to rare words and open text. But every solution leaves a
+models more robust to rare words and open text. But every phrasebook has a
 shape. A BPE tokenizer can spell any string from small pieces, but it does not
 spell every string with the same number of pieces.
 
-The corpus that trained the tokenizer leaves a bill of materials for future
+The choice of phrasebook also matters beyond raw compression. Bostrom and
+Durrett compared BPE with unigram language-model tokenization for masked
+language-model pretraining and found that unigram tokenization often aligned
+better with morphology while avoiding some failures of BPE's greedy
+construction.[^bostrom] That is a useful warning for this post: the lab is about
+BPE because BPE is inspectable, not because BPE is the only possible
+subword prior.
+
+The corpus that trained the tokenizer leaves a pronunciation guide for future
 text.
 
-## Vocabulary Slots Are Subsidies
+## What a Merge Buys
 
 Suppose a raw-text BPE trainer starts with characters as symbols. At step \(k\),
 it chooses the adjacent pair
@@ -86,14 +96,14 @@ symbol.
 Ignoring overlap details, a merge with count \(c\) saves about \(c\) tokens on
 the training corpus. The early merges usually buy obvious fragments: spaces with
 common letters, suffixes, punctuation patterns, pieces of frequent words. Later
-merges buy more specialized phrases. The merge budget is finite, so each merge
-has an opportunity cost. Spending a token on `key_cache` means not spending that
-rank on something else.
+merges buy more specialized phrases. The merge budget is finite, so every phrase
+admitted to the book displaces another possible phrase. Spending a rank on
+`key_cache` means not spending it on something else.
 
-This turns tokenization into a quiet resource-allocation problem:
+This turns tokenization into a quiet selection policy:
 
 ```text
-vocabulary slots buy shorter sequences for a reference distribution
+the reference corpus chooses which future strings get short names
 ```
 
 For dense attention, shortening a sequence from \(n\) to \(m\) changes the
@@ -104,13 +114,13 @@ embeddings receive updates, and how strings are broken across positions.
 
 None of this means a tokenizer determines what a model can understand. Neural
 networks are annoyingly good at learning around bad interfaces. But an interface
-can still make one part of the world cheap and another part expensive.
+can still make one part of the world direct and another part circuitous.
 
 Numbers, code identifiers, logs, names, romanized words, low-resource languages,
 and domain-specific notation are exactly where this matters. They are often
 compositional to a human and fragmented to a tokenizer trained elsewhere.
 
-## Make Two Tokenizers Argue
+## Lab: Two Phrasebooks, One Probe
 
 The lab below trains two tiny BPE tokenizers in the browser. Both use the same
 merge budget and the same greedy algorithm. The only difference is the reference
@@ -124,7 +134,10 @@ string.
 This is not a production tokenizer. It is deliberately smaller and more
 inspectable: raw text, deterministic training rows, character initialization,
 greedy pair merges. The point is to make one mechanism visible. Change the
-reference distribution, and the same future text receives a different price.
+reference distribution, and the same future text receives a different spelling.
+The lab's exported audit checks that merge encoding preserves the original
+string, merge budgets are respected, larger merge budgets do not increase the
+weighted corpus token count, and domain-heavy corpora shorten matching probes.
 
 <style>
   .bpe-lab {
@@ -138,6 +151,7 @@ reference distribution, and the same future text receives a different price.
   }
 
   .bpe-lab__controls {
+    contain: paint;
     display: grid;
     gap: 0.85rem 1rem;
     grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
@@ -166,7 +180,43 @@ reference distribution, and the same future text receives a different price.
   }
 
   .bpe-lab__controls input[type="range"] {
+    appearance: none;
+    background: transparent;
     border: 0;
+    contain: paint;
+    display: block;
+    height: 1.35rem;
+    overflow: hidden;
+  }
+
+  .bpe-lab__controls input[type="range"]::-webkit-slider-runnable-track {
+    background: #cbd5e1;
+    border-radius: 999px;
+    height: 0.36rem;
+  }
+
+  .bpe-lab__controls input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    background: #0f766e;
+    border: 0;
+    border-radius: 999px;
+    height: 0.95rem;
+    margin-top: -0.3rem;
+    width: 0.95rem;
+  }
+
+  .bpe-lab__controls input[type="range"]::-moz-range-track {
+    background: #cbd5e1;
+    border-radius: 999px;
+    height: 0.36rem;
+  }
+
+  .bpe-lab__controls input[type="range"]::-moz-range-thumb {
+    background: #0f766e;
+    border: 0;
+    border-radius: 999px;
+    height: 0.95rem;
+    width: 0.95rem;
   }
 
   .bpe-lab__controls select {
@@ -423,33 +473,33 @@ reference distribution, and the same future text receives a different price.
     cheaper under that crude compute proxy.
   </p>
 </div>
-<script defer src="{{ '/assets/js/bpe-prior-lab.js?v=20260614a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bpe-prior-lab.js?v=20260617a' | relative_url }}"></script>
 
 At the default setting, the code probe goes from 42 pieces under the general
 tokenizer to 33 under the domain tokenizer. The crude dense-attention proxy
 drops to about 0.62x. The market log only moves from 50 to 48 pieces, and the
 rare string stays at 41 either way. The merge table helped where the reference
-corpus had bought relevant fragments. It did not become a universal decoder.
+corpus had learned relevant fragments. It did not become a universal phrasebook.
 
-Try three settings.
+Try three inspections.
 
 Raise **Code share** and keep the code probe selected. The general tokenizer can
 spell `attention_scores` and `key_cache`, but it spends many smaller pieces. The
-domain tokenizer starts buying underscores, suffixes, and identifier fragments.
-The same string becomes shorter.
+domain tokenizer starts naming underscores, suffixes, and identifier fragments.
+The same string needs fewer syllables.
 
 Now switch to the market-log probe and raise **Number/log share**. The advantage
 moves. Date fragments, decimal patterns, and field-name syntax become worth
-merging. Push the corpus toward code again and the market string can get more
-expensive than it was under the general tokenizer. The merge table cannot make
-everything cheap with a fixed budget.
+merging. Push the corpus toward code again and the market string may fragment
+more than it did under the general tokenizer. A fixed phrasebook cannot make
+every dialect compact.
 
 Finally, use the rare-string probe. It does not become magically efficient just
 because the tokenizer has seen "technical" text. A BPE table generalizes through
 shared adjacent fragments, not through understanding. If the important pattern
 is not frequent enough to buy merges, it falls back to smaller units.
 
-## The Tax Is Not Only Token Count
+## Token Count Is Only the Obvious Symptom
 
 Token count is the easiest thing to measure, so it is the thing the lab shows.
 But the representational effect is broader.
@@ -464,15 +514,18 @@ Consider identifiers. `retry_count` is not just the characters `r e t r y _ c`.
 In code, the underscore is a boundary, `retry` is a concept, and `count` is a
 role. A tokenizer trained on prose may see the underscore as punctuation noise.
 A tokenizer trained on code may spend merges that preserve the idiom. Neither
-choice is universally correct. The question is whether the chosen coordinate
-system matches the task distribution.
+choice is universally correct. The question is whether the phrasebook matches
+the task distribution.
 
 Numbers are worse in a different way. A decimal string is simultaneously text,
 syntax, and magnitude. Splitting it into arbitrary chunks can make arithmetic
 look like spelling. Some models can learn the patterns anyway, but the tokenizer
 has changed the path. It decides which chunks receive atomic embeddings, where
 positional boundaries fall, and how many recurrent decoding decisions are
-needed to emit or inspect the number.
+needed to emit or inspect the number. Singh and Strouse's arithmetic study makes
+this concrete: changing number tokenization direction changed frontier-model
+arithmetic behavior, and some error patterns followed the tokenization rather
+than the mathematical expression alone.[^numbers]
 
 This is why tokenization audits should be empirical. For a workload you care
 about, measure:
@@ -483,9 +536,9 @@ about, measure:
 4. how much the answer changes under another tokenizer or byte-level baseline.
 
 The important comparison is not "does the tokenizer work on average?" It is
-"which parts of my distribution are paying the tax?"
+"which parts of my distribution are being forced to spell themselves out?"
 
-## The Token-Free Temptation
+## Refusing the Phrasebook
 
 One response is to remove the learned vocabulary boundary altogether.
 
@@ -503,13 +556,13 @@ patterns over character triplets, aiming to avoid a reference-corpus tokenizer
 while reducing the embedding and output-head burden.[^tfree]
 
 The moral is not that subword tokenizers are obsolete. They remain a very good
-engineering compromise. A byte-level model may pay a longer-sequence tax; a
-subword model may pay a reference-corpus tax. The right question is not whether
-there is a free representation. There is not.
+engineering compromise. A byte-level model may pay with longer sequences; a
+subword model may pay with reference-corpus assumptions. The right question is
+not whether there is a free representation. There is not.
 
-The right question is which bill you want to itemize.
+The right question is which assumptions you want to make visible.
 
-## Treat the Tokenizer Like Data
+## Provenance Questions
 
 It is useful to treat a tokenizer the way we treat a training set, a benchmark,
 or a labeling policy: as a dataset artifact with assumptions.
@@ -521,17 +574,17 @@ words, or tokens when comparing systems.
 
 This matters even when model weights are frozen. Retrieval chunks are usually
 budgeted in tokens. Prompt templates are budgeted in tokens. Tool traces,
-source code, logs, citations, tables, and long-context documents are all priced
-by a tokenizer before the model sees them. A ten percent token-count difference
-is not an aesthetic detail when the context window, attention kernel, cache, and
-billing system are all token-indexed.
+source code, logs, citations, tables, and long-context documents are all routed
+through a tokenizer before the model sees them. A ten percent token-count
+difference is not an aesthetic detail when the context window, attention kernel,
+cache, and billing system are all token-indexed.
 
 The most dangerous phrase is "just preprocessing."
 
 Preprocessing is where the world is discretized. Discretization is a model.
 
 The merge table remembers a corpus. Then every future string negotiates with
-that memory.
+that memory, one piece at a time.
 
 ## Primary Sources
 
@@ -540,6 +593,10 @@ that memory.
 [^sennrich]: Rico Sennrich, Barry Haddow, and Alexandra Birch, "Neural Machine Translation of Rare Words with Subword Units," ACL 2016. [ACL Anthology](https://aclanthology.org/P16-1162/), [arXiv](https://arxiv.org/abs/1508.07909).
 
 [^sentencepiece]: Taku Kudo and John Richardson, "SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing," EMNLP 2018 System Demonstrations. [ACL Anthology](https://aclanthology.org/D18-2012/), [arXiv](https://arxiv.org/abs/1808.06226).
+
+[^bostrom]: Kaj Bostrom and Greg Durrett, "Byte Pair Encoding is Suboptimal for Language Model Pretraining," Findings of EMNLP 2020. [ACL Anthology](https://aclanthology.org/2020.findings-emnlp.414/), [arXiv](https://arxiv.org/abs/2004.03720).
+
+[^numbers]: Aaditya K. Singh and DJ Strouse, "Tokenization counts: the impact of tokenization on arithmetic in frontier LLMs," arXiv 2024. [arXiv](https://arxiv.org/abs/2402.14903).
 
 [^canine]: Jonathan H. Clark, Dan Garrette, Iulia Turc, and John Wieting, "Canine: Pre-training an Efficient Tokenization-Free Encoder for Language Representation," TACL 2022. [ACL Anthology](https://aclanthology.org/2022.tacl-1.5/), [arXiv](https://arxiv.org/abs/2103.06874).
 
