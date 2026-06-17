@@ -275,13 +275,13 @@ experiment can be audited. A real verifier would not see them.
     <span><i style="background:#7c3aed"></i> linear relation</span>
   </div>
   <p class="nonce-lab__note">
-    Deterministic toy signature experiment over q = 65537. The audit verifies
-    every generated signature equation, reused-nonce key recovery, tiny-nonce
-    dictionary recovery, linear-relation recovery, and failure of the tiny
-    dictionary against fresh wide nonces.
+    Deterministic toy signature experiment over q = 65537. The Node audit runs
+    1,148 checks: field arithmetic, signature equations, repeated-r recovery,
+    tiny-nonce dictionary hits, linear-system recovery, fresh-nonce controls,
+    and parameter sanitization.
   </p>
 </div>
-<script defer src="{{ '/assets/js/signature-nonce-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/signature-nonce-lab.js?v=20260617b' | relative_url }}"></script>
 
 Try four modes.
 

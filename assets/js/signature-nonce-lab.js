@@ -554,24 +554,166 @@
   }
 
   function audit() {
+    var checked = 0;
+    var maxEquationResidue = 0;
+    var maxDictionaryHits = 0;
+
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    function range(value, min, max) {
+      return Number.isInteger(value) && value >= min && value <= max;
+    }
+
+    function duplicateRCount(signatures) {
+      var seen = Object.create(null);
+      var duplicates = 0;
+      signatures.forEach(function (sig) {
+        if (seen[sig.r]) duplicates += 1;
+        seen[sig.r] = true;
+      });
+      return duplicates;
+    }
+
+    function equationResidue(sig, x) {
+      return mod(mulMod(sig.s, sig.k) - sig.h - mulMod(sig.r, x));
+    }
+
+    function recoveredXFrom(sig, k) {
+      return mulMod(mod(mulMod(sig.s, k) - sig.h), invMod(sig.r));
+    }
+
+    function checkSignatureState(state, label) {
+      check(state.q === Q, label + " should expose the toy prime");
+      check(state.secretX === SECRET_X, label + " should expose the toy private key for audit");
+      check(state.signatures.length === state.params.signatures, label + " should generate the requested number of signatures");
+      check(state.verified, label + " signatures should verify");
+      state.signatures.forEach(function (sig, index) {
+        check(sig.i === index, label + " signature index should be stable");
+        check(range(sig.h, 0, Q - 1), label + " message hash should live in the field");
+        check(range(sig.k, 1, Q - 1), label + " nonce should be nonzero in the field");
+        check(range(sig.r, 1, Q - 1), label + " r should be nonzero in the field");
+        check(range(sig.s, 0, Q - 1), label + " s should live in the field");
+        check(sig.r === rFromK(sig.k), label + " r should be derived from k");
+        var residue = equationResidue(sig, SECRET_X);
+        maxEquationResidue = Math.max(maxEquationResidue, residue);
+        check(residue === 0, label + " signature equation should close");
+        check(verifySignature(sig, SECRET_X), label + " verifier should accept the true key");
+        check(recoveredXFrom(sig, sig.k) === SECRET_X, label + " known nonce should recover x from one row");
+      });
+    }
+
+    function checkReuse(state, label) {
+      checkSignatureState(state, label);
+      check(duplicateRCount(state.signatures) === state.signatures.length - 1, label + " reused mode should repeat every r");
+      check(state.attack.kind === "reuse", label + " attack kind should be reuse");
+      check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " reuse should recover the private key");
+      check(state.attack.recoveredK === state.signatures[0].k, label + " reuse should recover the shared nonce");
+      var a = state.signatures[state.attack.evidence[0]];
+      var b = state.signatures[state.attack.evidence[1]];
+      var k = mulMod(mod(a.h - b.h), invMod(mod(a.s - b.s)));
+      var x = recoveredXFrom(a, k);
+      check(a.r === b.r, label + " reuse evidence should share r");
+      check(a.s !== b.s, label + " reuse evidence should have different s values");
+      check(k === state.attack.recoveredK, label + " reuse formula should reproduce recovered k");
+      check(x === state.attack.recoveredX, label + " reuse formula should reproduce recovered x");
+    }
+
+    function checkSmall(state, label) {
+      var limit = Math.pow(2, state.params.bits);
+      checkSignatureState(state, label);
+      check(state.attack.kind === "small", label + " attack kind should be small");
+      check(state.attack.limit === limit, label + " dictionary limit should match bit count");
+      check(state.attack.rows.length === state.signatures.length, label + " dictionary rows should align with signatures");
+      check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " small nonce space should recover the private key");
+      check(state.attack.hits >= state.signatures.length, label + " small nonce space should hit every generated r");
+      maxDictionaryHits = Math.max(maxDictionaryHits, state.attack.hits);
+      state.attack.rows.forEach(function (row, index) {
+        var sig = state.signatures[index];
+        check(row.i === sig.i, label + " dictionary row index should match signature");
+        check(row.tested === limit - 1, label + " dictionary tested count should match nonce space");
+        check(row.matches >= 1, label + " each tiny nonce should be found by dictionary search");
+        check(row.recoveredK === sig.k, label + " dictionary should recover the actual nonce");
+        check(row.recoveredX === SECRET_X, label + " dictionary row should recover the private key");
+        check(sig.k < limit, label + " tiny-mode nonce should live inside the advertised space");
+      });
+    }
+
+    function checkLinear(state, label) {
+      checkSignatureState(state, label);
+      check(duplicateRCount(state.signatures) === 0, label + " linear mode should not rely on repeated r");
+      check(state.attack.kind === "linear", label + " attack kind should be linear");
+      check(state.attack.success && state.attack.recoveredX === SECRET_X, label + " linear relation should recover the private key");
+      check(state.attack.recoveredK0 === 12017, label + " linear attack should recover the starting nonce");
+      state.signatures.forEach(function (sig) {
+        check(mod(state.attack.recoveredK0 + sig.i * state.params.step) === sig.k, label + " recovered k0 should predict each nonce");
+      });
+      var a = state.signatures[state.attack.evidence[0]];
+      var b = state.signatures[state.attack.evidence[1]];
+      var betaA = mod(a.i * state.params.step);
+      var betaB = mod(b.i * state.params.step);
+      var cA = mod(mulMod(a.s, betaA) - a.h);
+      var cB = mod(mulMod(b.s, betaB) - b.h);
+      var solution = solve2x2(a.r, mod(-a.s), cA, b.r, mod(-b.s), cB);
+      check(solution && solution.x === SECRET_X, label + " 2x2 system should recover x");
+      check(solution && solution.y === state.attack.recoveredK0, label + " 2x2 system should recover k0");
+    }
+
+    function checkFresh(state, label) {
+      var limit = Math.pow(2, state.params.bits);
+      checkSignatureState(state, label);
+      check(duplicateRCount(state.signatures) === 0, label + " fresh mode should not repeat r");
+      check(state.attack.kind === "fresh", label + " attack kind should be fresh");
+      check(!state.attack.success, label + " fresh mode should not recover the key under this attack model");
+      check(state.attack.hits === 0, label + " fresh nonces should not match the tiny dictionary");
+      check(state.attack.limit === limit, label + " fresh dictionary limit should match bit count");
+      state.signatures.forEach(function (sig) {
+        check(sig.k > limit, label + " fresh nonce should sit outside the tiny dictionary");
+      });
+    }
+
+    [1, 2, 3, 7, 12345, Q - 1].forEach(function (value) {
+      check(mulMod(value, invMod(value)) === 1, "modular inverse should close for " + value);
+    });
+    [0, 1, Q, Q + 1, -1, -Q - 3].forEach(function (value) {
+      check(range(mod(value), 0, Q - 1), "mod should return a field element");
+    });
+
     var reuse = evaluate({ mode: "reuse", signatures: 3 });
     var small = evaluate({ mode: "small", bits: 8, signatures: 4 });
     var linear = evaluate({ mode: "linear", signatures: 4, step: 137 });
     var fresh = evaluate({ mode: "fresh", bits: 8, signatures: 5 });
-    [reuse, small, linear, fresh].forEach(function (state) {
-      assert(state.verified, state.params.mode + " signatures should verify");
-      state.signatures.forEach(function (sig) {
-        assert(sig.r === rFromK(sig.k), state.params.mode + " r should be derived from k");
-      });
+    checkReuse(reuse, "default reuse");
+    checkSmall(small, "default small");
+    checkLinear(linear, "default linear");
+    checkFresh(fresh, "default fresh");
+
+    [2, 5, 8].forEach(function (signatures) {
+      checkReuse(evaluate({ mode: "reuse", signatures: signatures }), "reuse/" + signatures);
+      checkLinear(evaluate({ mode: "linear", signatures: signatures, step: 137 }), "linear/" + signatures);
     });
-    assert(reuse.attack.success && reuse.attack.recoveredX === SECRET_X, "reuse should recover the private key");
-    assert(small.attack.success && small.attack.recoveredX === SECRET_X, "small nonce space should recover the private key");
-    assert(linear.attack.success && linear.attack.recoveredX === SECRET_X, "linear nonce relation should recover the private key");
-    assert(!fresh.attack.success && fresh.attack.hits === 0, "fresh nonces should not match the tiny dictionary");
-    assert(invMod(7) * 7 % Q === 1, "modular inverse should work");
+    [4, 8, 12].forEach(function (bits) {
+      checkSmall(evaluate({ mode: "small", bits: bits, signatures: 4 }), "small/" + bits);
+      checkFresh(evaluate({ mode: "fresh", bits: bits, signatures: 5 }), "fresh/" + bits);
+    });
+    [1, 137, 997].forEach(function (step) {
+      checkLinear(evaluate({ mode: "linear", signatures: 5, step: step }), "linear-step/" + step);
+    });
+
+    var sanitized = cleanParams({ mode: "ghost", signatures: 99, bits: -3, step: 2000 });
+    check(sanitized.mode === DEFAULTS.mode, "sanitizer should fall back to the default mode");
+    check(sanitized.signatures === 8, "sanitizer should clamp signatures");
+    check(sanitized.bits === 4, "sanitizer should clamp tiny-space bits");
+    check(sanitized.step === 997, "sanitizer should clamp linear step");
+
     return {
+      checked: checked,
       freshHits: fresh.attack.hits,
       linearK0: linear.attack.recoveredK0,
+      maxDictionaryHits: maxDictionaryHits,
+      maxEquationResidue: maxEquationResidue,
       ok: true,
       q: Q,
       recoveredX: reuse.attack.recoveredX,
