@@ -344,10 +344,10 @@
   }
 
   function drawSignaturePanel(ctx, state, box) {
-    panel(ctx, box, "public signature rows", "r and s are visible; k and x are supposed to stay hidden");
+    panel(ctx, box, "public signature rows", "public h, r, s; lab reveals hidden k");
     var x = box.x + 16;
-    var y = box.y + 62;
-    var rowH = Math.min(25, (box.h - 92) / state.signatures.length);
+    var y = box.y + 78;
+    var rowH = Math.min(25, (box.h - 112) / state.signatures.length);
     text(ctx, "i", x, y - 20, { color: COLORS.muted, size: 10 });
     text(ctx, "h", x + 36, y - 20, { color: COLORS.muted, size: 10 });
     text(ctx, "r", x + 104, y - 20, { color: COLORS.muted, size: 10 });
