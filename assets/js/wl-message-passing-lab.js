@@ -56,7 +56,7 @@
         layout: "two-triangles",
         nodes: ["0", "1", "2", "3", "4", "5"]
       },
-      note: "Every node has two identical-looking neighbors forever, but the right graph has two triangles."
+      note: "All nodes stay 2-neighbor symmetric; the right graph has triangles."
     },
     "prism-k33": {
       label: "prism vs K3,3",
@@ -72,7 +72,7 @@
         layout: "bipartite",
         nodes: ["0", "1", "2", "3", "4", "5"]
       },
-      note: "Both graphs are connected and 3-regular, so 1-WL stays blind to the prism triangles."
+      note: "Connected and 3-regular; 1-WL stays blind to the prism triangles."
     },
     "path-cycle": {
       label: "path vs cycle",
@@ -88,7 +88,7 @@
         layout: "cycle",
         nodes: ["0", "1", "2", "3", "4", "5"]
       },
-      note: "The endpoints of the path have degree one, so the first refinement already separates the graphs."
+      note: "The path endpoints expose a degree-count mismatch at round one."
     },
     "c6-relabel": {
       label: "C6 vs relabeled C6",
@@ -104,7 +104,7 @@
         layout: "cycle",
         nodes: ["0", "1", "2", "3", "4", "5"]
       },
-      note: "A sanity check: permutation of node names changes the drawing labels, not the graph-level color histogram."
+      note: "Relabeling node names preserves the graph-level color histogram."
     }
   };
 
@@ -553,8 +553,8 @@
   function splitGraphBoxes(box, compact) {
     if (compact) {
       return [
-        { x: box.x + 18, y: box.y + 70, w: box.w - 36, h: 130 },
-        { x: box.x + 18, y: box.y + 248, w: box.w - 36, h: 130 }
+        { x: box.x + 18, y: box.y + 92, w: box.w - 36, h: 112 },
+        { x: box.x + 18, y: box.y + 260, w: box.w - 36, h: 112 }
       ];
     }
     return [
@@ -593,10 +593,10 @@
   }
 
   function drawTapePanel(ctx, state, box, compact) {
-    panel(ctx, box, "The 1-WL tape", "Each column is one refinement round; top bar is left graph, bottom bar is right graph.");
+    panel(ctx, box, "The 1-WL tape", "Top bar is left graph; bottom bar is right graph.");
     var rounds = state.refinement.rounds;
     var innerX = box.x + 18;
-    var innerY = box.y + (compact ? 72 : 78);
+    var innerY = box.y + (compact ? 84 : 78);
     var innerW = box.w - 36;
     var colGap = 8;
     var colW = Math.max(28, (innerW - colGap * (rounds.length - 1)) / rounds.length);
@@ -614,13 +614,13 @@
       fillText(ctx, round.equal ? "=" : "x", x + colW / 2, innerY + 61, round.equal ? COLORS.good : COLORS.bad, 12, 850, "center");
     });
     var footer = state.refinement.firstDifferenceRound == null
-      ? "No separating round before stabilization: a sum/readout over colors stays identical."
-      : "First separating round: " + state.refinement.firstDifferenceRound + ". The color histogram becomes a graph invariant with different counts.";
+      ? (compact ? "No separating round before stabilization." : "No separating round before stabilization: a sum/readout over colors stays identical.")
+      : (compact ? "First separating round: " + state.refinement.firstDifferenceRound + "." : "First separating round: " + state.refinement.firstDifferenceRound + ". The color histogram becomes a graph invariant with different counts.");
     wrapText(ctx, footer, box.x + 18, box.y + box.h - 42, box.w - 36, 15, 2);
   }
 
   function drawHistPanel(ctx, state, box) {
-    panel(ctx, box, "What message passing sees", "A shared-initial-feature MPNN can only build node states from these recursive neighborhood multisets.");
+    panel(ctx, box, "What message passing sees", "Selected-round color counts after pooling node states.");
     var hist = histogramKeys(state.selected.leftHist, state.selected.rightHist);
     var maxCount = Math.max.apply(null, hist.map(function (key) {
       return Math.max(state.selected.leftHist[key] || 0, state.selected.rightHist[key] || 0);
