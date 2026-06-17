@@ -78,12 +78,16 @@ skeleton, it:
 ```text
 enumerates every acyclic orientation
 keeps only orientations with the same v-structures as the drawn DAG
+cross-checks that class with an exact d-separation oracle
 marks an edge as compelled only if every surviving DAG agrees on its direction
 optionally adds one perfect intervention and recomputes the class
 ```
 
 This is deliberately brute force. That is the point. The picture is not a
-metaphor for the theorem; it is a tiny verifier for it.
+metaphor for the theorem; it is a tiny verifier for it. The audit does not
+merely restate the skeleton/v-structure rule. It enumerates
+conditional-independence statements over the shown variables and checks that the
+two views pick the same surviving DAGs.
 
 <style>
   .mec-lab {
@@ -256,13 +260,13 @@ metaphor for the theorem; it is a tiny verifier for it.
     <span><i style="background:#d97706"></i> collider witness</span>
   </div>
   <p class="mec-lab__note">
-    Exact finite enumeration for small DAGs. The audit checks acyclicity,
-    skeleton/v-structure equality, CPDAG edge agreement, known class sizes for
-    chains, colliders, and complete triangles, and monotone refinement under
-    the displayed perfect-intervention model.
+    Exact finite enumeration for small DAGs. Its 22-case audit checks
+    acyclicity, d-separation equivalence, CPDAG edge unanimity, scorecard class
+    sizes, and monotone refinement under the displayed perfect-intervention
+    model.
   </p>
 </div>
-<script defer src="{{ '/assets/js/markov-equivalence-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/markov-equivalence-lab.js?v=20260617b' | relative_url }}"></script>
 
 Start with **three-node chain** and **observed only**. The class has three
 DAGs. The CPDAG has two gray links because the conditional independences do not
@@ -330,6 +334,25 @@ the CPDAG is the causal graph
 ```
 
 Those are separate contracts.
+
+## Reproducibility Notes
+
+The executable artifact is
+[`assets/js/markov-equivalence-lab.js`]({{ '/assets/js/markov-equivalence-lab.js' | relative_url }}).
+
+Its self-test runs 22 scenario/intervention cases and performs 687 local
+checks:
+
+```text
+all displayed orientations are acyclic DAGs
+the skeleton/v-structure criterion matches an independent d-separation oracle
+every accepted orientation has the same observational/interventional CI signature
+every rejected orientation differs from that CI signature
+directed CPDAG edges are unanimous across the surviving class
+undirected CPDAG edges occur in both directions across the surviving class
+single-node interventions refine, rather than enlarge, the observational class
+displayed class sizes match fixed regression anchors for all graph/target pairs
+```
 
 ## A Useful Reporting Habit
 

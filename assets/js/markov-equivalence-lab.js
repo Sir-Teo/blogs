@@ -126,6 +126,140 @@
     return parents;
   }
 
+  function directedEdgeSet(edges) {
+    var out = {};
+    edges.forEach(function (edge) {
+      out[edgeLabel(edge)] = true;
+    });
+    return out;
+  }
+
+  function undirectedNeighbors(ids, edges) {
+    var neighbors = {};
+    ids.forEach(function (id) { neighbors[id] = []; });
+    edges.forEach(function (edge) {
+      neighbors[edge[0]].push(edge[1]);
+      neighbors[edge[1]].push(edge[0]);
+    });
+    ids.forEach(function (id) { neighbors[id].sort(); });
+    return neighbors;
+  }
+
+  function simplePaths(ids, edges, start, end) {
+    var neighbors = undirectedNeighbors(ids, edges);
+    var paths = [];
+    var seen = {};
+    seen[start] = true;
+    function walk(node, path) {
+      if (node === end) {
+        paths.push(path.slice());
+        return;
+      }
+      neighbors[node].forEach(function (next) {
+        if (seen[next]) return;
+        seen[next] = true;
+        path.push(next);
+        walk(next, path);
+        path.pop();
+        delete seen[next];
+      });
+    }
+    walk(start, [start]);
+    return paths;
+  }
+
+  function ancestorsOf(ids, edges, targets) {
+    var parents = parentMap(ids, edges);
+    var seen = {};
+    var stack = targets.slice();
+    while (stack.length) {
+      var id = stack.pop();
+      if (seen[id]) continue;
+      seen[id] = true;
+      parents[id].forEach(function (parent) { stack.push(parent); });
+    }
+    return seen;
+  }
+
+  function arraySet(values) {
+    var out = {};
+    values.forEach(function (value) { out[value] = true; });
+    return out;
+  }
+
+  function pathActive(path, edgeSet, conditioned, conditionedAncestors) {
+    for (var i = 1; i < path.length - 1; i += 1) {
+      var left = path[i - 1];
+      var mid = path[i];
+      var right = path[i + 1];
+      var collider = edgeSet[edgeLabel([left, mid])] && edgeSet[edgeLabel([right, mid])];
+      if (collider) {
+        if (!conditionedAncestors[mid]) return false;
+      } else if (conditioned[mid]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function dConnectedPair(ids, edges, left, right, conditioning) {
+    var conditioned = arraySet(conditioning);
+    var conditionedAncestors = ancestorsOf(ids, edges, conditioning);
+    var edgeSet = directedEdgeSet(edges);
+    return simplePaths(ids, edges, left, right).some(function (path) {
+      return pathActive(path, edgeSet, conditioned, conditionedAncestors);
+    });
+  }
+
+  function dSeparatedSets(ids, edges, leftSet, rightSet, conditioning) {
+    for (var i = 0; i < leftSet.length; i += 1) {
+      for (var j = 0; j < rightSet.length; j += 1) {
+        if (dConnectedPair(ids, edges, leftSet[i], rightSet[j], conditioning)) return false;
+      }
+    }
+    return true;
+  }
+
+  function idsFromMask(ids, mask) {
+    return ids.filter(function (_id, index) { return mask & (1 << index); });
+  }
+
+  function maskLabel(ids, mask) {
+    return idsFromMask(ids, mask).join(",");
+  }
+
+  function dSeparationSignature(ids, edges) {
+    var full = (1 << ids.length) - 1;
+    var statements = [];
+    for (var leftMask = 1; leftMask <= full; leftMask += 1) {
+      for (var rightMask = leftMask + 1; rightMask <= full; rightMask += 1) {
+        if (leftMask & rightMask) continue;
+        var restMask = full & ~(leftMask | rightMask);
+        var condMask = restMask;
+        while (true) {
+          var left = idsFromMask(ids, leftMask);
+          var right = idsFromMask(ids, rightMask);
+          var conditioning = idsFromMask(ids, condMask);
+          if (dSeparatedSets(ids, edges, left, right, conditioning)) {
+            statements.push(maskLabel(ids, leftMask) + " _||_ " + maskLabel(ids, rightMask) + " | " + (condMask ? maskLabel(ids, condMask) : "empty"));
+          }
+          if (condMask === 0) break;
+          condMask = (condMask - 1) & restMask;
+        }
+      }
+    }
+    return statements.sort();
+  }
+
+  function familyDsepSignature(ids, edges, intervention) {
+    var target = intervention || "none";
+    var parts = ["obs:" + dSeparationSignature(ids, edges).join(";")];
+    if (target !== "none") {
+      parts.push("do(" + target + "):" + dSeparationSignature(ids, removeIncoming(edges, [target])).join(";"));
+    }
+    return parts.join(" || ");
+  }
+
   function isAcyclic(ids, edges) {
     var indeg = {};
     var next = {};
@@ -265,6 +399,7 @@
     var v = vStructures(ids, scenario.edges);
     var rows = classStats(scenario, params.intervention);
     return {
+      ciStatements: dSeparationSignature(ids, scenario.edges),
       currentClass: currentClass,
       currentCpdag: currentGraph,
       fingerprint: {
@@ -567,7 +702,8 @@
         metric("after intervention", String(state.currentClass.length), state.currentClass.length < state.obsClass.length ? "good" : ""),
         metric("compelled edges", String(compelled), compelled ? "good" : ""),
         metric("reversible edges", String(reversible), reversible ? "warn" : "good"),
-        metric("v-structures", String(state.fingerprint.vStructures.length))
+        metric("v-structures", String(state.fingerprint.vStructures.length)),
+        metric("CI facts", String(state.ciStatements.length))
       ].join("");
     }
     draw(root, state);
@@ -597,32 +733,102 @@
   }
 
   function audit() {
-    var chain = evaluate({ scenario: "chain", intervention: "none" });
-    var chainB = evaluate({ scenario: "chain", intervention: "B" });
-    var collider = evaluate({ scenario: "collider", intervention: "none" });
-    var triangle = evaluate({ scenario: "triangle", intervention: "none" });
-    var diamond = evaluate({ scenario: "diamond", intervention: "D" });
+    var cases = 0;
+    var checked = 0;
+    var rejectedOrientations = 0;
+    var summary = {};
+    var expectedClassSizes = {
+      chain: { none: 3, A: 1, B: 1, C: 2 },
+      collider: { none: 1, A: 1, B: 1, C: 1 },
+      diamond: { none: 3, A: 1, B: 2, C: 2, D: 3 },
+      frontdoor: { none: 3, W: 1, X: 1, Y: 2, Z: 3 },
+      triangle: { none: 6, A: 2, B: 1, C: 2 }
+    };
+
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    function hasDirectedEdge(edges, from, to) {
+      return edges.some(function (edge) { return edge[0] === from && edge[1] === to; });
+    }
+
+    function orientationSet(classEdges) {
+      var out = {};
+      classEdges.forEach(function (edges) { out[orientText(edges)] = true; });
+      return out;
+    }
+
     Object.keys(SCENARIOS).forEach(function (name) {
-      var state = evaluate({ scenario: name, intervention: "none" });
-      var sig = familySignature(nodeIds(state.scenario), state.scenario.edges, "none");
-      state.obsClass.forEach(function (edges) {
-        assert(isAcyclic(nodeIds(state.scenario), edges), name + " candidate should be acyclic");
-        assert(familySignature(nodeIds(state.scenario), edges, "none") === sig, name + " candidate should match observational signature");
+      var scenario = SCENARIOS[name];
+      var ids = nodeIds(scenario);
+      var allDags = enumerateDags(scenario);
+      var obsSet = orientationSet(equivalentClass(scenario, "none"));
+      var targets = ["none"].concat(ids);
+      var maxClassSize = 0;
+      var minClassSize = Infinity;
+
+      check(allDags.length > 0, name + " should have at least one acyclic orientation");
+      targets.forEach(function (target) {
+        var state = evaluate({ scenario: name, intervention: target });
+        var targetSig = familySignature(ids, scenario.edges, target);
+        var targetDsepSig = familyDsepSignature(ids, scenario.edges, target);
+        var currentSet = orientationSet(state.currentClass);
+
+        cases += 1;
+        maxClassSize = Math.max(maxClassSize, state.currentClass.length);
+        minClassSize = Math.min(minClassSize, state.currentClass.length);
+
+        check(state.currentClass.length === expectedClassSizes[name][target], name + " " + target + " class size should match regression anchor");
+        check(state.ciStatements.length === dSeparationSignature(ids, scenario.edges).length, name + " should expose its observational CI count");
+
+        allDags.forEach(function (edges) {
+          var orientation = orientText(edges);
+          var byCriterion = familySignature(ids, edges, target) === targetSig;
+          var byDsep = familyDsepSignature(ids, edges, target) === targetDsepSig;
+          check(byCriterion === byDsep, name + " " + target + " skeleton/v-structure test should match d-separation oracle");
+          check(Boolean(currentSet[orientation]) === byCriterion, name + " " + target + " class membership should match criterion");
+          if (!byCriterion) rejectedOrientations += 1;
+        });
+
+        state.currentClass.forEach(function (edges) {
+          check(isAcyclic(ids, edges), name + " " + target + " candidate should be acyclic");
+          check(familySignature(ids, edges, target) === targetSig, name + " " + target + " candidate should match graphical signature");
+          check(familyDsepSignature(ids, edges, target) === targetDsepSig, name + " " + target + " candidate should match d-separation signature");
+          if (target !== "none") {
+            check(Boolean(obsSet[orientText(edges)]), name + " " + target + " intervention class should refine observational class");
+          }
+        });
+
+        state.currentCpdag.forEach(function (edge) {
+          var everyForward = state.currentClass.every(function (edges) { return hasDirectedEdge(edges, edge.from, edge.to); });
+          var someForward = state.currentClass.some(function (edges) { return hasDirectedEdge(edges, edge.from, edge.to); });
+          var someBackward = state.currentClass.some(function (edges) { return hasDirectedEdge(edges, edge.to, edge.from); });
+          if (edge.kind === "directed") {
+            check(everyForward && !someBackward, name + " " + target + " directed CPDAG edge should be unanimous");
+          } else {
+            check(someForward && someBackward, name + " " + target + " undirected CPDAG edge should be reversible");
+          }
+        });
+
+        check(state.currentClass.length <= state.obsClass.length, name + " " + target + " intervention should not enlarge the class");
       });
+
+      summary[name] = {
+        acyclicOrientations: allDags.length,
+        maxClassSize: maxClassSize,
+        minClassSize: minClassSize,
+        nodes: ids.length
+      };
     });
-    assert(chain.obsClass.length === 3, "three-node chain should have three observational DAGs");
-    assert(chain.currentCpdag.every(function (edge) { return edge.kind === "undirected"; }), "chain CPDAG should be undirected");
-    assert(chainB.currentClass.length === 1, "intervening on the middle of A->B->C should identify the chain");
-    assert(collider.obsClass.length === 1 && collider.fingerprint.vStructures.length === 1, "unshielded collider should be compelled");
-    assert(triangle.obsClass.length === 6, "complete triangle should have six acyclic orientations");
-    assert(diamond.currentClass.length <= diamond.obsClass.length, "intervention should not enlarge the class");
+
     return {
-      chainAfterDoB: chainB.currentClass.length,
-      chainClass: chain.obsClass.length,
-      colliderClass: collider.obsClass.length,
-      diamondAfterDoD: diamond.currentClass.length,
+      cases: cases,
+      checked: checked,
       ok: true,
-      triangleClass: triangle.obsClass.length
+      rejectedOrientations: rejectedOrientations,
+      summary: summary
     };
   }
 
@@ -631,8 +837,12 @@
     audit: audit,
     cleanParams: cleanParams,
     cpdag: cpdag,
+    dConnectedPair: dConnectedPair,
+    dSeparatedSets: dSeparatedSets,
+    dSeparationSignature: dSeparationSignature,
     enumerateDags: enumerateDags,
     equivalentClass: equivalentClass,
+    familyDsepSignature: familyDsepSignature,
     evaluate: evaluate,
     familySignature: familySignature,
     graphSignature: graphSignature,
