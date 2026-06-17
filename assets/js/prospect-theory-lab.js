@@ -248,8 +248,33 @@
   function runAudit() {
     if (AUDIT_CACHE) return AUDIT_CACHE;
     var failures = [];
-    function record(name, ok) {
-      if (!ok) failures.push(name);
+    var checked = 0;
+    function record(name, ok, detail) {
+      checked += 1;
+      if (!ok) failures.push(detail ? name + ": " + detail : name);
+    }
+    function recordNear(name, actual, expected, eps) {
+      record(name, nearly(actual, expected, eps), "expected " + expected + ", got " + actual);
+    }
+    function sum(rows, fn) {
+      return rows.reduce(function (total, row) { return total + fn(row); }, 0);
+    }
+    function finiteResult(name, result) {
+      record(name + " has finite expected value", Number.isFinite(result.expectedValue));
+      record(name + " has finite CPT value", Number.isFinite(result.cptValue));
+      record(name + " has finite certainty equivalent", Number.isFinite(result.certaintyEquivalent));
+      record(name + " normalized probabilities sum to one", nearly(sum(result.outcomes, function (row) { return row.p; }), 1, 1e-12));
+      recordNear(name + " expected value recomputes from outcomes", expectedValue(result.outcomes), result.expectedValue, 1e-10);
+      recordNear(name + " CPT value recomputes from decision weights", sum(result.weights, function (row) { return row.pi * row.v; }), result.cptValue, 1e-10);
+      record(name + " decision weights are finite", result.weights.every(function (row) { return Number.isFinite(row.pi) && Number.isFinite(row.v); }));
+      record(name + " decision weights are nonnegative", result.weights.every(function (row) { return row.pi >= -1e-12; }));
+      var gainProbability = sum(result.outcomes, function (row) { return row.x > 0 ? row.p : 0; });
+      var lossProbability = sum(result.outcomes, function (row) { return row.x < 0 ? row.p : 0; });
+      var gainWeight = sum(result.weights, function (row) { return row.side === "gain" ? row.pi : 0; });
+      var lossWeight = sum(result.weights, function (row) { return row.side === "loss" ? row.pi : 0; });
+      recordNear(name + " gain weights sum to transformed gain probability", gainWeight, tkWeight(gainProbability, result.params.gamma), 1e-10);
+      recordNear(name + " loss weights sum to transformed loss probability", lossWeight, tkWeight(lossProbability, result.params.delta), 1e-10);
+      recordNear(name + " certainty equivalent inverts the CPT value", valueOf(result.certaintyEquivalent, result.params), result.cptValue, 1e-8);
     }
 
     var neutralMixed = evaluate({
@@ -262,40 +287,141 @@
       gamma: 100,
       delta: 100
     });
-    record("neutral model equals expected value", nearly(neutralMixed.certaintyEquivalent, neutralMixed.expectedValue, 1e-9));
-    record("neutral cpt value equals expected value", nearly(neutralMixed.cptValue, neutralMixed.expectedValue, 1e-9));
+    recordNear("neutral model equals expected value", neutralMixed.certaintyEquivalent, neutralMixed.expectedValue, 1e-9);
+    recordNear("neutral cpt value equals expected value", neutralMixed.cptValue, neutralMixed.expectedValue, 1e-9);
 
     var lottery = evaluate({});
-    record("default lottery is near fair by expected value", Math.abs(lottery.expectedValue) < 1e-9);
+    recordNear("default lottery is fair by expected value", lottery.expectedValue, 0, 1e-9);
     record("default lottery has positive prospect CE", lottery.certaintyEquivalent > 0);
     record("default lottery overweights small gain tail", lottery.tailWeights.gainWeight > lottery.tailWeights.p);
     record("default lottery cpt accepts while ev is indifferent or accept", lottery.cptBetter && lottery.evBetter);
+    var facts = roundedFacts(lottery);
+    recordNear("default lottery CE rounds to post number", facts.certaintyEquivalent, 2.06, 1e-12);
+    recordNear("default gain tail weight rounds to post number", facts.gainTailWeight, 0.0553, 1e-12);
+    recordNear("default loss tail weight rounds to post number", facts.lossTailWeight, 0.0397, 1e-12);
 
     var insurance = evaluate({ scenario: "insurance", probability: 1, gain: 200, loss: 2 });
-    record("insurance expected loss is actuarial two dollars", nearly(insurance.expectedValue, -2, 1e-9));
+    recordNear("insurance expected loss is actuarial two dollars", insurance.expectedValue, -2, 1e-9);
     record("insurance max premium exceeds expected loss", insurance.maxPremium > -insurance.expectedValue);
     record("insurance two dollar quote accepted by cpt", insurance.cptBetter);
+    recordNear("insurance max premium rounds to post number", roundedFacts(insurance).maxPremium, 5.11, 1e-12);
 
     var mixed = evaluate({ scenario: "mixed", probability: 50, gain: 100, loss: 60 });
     record("mixed gamble has positive expected value", mixed.expectedValue > 0);
     record("mixed gamble rejected under default loss aversion", !mixed.cptBetter);
+    recordNear("mixed gamble CE rounds to post number", roundedFacts(mixed).certaintyEquivalent, -7.53, 1e-12);
 
     var noLossAversion = evaluate({ scenario: "mixed", probability: 50, gain: 100, loss: 60, lambda: 100 });
     record("lower loss aversion can accept mixed gamble", noLossAversion.cptBetter);
+    record("loss aversion lowers the mixed gamble CE", mixed.certaintyEquivalent < noLossAversion.certaintyEquivalent);
 
-    var bad = evaluate({ scenario: "bogus", probability: -10, gain: "x", loss: Infinity, alpha: -1 });
-    record("bad inputs sanitize", bad.params.scenario === "lottery" && bad.params.probability === 1 && bad.params.gain === DEFAULTS.gain);
+    var richerLottery = evaluate({ scenario: "lottery", probability: 1, gain: 300, loss: 2 });
+    var pricierLottery = evaluate({ scenario: "lottery", probability: 1, gain: 200, loss: 5 });
+    record("larger jackpot raises lottery CE", richerLottery.certaintyEquivalent > lottery.certaintyEquivalent);
+    record("higher ticket price lowers lottery CE", pricierLottery.certaintyEquivalent < lottery.certaintyEquivalent);
+
+    var largerInsurance = evaluate({ scenario: "insurance", probability: 1, gain: 300, loss: 2 });
+    var saferInsurance = evaluate({ scenario: "insurance", probability: 5, gain: 200, loss: 2 });
+    record("larger insured loss raises max premium", largerInsurance.maxPremium > insurance.maxPremium);
+    record("higher loss probability raises max premium", saferInsurance.maxPremium > insurance.maxPremium);
+
+    var largerMixedGain = evaluate({ scenario: "mixed", probability: 50, gain: 160, loss: 60 });
+    var largerMixedLoss = evaluate({ scenario: "mixed", probability: 50, gain: 100, loss: 100 });
+    record("larger mixed-gamble gain raises CE", largerMixedGain.certaintyEquivalent > mixed.certaintyEquivalent);
+    record("larger mixed-gamble loss lowers CE", largerMixedLoss.certaintyEquivalent < mixed.certaintyEquivalent);
+
+    var bad = evaluate({ scenario: "bogus", probability: -10, gain: "x", loss: Infinity, alpha: -1, lambda: NaN, gamma: 0, delta: "x" });
+    record("bad inputs sanitize scenario", bad.params.scenario === "lottery");
+    record("bad inputs clamp probability", bad.params.probability === 1);
+    record("bad inputs keep fallback gain", bad.params.gain === DEFAULTS.gain);
+    record("bad inputs keep fallback loss", bad.params.loss === DEFAULTS.loss);
+    record("bad inputs clamp alpha", bad.params.alpha === 0.5);
+    record("bad inputs keep fallback lambda", bad.params.lambda === DEFAULTS.lambda / 100);
     record("clean params are idempotent", nearly(evaluate(lottery.params).certaintyEquivalent, lottery.certaintyEquivalent, 1e-12));
+    var decimalParams = evaluate({ alpha: 0.88, lambda: 2.25, gamma: 0.61, delta: 0.69 }).params;
+    record("decimal alpha parses like percent alpha", nearly(decimalParams.alpha, 0.88, 1e-12));
+    record("decimal lambda parses like percent lambda", nearly(decimalParams.lambda, 2.25, 1e-12));
+    record("decimal gamma parses like percent gamma", nearly(decimalParams.gamma, 0.61, 1e-12));
+    record("decimal delta parses like percent delta", nearly(decimalParams.delta, 0.69, 1e-12));
 
     var probs = normalize([{ x: 1, p: 0.2 }, { x: 2, p: 0.3 }, { x: -1, p: 0.5 }]);
-    record("normalization sums to one", nearly(probs.reduce(function (s, row) { return s + row.p; }, 0), 1, 1e-12));
-    record("weights are nonnegative", lottery.weights.every(function (row) { return row.pi >= -1e-12; }));
-    record("certainty equivalent is inverse value", nearly(valueOf(lottery.certaintyEquivalent, lottery.params), lottery.cptValue, 1e-8));
+    recordNear("normalization sums to one", probs.reduce(function (s, row) { return s + row.p; }, 0), 1, 1e-12);
+
+    [0.35, 0.61, 0.69, 0.88, 1].forEach(function (curvature) {
+      var last = -Infinity;
+      [0, 0.001, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 1].forEach(function (p) {
+        var weight = tkWeight(p, curvature);
+        record("weight is finite for curvature " + curvature + " probability " + p, Number.isFinite(weight));
+        record("weight stays inside unit interval for curvature " + curvature + " probability " + p, weight >= -1e-12 && weight <= 1 + 1e-12);
+        record("weight is monotone for curvature " + curvature + " probability " + p, weight + 1e-12 >= last);
+        if (nearly(curvature, 1, 1e-12)) recordNear("linear weighting preserves probability " + p, weight, p, 1e-12);
+        last = weight;
+      });
+      if (curvature < 1) {
+        record("small probabilities are overweighted for curvature " + curvature, tkWeight(0.01, curvature) > 0.01);
+        record("near-certainties are underweighted for curvature " + curvature, tkWeight(0.99, curvature) < 0.99);
+      }
+    });
+
+    [{ alpha: 88, lambda: 225 }, { alpha: 65, lambda: 300 }, { alpha: 100, lambda: 100 }].forEach(function (rawParams) {
+      var params = cleanParams(rawParams);
+      [1, 7, 50, 200, 1000].forEach(function (x) {
+        var gainValue = valueOf(x, params);
+        var lossValue = valueOf(-x, params);
+        recordNear("positive value inverse round-trip " + rawParams.alpha + " " + x, inverseValue(gainValue, params), x, 1e-9);
+        recordNear("negative value inverse round-trip " + rawParams.alpha + " " + x, inverseValue(lossValue, params), -x, 1e-9);
+        if (params.lambda > 1) record("loss value is steeper than gain value " + rawParams.lambda + " " + x, lossValue < -gainValue);
+        if (nearly(params.alpha, 1, 1e-12) && nearly(params.lambda, 1, 1e-12)) {
+          recordNear("neutral gain value is dollar value " + x, gainValue, x, 1e-12);
+          recordNear("neutral loss value is dollar value -" + x, lossValue, -x, 1e-12);
+        }
+      });
+    });
+
+    var scenarios = ["lottery", "insurance", "mixed"];
+    var probabilities = [1, 5, 17, 50, 73, 95];
+    var gains = [20, 100, 240, 1000];
+    var losses = [1, 25, 80, 1000];
+    var parameterSets = [
+      { alpha: 88, lambda: 225, gamma: 61, delta: 69 },
+      { alpha: 100, lambda: 100, gamma: 100, delta: 100 },
+      { alpha: 65, lambda: 300, gamma: 45, delta: 90 },
+      { alpha: 50, lambda: 400, gamma: 35, delta: 35 }
+    ];
+    var gridCases = 0;
+    scenarios.forEach(function (scenario) {
+      probabilities.forEach(function (probability) {
+        gains.forEach(function (gain) {
+          losses.forEach(function (loss) {
+            parameterSets.forEach(function (params) {
+              var raw = {
+                scenario: scenario,
+                probability: probability,
+                gain: gain,
+                loss: loss,
+                alpha: params.alpha,
+                lambda: params.lambda,
+                gamma: params.gamma,
+                delta: params.delta
+              };
+              var result = evaluate(raw);
+              finiteResult(scenario + " p" + probability + " g" + gain + " l" + loss + " a" + params.alpha, result);
+              if (params.alpha === 100 && params.lambda === 100 && params.gamma === 100 && params.delta === 100) {
+                recordNear("neutral grid CPT equals EV for " + scenario + " p" + probability + " g" + gain + " l" + loss, result.cptValue, result.expectedValue, 1e-9);
+                recordNear("neutral grid CE equals EV for " + scenario + " p" + probability + " g" + gain + " l" + loss, result.certaintyEquivalent, result.expectedValue, 1e-9);
+              }
+              gridCases += 1;
+            });
+          });
+        });
+      });
+    });
 
     AUDIT_CACHE = {
-      passed: 16 - failures.length,
-      checked: 16,
+      passed: checked - failures.length,
+      checked: checked,
       failures: failures,
+      gridCases: gridCases,
       defaultFacts: roundedFacts(lottery)
     };
     return AUDIT_CACHE;
@@ -429,13 +555,13 @@
     var decision = result.spec.mode === "pay"
       ? (result.cptBetter ? "pay quote" : "skip quote")
       : (result.cptBetter ? "take gamble" : "walk away");
-    var maxPremiumText = result.maxPremium == null ? money(result.certaintyEquivalent) : money(result.maxPremium);
-    var maxLabel = result.maxPremium == null ? "CPT CE" : "Max premium";
+    var secondaryText = result.maxPremium == null ? String(facts.cptValue) : money(result.maxPremium);
+    var secondaryLabel = result.maxPremium == null ? "CPT value" : "Max premium";
     target.innerHTML = [
       '<div class="prospect-lab__case"><strong>' + escapeHtml(result.spec.title) + '</strong><span>' + escapeHtml(result.spec.subtitle) + '</span></div>',
       '<div class="prospect-lab__metrics">',
       metric("EV", money(facts.expectedValue)),
-      metric(maxLabel, maxPremiumText),
+      metric(secondaryLabel, secondaryText),
       metric("CPT CE", money(facts.certaintyEquivalent)),
       metric("Tail w+ / p", facts.gainTailMultiplier + "x"),
       metric("Tail w- / p", facts.lossTailMultiplier + "x"),

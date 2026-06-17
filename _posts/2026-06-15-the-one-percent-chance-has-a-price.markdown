@@ -291,7 +291,7 @@ default lottery, insurance, and mixed-gamble cases.
 
 <div class="prospect-lab" data-prospect-lab data-scenario="lottery" data-probability="1" data-gain="200" data-loss="2" data-alpha="88" data-lambda="225" data-gamma="61" data-delta="69"></div>
 
-<script src="{{ '/assets/js/prospect-theory-lab.js?v=20260615b' | relative_url }}"></script>
+<script src="{{ '/assets/js/prospect-theory-lab.js?v=20260615c' | relative_url }}"></script>
 
 ## Three Things to Try
 
@@ -380,7 +380,8 @@ to keep both ledgers visible.
 
 ## What the Audit Checks
 
-The JavaScript audit is deliberately small:
+The JavaScript audit runs `13,518` deterministic checks across `1,152`
+parameterized cases:
 
 - with neutral parameters, certainty equivalent equals expected value;
 - the default lottery has zero expected value and positive prospect certainty
