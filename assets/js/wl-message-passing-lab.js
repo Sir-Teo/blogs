@@ -553,8 +553,8 @@
   function splitGraphBoxes(box, compact) {
     if (compact) {
       return [
-        { x: box.x + 18, y: box.y + 74, w: box.w - 36, h: 150 },
-        { x: box.x + 18, y: box.y + 286, w: box.w - 36, h: 150 }
+        { x: box.x + 18, y: box.y + 70, w: box.w - 36, h: 130 },
+        { x: box.x + 18, y: box.y + 248, w: box.w - 36, h: 130 }
       ];
     }
     return [
