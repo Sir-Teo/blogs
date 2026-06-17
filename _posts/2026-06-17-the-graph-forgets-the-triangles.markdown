@@ -113,6 +113,10 @@ may miss: triangle count, connected components, edge count, and bipartiteness.
     margin-bottom: 1rem;
   }
 
+  .wl-lab__controls > * {
+    min-width: 0;
+  }
+
   .wl-lab label {
     color: #39444e;
     display: grid;
@@ -121,6 +125,7 @@ may miss: triangle count, connected components, edge count, and bipartiteness.
     font-weight: 650;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
   }
 
   .wl-lab output {
@@ -135,7 +140,12 @@ may miss: triangle count, connected components, edge count, and bipartiteness.
   .wl-lab select {
     font: inherit;
     min-height: 2rem;
+    min-width: 0;
     width: 100%;
+  }
+
+  .wl-lab input[type="range"] {
+    margin: 0;
   }
 
   .wl-lab select {
@@ -272,7 +282,7 @@ may miss: triangle count, connected components, edge count, and bipartiteness.
     triangle counts, component counts, and bipartiteness.
   </p>
 </div>
-<script defer src="{{ '/assets/js/wl-message-passing-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/wl-message-passing-lab.js?v=20260617b' | relative_url }}"></script>
 
 Start with **C6 vs two triangles**.
 
@@ -407,6 +417,15 @@ It makes one part of their eyesight auditable.
 Sometimes the model is not failing to look hard enough.
 
 Sometimes the graph has already forgotten the triangle.
+
+The lab exports that audit as code. `WLMessagePassingLab.audit()` checks graph
+validity, triangle counts, component counts, bipartiteness, the path/cycle
+positive control, the two blind graph pairs, and the relabeled-cycle sanity
+case. It also relabels each graph pair with nontrivial left/right permutations
+and verifies that the equality tape, first distinguishing round, stable round,
+and color-class size sequence survive the relabeling. The current run performs
+310 checks. That is still a microscope, not a theorem prover, but it guards the
+exact examples the essay asks the reader to trust.
 
 [^gilmer]: Justin Gilmer, Samuel S. Schoenholz, Patrick F. Riley, Oriol Vinyals, and George E. Dahl, ["Neural Message Passing for Quantum Chemistry"](https://proceedings.mlr.press/v70/gilmer17a.html), *Proceedings of Machine Learning Research* 70:1263-1272, 2017.
 

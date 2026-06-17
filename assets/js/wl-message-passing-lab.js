@@ -805,29 +805,155 @@
     if (!condition) throw new Error(message);
   }
 
+  function histTotal(hist) {
+    return Object.keys(hist).reduce(function (sum, key) {
+      return sum + hist[key];
+    }, 0);
+  }
+
+  function histShape(hist) {
+    return Object.keys(hist).map(function (key) {
+      return hist[key];
+    }).sort(function (a, b) { return a - b; }).join(",");
+  }
+
+  function factSignature(facts) {
+    return [
+      facts.bipartite ? "bipartite" : "non-bipartite",
+      "components:" + facts.components,
+      "degrees:" + facts.degreeSequence.join(","),
+      "edges:" + facts.edges,
+      "nodes:" + facts.nodes,
+      "triangles:" + facts.triangles
+    ].join("|");
+  }
+
+  function permuteGraph(graph, order) {
+    var inverse = {};
+    order.forEach(function (oldIndex, newIndex) {
+      inverse[oldIndex] = newIndex;
+    });
+    return {
+      edges: graph.edges.map(function (edge) {
+        return [inverse[edge[0]], inverse[edge[1]]];
+      }),
+      label: graph.label + " permuted",
+      layout: graph.layout,
+      nodes: order.map(function (oldIndex) { return graph.nodes[oldIndex]; })
+    };
+  }
+
+  function expectThrows(fn, message) {
+    var threw = false;
+    try {
+      fn();
+    } catch (error) {
+      threw = true;
+    }
+    assert(threw, message);
+  }
+
+  function assertRoundLedger(state, expectedFirstDifference) {
+    var firstDifference = null;
+    var stableRound = null;
+    state.refinement.rounds.forEach(function (round, index) {
+      assert(round.t === index, "round index should match tape index");
+      assert(round.left.length === state.facts.left.nodes, "left color vector length should equal node count");
+      assert(round.right.length === state.facts.right.nodes, "right color vector length should equal node count");
+      assert(histTotal(round.leftHist) === state.facts.left.nodes, "left histogram should count every node");
+      assert(histTotal(round.rightHist) === state.facts.right.nodes, "right histogram should count every node");
+      assert(round.equal === histEqual(round.leftHist, round.rightHist), "round equality should match shared color histograms");
+      if (!round.equal && firstDifference == null) firstDifference = index;
+      if (!round.changed && stableRound == null) stableRound = index;
+    });
+    if (expectedFirstDifference === null) {
+      assert(state.refinement.firstDifferenceRound === null, "pair should stay indistinguishable by 1-WL");
+    } else {
+      assert(state.refinement.firstDifferenceRound === expectedFirstDifference, "first distinguishing round should match expectation");
+    }
+    assert(state.refinement.firstDifferenceRound === firstDifference, "first-difference ledger should match tape");
+    assert(state.refinement.stableRound === (stableRound == null ? MAX_ROUNDS : stableRound), "stable-round ledger should match tape");
+  }
+
+  function assertSameFacts(a, b, message) {
+    assert(factSignature(graphFacts(a)) === factSignature(graphFacts(b)), message);
+  }
+
+  function assertPermutationInvariantPair(pairKey, orderLeft, orderRight) {
+    var pair = PAIRS[pairKey];
+    var canonical = refinePair(pair.left, pair.right, MAX_ROUNDS);
+    var left = permuteGraph(pair.left, orderLeft);
+    var right = permuteGraph(pair.right, orderRight);
+    var permuted = refinePair(left, right, MAX_ROUNDS);
+    assertSameFacts(pair.left, left, pairKey + " left permutation should preserve graph facts");
+    assertSameFacts(pair.right, right, pairKey + " right permutation should preserve graph facts");
+    assert(permuted.firstDifferenceRound === canonical.firstDifferenceRound, pairKey + " first difference should survive relabeling");
+    assert(permuted.stableRound === canonical.stableRound, pairKey + " stable round should survive relabeling");
+    canonical.rounds.forEach(function (round, index) {
+      assert(permuted.rounds[index].equal === round.equal, pairKey + " equality tape should survive relabeling");
+      assert(histShape(permuted.rounds[index].leftHist) === histShape(round.leftHist), pairKey + " left color-class sizes should survive relabeling");
+      assert(histShape(permuted.rounds[index].rightHist) === histShape(round.rightHist), pairKey + " right color-class sizes should survive relabeling");
+    });
+  }
+
   function audit() {
+    var checked = 0;
+    var permutationOrderA = [2, 5, 1, 4, 0, 3];
+    var permutationOrderB = [5, 2, 4, 1, 3, 0];
     Object.keys(PAIRS).forEach(function (key) {
       validateGraph(PAIRS[key].left);
       validateGraph(PAIRS[key].right);
+      checked += 2;
     });
     var c6 = evaluate({ pair: "c6-triangles", round: MAX_ROUNDS });
     var prism = evaluate({ pair: "prism-k33", round: MAX_ROUNDS });
     var path = evaluate({ pair: "path-cycle", round: MAX_ROUNDS });
     var relabel = evaluate({ pair: "c6-relabel", round: MAX_ROUNDS });
+    [c6, prism, path, relabel].forEach(function (state) {
+      assertRoundLedger(state, state.params.pair === "path-cycle" ? 1 : null);
+      checked += state.refinement.rounds.length * 6 + 3;
+    });
     assert(c6.refinement.firstDifferenceRound === null, "C6 and two triangles should not be distinguished by 1-WL");
     assert(c6.facts.left.triangles === 0 && c6.facts.right.triangles === 2, "C6 pair should have a triangle-count gap");
     assert(c6.facts.left.components === 1 && c6.facts.right.components === 2, "C6 pair should have a component-count gap");
+    assert(c6.facts.left.edges === 6 && c6.facts.right.edges === 6, "C6 pair should have equal edge counts");
+    assert(c6.facts.left.bipartite === true && c6.facts.right.bipartite === false, "C6 pair should differ in bipartiteness");
+    assert(c6.refinement.stableRound === 1, "C6 pair should stabilize after one regular-neighborhood update");
     assert(prism.refinement.firstDifferenceRound === null, "triangular prism and K3,3 should not be distinguished by 1-WL");
     assert(prism.facts.left.triangles === 2 && prism.facts.right.triangles === 0, "prism pair should have a triangle-count gap");
     assert(prism.facts.left.bipartite === false && prism.facts.right.bipartite === true, "prism pair should differ in bipartiteness");
+    assert(prism.facts.left.components === 1 && prism.facts.right.components === 1, "prism pair should be connected on both sides");
+    assert(prism.facts.left.edges === 9 && prism.facts.right.edges === 9, "prism pair should have equal edge counts");
+    assert(histShape(prism.selected.leftHist) === "6" && histShape(prism.selected.rightHist) === "6", "prism pair should keep one six-node color class");
     assert(path.refinement.firstDifferenceRound === 1, "P6 and C6 should be distinguished at round one");
+    assert(histShape(path.refinement.rounds[1].leftHist) === "2,4", "P6 first round should split endpoints from internal nodes");
+    assert(histShape(path.refinement.rounds[1].rightHist) === "6", "C6 first round should remain one color class");
+    assert(path.facts.left.edges === 5 && path.facts.right.edges === 6, "path/cycle control should differ by one edge");
     assert(relabel.refinement.firstDifferenceRound === null, "relabeled C6 should not be distinguished");
     assert(histEqual(relabel.selected.leftHist, relabel.selected.rightHist), "relabeled C6 histograms should match");
+    assert(factSignature(relabel.facts.left) === factSignature(relabel.facts.right), "relabeled C6 should preserve graph facts");
+    checked += 19;
+    Object.keys(PAIRS).forEach(function (key) {
+      assertPermutationInvariantPair(key, permutationOrderA, permutationOrderB);
+      checked += (MAX_ROUNDS + 1) * 3 + 4;
+    });
+    expectThrows(function () {
+      validateGraph({ edges: [[0, 0]], label: "bad self loop", nodes: ["0"] });
+    }, "graph validation should reject self loops");
+    expectThrows(function () {
+      validateGraph({ edges: [[0, 1], [1, 0]], label: "bad duplicate", nodes: ["0", "1"] });
+    }, "graph validation should reject duplicate undirected edges");
+    expectThrows(function () {
+      validateGraph({ edges: [[0, 2]], label: "bad range", nodes: ["0", "1"] });
+    }, "graph validation should reject out-of-range endpoints");
+    checked += 3;
     return {
       c6TriangleGap: c6.facts.right.triangles - c6.facts.left.triangles,
+      checked: checked,
       ok: true,
       pathFirstDifference: path.refinement.firstDifferenceRound,
       prismTriangleGap: prism.facts.left.triangles - prism.facts.right.triangles,
+      relabelChecks: Object.keys(PAIRS).length,
       relabelStableRound: relabel.refinement.stableRound
     };
   }
