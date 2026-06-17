@@ -285,29 +285,142 @@
     return lits.every(function (lit) { return litValue(lit, assigns) === -1; });
   }
 
-  function audit() {
-    var checks = [];
-    function record(name, ok) {
-      checks.push({ name: name, ok: !!ok });
-    }
-    [
-      { chain: 2, detours: 0, step: 0 },
-      { chain: 4, detours: 2, step: 4 },
-      { chain: 7, detours: 4, step: 99 }
-    ].forEach(function (params, index) {
-      var result = evaluate(params);
-      var names = result.formula.names;
-      record("case " + index + " reaches conflict", !!result.run.conflict);
-      record("case " + index + " learned clause is false before backjump", clauseIsFalse(result.analysis.finalClause, result.run.assigns));
-      record("case " + index + " final clause has one current literal", countAtLevel(result.analysis.finalClause, result.run.assigns, result.run.decisionLevel) === 1);
-      record("case " + index + " backjump skips detours", result.analysis.levelsSkipped === result.params.detours);
-      record("case " + index + " learned clause is asserting", result.analysis.unitAfterBackjump);
-      record("case " + index + " asserting literal is negated final decision", litName(result.analysis.assertingLit, names) === "~c");
+  function sameClause(a, b) {
+    var aa = uniqueClause(a);
+    var bb = uniqueClause(b);
+    return aa.length === bb.length && aa.every(function (lit, index) {
+      return lit === bb[index];
     });
+  }
+
+  function hasTautology(lits) {
+    var seen = {};
+    return lits.some(function (lit) {
+      if (seen[String(-lit)]) return true;
+      seen[String(lit)] = true;
+      return false;
+    });
+  }
+
+  function assignedLiteral(item) {
+    return item.value ? item.variable : -item.variable;
+  }
+
+  function trailPrefixAssigns(trail, stopOrder) {
+    var assigns = {};
+    trail.forEach(function (item) {
+      if (item.order >= stopOrder) return;
+      assigns[item.variable] = item;
+    });
+    return assigns;
+  }
+
+  function assignsThroughLevel(trail, maxLevel) {
+    var assigns = {};
+    trail.forEach(function (item) {
+      if (item.level <= maxLevel) assigns[item.variable] = item;
+    });
+    return assigns;
+  }
+
+  function literalPolarity(lits, variable) {
+    var polarity = 0;
+    lits.forEach(function (lit) {
+      if (Math.abs(lit) === variable) polarity += lit > 0 ? 1 : -1;
+    });
+    return polarity;
+  }
+
+  function audit() {
+    var checked = 0;
+    var failures = [];
+    function check(name, ok) {
+      checked += 1;
+      if (!ok) failures.push(name);
+    }
+
+    function checkTrail(result, label) {
+      var seen = {};
+      result.run.trail.forEach(function (item) {
+        check(label + " assigns each variable once " + item.variable, !seen[item.variable]);
+        seen[item.variable] = true;
+        if (item.reason) {
+          var before = trailPrefixAssigns(result.run.trail, item.order);
+          var status = clauseStatus(item.reason, before);
+          check(label + " reason is unit before " + varName(item.variable, result.formula.names), status.kind === "unit" && status.lit === assignedLiteral(item));
+        }
+      });
+      result.formula.clauses.forEach(function (clause) {
+        var status = clauseStatus(clause, result.run.assigns);
+        if (clause === result.run.conflict.clause) {
+          check(label + " conflict clause is false", status.kind === "conflict");
+        } else {
+          check(label + " non-conflict clause is satisfied or reason-open " + clause.label, status.kind === "sat" || status.kind === "open");
+        }
+      });
+    }
+
+    function checkResolution(result, label) {
+      var steps = result.analysis.steps;
+      check(label + " first step is conflict", sameClause(steps[0].clause, result.run.conflict.clause.lits));
+      check(label + " first step has no tautology", !hasTautology(steps[0].clause));
+      for (var i = 1; i < steps.length; i += 1) {
+        var previous = steps[i - 1];
+        var step = steps[i];
+        var pivot = step.pivot;
+        var assignment = result.run.assigns[pivot];
+        check(label + " step " + i + " has a pivot reason", !!assignment && assignment.reason === step.reason);
+        check(label + " step " + i + " pivot is current-level", !!assignment && assignment.level === result.run.decisionLevel);
+        check(label + " step " + i + " resolves opposite signs", literalPolarity(previous.clause, pivot) * literalPolarity(step.reason.lits, pivot) < 0);
+        check(label + " step " + i + " resolvent is exact", sameClause(step.clause, resolveClause(previous.clause, step.reason.lits, pivot)));
+        check(label + " step " + i + " resolvent has no tautology", !hasTautology(step.clause));
+        check(label + " step " + i + " current count is recorded", step.currentCount === countAtLevel(step.clause, result.run.assigns, result.run.decisionLevel));
+      }
+    }
+
+    function checkBackjump(result, label) {
+      var expected = uniqueClause([-result.formula.key.x, -result.formula.key.y, -result.formula.key.c]);
+      var trimmed = assignsThroughLevel(result.run.trail, result.analysis.backjump);
+      var status = clauseStatus({ lits: result.analysis.finalClause }, trimmed);
+      check(label + " reaches conflict", !!result.run.conflict);
+      check(label + " decision level includes supports detours and c", result.run.decisionLevel === result.params.detours + 3);
+      check(label + " learned clause is exact support cut", sameClause(result.analysis.finalClause, expected));
+      check(label + " learned clause is false before backjump", clauseIsFalse(result.analysis.finalClause, result.run.assigns));
+      check(label + " final clause has one current literal", countAtLevel(result.analysis.finalClause, result.run.assigns, result.run.decisionLevel) === 1);
+      check(label + " backjump skips detours", result.analysis.levelsSkipped === result.params.detours);
+      check(label + " backjump level is second-highest support", result.analysis.backjump === 2);
+      check(label + " learned clause is asserting", result.analysis.unitAfterBackjump);
+      check(label + " learned clause is unit after backjump", status.kind === "unit" && status.lit === result.analysis.assertingLit);
+      check(label + " asserting literal is negated final decision", litName(result.analysis.assertingLit, result.formula.names) === "~c");
+      check(label + " final clause has no detour variables", result.analysis.finalClause.every(function (lit) {
+        return result.formula.roles[Math.abs(lit)] !== "detour";
+      }));
+    }
+
+    var cases = 0;
+    for (var chain = 2; chain <= 7; chain += 1) {
+      for (var detours = 0; detours <= 4; detours += 1) {
+        var params = { chain: chain, detours: detours, step: 99 };
+        var label = "chain " + chain + " detours " + detours;
+        var result = evaluate(params);
+        checkTrail(result, label);
+        checkResolution(result, label);
+        checkBackjump(result, label);
+        check(label + " max step clamps to final proof row", result.params.step === result.analysis.steps.length - 1);
+        cases += 1;
+      }
+    }
+    var lowClamp = evaluate({ chain: -10, detours: -1, step: -2 }).params;
+    var highClamp = evaluate({ chain: 99, detours: 99, step: 999 }).params;
+    check("low params clamp", lowClamp.chain === 2 && lowClamp.detours === 0 && lowClamp.step === 0);
+    check("high params clamp", highClamp.chain === 7 && highClamp.detours === 4);
+
     var defaultRun = evaluate(DEFAULTS);
-    var ok = checks.every(function (check) { return check.ok; });
+    var ok = failures.length === 0;
     return {
-      checks: checks,
+      cases: cases,
+      checked: checked,
+      failures: failures,
       ok: ok,
       pass: ok,
       sample: {

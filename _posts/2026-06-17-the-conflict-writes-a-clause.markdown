@@ -145,9 +145,14 @@ this failure.
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
     border: 1px solid var(--cdcl-border);
     border-radius: 8px;
+    box-sizing: border-box;
     color: var(--cdcl-text);
     margin: 1.5rem 0;
     padding: 1rem;
+  }
+
+  .cdcl-lab * {
+    box-sizing: border-box;
   }
 
   .cdcl-lab__controls {
@@ -175,6 +180,7 @@ this failure.
 
   .cdcl-lab input {
     accent-color: #be123c;
+    margin: 0;
     min-width: 0;
     width: 100%;
   }
@@ -346,7 +352,7 @@ this failure.
   <p class="cdcl-lab__note" data-role="note"></p>
 </div>
 
-<script defer src="{{ '/assets/js/cdcl-conflict-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cdcl-conflict-lab.js?v=20260617b' | relative_url }}"></script>
 
 The **Resolution step** slider is intentionally a little strange: it lets you
 pause the proof, not the search. Step `0` is the raw conflict clause. Each later
@@ -361,17 +367,19 @@ longer; more current-level implications must be explained away before the same
 small learned clause appears.
 
 This is not a benchmark. It is a glass-box instance whose point is auditability.
-The JavaScript lab exports a small verifier that checks three invariants across
-several generated formulas:
+The JavaScript lab exports a 2,987-check verifier over all 30 generated formulas
+in the slider grid:
 
 ```text
-1. propagation reaches a real conflicting clause
-2. resolution ends with exactly one current-level literal
-3. after the computed backjump, the learned clause is unit and asserts ~c
+6 chain lengths * 5 detour counts
 ```
 
-That is the contract conflict analysis must satisfy. Without it, a learned
-clause is just a story.
+For every case, it checks that each implied assignment was forced by a unit
+reason at the moment it entered the trail, every resolution row uses opposite
+pivot literals and equals the computed resolvent, the learned clause is exactly
+`(~x OR ~y OR ~c)`, and after the computed backjump the clause is unit and
+asserts `~c`. That is the contract conflict analysis must satisfy. Without it,
+a learned clause is just a story.
 
 ## Why The Learned Clause Is Allowed
 
