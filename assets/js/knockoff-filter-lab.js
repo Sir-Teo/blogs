@@ -660,7 +660,6 @@
       ctx.globalAlpha = 1;
     }
     drawText(ctx, "shadow score", plot.x + plot.w, box.y + box.h - 17, { color: COLORS.muted, size: 10, align: "right", weight: 650 });
-    drawText(ctx, "original", plot.x, plot.y - 10, { color: COLORS.muted, size: 10, weight: 650 });
   }
 
   function drawFrontier(ctx, box, result) {
@@ -700,7 +699,6 @@
     });
     ctx.globalAlpha = 1;
     drawText(ctx, "power", plot.x + plot.w, box.y + box.h - 18, { color: COLORS.muted, size: 10, align: "right", weight: 650 });
-    drawText(ctx, "FDP", plot.x - 27, plot.y + 3, { color: COLORS.muted, size: 10, weight: 650 });
   }
 
   function drawCanvas(canvas, result) {
