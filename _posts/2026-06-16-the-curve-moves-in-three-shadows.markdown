@@ -196,10 +196,11 @@ Move **Noise** upward. The three-factor story degrades. Move **Slope shock** or
   <p class="yc-lab__note">
     Deterministic browser experiment. Yields are simulated from smooth
     level/slope/curvature shocks plus maturity-specific noise; the principal
-    components are estimated from the simulated changes, not hard-coded.
+    components are estimated from the simulated changes, not hard-coded. The
+    exported audit checks the PCA and pricing invariants behind the display.
   </p>
 </div>
-<script defer src="{{ '/assets/js/yield-curve-pca-lab.js?v=20260616a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/yield-curve-pca-lab.js?v=20260616b' | relative_url }}"></script>
 
 The four panels are deliberately different views of the same object.
 
@@ -216,6 +217,14 @@ factor movement -> curve movement -> price movement
 
 A 25 bp level shock is not a 25 bp price shock. Price damage is filtered through
 maturity, duration, convexity, and the exact location of the curve move.
+
+The reproducibility hook is `YieldCurvePcaLab.audit()`. It runs 5,084
+deterministic checks over the simulated samples: covariance symmetry,
+orthonormal eigenvectors, trace and explained-variance identities, reconstruction
+from eigenpairs, sign-oriented PC shapes, noise degradation, exact zero-coupon
+pricing, duration/convexity formulas, deterministic seeds, and input clamping.
+The audit is intentionally fussy because a PCA chart can look plausible even
+when the factor math has quietly drifted.
 
 ## PCA Is A Coordinate Choice
 

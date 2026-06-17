@@ -319,10 +319,158 @@
   }
 
   function audit() {
+    var checked = 0;
+
+    function assert(condition, message) {
+      checked += 1;
+      if (!condition) throw new Error(message);
+    }
+
+    function close(actual, expected, tolerance) {
+      return Math.abs(actual - expected) <= tolerance;
+    }
+
+    function closeRelative(actual, expected, tolerance) {
+      return Math.abs(actual - expected) <= Math.max(1, Math.abs(expected)) * tolerance;
+    }
+
+    function assertBetween(value, low, high, message) {
+      assert(value >= low && value <= high, message + ": " + value);
+    }
+
+    function vectorDot(a, b) {
+      var sum = 0;
+      for (var i = 0; i < a.length; i += 1) sum += a[i] * b[i];
+      return sum;
+    }
+
+    function assertPriceMath(name, result) {
+      result.impacts.forEach(function (impact, index) {
+        var dy = (result.shockedYields[index] - result.baseYields[index]) / 100;
+        var expectedExact = (Math.exp(-impact.maturity * dy) - 1) * 100;
+        var expectedDuration = -impact.maturity * dy * 100;
+        var expectedConvexity = (-impact.maturity * dy + 0.5 * impact.maturity * impact.maturity * dy * dy) * 100;
+        assert(close(impact.exact, expectedExact, 1e-12), name + " exact zero-coupon return");
+        assert(close(impact.duration, expectedDuration, 1e-12), name + " duration approximation");
+        assert(close(impact.convexity, expectedConvexity, 1e-12), name + " convexity approximation");
+      });
+    }
+
+    function assertShape(name, result) {
+      var n = MATURITIES.length;
+      assert(result.changes.length === result.params.days, name + " sample day count");
+      result.changes.forEach(function (row) {
+        assert(row.length === n, name + " simulated maturity count");
+      });
+      assert(result.baseYields.length === n, name + " base curve count");
+      assert(result.shockedYields.length === n, name + " shocked curve count");
+      assert(result.shocks.length === n, name + " shock count");
+      assert(result.impacts.length === n, name + " impact count");
+      assert(result.covariance.length === n, name + " covariance row count");
+      assert(result.eigen.length === n, name + " eigenpair count");
+      assert(result.explained.length === n, name + " explained variance count");
+      for (var i = 0; i < n; i += 1) {
+        assert(result.covariance[i].length === n, name + " covariance column count");
+        for (var j = 0; j < n; j += 1) {
+          assert(close(result.covariance[i][j], result.covariance[j][i], 1e-10), name + " covariance symmetry");
+        }
+      }
+    }
+
+    function assertPcaInvariants(name, result) {
+      var totalExplained = result.explained.reduce(function (sum, value) { return sum + value; }, 0);
+      var trace = 0;
+      var eigenTotal = 0;
+      var maxReconstructionError = 0;
+      for (var i = 0; i < MATURITIES.length; i += 1) {
+        trace += result.covariance[i][i];
+        eigenTotal += result.eigen[i].value;
+        assert(result.eigen[i].value >= 0, name + " nonnegative eigenvalue");
+        if (i > 0) assert(result.eigen[i - 1].value >= result.eigen[i].value, name + " sorted eigenvalues");
+        assert(close(vectorDot(result.eigen[i].vector, result.eigen[i].vector), 1, 1e-8), name + " unit eigenvector");
+        for (var j = i + 1; j < MATURITIES.length; j += 1) {
+          assert(Math.abs(vectorDot(result.eigen[i].vector, result.eigen[j].vector)) < 1e-8, name + " orthogonal eigenvectors");
+        }
+      }
+      for (i = 0; i < MATURITIES.length; i += 1) {
+        for (j = 0; j < MATURITIES.length; j += 1) {
+          var reconstructed = 0;
+          for (var k = 0; k < MATURITIES.length; k += 1) {
+            reconstructed += result.eigen[k].value * result.eigen[k].vector[i] * result.eigen[k].vector[j];
+          }
+          maxReconstructionError = Math.max(maxReconstructionError, Math.abs(reconstructed - result.covariance[i][j]));
+        }
+      }
+      assert(close(totalExplained, 1, 1e-10), name + " explained variance sums to one");
+      assert(close(result.top3, result.explained[0] + result.explained[1] + result.explained[2], 1e-12), name + " top-three identity");
+      assert(closeRelative(eigenTotal, trace, 1e-10), name + " covariance trace equals eigenvalue sum");
+      assert(maxReconstructionError < 1e-6, name + " covariance reconstructs from eigenpairs");
+    }
+
+    function assertCase(name, result) {
+      assertShape(name, result);
+      assertPcaInvariants(name, result);
+      assertPriceMath(name, result);
+    }
+
     var result = evaluate(DEFAULTS);
+    var noisy = evaluate(Object.assign({}, DEFAULTS, { noise: 18 }));
+    var policy = evaluate(Object.assign({}, DEFAULTS, { regime: "policy" }));
+    var inflation = evaluate(Object.assign({}, DEFAULTS, { regime: "inflation" }));
+    var zeroShock = evaluate(Object.assign({}, DEFAULTS, { curvature: 0, level: 0, slope: 0 }));
+    var stress = evaluate(Object.assign({}, DEFAULTS, { curvature: 0, level: 80, slope: 0 }));
+
+    [
+      ["default", result],
+      ["high noise", noisy],
+      ["policy regime", policy],
+      ["inflation regime", inflation],
+      ["zero shock", zeroShock],
+      ["large level shock", stress]
+    ].forEach(function (pair) {
+      assertCase(pair[0], pair[1]);
+    });
+
+    var pc1 = result.eigen[0].vector;
+    var pc2 = result.eigen[1].vector;
+    var pc3 = result.eigen[2].vector;
+    assert(Math.min.apply(null, pc1) > 0.12, "PC1 should be a same-sign level-like move");
+    assert(pc2[0] > 0.35 && pc2[pc2.length - 1] < -0.25, "PC2 should separate short and long maturities");
+    assert(pc3[4] > 0.2 && 0.5 * (pc3[0] + pc3[pc3.length - 1]) < -0.45, "PC3 should bend the belly against the wings");
+
     var shock10 = result.impacts[6];
+    assertBetween(100 * result.explained[0], 73.8, 74.0, "default PC1 explained variance regression");
+    assertBetween(100 * result.top3, 93.2, 93.4, "default top-three explained variance regression");
+    assertBetween(shock10.exact, -1.22, -1.20, "default 10y exact return regression");
+    assertBetween(shock10.duration, -1.23, -1.21, "default 10y duration return regression");
+    assertBetween(result.shocks[8], 12.2, 12.4, "default 30y shock regression");
+    assert(noisy.top3 < 0.5, "maturity-specific noise should break the clean three-factor map");
+    assert(noisy.explained[0] < result.explained[0] / 3, "high noise should flatten the variance ledger");
+    assert(policy.top3 > 0.94 && inflation.top3 > 0.93, "named regimes should still be mostly low-rank in this simulator");
+    zeroShock.impacts.forEach(function (impact, index) {
+      assert(zeroShock.shocks[index] === 0, "zero shock curve movement");
+      assert(impact.exact === 0 && impact.duration === 0 && impact.convexity === 0, "zero shock price movement");
+    });
+    var stress30 = stress.impacts[8];
+    assert(Math.abs(stress30.exact - stress30.convexity) < Math.abs(stress30.exact - stress30.duration) / 10, "convexity should improve a large 30y shock approximation");
+    assert(evaluate(DEFAULTS).top3 === result.top3, "default run should be deterministic");
+
+    var cleaned = cleanParams({ curvature: 99, days: 227, level: -99, noise: 99, regime: "broken", seed: 9999, slope: 99 });
+    assert(cleaned.curvature === 40, "curvature clamps high");
+    assert(cleaned.days === 230, "days clamps and rounds to tens");
+    assert(cleaned.level === -60, "level clamps low");
+    assert(cleaned.noise === 18, "noise clamps high");
+    assert(cleaned.regime === DEFAULTS.regime, "invalid regime falls back to default");
+    assert(cleaned.seed === 997, "seed clamps high");
+    assert(cleaned.slope === 70, "slope clamps high");
+
     return {
+      checked: checked,
+      highNoiseTop3Explained: Number((100 * noisy.top3).toFixed(1)),
+      ok: true,
       pc1Explained: Number((100 * result.explained[0]).toFixed(1)),
+      stressThirtyYearConvexityError: Number(Math.abs(stress30.exact - stress30.convexity).toFixed(4)),
+      stressThirtyYearDurationError: Number(Math.abs(stress30.exact - stress30.duration).toFixed(4)),
       top3Explained: Number((100 * result.top3).toFixed(1)),
       tenYearExactReturn: Number(shock10.exact.toFixed(2)),
       tenYearDurationReturn: Number(shock10.duration.toFixed(2)),
@@ -472,10 +620,13 @@
   function drawVariance(ctx, result, x, y, w, h) {
     panel(ctx, x, y, w, h, "variance ledger");
     var px = x + 34;
-    var py = y + 42;
+    var py = y + 54;
     var pw = w - 54;
-    var ph = h - 70;
+    var ph = h - 84;
     var max = Math.max.apply(null, result.explained.slice(0, 6));
+    ctx.fillStyle = COLORS.muted;
+    ctx.font = "12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("top three = " + fmt(100 * result.top3, 1) + "%", x + w - 126, y + 23);
     result.explained.slice(0, 6).forEach(function (value, i) {
       var barW = pw / 6 * 0.66;
       var cx = px + pw * (i + 0.5) / 6;
@@ -487,9 +638,6 @@
       ctx.fillText("PC" + (i + 1), cx - 12, py + ph + 17);
       ctx.fillText(fmt(100 * value, 0) + "%", cx - 13, py + ph - bh - 7);
     });
-    ctx.fillStyle = COLORS.muted;
-    ctx.font = "12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillText("top three explain " + fmt(100 * result.top3, 1) + "% of simulated yield-change variance", px, y + h - 14);
   }
 
   function drawPnL(ctx, result, x, y, w, h) {
@@ -559,6 +707,8 @@
   }
 
   var api = {
+    DEFAULTS: DEFAULTS,
+    MATURITIES: MATURITIES,
     audit: audit,
     cleanParams: cleanParams,
     evaluate: evaluate
