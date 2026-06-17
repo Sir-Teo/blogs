@@ -424,7 +424,6 @@
     var student = result.series.student;
     var clayton = result.series.clayton;
     var gridCases = 0;
-    var gridValid = 0;
 
     function check(name, condition, details) {
       checked += 1;
@@ -435,30 +434,88 @@
       }
     }
 
+    function checkClose(name, actual, expected, tolerance) {
+      check(name, close(actual, expected, tolerance), {
+        actual: actual,
+        expected: expected,
+        tolerance: tolerance
+      });
+    }
+
+    function checkProbability(name, value) {
+      check(name, isProbability(value), { value: value });
+    }
+
     function sameMargins(a, b) {
       return sameSorted(sortedLosses(a, "x"), sortedLosses(b, "x"), 1e-12) &&
         sameSorted(sortedLosses(a, "y"), sortedLosses(b, "y"), 1e-12);
     }
 
-    check("parameter sanitation snaps and clamps", (function () {
-      var params = cleanParams({ tau: 83, df: 19.8, samples: 777, tail: 88, seed: -5, focus: "bad", marginal: "bad" });
-      return params.tau === 0.80 &&
-        params.df === 16 &&
-        params.samples === 800 &&
-        params.tail === 0.90 &&
-        params.seed === 1 &&
-        params.focus === DEFAULTS.focus &&
-        params.marginal === DEFAULTS.marginal;
-    })());
+    function tailCount(points, q) {
+      return points.reduce(function (count, point) {
+        return count + (point.u > q && point.v > q ? 1 : 0);
+      }, 0);
+    }
+
+    function checkSeries(name, series, params) {
+      check(name + " reports finite summary statistics", seriesIsFinite(series));
+      check(name + " point count matches sanitized samples", series.points.length === params.samples);
+      check(name + " curve has 20 threshold rows", series.curve.length === 20);
+      checkClose(name + " first curve threshold is 80%", series.curve[0].q, 0.80, 1e-12);
+      checkClose(name + " last curve threshold is 99%", series.curve[series.curve.length - 1].q, 0.99, 1e-12);
+      checkClose(name + " selected tail conditional recomputes", series.tailConditional, tailConditional(series.points, params.tail), 1e-15);
+      checkClose(name + " joint tail recomputes from points", series.jointTail, tailCount(series.points, params.tail) / params.samples, 1e-15);
+      var oneHigh = highCount(series.points, params.tail);
+      check(name + " one-name tail count follows rank grid", oneHigh === Math.round((1 - params.tail) * params.samples), {
+        actual: oneHigh,
+        expected: Math.round((1 - params.tail) * params.samples)
+      });
+      checkClose(name + " joint tail equals conditional times tail mass", series.jointTail, series.tailConditional * oneHigh / params.samples, 1e-15);
+      checkClose(name + " lambda recomputes from formula", series.lambda, theoreticalLambda(series.kind, params), 1e-15);
+      checkProbability(name + " Spearman correlation is bounded after rescale", series.spearman * 0.5 + 0.5);
+      checkProbability(name + " loss correlation is bounded after rescale", series.lossCorrelation * 0.5 + 0.5);
+      checkProbability(name + " finite-threshold co-tail is a probability", series.tailConditional);
+      checkProbability(name + " asymptotic lambda is a probability", series.lambda);
+      check(name + " ES is at least VaR", series.esTail >= series.varTail - 1e-12);
+      check(name + " median sits below tail VaR", series.medianPortfolio <= series.varTail + 1e-12);
+      series.curve.forEach(function (row, i) {
+        checkClose(name + " curve row " + i + " conditional recomputes", row.conditional, tailConditional(series.points, row.q), 1e-15);
+        checkProbability(name + " curve row " + i + " conditional is probability", row.conditional);
+      });
+    }
+
+    var dirty = cleanParams({ tau: 83, df: 19.8, samples: 777, tail: 88, seed: -5, focus: "bad", marginal: "bad" });
+    check("sanitation clamps tau to slider max", dirty.tau === 0.80);
+    check("sanitation clamps degrees of freedom to slider max", dirty.df === 16);
+    check("sanitation snaps samples to slider floor", dirty.samples === 800);
+    check("sanitation clamps tail threshold to slider floor", dirty.tail === 0.90);
+    check("sanitation clamps seed to slider floor", dirty.seed === 1);
+    check("sanitation falls back to default focus", dirty.focus === DEFAULTS.focus);
+    check("sanitation falls back to default marginal", dirty.marginal === DEFAULTS.marginal);
     check("rank uniforms are the midpoint grid", (function () {
       var ranks = rankUniforms([30, 10, 20, 40]).slice().sort(function (a, b) { return a - b; });
       return sameSorted(ranks, [0.125, 0.375, 0.625, 0.875], 1e-15);
     })());
-    check("normal quantile is symmetric", close(invNorm(0.975), -invNorm(0.025), 1e-8));
-    check("student t cdf is centered and symmetric", close(studentTCdf(0, 5), 0.5, 1e-12) &&
-      close(studentTCdf(1.4, 5), 1 - studentTCdf(-1.4, 5), 2e-4));
-    check("Kendall tau maps to elliptical rho", close(rhoFromTau(0.5), Math.SQRT1_2, 1e-12) &&
-      close(rhoFromTau(0), 0, 1e-12));
+    checkClose("normal quantile is centered", invNorm(0.5), 0, 1e-12);
+    [0.001, 0.01, 0.025, 0.1, 0.25, 0.75, 0.9, 0.975, 0.99, 0.999].forEach(function (p, i, rows) {
+      check("normal quantile is finite at p=" + p, Number.isFinite(invNorm(p)));
+      if (p < 0.5) checkClose("normal quantile is symmetric at p=" + p, invNorm(p), -invNorm(1 - p), 1e-8);
+      if (i > 0) check("normal quantile is monotone at p=" + p, invNorm(p) > invNorm(rows[i - 1]));
+    });
+    [2, 3, 5, 16].forEach(function (df) {
+      checkClose("student t cdf is centered for df " + df, studentTCdf(0, df), 0.5, 1e-12);
+      [0.4, 1.4, 2.2].forEach(function (x) {
+        checkClose("student t cdf is symmetric for df " + df + " x " + x, studentTCdf(x, df), 1 - studentTCdf(-x, df), 2e-4);
+      });
+    });
+    [0, 0.25, 0.5, 0.8].forEach(function (tau) {
+      var rho = rhoFromTau(tau);
+      checkProbability("tau-to-rho stays inside correlation range for tau " + tau, rho * 0.5 + 0.5);
+      checkClose("elliptical Kendall tau round trip " + tau, 2 * Math.asin(rho) / Math.PI, tau, 1e-12);
+      var theta = thetaFromTau(tau);
+      if (tau === 0) checkClose("Clayton theta is zero at zero tau", theta, 0, 1e-12);
+      else checkClose("Clayton Kendall tau round trip " + tau, theta / (theta + 2), tau, 1e-12);
+    });
     check("Kendall tau maps to Clayton theta", (function () {
       var theta = thetaFromTau(0.45);
       return close(theta / (theta + 2), 0.45, 1e-12);
@@ -471,22 +528,27 @@
       theoreticalLambda("student", Object.assign({}, defaults, { df: 16 })));
     check("survival Clayton tail dependence rises with tau", theoreticalLambda("clayton", Object.assign({}, defaults, { tau: 0.20 })) <
       theoreticalLambda("clayton", Object.assign({}, defaults, { tau: 0.70 })));
+    [0, 0.25, 0.45, 0.65, 0.80].forEach(function (tau) {
+      var previousT = null;
+      [2, 3, 6, 16].forEach(function (df) {
+        var value = theoreticalLambda("student", Object.assign({}, defaults, { tau: tau, df: df }));
+        checkProbability("t lambda probability tau " + tau + " df " + df, value);
+        if (previousT != null) check("t lambda weakly falls with df tau " + tau + " df " + df, value <= previousT + 1e-12);
+        previousT = value;
+      });
+      checkProbability("Clayton lambda probability tau " + tau, theoreticalLambda("clayton", Object.assign({}, defaults, { tau: tau })));
+    });
     check("default result order and worst ES match the post", result.order.join("|") === "gaussian|student|clayton" && result.worst === "clayton");
-    check("default co-tail facts match the post", close(gaussian.tailConditional, 0.2857142857142857, 1e-15) &&
-      close(student.tailConditional, 0.36904761904761907, 1e-15) &&
-      close(clayton.tailConditional, 0.6071428571428571, 1e-15));
-    check("default ES facts match the post", close(gaussian.esTail, 2.8918724923654233, 1e-12) &&
-      close(student.esTail, 2.942234308464295, 1e-12) &&
-      close(clayton.esTail, 3.1870519729096882, 1e-12));
+    checkClose("default Gaussian co-tail fact matches the post", gaussian.tailConditional, 0.2857142857142857, 1e-15);
+    checkClose("default t co-tail fact matches the post", student.tailConditional, 0.36904761904761907, 1e-15);
+    checkClose("default Clayton co-tail fact matches the post", clayton.tailConditional, 0.6071428571428571, 1e-15);
+    checkClose("default Gaussian ES fact matches the post", gaussian.esTail, 2.8918724923654233, 1e-12);
+    checkClose("default t ES fact matches the post", student.esTail, 2.942234308464295, 1e-12);
+    checkClose("default Clayton ES fact matches the post", clayton.esTail, 3.1870519729096882, 1e-12);
     check("copulas share the same marginal loss grid", sameMargins(gaussian, student) && sameMargins(gaussian, clayton));
-    check("joint tail equals conditional times tail mass", result.order.every(function (key) {
-      var series = result.series[key];
-      var mass = highCount(series.points, result.params.tail) / result.params.samples;
-      return close(series.jointTail, series.tailConditional * mass, 1e-15);
-    }));
-    check("portfolio ES is at least VaR", result.order.every(function (key) {
-      return result.series[key].esTail >= result.series[key].varTail;
-    }));
+    result.order.forEach(function (key) {
+      checkSeries("default " + key, result.series[key], result.params);
+    });
     check("focus changes presentation but not the dependence runs", (function () {
       var other = evaluate(Object.assign({}, DEFAULTS, { focus: "gaussian" }));
       return close(other.series.clayton.tailConditional, clayton.tailConditional, 1e-15) &&
@@ -505,27 +567,31 @@
         return close(result.series[key].tailConditional, normalResult.series[key].tailConditional, 1e-15);
       });
     })());
+    check("different marginals actually move the loss scale", (function () {
+      var normalResult = evaluate(Object.assign({}, DEFAULTS, { marginal: "normal" }));
+      return !sameMargins(result.series.gaussian, normalResult.series.gaussian);
+    })());
 
     [3, 31, 211].forEach(function (seed) {
       [0, 0.35, 0.65].forEach(function (tau) {
-        [2, 6].forEach(function (df) {
-          ["normal", "skew"].forEach(function (marginal) {
-            [95, 99].forEach(function (tail) {
-              var tested = evaluate({ seed: seed, tau: tau * 100, df: df, marginal: marginal, samples: 1200, tail: tail });
-              var finite = tested.order.every(function (key) { return seriesIsFinite(tested.series[key]); });
-              var margins = sameMargins(tested.series.gaussian, tested.series.student) &&
-                sameMargins(tested.series.gaussian, tested.series.clayton);
+        [2, 6, 16].forEach(function (df) {
+          ["normal", "skew", "credit"].forEach(function (marginal) {
+            [90, 95, 99].forEach(function (tail) {
+              var tested = evaluate({ seed: seed, tau: tau * 100, df: df, marginal: marginal, samples: 800, tail: tail });
               gridCases += 1;
-              if (finite && margins) gridValid += 1;
+              check("grid " + gridCases + " sanitized samples", tested.params.samples === 800);
+              check("grid " + gridCases + " sanitized tau", close(tested.params.tau, tau, 1e-12));
+              check("grid " + gridCases + " all copulas share marginal grids", sameMargins(tested.series.gaussian, tested.series.student) &&
+                sameMargins(tested.series.gaussian, tested.series.clayton));
+              tested.order.forEach(function (key) {
+                checkSeries("grid " + gridCases + " " + key, tested.series[key], tested.params);
+              });
             });
           });
         });
       });
     });
-    check("72-case copula grid is numerically valid", gridCases === 72 && gridValid === 72, {
-      cases: gridCases,
-      valid: gridValid
-    });
+    check("243-case copula grid completed", gridCases === 243, { cases: gridCases });
 
     return {
       ok: passed,
