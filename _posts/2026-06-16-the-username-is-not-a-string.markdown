@@ -66,8 +66,10 @@ can make the code-point sequence different without making the displayed string
 obviously different. Bidirectional controls can be worse in source code:
 Boucher and Anderson's Trojan Source work showed how maliciously encoded source
 can appear different to a reviewer than to a compiler or interpreter.[^trojan]
-That attack is about source code, not usernames, but the lesson travels: visual
-review is not a parser.
+Unicode's newer source-code guidance, UTS #55, treats lookalike glyphs,
+bidirectional reordering, and invisible characters as separate tooling and
+display problems.[^uts55] That attack is about source code, not usernames, but
+the lesson travels: visual review is not a parser.
 
 **Confusable scripts.** Greek, Cyrillic, Latin, and other scripts contain
 characters that can be visually confusable. Unicode Technical Standard #39
@@ -93,8 +95,11 @@ The policy ladder is:
 5. a tiny UTS #39-style confusable skeleton plus a mixed-script guard.
 
 This is intentionally not a production implementation of UTS #39. The real
-standard has data files, profiles, context rules, and versioning concerns. The
-browser lab uses a small readable table so the failure modes are visible.
+standard has data files, profiles, context rules, restriction levels, and
+versioning concerns. UAX #31 adds the other half of the story: identifier
+syntax is normally a profile, not a universal alphabet, and default-ignorable
+code points deserve explicit treatment.[^uax31] The browser lab uses a small
+readable table so the failure modes are visible.
 
 <style>
   .unicode-lab {
@@ -123,6 +128,7 @@ browser lab uses a small readable table so the failure modes are visible.
     font-size: 0.82rem;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
   }
 
   .unicode-lab output {
@@ -135,6 +141,9 @@ browser lab uses a small readable table so the failure modes are visible.
 
   .unicode-lab input[type="range"] {
     accent-color: #0f766e;
+    box-sizing: border-box;
+    margin: 0;
+    min-width: 0;
     width: 100%;
   }
 
@@ -214,7 +223,7 @@ browser lab uses a small readable table so the failure modes are visible.
   <div class="unicode-lab__controls">
     <label>
       Case <output data-value="case">canonical accent</output>
-      <input type="range" data-param="case" min="0" max="7" step="1" value="0">
+      <input type="range" data-param="case" min="0" max="8" step="1" value="0">
     </label>
     <label>
       Policy <output data-value="policy">raw equality</output>
@@ -230,13 +239,14 @@ browser lab uses a small readable table so the failure modes are visible.
     <span><i style="background:#7c3aed"></i> Mixed script</span>
   </div>
   <p class="unicode-lab__note">
-    Deterministic toy registry. The audit checks nine expected failures:
+    Deterministic toy registry with a 573-assertion audit over nine cases:
     canonical equivalence, compatibility equivalence, case folding, invisible
-    controls, mixed-script detection, and a small confusable skeleton. Production
-    systems should use Unicode's full data files and a documented versioned profile.
+    controls, bidirectional controls, mixed-script detection, and a small
+    confusable skeleton. Production systems should use Unicode's full data files
+    and a documented versioned profile.
   </p>
 </div>
-<script defer src="{{ '/assets/js/unicode-identifier-lab.js?v=20260616a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/unicode-identifier-lab.js?v=20260616b' | relative_url }}"></script>
 
 The default case is `éclair` versus `e` plus a combining acute accent. Raw
 equality misses it. NFC catches it.
@@ -247,6 +257,12 @@ case folding collides it with `kilo`.
 Move to **invisible joiner**. Even NFKC plus folding misses `ad + U+200D +
 min`; the identifier key catches it only after selected default-ignorable
 controls are removed.
+
+Move to **directional control**. The candidate inserts `U+202E`, right-to-left
+override, inside `admin`. A registry that treats hidden format controls as part
+of the identity boundary lets the display layer and the comparison layer drift.
+The toy identifier key strips it; a real profile has to decide which such
+controls are allowed, rejected, or diagnosed.
 
 Move to **Cyrillic lookalike**. Normalization does not save you. The candidate
 is already a perfectly normal Unicode string. It needs a script/confusable
@@ -352,7 +368,11 @@ Treat the username like a security object, not a string.
 
 [^uts39]: Unicode Consortium, "Unicode Technical Standard #39: Unicode Security Mechanisms." [UTS #39](https://www.unicode.org/reports/tr39/).
 
+[^uax31]: Unicode Consortium, "Unicode Standard Annex #31: Unicode Identifiers and Syntax." [UAX #31](https://www.unicode.org/reports/tr31/).
+
 [^utr36]: Unicode Consortium, "Unicode Security Considerations" stabilized report page, noting that UTR #36 is no longer maintained and that some material has been superseded by newer standards. [UTR #36](https://www.unicode.org/reports/tr36/).
+
+[^uts55]: Unicode Consortium, "Unicode Technical Standard #55: Unicode Source Code Handling." [UTS #55](https://www.unicode.org/reports/tr55/).
 
 [^idna]: John Klensin, "Internationalized Domain Names for Applications (IDNA): Definitions and Document Framework," RFC 5890, IETF, 2010. [RFC 5890](https://datatracker.ietf.org/doc/html/rfc5890). See also RFC 5891 for the IDNA protocol. [RFC 5891](https://www.rfc-editor.org/info/rfc5891/).
 

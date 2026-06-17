@@ -6,48 +6,63 @@
       label: "canonical accent",
       existing: "éclair",
       candidate: "e\u0301clair",
+      firstBlock: 1,
       note: "same abstract accent, different code points"
     },
     {
       label: "compatibility letter",
       existing: "kilo",
       candidate: "\u212Ailo",
+      firstBlock: 2,
       note: "Kelvin sign normalizes to K"
     },
     {
       label: "invisible joiner",
       existing: "admin",
       candidate: "ad\u200Dmin",
+      firstBlock: 3,
       note: "zero-width joiner survives raw equality"
+    },
+    {
+      label: "directional control",
+      existing: "admin",
+      candidate: "ad\u202Emin",
+      firstBlock: 3,
+      note: "right-to-left override is invisible but changes display state"
     },
     {
       label: "Cyrillic lookalike",
       existing: "paypal",
       candidate: "\u0440\u0430\u0443\u0440\u0430l",
+      firstBlock: 4,
       note: "Cyrillic letters imitate Latin ones"
     },
     {
       label: "whole-script lookalike",
       existing: "scope",
       candidate: "\u0455\u0441\u043E\u0440\u0435",
+      firstBlock: 4,
       note: "single-script Cyrillic can still spoof Latin"
     },
     {
       label: "sharp s",
       existing: "strasse",
       candidate: "straße",
+      firstBlock: 2,
       note: "case folding is not just lowercasing"
     },
     {
       label: "Roman numeral",
       existing: "IV",
       candidate: "\u2163",
+      firstBlock: 2,
       note: "compatibility form expands to two letters"
     },
     {
       label: "Greek first letter",
       existing: "amazon",
       candidate: "\u0391mazon",
+      firstBlock: 4,
       note: "one script switch inside a familiar name"
     }
   ];
@@ -109,6 +124,14 @@
     "\u03C2": "\u03C3"
   };
 
+  var SCRIPT_TESTS = [
+    ["Latin", /\p{Script=Latin}/u],
+    ["Greek", /\p{Script=Greek}/u],
+    ["Cyrillic", /\p{Script=Cyrillic}/u],
+    ["Hebrew", /\p{Script=Hebrew}/u],
+    ["Arabic", /\p{Script=Arabic}/u]
+  ];
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -139,6 +162,15 @@
       cp === 0xFEFF;
   }
 
+  function isBidiControl(ch) {
+    var cp = ch.codePointAt(0);
+    return cp === 0x061C ||
+      cp === 0x200E ||
+      cp === 0x200F ||
+      (cp >= 0x202A && cp <= 0x202E) ||
+      (cp >= 0x2066 && cp <= 0x2069);
+  }
+
   function stripIgnorables(str) {
     return chars(str).filter(function (ch) {
       return !isIgnorable(ch);
@@ -163,10 +195,9 @@
     var cp = ch.codePointAt(0);
     if ((cp >= 0x0300 && cp <= 0x036F) || cp === 0x200C || cp === 0x200D) return "Inherited";
     if (cp <= 0x024F || (cp >= 0x1E00 && cp <= 0x1EFF)) return "Latin";
-    if (cp >= 0x0370 && cp <= 0x03FF) return "Greek";
-    if (cp >= 0x0400 && cp <= 0x052F) return "Cyrillic";
-    if (cp >= 0x0590 && cp <= 0x05FF) return "Hebrew";
-    if (cp >= 0x0600 && cp <= 0x06FF) return "Arabic";
+    for (var i = 0; i < SCRIPT_TESTS.length; i += 1) {
+      if (SCRIPT_TESTS[i][1].test(ch)) return SCRIPT_TESTS[i][0];
+    }
     if ((cp >= 0x2000 && cp <= 0x206F) || (cp >= 0xFE00 && cp <= 0xFE0F)) return "Common";
     return "Other";
   }
@@ -194,6 +225,7 @@
 
   function policyFlags(policy, candidate) {
     return {
+      bidi: policy !== "raw" && chars(candidate).some(isBidiControl),
       mixed: policy === "skeleton" && mixedScript(candidate),
       invisible: policy !== "raw" && chars(candidate).some(isIgnorable)
     };
@@ -230,13 +262,15 @@
     var collisions = 0;
     var mixed = 0;
     var invisible = 0;
+    var bidi = 0;
     CASES.forEach(function (item) {
       var e = evaluateCase(item, policyIndex);
       if (e.keyCollision) collisions += 1;
       if (e.flags.mixed) mixed += 1;
       if (e.flags.invisible) invisible += 1;
+      if (e.flags.bidi) bidi += 1;
     });
-    return { collisions: collisions, mixed: mixed, invisible: invisible };
+    return { bidi: bidi, collisions: collisions, mixed: mixed, invisible: invisible };
   }
 
   function formatList(values) {
@@ -439,10 +473,17 @@
       metric("key collision", result.keyCollision ? "yes" : "no"),
       metric("candidate scripts", formatList(scripts(item.candidate))),
       metric("mixed script", mixedScript(item.candidate) ? "yes" : "no"),
-      metric("invisible chars", chars(item.candidate).filter(isIgnorable).length),
+      metric("hidden controls", chars(item.candidate).filter(isIgnorable).length),
       metric("registry hits", stats.collisions + "/" + CASES.length)
     ].join("");
     drawChart(canvas, item, policyIndex, result);
+    root.__unicodeIdentifierState = {
+      caseIndex: caseIndex,
+      item: item,
+      policyIndex: policyIndex,
+      result: result,
+      stats: stats
+    };
   }
 
   function init() {
@@ -466,34 +507,93 @@
   }
 
   function audit() {
-    var checks = [
-      ["NFC catches combining accent", evaluateCase(CASES[0], 1).keyCollision],
-      ["NFKC catches Kelvin sign", evaluateCase(CASES[1], 2).keyCollision],
-      ["identifier key strips ZWJ", evaluateCase(CASES[2], 3).keyCollision],
-      ["skeleton catches Cyrillic paypal", evaluateCase(CASES[3], 4).keyCollision],
-      ["whole-script skeleton catches scope", evaluateCase(CASES[4], 4).keyCollision],
-      ["casefold catches sharp s", evaluateCase(CASES[5], 2).keyCollision],
-      ["NFKC catches Roman numeral", evaluateCase(CASES[6], 2).keyCollision],
-      ["mixed script flags Greek Amazon", evaluateCase(CASES[7], 4).flags.mixed],
-      ["skeleton idempotent", skeleton(skeleton(CASES[3].candidate)) === skeleton(CASES[3].candidate)]
-    ];
-    var passed = checks.filter(function (row) { return row[1]; }).length;
-    return { passed: passed, total: checks.length, checks: checks };
-  }
+    var checked = 0;
 
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-      audit: audit,
-      CASES: CASES,
-      codePoints: codePoints,
-      evaluateCase: evaluateCase,
-      keyFor: keyFor,
-      mixedScript: mixedScript,
-      scripts: scripts,
-      skeleton: skeleton,
-      stripIgnorables: stripIgnorables
+    function check(condition, message) {
+      checked += 1;
+      if (!condition) throw new Error(message);
+    }
+
+    function blockedAt(item, policyIndex) {
+      var result = evaluateCase(item, policyIndex);
+      return !result.accepted;
+    }
+
+    CASES.forEach(function (item, caseIndex) {
+      check(typeof item.firstBlock === "number", item.label + ": expected first blocking layer");
+      check(item.firstBlock >= 1 && item.firstBlock < POLICIES.length, item.label + ": first block should be a real policy");
+      check(item.existing !== item.candidate, item.label + ": raw source strings should differ");
+      check(codePoints(item.candidate).length === chars(item.candidate).length, item.label + ": code point ledger should match character iterator");
+      check(keyFor("raw", item.candidate) === item.candidate, item.label + ": raw key should preserve the candidate");
+      check(keyFor("nfc", item.candidate) === item.candidate.normalize("NFC"), item.label + ": NFC key should match platform normalization");
+      check(keyFor("nfkc-fold", item.candidate) === foldCase(item.candidate), item.label + ": folded key should match foldCase");
+      check(keyFor("identifier", item.candidate) === stripIgnorables(foldCase(item.candidate)), item.label + ": identifier key should strip selected controls after folding");
+      check(keyFor("skeleton", item.candidate) === skeleton(item.candidate), item.label + ": skeleton key should match skeleton function");
+      check(skeleton(skeleton(item.candidate)) === skeleton(item.candidate), item.label + ": skeleton should be idempotent");
+
+      POLICIES.forEach(function (policy, policyIndex) {
+        var result = evaluateCase(item, policyIndex);
+        var expectedBlocked = policyIndex >= item.firstBlock;
+        check(result.policy === policy.id, item.label + " / " + policy.label + ": policy id should round trip");
+        check(result.policyLabel === policy.label, item.label + " / " + policy.label + ": policy label should round trip");
+        check(result.existingKey === keyFor(policy.id, item.existing), item.label + " / " + policy.label + ": existing key should be reproducible");
+        check(result.candidateKey === keyFor(policy.id, item.candidate), item.label + " / " + policy.label + ": candidate key should be reproducible");
+        check(result.keyCollision === (result.existingKey === result.candidateKey), item.label + " / " + policy.label + ": keyCollision should equal key equality");
+        check(result.flags.invisible === (policy.id !== "raw" && chars(item.candidate).some(isIgnorable)), item.label + " / " + policy.label + ": invisible flag should match controls");
+        check(result.flags.bidi === (policy.id !== "raw" && chars(item.candidate).some(isBidiControl)), item.label + " / " + policy.label + ": bidi flag should match controls");
+        check(result.flags.mixed === (policy.id === "skeleton" && mixedScript(item.candidate)), item.label + " / " + policy.label + ": mixed flag should be skeleton-only");
+        check(result.accepted === !(result.keyCollision || result.flags.mixed), item.label + " / " + policy.label + ": accepted should follow collision or mixed-script guard");
+        check(blockedAt(item, policyIndex) === expectedBlocked, item.label + " / " + policy.label + ": block ladder should match expected first-block layer");
+      });
+
+      if (caseIndex > 0) check(CASES.slice(0, caseIndex).every(function (previous) { return previous.label !== item.label; }), item.label + ": labels should be unique");
+    });
+
+    var expectedCollisions = [0, 1, 4, 6, 9];
+    var expectedMixed = [0, 0, 0, 0, 2];
+    var expectedInvisible = [0, 2, 2, 2, 2];
+    var expectedBidi = [0, 1, 1, 1, 1];
+    POLICIES.forEach(function (policy, index) {
+      var stats = allStats(index);
+      check(stats.collisions === expectedCollisions[index], policy.label + ": collision count should match fixture");
+      check(stats.mixed === expectedMixed[index], policy.label + ": mixed-script count should match fixture");
+      check(stats.invisible === expectedInvisible[index], policy.label + ": invisible count should match fixture");
+      check(stats.bidi === expectedBidi[index], policy.label + ": bidi count should match fixture");
+    });
+
+    check(scripts("paypal").join(",") === "Latin", "ASCII sample should resolve to Latin");
+    check(mixedScript("\u0391mazon"), "Greek + Latin candidate should be mixed script");
+    check(!mixedScript("\u0455\u0441\u043E\u0440\u0435"), "whole-script Cyrillic candidate should not be locally mixed");
+    check(stripIgnorables("ad\u200Dmin") === "admin", "stripIgnorables should remove ZWJ");
+    check(stripIgnorables("ad\u202Emin") === "admin", "stripIgnorables should remove right-to-left override");
+
+    return {
+      checked: checked,
+      collisionsByPolicy: POLICIES.map(function (policy, index) { return [policy.label, allStats(index).collisions]; }),
+      ok: true,
+      totalCases: CASES.length
     };
   }
+
+  var api = {
+    audit: audit,
+    CASES: CASES,
+    codePoints: codePoints,
+    evaluateCase: evaluateCase,
+    isBidiControl: isBidiControl,
+    isIgnorable: isIgnorable,
+    keyFor: keyFor,
+    mixedScript: mixedScript,
+    scripts: scripts,
+    skeleton: skeleton,
+    stripIgnorables: stripIgnorables
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+
+  if (typeof window !== "undefined") window.UnicodeIdentifierLab = api;
 
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
