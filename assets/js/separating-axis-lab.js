@@ -232,7 +232,7 @@
       metric("candidate axes", String(result.sat.axes.length)),
       metric("critical axis", critical.owner + "#" + (critical.edge + 1)),
       metric(result.sat.colliding ? "min overlap" : "largest gap", fmt(result.sat.colliding ? critical.overlap : critical.gap, 2)),
-      metric("MTV overlap", fmt(result.sat.mtv.overlap, 2), result.sat.colliding ? "warn" : ""),
+      metric("resolution hint", result.sat.colliding ? fmt(result.sat.mtv.overlap, 2) : "n/a", result.sat.colliding ? "warn" : ""),
       metric("offset", result.params.offsetX + ", " + result.params.offsetY)
     ].join("");
   }
