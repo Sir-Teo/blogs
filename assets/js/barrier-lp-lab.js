@@ -376,6 +376,29 @@
     ctx.fillText(text, x, y);
   }
 
+  function wrapLabel(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+    var words = String(text || "").split(/\s+/);
+    var lines = [];
+    var line = "";
+    ctx.font = "600 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    words.forEach(function (word) {
+      var next = line ? line + " " + word : word;
+      if (line && ctx.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    });
+    if (line) lines.push(line);
+    var limit = Math.min(maxLines || lines.length, lines.length);
+    for (var i = 0; i < limit; i += 1) {
+      var out = lines[i];
+      if (i === limit - 1 && lines.length > limit) out = out.replace(/[.,;:]?$/, "") + "...";
+      label(ctx, out, x, y + i * lineHeight, COLORS.muted, 12, 600);
+    }
+  }
+
   function panel(ctx, box, title, subtitle) {
     roundRect(ctx, box.x, box.y, box.w, box.h, 8);
     ctx.fillStyle = COLORS.white;
@@ -384,7 +407,7 @@
     ctx.lineWidth = 1;
     ctx.stroke();
     label(ctx, title, box.x + 14, box.y + 12, COLORS.ink, 14, 790);
-    if (subtitle) label(ctx, subtitle, box.x + 14, box.y + 34, COLORS.muted, 12, 600);
+    if (subtitle) wrapLabel(ctx, subtitle, box.x + 14, box.y + 34, box.w - 28, 15, 2);
   }
 
   function bounds(points) {
@@ -435,6 +458,10 @@
     panel(ctx, box, "Feasible set", state.problem.note);
     var plot = { x: box.x + 30, y: box.y + 70, w: box.w - 60, h: box.h - 112 };
     var map = pointMapper(state.polygon, plot);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(plot.x, plot.y, plot.w, plot.h);
+    ctx.clip();
     ctx.strokeStyle = COLORS.grid;
     ctx.lineWidth = 1;
     for (var g = 0; g <= 4; g += 1) {
@@ -498,6 +525,7 @@
     });
     drawDot(ctx, map(state.optimum.point), 6, COLORS.optimum, COLORS.white);
     drawDot(ctx, map(state.current.point), 6, COLORS.current, COLORS.white);
+    ctx.restore();
     label(ctx, "central path", plot.x + 4, box.y + box.h - 30, COLORS.blue, 11, 760);
     label(ctx, "optimum", plot.x + 110, box.y + box.h - 30, COLORS.optimum, 11, 760);
     label(ctx, "current", plot.x + 188, box.y + box.h - 30, COLORS.current, 11, 760);
@@ -542,14 +570,16 @@
 
   function drawSlacks(ctx, state, box) {
     panel(ctx, box, "Slack prices", "Small slack gets a large multiplier; each product lambda_i s_i = 1/t.");
-    var rows = state.active.slice(0, Math.min(8, state.active.length));
+    var maxRows = Math.max(3, Math.floor((box.h - 132) / 26));
+    var rows = state.active.slice(0, Math.min(maxRows, state.active.length));
+    var rowGap = Math.min(28, (box.h - 136) / Math.max(1, rows.length));
     var maxLambda = Math.max.apply(null, rows.map(function (r) { return r.lambda; }).concat([1e-9]));
     var maxSlack = Math.max.apply(null, rows.map(function (r) { return r.slack; }).concat([1e-9]));
     var x = box.x + 18;
-    var y = box.y + 78;
+    var y = box.y + 86;
     var w = box.w - 36;
     rows.forEach(function (r, i) {
-      var yy = y + i * 28;
+      var yy = y + i * rowGap;
       label(ctx, r.label, x, yy, COLORS.muted, 11, 650);
       roundRect(ctx, x + 104, yy + 2, w - 180, 10, 5);
       ctx.fillStyle = COLORS.panel;
