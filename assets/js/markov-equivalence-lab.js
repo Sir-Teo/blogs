@@ -409,8 +409,8 @@
       text(ctx, row, vx + 8, y + 28 + i * 22, { color: row === "none" ? COLORS.muted : COLORS.bad, size: 11, weight: 760 });
     });
     var phrase = state.fingerprint.vStructures.length
-      ? "orient every collider; leave the rest to the class"
-      : "no collider witness means directions are mostly hidden";
+      ? (box.w < 360 ? "colliders orient shared arrows" : "orient every collider; leave the rest to the class")
+      : (box.w < 360 ? "no collider witness: directions hidden" : "no collider witness means directions are mostly hidden");
     ctx.fillStyle = state.fingerprint.vStructures.length ? COLORS.softGold : COLORS.softPurple;
     ctx.strokeStyle = state.fingerprint.vStructures.length ? COLORS.gold : COLORS.purple;
     ctx.beginPath();
@@ -449,7 +449,7 @@
     var maxSize = Math.max.apply(null, rows.map(function (row) { return row.classSize; }).concat([1]));
     var x = box.x + 52;
     var y = box.y + 70;
-    var plot = { x: x, y: y, w: box.w - 78, h: box.h - 124 };
+    var plot = { x: x, y: y, w: box.w - 78, h: Math.max(70, box.h - 164) };
     ctx.strokeStyle = COLORS.axis;
     ctx.beginPath();
     ctx.moveTo(plot.x, plot.y);
@@ -464,15 +464,15 @@
       var selected = row.target === state.params.intervention;
       ctx.fillStyle = selected ? COLORS.good : COLORS.softBlue;
       ctx.fillRect(bx, plot.y + plot.h - h, barW, h);
-      text(ctx, row.target === "none" ? "obs" : row.target, bx + barW / 2, plot.y + plot.h + 16, { align: "center", color: COLORS.muted, size: 10 });
+      text(ctx, row.target === "none" ? "obs" : row.target, bx + barW / 2, plot.y + plot.h + 15, { align: "center", color: COLORS.muted, size: 10 });
       text(ctx, String(row.classSize), bx + barW / 2, plot.y + plot.h - h - 10, { align: "center", color: selected ? COLORS.good : COLORS.blue, size: 10, weight: 780 });
     });
     var best = rows.slice().sort(function (a, b) {
       return a.classSize - b.classSize || b.compelled - a.compelled || a.target.localeCompare(b.target);
     })[0];
     text(ctx, "class size", plot.x - 10, plot.y, { align: "right", color: COLORS.muted, size: 10 });
-    text(ctx, "best single target: " + fmtTarget(best.target), box.x + 18, box.y + box.h - 42, { color: COLORS.good, size: 11, weight: 820 });
-    text(ctx, "compelled edges there: " + best.compelled, box.x + 18, box.y + box.h - 20, { color: COLORS.muted, size: 10, weight: 700 });
+    text(ctx, "best single target: " + fmtTarget(best.target), box.x + 18, box.y + box.h - 34, { color: COLORS.good, size: 11, weight: 820 });
+    text(ctx, "compelled edges there: " + best.compelled, box.x + 18, box.y + box.h - 16, { color: COLORS.muted, size: 10, weight: 700 });
   }
 
   function draw(root, state) {
