@@ -40,7 +40,7 @@
       label: "lost input bit",
       maxScale: 18,
       minScale: 12,
-      note: "The intended grid has a tiny triangle, but binary64 rounds two vertices together.",
+      note: "The source grid has a tiny triangle; binary64 collapses vertices.",
       scaleLabel: "power of ten"
     },
     safe: {
@@ -346,7 +346,7 @@
     var rect = canvas.getBoundingClientRect();
     var width = Math.max(320, Math.round(rect.width || canvas.clientWidth || canvas.width || 940));
     var compact = width < 680;
-    var height = compact ? 1120 : 760;
+    var height = compact ? 1240 : 760;
     var ratio = Math.max(1, global.devicePixelRatio || 1);
     canvas.style.height = height + "px";
     canvas.width = Math.round(width * ratio);
@@ -522,7 +522,7 @@
   }
 
   function drawVotes(ctx, state, box) {
-    panel(ctx, box, "Four sign votes", "A geometry algorithm branches on this sign, not on the determinant's magnitude.");
+    panel(ctx, box, "Four sign votes", "Algorithms branch on this sign, not on determinant size.");
     var x = box.x + 16;
     var y = box.y + 78;
     var w = box.w - 32;
@@ -534,7 +534,7 @@
   }
 
   function drawFilter(ctx, state, box) {
-    panel(ctx, box, "The filtered predicate", "Try the cheap determinant first; pay for exact arithmetic only when the error bound cannot certify the sign.");
+    panel(ctx, box, "The filtered predicate", "Fast path first; exact fallback when the sign is not certified.");
     var x = box.x + 18;
     var y = box.y + 80;
     var w = box.w - 36;
@@ -555,7 +555,7 @@
     ctx.fillStyle = state.filter.trusted ? COLORS.softGood : COLORS.softGold;
     ctx.fill();
     fillText(ctx, verdict, x + 12, y + 94, state.filter.trusted ? COLORS.good : COLORS.gold, 14, 820);
-    wrapText(ctx, state.failureMode === "input rounding" ? "Caveat: a robust predicate over binary64 inputs cannot recover source coordinates already rounded away." : "The exact fallback restores the predicate sign for this source-coordinate model.", x + 12, y + 116, w - 24, 15, 2);
+    wrapText(ctx, state.failureMode === "input rounding" ? "Caveat: lost coordinates stay lost." : "The exact fallback restores the source-grid predicate sign.", x + 12, y + 116, w - 24, 15, 2);
     fillText(ctx, "final filtered sign: " + signText(state.filterSign), x, box.y + box.h - 30, state.filterSign === state.sourceSign ? COLORS.good : COLORS.bad, 12, 800);
   }
 
@@ -566,9 +566,9 @@
       var w = setup.width - pad * 2;
       return [
         { x: pad, y: pad, w: w, h: 286 },
-        { x: pad, y: 318, w: w, h: 238 },
-        { x: pad, y: 572, w: w, h: 276 },
-        { x: pad, y: 864, w: w, h: 238 }
+        { x: pad, y: 318, w: w, h: 274 },
+        { x: pad, y: 608, w: w, h: 276 },
+        { x: pad, y: 900, w: w, h: 320 }
       ];
     }
     var w2 = (setup.width - pad * 2 - gap) / 2;
