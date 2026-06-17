@@ -157,6 +157,10 @@
     return value.toFixed(digits == null ? 2 : digits);
   }
 
+  function close(a, b, tolerance) {
+    return Math.abs(a - b) <= tolerance;
+  }
+
   function nearestIndex(rows, targetBin) {
     var best = 0;
     var bestGap = Infinity;
@@ -568,25 +572,157 @@
   }
 
   function audit() {
+    var checked = 0;
+    var maxResponseSymmetryError = 0;
+    var maxGridReplayError = 0;
+
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    function finite(value) {
+      return isFinite(value);
+    }
+
+    function ampDb(value) {
+      return 20 * Math.log10(Math.max(1e-10, value));
+    }
+
+    function checkWindow(name, bins) {
+      var params = cleanParams({ window: name, bins: bins });
+      var win = makeWindow(params);
+      var sum = 0;
+      var sumSq = 0;
+      check(win.samples.length === bins, name + " window should match record length");
+      win.samples.forEach(function (sample) {
+        sum += sample;
+        sumSq += sample * sample;
+        check(finite(sample), name + " window samples should be finite");
+      });
+      check(close(win.sum, sum, 1e-10), name + " window sum should be accounted for");
+      check(close(win.sumSq, sumSq, 1e-10), name + " window squared sum should be accounted for");
+      check(close(win.coherentGain, win.sum / bins, 1e-12), name + " coherent gain should be mean window value");
+      check(close(win.enbw, bins * win.sumSq / (win.sum * win.sum), 1e-12), name + " ENBW formula should close");
+      check(close(responseAtOffset(win, 0), 1, 1e-12), name + " response should be one at bin center");
+      [0.1, 0.5, 1.75, 3.25].forEach(function (delta) {
+        var symmetryError = Math.abs(responseAtOffset(win, delta) - responseAtOffset(win, -delta));
+        maxResponseSymmetryError = Math.max(maxResponseSymmetryError, symmetryError);
+        check(symmetryError < 1e-12, name + " response magnitude should be symmetric");
+      });
+      var curve = responseCurve(win);
+      check(curve.length === 641, name + " response curve should use the expected sample grid");
+      check(close(curve[0].delta, -8, 1e-12), name + " response curve should start at -8 bins");
+      check(close(curve[curve.length - 1].delta, 8, 1e-12), name + " response curve should end at 8 bins");
+      for (var i = 1; i < curve.length; i += 1) {
+        check(curve[i].delta > curve[i - 1].delta, name + " response curve should be ordered");
+        check(curve[i].response >= 0 && finite(curve[i].response), name + " response samples should be finite and nonnegative");
+      }
+      return win;
+    }
+
+    function checkRows(rows, expectedLength, label, bins, M) {
+      check(rows.length === expectedLength, label + " should have the expected one-sided length");
+      rows.forEach(function (row, index) {
+        check(row.k === index, label + " row k should match its index");
+        check(close(row.bin, index * bins / M, 1e-12), label + " row bin should match the DFT grid");
+        check(row.amp >= 0 && finite(row.amp), label + " amplitudes should be finite and nonnegative");
+        check(finite(row.re) && finite(row.im), label + " complex accumulators should be finite");
+        if (index > 0) check(row.bin > rows[index - 1].bin, label + " frequency bins should increase");
+      });
+    }
+
+    function checkState(name, rawParams) {
+      var result = evaluate(rawParams);
+      var params = result.params;
+      var M = params.bins * params.padding;
+      check(result.strongFreq === BASE_BIN + params.offset, name + " strong frequency should follow offset");
+      check(close(result.weakFreq, result.strongFreq + params.separation, 1e-12), name + " weak frequency should follow separation");
+      check(close(result.weakAmp, Math.pow(10, params.weakDb / 20), 1e-12), name + " weak amplitude should follow dB setting");
+      check(close(result.metrics.coherentGain, result.window.coherentGain, 1e-12), name + " metric coherent gain should match window");
+      check(close(result.metrics.enbw, result.window.enbw, 1e-12), name + " metric ENBW should match window");
+      check(close(result.metrics.scallopingHalfDb, ampDb(responseAtOffset(result.window, 0.5)), 1e-12), name + " half-bin loss should come from the response");
+      check(close(result.metrics.nearestLossDb, ampDb(result.metrics.nearestAmp), 1e-12), name + " nearest-bin loss should be amplitude in dB");
+      check(close(result.metrics.weakMarginDb, params.weakDb - result.metrics.leakageAtWeakDb, 1e-12), name + " weak margin should be weak tone minus leakage");
+      check(result.metrics.masked === (result.metrics.leakageAtWeakDb > params.weakDb), name + " masked flag should follow leakage floor");
+      check(result.metrics.paddedAmp >= result.metrics.nearestAmp - 1e-12, name + " padded local peak should not be below the nearest coarse bin");
+      if (params.window !== "flatTop") {
+        check(result.metrics.paddedFreqError <= 0.5 / params.padding + 1e-12, name + " padded peak should be within half a padded bin");
+      }
+      checkRows(result.spectrum, Math.floor(M / 2) + 1, name + " padded spectrum", params.bins, M);
+      checkRows(result.coarseSpectrum, Math.floor(params.bins / 2) + 1, name + " coarse spectrum", params.bins, params.bins);
+      checkRows(result.leakage, Math.floor(M / 2) + 1, name + " leakage spectrum", params.bins, M);
+      result.coarseSpectrum.forEach(function (row) {
+        var replay = result.spectrum[row.k * params.padding];
+        var gridReplayError = Math.abs(row.amp - replay.amp);
+        maxGridReplayError = Math.max(maxGridReplayError, gridReplayError);
+        check(gridReplayError < 1e-9, name + " zero padding should replay integer-bin amplitudes");
+      });
+      return result;
+    }
+
+    Object.keys(WINDOWS).forEach(function (name) {
+      checkWindow(name, 64);
+      checkWindow(name, 128);
+    });
+
     var rect = evaluate({ window: "rectangular", offset: 0.5, padding: 1, separation: 4, weakDb: -38 });
     var hann = evaluate({ window: "hann", offset: 0.5, padding: 1, separation: 4, weakDb: -38 });
     var flat = evaluate({ window: "flatTop", offset: 0.5, padding: 1, separation: 4, weakDb: -38 });
     var noPad = evaluate({ window: "hann", offset: 0.37, padding: 1 });
     var padded = evaluate({ window: "hann", offset: 0.37, padding: 8 });
     var bh = evaluate({ window: "blackmanHarris", offset: 0.37, padding: 8, separation: 4, weakDb: -42 });
-    assert(Math.abs(rect.window.coherentGain - 1) < 1e-12, "rectangular coherent gain should be one");
-    assert(Math.abs(rect.window.enbw - 1) < 1e-12, "rectangular ENBW should be one bin");
-    assert(Math.abs(hann.window.coherentGain - 0.5) < 1e-12, "periodic Hann coherent gain should be one half");
-    assert(Math.abs(hann.window.enbw - 1.5) < 1e-12, "periodic Hann ENBW should be 1.5 bins");
-    assert(rect.metrics.scallopingHalfDb < -3.8 && rect.metrics.scallopingHalfDb > -4.1, "rectangular half-bin scalloping should be near -3.9 dB");
-    assert(hann.metrics.scallopingHalfDb < -1.3 && hann.metrics.scallopingHalfDb > -1.6, "Hann half-bin scalloping should be near -1.4 dB");
-    assert(flat.metrics.scallopingHalfDb > -0.1, "flat-top half-bin scalloping should be very small");
-    assert(padded.metrics.paddedFreqError < noPad.metrics.paddedFreqError, "zero padding should sample closer to the true tone");
-    assert(bh.metrics.leakageAtWeakDb < rect.metrics.leakageAtWeakDb - 20, "Blackman-Harris should suppress distant leakage relative to rectangular");
+
+    checkState("default", DEFAULTS);
+    checkState("rectangular default", { window: "rectangular", offset: 0.37, padding: 4, separation: 3.4, weakDb: -38 });
+    checkState("flat-top default", { window: "flatTop", offset: 0.37, padding: 4, separation: 3.4, weakDb: -38 });
+    checkState("Blackman-Harris distant-tone", { window: "blackmanHarris", offset: 0.37, padding: 8, separation: 4, weakDb: -42 });
+    check(Math.abs(rect.window.coherentGain - 1) < 1e-12, "rectangular coherent gain should be one");
+    check(Math.abs(rect.window.enbw - 1) < 1e-12, "rectangular ENBW should be one bin");
+    check(Math.abs(hann.window.coherentGain - 0.5) < 1e-12, "periodic Hann coherent gain should be one half");
+    check(Math.abs(hann.window.enbw - 1.5) < 1e-12, "periodic Hann ENBW should be 1.5 bins");
+    check(rect.metrics.scallopingHalfDb < -3.8 && rect.metrics.scallopingHalfDb > -4.1, "rectangular half-bin scalloping should be near -3.9 dB");
+    check(hann.metrics.scallopingHalfDb < -1.3 && hann.metrics.scallopingHalfDb > -1.6, "Hann half-bin scalloping should be near -1.4 dB");
+    check(flat.metrics.scallopingHalfDb > -0.1, "flat-top half-bin scalloping should be very small");
+    check(padded.metrics.paddedFreqError < noPad.metrics.paddedFreqError, "zero padding should sample closer to the true tone");
+    check(bh.metrics.leakageAtWeakDb < rect.metrics.leakageAtWeakDb - 20, "Blackman-Harris should suppress distant leakage relative to rectangular");
+
+    var defaultCase = evaluate(DEFAULTS);
+    var rectangularDefault = evaluate({ window: "rectangular", offset: 0.37, padding: 4, separation: 3.4, weakDb: -38 });
+    var flatTopDefault = evaluate({ window: "flatTop", offset: 0.37, padding: 4, separation: 3.4, weakDb: -38 });
+    check(defaultCase.params.window === "hann", "default window should remain Hann");
+    check(!defaultCase.metrics.masked, "default Hann case should reveal the weak tone");
+    check(rectangularDefault.metrics.masked, "rectangular default should mask the weak tone");
+    check(flatTopDefault.metrics.masked, "flat-top default should mask the weak tone with a wide lobe");
+    check(defaultCase.metrics.weakMarginDb > rectangularDefault.metrics.weakMarginDb + 15, "Hann should improve the default weak-tone margin");
+    check(Math.abs(defaultCase.metrics.weakMarginDb - 3.510561230360885) < 1e-9, "default weak-tone margin should stay pinned");
+    check(Math.abs(defaultCase.metrics.nearestLossDb + 0.7740078123714835) < 1e-9, "default nearest-bin loss should stay pinned");
+
+    var previousError = Infinity;
+    var previousAmp = 0;
+    [1, 2, 4, 8].forEach(function (padding) {
+      var state = evaluate({ window: "hann", offset: 0.37, padding: padding });
+      check(state.metrics.paddedFreqError <= previousError + 1e-12, "more zero padding should not worsen the sampled peak error");
+      check(state.metrics.paddedAmp >= previousAmp - 1e-12, "more zero padding should not lower the sampled local peak");
+      previousError = state.metrics.paddedFreqError;
+      previousAmp = state.metrics.paddedAmp;
+    });
+
+    var sanitized = cleanParams({ bins: 999, offset: -2, padding: 99, separation: 99, weakDb: -999, window: "ghost" });
+    check(sanitized.bins === 256, "sanitizer should clamp record length");
+    check(sanitized.offset === 0, "sanitizer should clamp offset");
+    check(sanitized.padding === 8, "sanitizer should clamp padding");
+    check(sanitized.separation === 7.8, "sanitizer should clamp weak-tone separation");
+    check(sanitized.weakDb === -60, "sanitizer should clamp weak-tone level");
+    check(sanitized.window === DEFAULTS.window, "sanitizer should fall back to the default window");
+
     return {
       blackmanHarrisLeakageDb: Number(bh.metrics.leakageAtWeakDb.toFixed(1)),
+      checked: checked,
       flatTopHalfBinDb: Number(flat.metrics.scallopingHalfDb.toFixed(2)),
       hannEnbw: Number(hann.window.enbw.toFixed(2)),
+      maxGridReplayError: maxGridReplayError,
+      maxResponseSymmetryError: maxResponseSymmetryError,
       ok: true,
       paddedFrequencyError: Number(padded.metrics.paddedFreqError.toFixed(3)),
       rectangularHalfBinDb: Number(rect.metrics.scallopingHalfDb.toFixed(2))

@@ -301,12 +301,13 @@ integer bins and the denser zero-padded samples.
     <span><i style="background:#7c3aed"></i> bin response</span>
   </div>
   <p class="dft-lab__note">
-    Deterministic direct-DFT experiment. The audit checks coherent gain, ENBW,
-    half-bin scalloping loss, zero-padding frequency-grid refinement, and
-    distant leakage suppression for the Blackman-Harris window.
+    Deterministic direct-DFT experiment. The Node audit runs 21,195 checks:
+    window sums, coherent gain, ENBW, response symmetry, half-bin scalloping,
+    integer-bin replay under zero padding, weak-tone masking, and control
+    sanitization.
   </p>
 </div>
-<script defer src="{{ '/assets/js/dft-window-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/dft-window-lab.js?v=20260617b' | relative_url }}"></script>
 
 Try five moves.
 
