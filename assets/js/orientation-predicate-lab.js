@@ -670,26 +670,143 @@
   }
 
   function audit() {
-    var productHard = evaluate({ scenario: "product", scale: 27, tolerance: 0 });
-    var productEasy = evaluate({ scenario: "product", scale: 24, tolerance: 0 });
-    var inputHard = evaluate({ scenario: "input", scale: 16, tolerance: 0 });
-    var inputEasy = evaluate({ scenario: "input", scale: 14, tolerance: 0 });
-    var safe = evaluate({ scenario: "safe", scale: 0, tolerance: 0 });
-    var tolerance = evaluate({ scenario: "safe", scale: 0, tolerance: 8 });
+    var checked = 0;
+    var maxExactProductBits = 0;
+    var maxRoundedNumeratorBits = 0;
 
-    assert(productHard.sourceSign === -1, "wide product exact sign should be clockwise");
-    assert(productHard.roundedSign === -1, "wide product rounded inputs should preserve the sign");
-    assert(productHard.doubleSign === 0, "wide product naive double should collapse to zero at 2^27");
-    assert(!productHard.filter.trusted && productHard.filterSign === productHard.sourceSign, "wide product filter should fall back to exact sign");
-    assert(productEasy.doubleSign === productEasy.sourceSign, "smaller product case should be safe in double");
-    assert(inputHard.sourceSign === 1, "input-rounding exact source sign should be positive");
-    assert(inputHard.roundedSign === 0 && inputHard.doubleSign === 0, "input-rounding case should collapse after binary64 conversion");
-    assert(inputHard.failureMode === "input rounding", "input case should report input rounding");
-    assert(inputEasy.sourceSign === inputEasy.doubleSign && inputEasy.roundedSign === inputEasy.sourceSign, "smaller decimal base should preserve offsets");
-    assert(safe.sourceSign === safe.roundedSign && safe.roundedSign === safe.doubleSign, "safe case should agree across methods");
-    assert(tolerance.tolerance.sign === safe.sourceSign, "safe tolerance should not flip a large determinant");
+    function check(condition, message) {
+      checked += 1;
+      assert(condition, message);
+    }
+
+    function changed(loss) {
+      return loss.xChanged || loss.yChanged;
+    }
+
+    function checkCore(state, label) {
+      var generated = makePoints(state.params);
+      var recomputedRounded = orientRoundedExact(state.numberPoints);
+      var termsDet = state.exactTerms.left - state.exactTerms.right;
+      var doubleDet = state.doubleTerms.left - state.doubleTerms.right;
+      var permanent = Math.abs(state.doubleTerms.left) + Math.abs(state.doubleTerms.right);
+      var expectedTolerance = state.params.tolerance === 0 ? 0 : Math.pow(10, state.params.tolerance - 9);
+      maxExactProductBits = Math.max(maxExactProductBits, bitLength(state.exactTerms.left), bitLength(state.exactTerms.right));
+      maxRoundedNumeratorBits = Math.max(maxRoundedNumeratorBits, bitLength(state.roundedExact.num));
+
+      check(SCENARIOS[state.params.scenario] === state.scenario, label + ": scenario metadata should match sanitized params");
+      check(state.exactPoints.length === 3 && state.numberPoints.length === 3 && state.losses.length === 3, label + ": should expose three points");
+      check(state.exactPoints.map(function (point) { return point.id; }).join("") === "ABC", label + ": point ids should be stable");
+      check(state.generated.baseDescription === generated.baseDescription, label + ": generated base description should be reproducible");
+      check(state.exactPoints.every(function (point, index) {
+        return point.id === generated.points[index].id && point.x === generated.points[index].x && point.y === generated.points[index].y;
+      }), label + ": generated exact points should be reproducible");
+      check(state.numberPoints.every(function (point, index) {
+        return point.id === state.exactPoints[index].id && point.x === Number(state.exactPoints[index].x) && point.y === Number(state.exactPoints[index].y);
+      }), label + ": rounded number points should match Number(source)");
+      check(state.exactDet === termsDet, label + ": exact determinant should equal exact product difference");
+      check(state.sourceSign === sign(state.exactDet), label + ": source sign should be sign(exact determinant)");
+      check(recomputedRounded.exp === state.roundedExact.exp && recomputedRounded.num === state.roundedExact.num, label + ": rounded-input rational determinant should be reproducible");
+      check(state.roundedSign === signRat(state.roundedExact), label + ": rounded sign should be sign(rational determinant)");
+      check(state.doubleDet === doubleDet, label + ": double determinant should equal double product difference");
+      check(state.doubleSign === sign(state.doubleDet), label + ": double sign should be sign(double determinant)");
+      check(state.filter.permanent === permanent, label + ": filter permanent should be |left| + |right|");
+      check(state.filter.errBound === (3 + 16 * EPS) * EPS * permanent, label + ": filter error bound should match implementation formula");
+      check(state.filter.trusted === (Math.abs(state.doubleDet) > state.filter.errBound), label + ": filter trust bit should be bound comparison");
+      check(state.filterSign === (state.filter.trusted ? state.doubleSign : state.sourceSign), label + ": filtered sign should use fast sign or source-grid fallback");
+      check(state.tolerance.tolerance === expectedTolerance, label + ": tolerance magnitude should match slider power");
+      check(state.tolerance.sign === (Math.abs(state.doubleDet) <= expectedTolerance ? 0 : sign(state.doubleDet)), label + ": tolerance decision should be derived from double determinant");
+      check(state.inputChanged === state.losses.some(changed), label + ": inputChanged should summarize per-coordinate losses");
+      check(state.losses.every(function (loss, index) {
+        var exact = state.exactPoints[index];
+        var rounded = state.numberPoints[index];
+        return loss.id === exact.id &&
+          loss.dx === BigInt(Math.trunc(rounded.x)) - exact.x &&
+          loss.dy === BigInt(Math.trunc(rounded.y)) - exact.y &&
+          loss.xChanged === (Number(exact.x) !== rounded.x || BigInt(Math.trunc(rounded.x)) !== exact.x) &&
+          loss.yChanged === (Number(exact.y) !== rounded.y || BigInt(Math.trunc(rounded.y)) !== exact.y);
+      }), label + ": coordinate-loss ledger should match rounded inputs");
+    }
+
+    function checkProduct(scale) {
+      var state = evaluate({ scenario: "product", scale: scale, tolerance: 0 });
+      checkCore(state, "product " + scale);
+      check(state.exactDet === -1n, "product " + scale + ": exact determinant should stay -1");
+      check(state.sourceSign === -1 && state.roundedSign === -1, "product " + scale + ": source and rounded-input signs should be clockwise");
+      check(!state.inputChanged, "product " + scale + ": all source coordinates should fit in binary64");
+      if (scale < 27) {
+        check(state.doubleSign === -1, "product " + scale + ": double sign should still be clockwise below 2^27");
+        check(state.failureMode === "none", "product " + scale + ": below threshold should not report a failure");
+      } else {
+        check(state.doubleSign === 0, "product " + scale + ": double sign should collapse at and above 2^27");
+        check(state.failureMode === "determinant rounding", "product " + scale + ": collapse should be determinant rounding");
+      }
+      if (state.filter.trusted) {
+        check(state.filterSign === state.doubleSign, "product " + scale + ": trusted filter should keep the double sign");
+      } else {
+        check(state.filterSign === state.sourceSign, "product " + scale + ": untrusted filter should fall back to source exact sign");
+      }
+      return state;
+    }
+
+    function checkInput(scale) {
+      var state = evaluate({ scenario: "input", scale: scale, tolerance: 0 });
+      checkCore(state, "input " + scale);
+      check(state.exactDet === 1n, "input " + scale + ": exact determinant should stay +1");
+      check(state.sourceSign === 1, "input " + scale + ": source sign should be counter-clockwise");
+      if (scale < 16) {
+        check(!state.inputChanged, "input " + scale + ": decimal offsets should survive below 10^16");
+        check(state.roundedSign === 1 && state.doubleSign === 1, "input " + scale + ": rounded and double signs should agree before source loss");
+        check(state.failureMode === "none", "input " + scale + ": before source loss should not report a failure");
+      } else {
+        check(state.inputChanged, "input " + scale + ": binary64 conversion should change source coordinates");
+        check(state.roundedSign === 0 && state.doubleSign === 0, "input " + scale + ": rounded geometry should be collinear");
+        check(state.failureMode === "input rounding", "input " + scale + ": collapse should be input rounding");
+      }
+      check(state.filterSign === state.sourceSign, "input " + scale + ": source-grid fallback should preserve intended sign in this demo");
+      return state;
+    }
+
+    function checkSafe(tolerancePower) {
+      var state = evaluate({ scenario: "safe", scale: 0, tolerance: tolerancePower });
+      checkCore(state, "safe tol " + tolerancePower);
+      check(state.exactDet === 54n, "safe tol " + tolerancePower + ": exact determinant should be 54");
+      check(state.sourceSign === 1 && state.roundedSign === 1 && state.doubleSign === 1, "safe tol " + tolerancePower + ": all arithmetic paths should agree");
+      check(state.filter.trusted && state.filterSign === 1, "safe tol " + tolerancePower + ": filter should certify fast path");
+      check(state.tolerance.sign === 1, "safe tol " + tolerancePower + ": tolerance should not erase a large determinant");
+      return state;
+    }
+
+    var productHard;
+    var inputHard;
+    for (var productScale = 20; productScale <= 32; productScale += 1) {
+      var productState = checkProduct(productScale);
+      if (productScale === 27) productHard = productState;
+    }
+    for (var inputScale = 12; inputScale <= 18; inputScale += 1) {
+      var inputState = checkInput(inputScale);
+      if (inputScale === 16) inputHard = inputState;
+    }
+    var safe = checkSafe(0);
+    checkSafe(1);
+    checkSafe(4);
+    var tolerance = checkSafe(8);
+
+    var dirtyParams = cleanParams({ scenario: "nope", scale: Infinity, tolerance: 99 });
+    check(dirtyParams.scenario === "product" && dirtyParams.scale === 27 && dirtyParams.tolerance === 8, "invalid params should sanitize to product defaults and tolerance cap");
+    var inputParams = cleanParams({ scenario: "input", scale: -99, tolerance: -1 });
+    check(inputParams.scenario === "input" && inputParams.scale === 12 && inputParams.tolerance === 0, "input params should clamp to decimal range");
+    var safeParams = cleanParams({ scenario: "safe", scale: 999, tolerance: 3.6 });
+    check(safeParams.scenario === "safe" && safeParams.scale === 12 && safeParams.tolerance === 4, "safe params should clamp and snap");
+    check(signRat(doubleToRational(0)) === 0, "zero should decode to a zero rational");
+    check(signRat(doubleToRational(-2)) === -1, "negative binary64 should decode to a negative rational");
+    check(signRat(doubleToRational(0.5)) === 1, "positive fraction should decode to a positive rational");
+    check(doubleToRational(1).num === 1n << 52n && doubleToRational(1).exp === -52, "one should decode to hidden-bit mantissa times 2^-52");
+    check(tolerance.tolerance.sign === safe.sourceSign, "safe tolerance should not flip a large determinant");
     return {
+      checked: checked,
       inputHard: signText(inputHard.sourceSign) + " -> " + signText(inputHard.roundedSign),
+      maxExactProductBits: maxExactProductBits,
+      maxRoundedNumeratorBits: maxRoundedNumeratorBits,
       ok: true,
       productHard: signText(productHard.sourceSign) + " -> " + signText(productHard.doubleSign),
       productScale: productHard.params.scale,

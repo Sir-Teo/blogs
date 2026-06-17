@@ -117,6 +117,7 @@ accept that the input geometry changed.
     font-weight: 650;
     gap: 0.35rem;
     line-height: 1.25;
+    min-width: 0;
   }
 
   .orient-lab output {
@@ -129,7 +130,10 @@ accept that the input geometry changed.
 
   .orient-lab input,
   .orient-lab select {
+    box-sizing: border-box;
     font: inherit;
+    margin: 0;
+    min-width: 0;
     min-height: 2rem;
     width: 100%;
   }
@@ -265,14 +269,15 @@ accept that the input geometry changed.
     <span><i style="background:#be123c"></i> wrong sign</span>
   </div>
   <p class="orient-lab__note">
-    Deterministic predicate test bench. The audit verifies determinant-product
-    cancellation at scale 2^27, source-coordinate loss at scale 10^16, agreement
-    on smaller scales, exact binary64 sign reconstruction, and the filtered
-    fallback decision. It is not a complete Shewchuk expansion implementation;
-    it is a small source-grid and rounded-input verifier.
+    Deterministic predicate test bench with a 624-assertion audit. It sweeps the
+    product-cancellation band from 2^20 through 2^32, the source-coordinate-loss
+    band from 10^12 through 10^18, exact binary64 sign reconstruction,
+    sanitizer behavior, tolerance decisions, and the filtered fallback. It is
+    not a complete Shewchuk expansion implementation; it is a small source-grid
+    and rounded-input verifier.
   </p>
 </div>
-<script defer src="{{ '/assets/js/orientation-predicate-lab.js?v=20260617a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/orientation-predicate-lab.js?v=20260617b' | relative_url }}"></script>
 
 With the default **wide-product cancellation** case, the points are:
 
