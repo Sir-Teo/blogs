@@ -378,7 +378,7 @@ language.
   <p class="fisher-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/fisher-information-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fisher-information-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What the Lab Measures
 
@@ -409,18 +409,15 @@ because for the normal mean the score is a scaled version of the sample mean.
 
 ## Reproducibility Check
 
-The browser lab is backed by a CommonJS module:
+The browser lab is backed by a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/fisher-information-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  model: row.params.model,
-  n: row.params.sampleSize,
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  model: row.model,
+  n: row.sampleSize,
   fisher: row.fisher.toFixed(4),
   crlb: row.crlb.toFixed(6),
   empiricalVariance: row.estimateVariance.toFixed(6),
@@ -428,6 +425,10 @@ console.table(rows.map((row) => ({
   scoreRatio: row.scoreRatio.toFixed(3),
   passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 The current audit cases are:
