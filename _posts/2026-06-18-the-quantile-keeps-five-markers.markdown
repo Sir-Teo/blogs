@@ -250,7 +250,7 @@ only sees one observation at a time and keeps five marker heights.
   <p class="p2-lab__note">The exact reference stores the whole prefix and uses the paper-style rounded order statistic. P2 keeps only five marker heights for this one target quantile.</p>
 </div>
 
-<script defer src="{{ '/assets/js/p2-quantile-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/p2-quantile-lab.js?v=20260618c' | relative_url }}"></script>
 
 On the default run, the stored exact p95 and the P2 estimate nearly agree, but
 that is an empirical result of this stream, not a theorem. Change the stream to
@@ -261,7 +261,7 @@ that setting. It is the question being asked.
 ## What The Audit Checks
 
 The exported Node audit runs three stream families at p50, p90, and p95. For
-each run it checks:
+each run it reports seven named checks:
 
 ```text
 the generated sample count matches the requested count
@@ -273,6 +273,10 @@ the exact and estimated history are finite
 the final estimate has rank error no larger than 0.12
 ```
 
+It also reports two default-run sanity checks: the estimator has exactly five
+markers, and this default stream uses more parabolic moves than linear fallback
+moves.
+
 Ignoring the returned case rows, the current top-level summary is:
 
 ```json
@@ -281,8 +285,10 @@ Ignoring the returned case rows, the current top-level summary is:
   "defaultRankError": 0.0036,
   "ok": true,
   "passed": 9,
+  "passedChecks": 65,
   "scenarios": 3,
-  "total": 9
+  "total": 9,
+  "totalChecks": 65
 }
 ```
 
@@ -292,13 +298,15 @@ The compact reproduction check is:
 const lab = require("./assets/js/p2-quantile-lab.js");
 
 const audit = lab.auditP2QuantileLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
+const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+if (audit.total !== 9 || audit.totalChecks !== 65) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
 
 console.table(audit.cases.map((row) => ({
@@ -307,8 +315,10 @@ console.table(audit.cases.map((row) => ({
   absError: row.absError,
   rankError: row.rankError,
   parabolicMoves: row.parabolicMoves,
-  linearMoves: row.linearMoves
+  linearMoves: row.linearMoves,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+console.log(summary);
 ```
 
 That last rank-error threshold is deliberately loose because P2 is a heuristic.

@@ -333,30 +333,50 @@
     };
   }
 
+  function auditChecks(audit) {
+    return [
+      { name: "sample-count", ok: audit.sampleCount },
+      { name: "marker-heights-ordered", ok: audit.markersOrdered },
+      { name: "marker-positions-increasing", ok: audit.positionsOrdered },
+      { name: "desired-positions-monotone", ok: audit.desiredOrdered },
+      { name: "estimate-inside-range", ok: audit.inRange },
+      { name: "finite-history", ok: audit.finiteHistory },
+      { name: "rank-error-threshold", ok: audit.rankReasonable }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
   function auditP2QuantileLab() {
     var cases = [];
     var passed = 0;
     Object.keys(SCENARIOS).forEach(function (scenario) {
       [50, 90, 95].forEach(function (percentile) {
         var result = evaluate({ scenario: scenario, percentile: percentile, samples: 2600, seed: 23 });
-        var failedChecks = Object.keys(result.audit).filter(function (key) {
-          return !result.audit[key];
-        });
+        var checks = auditChecks(result.audit);
+        var failedChecks = failedAuditChecks(checks);
+        var passedChecks = checks.length - failedChecks.length;
         if (!failedChecks.length) passed += 1;
         cases.push({
           absError: Number(Math.abs(result.estimate - result.exact).toFixed(4)),
+          caseId: cases.length + 1,
+          checks: checks,
           estimate: Number(result.estimate.toFixed(4)),
           exact: Number(result.exact.toFixed(4)),
           failedChecks: failedChecks,
           linearMoves: result.snapshot.linearMoves,
           parabolicMoves: result.snapshot.parabolicMoves,
           passed: !failedChecks.length,
+          passedChecks: passedChecks,
           percentile: percentile,
           rankError: Number(result.rankError.toFixed(4)),
           samples: result.params.samples,
           scenario: scenario,
           scenarioLabel: SCENARIOS[scenario].label,
-          seed: result.params.seed
+          seed: result.params.seed,
+          totalChecks: checks.length
         });
         assert(
           !failedChecks.length,
@@ -365,16 +385,43 @@
       });
     });
     var defaultResult = evaluate(DEFAULTS);
-    assert(defaultResult.snapshot.q.length === 5, "default run has five markers");
-    assert(defaultResult.snapshot.parabolicMoves > defaultResult.snapshot.linearMoves, "default run should usually use more parabolic than linear moves");
+    var defaultChecks = [
+      { name: "default-run-has-five-markers", ok: defaultResult.snapshot.q.length === 5 },
+      { name: "default-run-prefers-parabolic-moves", ok: defaultResult.snapshot.parabolicMoves > defaultResult.snapshot.linearMoves }
+    ];
+    var defaultFailedChecks = failedAuditChecks(defaultChecks);
+    var defaultRow = {
+      caseId: cases.length + 1,
+      checks: defaultChecks,
+      failedChecks: defaultFailedChecks,
+      label: "default stream sanity checks",
+      passed: !defaultFailedChecks.length,
+      passedChecks: defaultChecks.length - defaultFailedChecks.length,
+      totalChecks: defaultChecks.length
+    };
+    var details = cases.concat([defaultRow]);
+    var passedChecks = details.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = details.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    details.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        var label = row.label || row.scenario + " p" + row.percentile;
+        errors.push("case " + row.caseId + " " + label + ": " + name);
+      });
+    });
     return {
       cases: cases,
       defaultAbsError: Number(Math.abs(defaultResult.estimate - defaultResult.exact).toFixed(4)),
+      defaultChecks: defaultRow,
       defaultRankError: Number(defaultResult.rankError.toFixed(4)),
-      ok: true,
+      details: details,
+      errors: errors,
+      ok: passed === cases.length && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
       scenarios: Object.keys(SCENARIOS).length,
-      total: cases.length
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
