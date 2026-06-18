@@ -355,10 +355,21 @@ const EXPECTED_CASE_KEYS = EXPECTED_SCENARIOS.flatMap((scenario) =>
 );
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
 const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_TOTALS = {
+  checked: EXPECTED_CASES,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function groupByAxis(cases, field) {
@@ -408,6 +419,13 @@ function aggregateShape(row) {
 
 function auditShape(audit) {
   return {
+    totals: {
+      checked: audit.checked,
+      passed: audit.passed,
+      total: audit.total,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    },
     cases: audit.cases.map(
       (row) => `${row.scenario}/${row.maxAge}/${row.swr}/${row.latency}`
     ),
@@ -438,6 +456,7 @@ const failed = audit.cases.filter(
 );
 const checkNameShape = lab.evaluate({}).audit.checks.map((row) => row.name);
 const shapeErrors = [
+  sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   sameList(checkNameShape, EXPECTED_CHECK_NAMES) ? null : "checkNames",
   shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
@@ -459,15 +478,6 @@ console.table(audit.byScenario.map((row) => ({
   maxBlockingSaved: row.maxBlockingSaved.toFixed(2),
   maxSwrErrors: row.maxSwrErrors
 })));
-if (
-  audit.checked !== EXPECTED_CASES ||
-  audit.total !== EXPECTED_CASES ||
-  audit.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} parameter cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
