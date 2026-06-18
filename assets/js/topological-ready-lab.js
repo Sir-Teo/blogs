@@ -413,22 +413,44 @@
     function assert(condition, message) {
       if (!condition) throw new Error(message);
     }
-    function acyclicRow(label, result) {
+    function check(name, passed) {
       return {
+        name: name,
+        passed: Boolean(passed)
+      };
+    }
+    function failedChecks(checks) {
+      return checks.filter(function (row) { return !row.passed; }).map(function (row) { return row.name; });
+    }
+    function finishRow(row, checks) {
+      row.checks = checks;
+      row.failedChecks = failedChecks(checks);
+      row.passedChecks = checks.filter(function (item) { return item.passed; }).length;
+      row.totalChecks = checks.length;
+      row.passed = row.passedChecks === row.totalChecks;
+      return row;
+    }
+    function acyclicChecks(result, extra) {
+      return [
+        check("selected node had zero indegree", result.audit.selectedZero),
+        check("edges point forward in emitted order", result.audit.edgeOrder),
+        check("schedule respects dependencies", result.audit.scheduleRespectsDeps),
+        check("makespan respects work lower bound", result.audit.workBound),
+        check("makespan respects critical-path lower bound", result.audit.criticalBound)
+      ].concat(extra || []);
+    }
+    function acyclicRow(label, result, extraChecks) {
+      return finishRow({
         criticalPath: result.criticalPath.length,
         emitted: result.topo.order.length,
-        failedChecks: Object.keys(result.audit).filter(function (key) {
-          return key !== "passed" && result.audit[key] === false;
-        }),
         label: label,
         makespan: result.schedule.makespan,
-        passed: result.audit.passed,
         rule: result.params.rule,
         scenario: result.params.scenario,
         totalWork: result.totalWork,
         workPerWorker: result.totalWork / result.params.workers,
         workers: result.params.workers
-      };
+      }, acyclicChecks(result, extraChecks));
     }
     var base = evaluate({ scenario: "build", rule: "critical", workers: 3 });
     assert(base.audit.passed, "default audit should pass");
@@ -450,32 +472,48 @@
     var one = evaluate({ scenario: "build", workers: 1 });
     assert(one.schedule.makespan === one.totalWork, "one worker should take total work time");
     var rows = [
-      acyclicRow("package build", base),
-      acyclicRow("trap critical tail", critical),
+      acyclicRow("package build", base, [
+        check("critical path names tasks", base.criticalPath.path.length >= 2)
+      ]),
+      acyclicRow("trap critical tail", critical, [
+        check("critical rule beats shortest in trap", critical.schedule.makespan < shortest.schedule.makespan)
+      ]),
       acyclicRow("trap shortest task", shortest),
-      {
+      finishRow({
         emitted: cycle.topo.order.length,
-        failedChecks: Object.keys(cycle.audit).filter(function (key) {
-          return key !== "passed" && cycle.audit[key] === false;
-        }),
         label: "cycle introduced",
-        passed: !cycle.topo.acyclic &&
-          cycle.audit.cycleDetected &&
-          cycle.audit.noZeroLeftInCycle,
         remaining: cycle.topo.remaining.slice(),
         scenario: cycle.params.scenario
-      },
-      acyclicRow("single worker build", one)
+      }, [
+        check("partial pass selected only zero-indegree nodes", cycle.audit.selectedZero),
+        check("cycle was detected", cycle.audit.cycleDetected),
+        check("cycle remainder has no zero-indegree node", cycle.audit.noZeroLeftInCycle)
+      ]),
+      acyclicRow("single worker build", one, [
+        check("one worker takes total work time", one.schedule.makespan === one.totalWork)
+      ])
     ];
     var passed = rows.filter(function (row) { return row.passed; }).length;
+    var passedChecks = rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var failures = rows.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        failedChecks: row.failedChecks,
+        label: row.label,
+        scenario: row.scenario
+      };
+    });
     return {
       cases: rows,
-      ok: passed === rows.length,
+      failures: failures,
+      ok: passed === rows.length && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
       defaultMakespan: base.schedule.makespan,
       trapCritical: critical.schedule.makespan,
       trapShortest: shortest.schedule.makespan,
       cycleRemaining: cycle.topo.remaining.slice(),
+      totalChecks: totalChecks,
       total: rows.length
     };
   }

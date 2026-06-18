@@ -282,12 +282,12 @@ bound.
   <p class="topo-lab__note">The implementation is deterministic and static. It ignores cache effects, remote execution overhead, communication cost, retries, incremental rebuilds, and resource types beyond identical workers.</p>
 </div>
 
-<script defer src="{{ '/assets/js/topological-ready-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/topological-ready-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Audit Checks
 
 The JavaScript exports a Node-friendly audit function. The same function used by
-the page checks these invariants:
+the page checks 26 named invariants across five deterministic cases:
 
 ```text
 1. every emitted node had indegree zero at emission time
@@ -324,19 +324,11 @@ cycle introduced:
 
 The compact reproduction check is:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/topological-ready-lab.js");
 
 const audit = lab.auditTopologicalReadyLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || !audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
-}
-
 console.table(audit.cases.map((row) => ({
   case: row.label,
   scenario: row.scenario,
@@ -346,8 +338,23 @@ console.table(audit.cases.map((row) => ({
   makespan: row.makespan || "n/a",
   criticalPath: row.criticalPath || "n/a",
   totalWork: row.totalWork || "n/a",
-  remaining: row.remaining ? row.remaining.join(" ") : ""
+  remaining: row.remaining ? row.remaining.join(" ") : "",
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+if (
+  !audit.ok ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 26 ||
+  audit.totalChecks !== 26
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(
+  `${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
+NODE
 ```
 
 The interesting line is the trap. Both schedules are legal. Both pass the edge
