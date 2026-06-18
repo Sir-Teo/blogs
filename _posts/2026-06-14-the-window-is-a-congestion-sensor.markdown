@@ -128,6 +128,14 @@ factor, and initial skew, the queue stayed bounded by the configured buffer,
 utilization stayed in `[0, 1]`, fairness and loss shares stayed finite and
 bounded, and every summary value remained numeric.
 
+The browser asset exports that audit:
+
+```javascript
+const lab = require("./assets/js/congestion-window-lab.js");
+const audit = lab.auditCongestionWindowLab();
+if (!audit.passed) throw new Error("audit failed");
+```
+
 <div class="congestion-lab" data-congestion-lab>
   <div class="congestion-lab__controls">
     <label>
@@ -183,7 +191,7 @@ bounded, and every summary value remained numeric.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/congestion-window-lab.js' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/congestion-window-lab.js?v=20260618a' | relative_url }}"></script>
 
 Start with the default **Tail drop** setting. The utilization metric is
 excellent: `100%`. That is the trap. The p95 queue delay is `238.9 ms`, the

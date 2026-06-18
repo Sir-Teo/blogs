@@ -501,7 +501,99 @@
     Array.prototype.slice.call(document.querySelectorAll("[data-congestion-lab]")).forEach(initOne);
   }
 
+  function near(a, b, eps) {
+    return Math.abs(a - b) <= eps;
+  }
+
+  function auditCongestionWindowLab() {
+    var failures = [];
+    var cases = 0;
+
+    function record(condition, message) {
+      if (!condition) failures.push(message);
+    }
+
+    ["tail", "aqm", "none"].forEach(function (mode) {
+      [1, 4, 8].forEach(function (flows) {
+        [30, 90, 180].forEach(function (capacity) {
+          [30, 360, 900].forEach(function (buffer) {
+            [20, 60, 180].forEach(function (baseRtt) {
+              [5, 25, 120].forEach(function (targetDelay) {
+                [30, 50, 80].forEach(function (beta) {
+                  [0, 35, 100].forEach(function (stagger) {
+                    var result = evaluate({
+                      baseRtt: baseRtt,
+                      beta: beta,
+                      buffer: buffer,
+                      capacity: capacity,
+                      flows: flows,
+                      mode: mode,
+                      stagger: stagger,
+                      targetDelay: targetDelay
+                    });
+                    var params = result.params;
+                    cases += 1;
+
+                    record(result.rows.length === params.steps, mode + " row count matches steps");
+                    record(result.totals.length === params.flows, mode + " totals length matches flows");
+                    record(result.deliveredTotals.length === params.flows, mode + " delivered length matches flows");
+                    record(result.markCounts.length === params.flows, mode + " mark length matches flows");
+                    result.rows.forEach(function (row) {
+                      record(row.queue >= 0 && row.queue <= params.buffer + 1e-9, mode + " queue bounded by buffer");
+                      record(row.queueDelay >= 0 && Number.isFinite(row.queueDelay), mode + " queue delay finite");
+                      record(row.utilization >= 0 && row.utilization <= 1 + 1e-12, mode + " utilization bounded");
+                      record(row.cwnd.length === params.flows, mode + " cwnd length matches flows");
+                      row.cwnd.forEach(function (window) {
+                        record(window >= 2 && Number.isFinite(window), mode + " cwnd stays finite and positive");
+                      });
+                      row.marked.forEach(function (index) {
+                        record(index >= 0 && index < params.flows, mode + " marked flow index is valid");
+                      });
+                    });
+                    Object.keys(result.summary).forEach(function (key) {
+                      record(Number.isFinite(result.summary[key]), mode + " summary " + key + " is finite");
+                    });
+                    record(result.summary.fairness > 0 && result.summary.fairness <= 1 + 1e-12, mode + " fairness bounded");
+                    record(result.summary.lossShare >= 0 && result.summary.lossShare <= 1 + 1e-12, mode + " loss share bounded");
+                    record(result.summary.syncShare >= 0 && result.summary.syncShare <= 1 + 1e-12, mode + " sync share bounded");
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+    var tail = evaluate({ mode: "tail" });
+    var aqm = evaluate({ mode: "aqm" });
+    var none = evaluate({ mode: "none" });
+    record(near(tail.summary.utilization, 1, 1e-12), "default tail drop saturates bottleneck");
+    record(tail.summary.p95QueueDelay > aqm.summary.p95QueueDelay, "default delay marking lowers p95 queue delay");
+    record(tail.summary.syncShare === 1, "default tail drop synchronizes congestion events");
+    record(aqm.summary.syncShare === 0, "default delay marking avoids synchronized events");
+    record(none.summary.lossShare > tail.summary.lossShare, "no-signal mode wastes more offered work than tail drop");
+    record(none.summary.congestionEvents === 0, "no-signal mode has no feedback events");
+    record(cleanParams({ flows: 99, capacity: -1, buffer: "x", mode: "bad", baseRtt: 999, targetDelay: -4, beta: 12, stagger: 123 }).mode === DEFAULTS.mode, "invalid mode falls back");
+
+    return {
+      cases: cases,
+      defaultSummary: {
+        aqmP95QueueDelay: aqm.summary.p95QueueDelay,
+        aqmUtilization: aqm.summary.utilization,
+        noneLossShare: none.summary.lossShare,
+        tailAverageQueueDelay: tail.summary.avgQueueDelay,
+        tailP95QueueDelay: tail.summary.p95QueueDelay,
+        tailSyncShare: tail.summary.syncShare,
+        tailUtilization: tail.summary.utilization
+      },
+      failures: failures,
+      passed: failures.length === 0
+    };
+  }
+
   var api = {
+    auditCongestionWindowLab: auditCongestionWindowLab,
     cleanParams: cleanParams,
     evaluate: evaluate,
     jainFairness: jainFairness,
