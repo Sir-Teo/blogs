@@ -347,12 +347,16 @@
       { field: "ring", iso: 0, resolution: 26, ambiguity: "decider", noise: 0, seed: 41 },
       { field: "waves", iso: 10, resolution: 22, ambiguity: "center", noise: 12, seed: 57 }
     ];
-    return cases.map(function (params) {
+    var rows = cases.map(function (params, index) {
       var result = evaluate(params);
       return {
-        params: result.params,
-        summary: result.summary,
-        audit: result.audit,
+        caseId: index + 1,
+        field: result.params.field,
+        iso: result.params.iso,
+        resolution: result.params.resolution,
+        ambiguity: result.params.ambiguity,
+        noise: result.params.noise,
+        seed: result.params.seed,
         cells: result.summary.cells,
         activeCells: result.summary.activeCells,
         segments: result.summary.segments,
@@ -360,9 +364,15 @@
         highDecisions: result.summary.highDecisions,
         lowDecisions: result.summary.lowDecisions,
         maxResidual: result.summary.maxResidual,
-        passed: result.audit.passed
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
       };
     });
+    return {
+      cases: rows,
+      passed: rows.filter(function (row) { return row.passed; }).length,
+      total: rows.length
+    };
   }
 
   function fmt(value, digits) {

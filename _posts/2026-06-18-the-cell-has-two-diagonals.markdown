@@ -295,7 +295,7 @@ low-center branch.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/marching-squares-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/marching-squares-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Counts Hide
 
@@ -325,6 +325,30 @@ The exported audit verifies grid dimensions, case histogram accounting,
 ambiguous-cell counting, finite segment endpoints, unit-square endpoint bounds,
 and that every interpolated endpoint evaluates back to the isovalue within
 floating-point tolerance.
+
+To reproduce the deterministic audit grid from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/marching-squares-lab.js");
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  field: row.field,
+  rule: row.ambiguity,
+  resolution: row.resolution,
+  cells: row.cells,
+  active: row.activeCells,
+  segments: row.segments,
+  ambiguous: row.ambiguous,
+  decisions: `${row.highDecisions}/${row.lowDecisions}`,
+  residual: row.maxResidual.toExponential(1),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## The Diagonal Is Not A Styling Choice
 
