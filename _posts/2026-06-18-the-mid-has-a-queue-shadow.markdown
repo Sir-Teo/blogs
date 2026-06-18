@@ -311,14 +311,83 @@ To reproduce the deterministic audit sweep from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/microprice-queue-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 45;
+const EXPECTED_CASE_SHAPE = [
+  "1:30/26:pressure=0:trials=5000:seed=29:0.5000:0.704973:0.704200:0.0008:0.205:0.036:49.17:9/9",
+  "2:20/20:pressure=0:trials=5000:seed=11:0.5000:0.500000:0.496600:0.0034:0.000:0.000:34.86:9/9",
+  "3:15/55:pressure=35:trials=6000:seed=71:0.6682:0.013373:0.013167:0.0002:-0.487:-0.286:45.13:9/9",
+  "4:70/12:pressure=-40:trials=6000:seed=9:0.3100:0.999760:0.999333:0.0004:0.500:0.354:38.62:9/9",
+  "5:35/35:pressure=-65:trials=7000:seed=43:0.2142:0.000000:0.000000:0.0000:-0.500:0.000:44.53:9/9"
+];
+const EXPECTED_BY_CASE_SHAPE = [
+  "1:30/26:pressure=0:1/1:9/9",
+  "2:20/20:pressure=0:1/1:9/9",
+  "3:15/55:pressure=35:1/1:9/9",
+  "4:70/12:pressure=-40:1/1:9/9",
+  "5:35/35:pressure=-65:1/1:9/9"
+];
+const EXPECTED_CHECK_NAMES = [
+  "exact probability is bounded",
+  "microprice lies inside spread",
+  "weighted mid lies inside spread",
+  "monte carlo close to exact",
+  "sample path terminates at a quote depletion",
+  "balanced book has fair race",
+  "more bid depth tilts up under symmetric flow",
+  "buy pressure tilts up",
+  "curve has one row per alternate split"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.bid}/${row.ask}:pressure=${row.pressure}:` +
+    `trials=${row.trials}:seed=${row.seed}:` +
+    `${row.askEventProbability.toFixed(4)}:${row.exactUp.toFixed(6)}:` +
+    `${row.simulatedUp.toFixed(6)}:${row.monteCarloError.toFixed(4)}:` +
+    `${row.raceMicroTicks.toFixed(3)}:${row.weightedTicks.toFixed(3)}:` +
+    `${row.meanEvents.toFixed(2)}:${row.passedChecks}/${row.totalChecks}`;
+}
+
+function byCaseShape(row) {
+  return `${row.caseId}:${row.bid}/${row.ask}:pressure=${row.pressure}:` +
+    `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 console.table(audit.byCase);
+const shape = {
+  byCase: audit.byCase.map(byCaseShape),
+  cases: audit.cases.map(caseShape)
+};
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.byCase, EXPECTED_BY_CASE_SHAPE)) {
+  shapeErrors.push({
+    name: "byCase",
+    actual: shape.byCase,
+    expected: EXPECTED_BY_CASE_SHAPE
+  });
+}
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
   bid: row.bid,
@@ -332,21 +401,21 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
     failed,
+    shapeErrors,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
