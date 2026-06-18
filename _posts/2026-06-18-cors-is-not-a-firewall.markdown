@@ -317,9 +317,10 @@ The artifact is a plain JavaScript module:
 const lab = require("./assets/js/cors-preflight-lab.js");
 const result = lab.simulate({});
 const audit = lab.auditCorsPreflightLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
 
 console.log(result.summary);
-console.log(audit);
+console.log(audit.checked + " checks passed");
 ```
 
 Default output:

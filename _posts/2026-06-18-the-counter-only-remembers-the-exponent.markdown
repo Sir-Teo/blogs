@@ -307,8 +307,8 @@ checks for larger counts:
 ```js
 const lab = require("./assets/js/morris-counter-lab.js");
 const audit = lab.auditMorrisCounterLab();
-
-audit.passed === true;
+if (!audit.passed) throw new Error(JSON.stringify(audit));
+console.log(audit.scenarios.length + audit.exact.length + " checks passed");
 ```
 
 Those checks verify:

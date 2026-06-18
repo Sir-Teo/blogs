@@ -290,8 +290,8 @@ scenario/parameter combinations:
 ```js
 const lab = require("./assets/js/token-bucket-lab.js");
 const audit = lab.auditTokenBucketLab();
-console.log(audit.ok, audit.checked);
-// true 324
+if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
+console.log(audit.checked + " checks passed");
 ```
 
 The checks are deliberately mechanical:

@@ -359,8 +359,8 @@ The lab has a built-in audit:
 ```js
 const lab = require("./assets/js/elias-fano-lab.js");
 const audit = lab.auditEliasFanoLab();
-
-audit.passed === true;
+if (!audit.passed) throw new Error(JSON.stringify(audit.details));
+console.log(audit.details.length + " scenarios passed");
 ```
 
 The checks cover uniform, clustered, dense, and run-heavy lists. They assert

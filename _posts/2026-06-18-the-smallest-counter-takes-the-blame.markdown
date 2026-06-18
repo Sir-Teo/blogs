@@ -327,8 +327,8 @@ The audit is part of the artifact, not just a visual sanity check:
 ```js
 const lab = require("./assets/js/space-saving-lab.js");
 const audit = lab.auditSpaceSavingLab();
-
-audit.passed === true;
+if (!audit.passed) throw new Error(JSON.stringify(audit.details));
+console.log(audit.details.length + " scenarios passed");
 ```
 
 The checks cover several parameter settings. They assert that:
