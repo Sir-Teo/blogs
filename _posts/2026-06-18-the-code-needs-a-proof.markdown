@@ -273,7 +273,7 @@ seeing the challenge still does not reveal the verifier.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/oauth-pkce-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/oauth-pkce-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Reproducing The Artifact
 
@@ -299,12 +299,19 @@ console.table(audit.cases.map((row) => ({
   clientToken: row.clientToken,
   injectedToken: row.injectedToken,
   blocked: row.blocked,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+if (audit.total !== 27 || audit.totalChecks !== 216) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} policy cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} policy cases passed`);
+console.log(summary);
 NODE
 ```
 
@@ -329,9 +336,10 @@ The default summary is:
 ```
 
 The audit checks all 27 combinations of proof method, attacker view, and server
-policy. It verifies the S256 test vector, the no-PKCE first-redeemer failure
-mode, the `plain` request-observer failure mode, the S256 interception success
-case for the legitimate client, and the injected-unbound-code downgrade case.
+policy, for 216 named checks. It verifies the S256 test vector, the no-PKCE
+first-redeemer failure mode, the `plain` request-observer failure mode, the S256
+interception success case for the legitimate client, and the injected-unbound
+code downgrade case.
 
 ## The Downgrade Edge
 

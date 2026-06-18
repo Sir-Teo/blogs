@@ -354,29 +354,55 @@
 
   function verify(result) {
     var issues = [];
-    if (challengeFor("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk", "S256") !== "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM") {
+    var s256VectorMatches = challengeFor("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk", "S256") === "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+    var s256BlocksInterceptedCode = true;
+    var s256AllowsLegitimateClient = true;
+    var plainObserverCanRedeem = true;
+    var noPkceFirstRedeemer = true;
+    var pkceRequiredRejectsNoPkce = true;
+    var optionalShowsInjectedUnboundRisk = true;
+    var guardedServerBlocksInjectedUnbound = true;
+
+    if (!s256VectorMatches) {
       issues.push("S256 RFC7636 Appendix B test vector failed");
     }
     if (result.params.proof === "S256" && result.params.attacker !== "injectedUnbound" && result.params.server !== "requirePkce") {
-      if (result.summary.attackerToken) issues.push("S256 code interception should not give attacker a token");
-      if (!result.summary.clientToken) issues.push("S256 should allow the legitimate client to redeem");
+      s256BlocksInterceptedCode = !result.summary.attackerToken;
+      s256AllowsLegitimateClient = !!result.summary.clientToken;
+      if (!s256BlocksInterceptedCode) issues.push("S256 code interception should not give attacker a token");
+      if (!s256AllowsLegitimateClient) issues.push("S256 should allow the legitimate client to redeem");
     }
     if (result.params.proof === "plain" && result.params.attacker === "requestAndCode" && result.params.server !== "requirePkce") {
-      if (!result.summary.attackerToken) issues.push("plain request observer should learn enough to redeem first");
+      plainObserverCanRedeem = !!result.summary.attackerToken;
+      if (!plainObserverCanRedeem) issues.push("plain request observer should learn enough to redeem first");
     }
     if (result.params.proof === "none" && result.params.attacker !== "injectedUnbound" && result.params.server !== "requirePkce") {
-      if (!result.summary.attackerToken) issues.push("unbound intercepted code should be redeemable by first caller");
+      noPkceFirstRedeemer = !!result.summary.attackerToken;
+      if (!noPkceFirstRedeemer) issues.push("unbound intercepted code should be redeemable by first caller");
     }
     if (result.params.server === "requirePkce" && result.params.proof === "none" && result.params.attacker !== "injectedUnbound") {
-      if (result.summary.authCodeIssued) issues.push("PKCE-required server should reject no-PKCE authorization request");
+      pkceRequiredRejectsNoPkce = !result.summary.authCodeIssued;
+      if (!pkceRequiredRejectsNoPkce) issues.push("PKCE-required server should reject no-PKCE authorization request");
     }
     if (result.params.attacker === "injectedUnbound" && result.params.server === "optional" && result.params.proof !== "none") {
-      if (!result.summary.injectedToken) issues.push("optional server should demonstrate injected unbound-code risk");
+      optionalShowsInjectedUnboundRisk = !!result.summary.injectedToken;
+      if (!optionalShowsInjectedUnboundRisk) issues.push("optional server should demonstrate injected unbound-code risk");
     }
     if (result.params.attacker === "injectedUnbound" && result.params.server !== "optional" && result.params.proof !== "none") {
-      if (result.summary.injectedToken) issues.push("downgrade guard or PKCE requirement should block injected unbound code");
+      guardedServerBlocksInjectedUnbound = !result.summary.injectedToken;
+      if (!guardedServerBlocksInjectedUnbound) issues.push("downgrade guard or PKCE requirement should block injected unbound code");
     }
-    return { ok: issues.length === 0, issues: issues };
+    var checks = [
+      { name: "s256-rfc7636-vector", passed: s256VectorMatches },
+      { name: "s256-blocks-intercepted-code", passed: s256BlocksInterceptedCode },
+      { name: "s256-allows-legitimate-client", passed: s256AllowsLegitimateClient },
+      { name: "plain-observer-can-redeem", passed: plainObserverCanRedeem },
+      { name: "no-pkce-first-redeemer", passed: noPkceFirstRedeemer },
+      { name: "pkce-required-rejects-no-pkce", passed: pkceRequiredRejectsNoPkce },
+      { name: "optional-shows-injected-unbound-risk", passed: optionalShowsInjectedUnboundRisk },
+      { name: "guarded-server-blocks-injected-unbound", passed: guardedServerBlocksInjectedUnbound }
+    ];
+    return { ok: issues.length === 0, checks: checks, issues: issues };
   }
 
   function auditOauthPkceLab() {
@@ -385,18 +411,23 @@
       Object.keys(ATTACKERS).forEach(function (attacker) {
         Object.keys(SERVERS).forEach(function (server) {
           var result = evaluate({ proof: proof, attacker: attacker, server: server });
+          var failedChecks = result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
           cases.push({
             attacker: attacker,
             attackerToken: result.summary.attackerToken,
             authCodeIssued: result.summary.authCodeIssued,
             blocked: result.summary.blocked,
+            checks: result.audit.checks,
             clientToken: result.summary.clientToken,
             codeBound: result.summary.codeBound,
-            failedChecks: result.audit.issues,
+            failedChecks: failedChecks,
             injectedToken: result.summary.injectedToken,
+            issues: result.audit.issues,
             passed: result.audit.ok,
+            passedChecks: result.audit.checks.length - failedChecks.length,
             proof: proof,
-            server: server
+            server: server,
+            totalChecks: result.audit.checks.length
           });
         });
       });
@@ -404,7 +435,8 @@
     var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
       return {
         attacker: row.attacker,
-        issues: row.failedChecks,
+        failedChecks: row.failedChecks,
+        issues: row.issues,
         proof: row.proof,
         server: row.server
       };
@@ -417,18 +449,25 @@
         clientTokens: rows.reduce(function (sum, row) { return sum + row.clientToken; }, 0),
         injectedTokens: rows.reduce(function (sum, row) { return sum + row.injectedToken; }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
-        proof: proof
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
+        proof: proof,
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0)
       };
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
     return {
       byProof: byProof,
       cases: cases,
       checked: cases.length,
+      details: cases,
       failures: failures,
-      ok: failures.length === 0,
+      ok: failures.length === 0 && passedChecks === totalChecks,
       passed: passed,
-      total: cases.length
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
