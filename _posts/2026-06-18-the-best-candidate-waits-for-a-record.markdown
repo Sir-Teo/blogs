@@ -297,12 +297,82 @@ The compact reproduction check is:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/secretary-stopping-lab.js");
-const EXPECTED_EXACT_N = 3;
-const EXPECTED_EXACT_ROWS = 18;
-const EXPECTED_DP_ROWS = 4;
-const EXPECTED_DEFAULT_CHECKS = 4;
-const EXPECTED_ROWS = 26;
-const EXPECTED_CHECKS = 30;
+const EXPECTED_EXACT_CASE_SHAPE = [
+  "5:1:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force",
+  "5:2:0.416666666667:0.416666666667:5.551e-17:1/1:closed form equals brute force",
+  "5:3:0.433333333333:0.433333333333:5.551e-17:1/1:closed form equals brute force",
+  "5:4:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force",
+  "5:5:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force",
+  "6:1:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force",
+  "6:2:0.380555555556:0.380555555556:0.000e+0:1/1:closed form equals brute force",
+  "6:3:0.427777777778:0.427777777778:0.000e+0:1/1:closed form equals brute force",
+  "6:4:0.391666666667:0.391666666667:5.551e-17:1/1:closed form equals brute force",
+  "6:5:0.300000000000:0.300000000000:0.000e+0:1/1:closed form equals brute force",
+  "6:6:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force",
+  "7:1:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force",
+  "7:2:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force",
+  "7:3:0.414285714286:0.414285714286:5.551e-17:1/1:closed form equals brute force",
+  "7:4:0.407142857143:0.407142857143:5.551e-17:1/1:closed form equals brute force",
+  "7:5:0.352380952381:0.352380952381:0.000e+0:1/1:closed form equals brute force",
+  "7:6:0.261904761905:0.261904761905:0.000e+0:1/1:closed form equals brute force",
+  "7:7:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force"
+];
+const EXPECTED_EXACT_SUMMARY_SHAPE = [
+  "5:5:5/5:5.55e-17",
+  "6:6:6/6:5.55e-17",
+  "7:7:7/7:5.55e-17"
+];
+const EXPECTED_DP_CASE_SHAPE = [
+  "12:5:5:0.395514670515:0.395514670515:0.000e+0:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
+  "25:10:10:0.380916372563:0.380916372563:5.551e-17:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
+  "80:30:30:0.371855486992:0.371855486992:1.110e-16:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
+  "150:56:56:0.369997293685:0.369997293685:6.106e-16:2/2:DP cutoff equals finite optimum|DP value equals finite optimum"
+];
+const EXPECTED_DEFAULT_CHECK_SHAPE = [
+  "cutoff range:1/1",
+  "curve bounded:1/1",
+  "formula finite:1/1",
+  "simulation close:1/1"
+];
+const EXPECTED_ROWS =
+  EXPECTED_EXACT_CASE_SHAPE.length +
+  EXPECTED_DP_CASE_SHAPE.length +
+  EXPECTED_DEFAULT_CHECK_SHAPE.length;
+const EXPECTED_CHECKS = [
+  ...EXPECTED_EXACT_CASE_SHAPE,
+  ...EXPECTED_DP_CASE_SHAPE,
+  ...EXPECTED_DEFAULT_CHECK_SHAPE
+].reduce((sum, row) => sum + Number(row.match(/:(\d+)\/(\d+)(?::|$)/)[2]), 0);
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function checkNames(row) {
+  return row.checks.map((check) => check.name).join("|");
+}
+
+function exactCaseShape(row) {
+  return `${row.n}:${row.cutoff}:${row.exact.toFixed(12)}:` +
+    `${row.brute.toFixed(12)}:${row.difference.toExponential(3)}:` +
+    `${row.passedChecks}/${row.totalChecks}:${checkNames(row)}`;
+}
+
+function exactSummaryShape(row) {
+  return `${row.n}:${row.cutoffs}:${row.checks}:${row.maxDifference}`;
+}
+
+function dpCaseShape(row) {
+  return `${row.n}:${row.bestCutoff}:${row.dpFirstAccept}:` +
+    `${row.bestProbability.toFixed(12)}:${row.dpValue.toFixed(12)}:` +
+    `${row.valueDifference.toExponential(3)}:` +
+    `${row.passedChecks}/${row.totalChecks}:${checkNames(row)}`;
+}
+
+function defaultCheckShape(row) {
+  return `${row.name}:${row.passedChecks}/${row.totalChecks}`;
+}
 
 const audit = lab.auditSecretaryStoppingLab();
 const exactSummary = [5, 6, 7].map((n) => {
@@ -327,8 +397,13 @@ console.table(audit.defaultChecks.map((row) => ({
   check: row.name,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+const shape = {
+  defaultChecks: audit.defaultChecks.map(defaultCheckShape),
+  dpCases: audit.dpCases.map(dpCaseShape),
+  exactCases: audit.exactCases.map(exactCaseShape),
+  exactSummary: exactSummary.map(exactSummaryShape)
+};
 const auditShape = {
-  exactN: new Set(audit.exactCases.map((row) => row.n)).size,
   exactRows: audit.exactCases.length,
   dpRows: audit.dpCases.length,
   defaultChecks: audit.defaultChecks.length,
@@ -337,14 +412,13 @@ const auditShape = {
   passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
-if (auditShape.exactN !== EXPECTED_EXACT_N ||
-    auditShape.exactRows !== EXPECTED_EXACT_ROWS ||
-    auditShape.dpRows !== EXPECTED_DP_ROWS ||
-    auditShape.defaultChecks !== EXPECTED_DEFAULT_CHECKS ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
-}
+const shapeErrors = [
+  ["exactCases", shape.exactCases, EXPECTED_EXACT_CASE_SHAPE],
+  ["exactSummary", shape.exactSummary, EXPECTED_EXACT_SUMMARY_SHAPE],
+  ["dpCases", shape.dpCases, EXPECTED_DP_CASE_SHAPE],
+  ["defaultChecks", shape.defaultChecks, EXPECTED_DEFAULT_CHECK_SHAPE]
+].filter((row) => !sameList(row[1], row[2]))
+  .map(([name, actual, expected]) => ({ name, actual, expected }));
 
 const failedExactCases = audit.exactCases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -355,7 +429,10 @@ const failedDpCases = audit.dpCases.filter(
 const failedDefaultChecks = audit.defaultChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedExactCases.length || failedDpCases.length ||
+if (shapeErrors.length ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    !audit.ok || failedExactCases.length || failedDpCases.length ||
     failedDefaultChecks.length || audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
@@ -363,6 +440,7 @@ if (!audit.ok || failedExactCases.length || failedDpCases.length ||
     failedExactCases,
     failedDpCases,
     failedDefaultChecks,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
