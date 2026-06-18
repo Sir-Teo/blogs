@@ -375,7 +375,7 @@
   }
 
   function auditGrid() {
-    var rows = [];
+    var cases = [];
     var shapes = Object.keys(SHAPES);
     var counts = [8, 17, 31, 64, 96];
     var seeds = [1, 7, 23, 91];
@@ -383,7 +383,7 @@
       counts.forEach(function (count) {
         seeds.forEach(function (seed) {
           var result = evaluate({ shape: shape, count: count, seed: seed });
-          rows.push({
+          cases.push({
             shape: shape,
             count: count,
             seed: seed,
@@ -391,12 +391,38 @@
             candidates: result.calipers.candidates.length,
             brutePairs: result.brute.checked,
             diameter: result.stats.diameter,
-            audit: result.audit
+            passed: result.audit.passed,
+            failedChecks: result.audit.checks.filter(function (row) { return !row.passed; }).map(function (row) { return row.name; })
           });
         });
       });
     });
-    return rows;
+    var byShape = {};
+    cases.forEach(function (row) {
+      if (!byShape[row.shape]) byShape[row.shape] = { shape: row.shape, cases: 0, passed: 0, hullTotal: 0, candidateTotal: 0, brutePairTotal: 0 };
+      byShape[row.shape].cases += 1;
+      if (row.passed) byShape[row.shape].passed += 1;
+      byShape[row.shape].hullTotal += row.hull;
+      byShape[row.shape].candidateTotal += row.candidates;
+      byShape[row.shape].brutePairTotal += row.brutePairs;
+    });
+    var summary = shapes.map(function (shape) {
+      var row = byShape[shape];
+      return {
+        shape: row.shape,
+        cases: row.cases,
+        passed: row.passed,
+        avgHull: row.hullTotal / row.cases,
+        avgCandidates: row.candidateTotal / row.cases,
+        avgBrutePairs: row.brutePairTotal / row.cases
+      };
+    });
+    return {
+      byShape: summary,
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function formatNumber(value, digits) {

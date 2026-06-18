@@ -244,7 +244,7 @@ all-pairs search over the original points.
   <p class="calipers-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/rotating-calipers-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/rotating-calipers-lab.js?v=20260618b' | relative_url }}"></script>
 
 In the default run, `44` generated points produce `14` hull vertices. Exhaustive
 search over the original points checks `946` distances. The caliper candidate
@@ -260,15 +260,25 @@ The nested `while` loop has no chance to restart from zero.
 
 ## Reproducibility Check
 
-The browser lab is also a CommonJS module:
+The browser lab is also a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/rotating-calipers-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.audit.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-console.log(rows.length + " cases passed");
+const audit = lab.auditGrid();
+console.table(audit.byShape.map((row) => ({
+  shape: row.shape,
+  cases: row.cases,
+  avgHull: row.avgHull.toFixed(1),
+  avgCandidates: row.avgCandidates.toFixed(1),
+  avgBrutePairs: row.avgBrutePairs.toFixed(1),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+console.log(`${audit.passed}/${audit.total} cases passed`);
+NODE
 ```
 
 The current audit grid has 100 deterministic cases: five point-set families,
