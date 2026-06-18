@@ -324,27 +324,97 @@ To reproduce that parameter sweep from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/pid-windup-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 90;
+const EXPECTED_CASE_SHAPE = [
+  "1:high=1.50:limit=1.00:kp=1.40:ki=0.45:kb=0.70:14.45/1.67/1.20:21.2/0.0/0.0:7.02/0.45/0.62:12.5/10.3:18/18",
+  "2:high=1.70:limit=1.00:kp=1.40:ki=0.45:kb=0.70:17.57/2.16/1.40:29.9/0.0/0.0:9.18/0.45/0.47:13.7/11.6:18/18",
+  "3:high=1.50:limit=0.80:kp=1.20:ki=0.35:kb=0.60:11.21/2.03/1.14:>32/0.0/0.0:6.89/0.45/0.45:15.7/12.7:18/18",
+  "4:high=1.20:limit=0.90:kp=1.80:ki=0.55:kb=0.90:9.58/1.18/0.94:16.3/0.0/0.0:5.74/0.45/0.54:10.5/8.9:18/18",
+  "5:high=1.60:limit=1.10:kp=1.00:ki=0.60:kb=1.20:15.52/1.81/1.68:20.1/0.0/0.0:9.58/0.60/0.85:9.8/10.0:18/18"
+];
+const EXPECTED_CHECK_NAMES = [
+  "none sample count",
+  "none finite samples",
+  "none actuator limit respected",
+  "none finite IAE",
+  "clamp sample count",
+  "clamp finite samples",
+  "clamp actuator limit respected",
+  "clamp finite IAE",
+  "backcalc sample count",
+  "backcalc finite samples",
+  "backcalc actuator limit respected",
+  "backcalc finite IAE",
+  "windup grows larger integral",
+  "back calculation lowers post-drop error area",
+  "plain integrator stays saturated longer",
+  "back calculation settles by end",
+  "clamping lowers post-drop error area",
+  "clamping settles by end"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function seconds(value) {
+  return value == null ? ">32" : value.toFixed(1);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:high=${row.high.toFixed(2)}:limit=${row.limit.toFixed(2)}:` +
+    `kp=${row.kp.toFixed(2)}:ki=${row.ki.toFixed(2)}:kb=${row.kb.toFixed(2)}:` +
+    `${row.noneIaeAfterDrop.toFixed(2)}/${row.clampIaeAfterDrop.toFixed(2)}/${row.backcalcIaeAfterDrop.toFixed(2)}:` +
+    `${seconds(row.noneReentryTime)}/${seconds(row.clampReentryTime)}/${seconds(row.backcalcReentryTime)}:` +
+    `${row.noneMaxAbsIntegral.toFixed(2)}/${row.clampMaxAbsIntegral.toFixed(2)}/${row.backcalcMaxAbsIntegral.toFixed(2)}:` +
+    `${seconds(row.clampSettlingTime)}/${seconds(row.backcalcSettlingTime)}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-const seconds = (value) => value == null ? ">32" : value.toFixed(1);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
