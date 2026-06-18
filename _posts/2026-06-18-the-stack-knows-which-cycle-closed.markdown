@@ -272,7 +272,7 @@ The browser file is also a CommonJS module:
 const lab = require("./assets/js/tarjan-scc-lab.js");
 
 const audit = lab.auditTarjanScc();
-console.log(audit.ok);
+if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
 console.log(audit.exhaustiveCases);
 console.table(audit.reports.map((row) => ({
   graph: row.label,

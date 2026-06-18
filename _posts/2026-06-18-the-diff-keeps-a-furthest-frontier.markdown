@@ -334,7 +334,7 @@ The browser file is also a CommonJS module:
 const lab = require("./assets/js/myers-diff-lab.js");
 
 const audit = lab.auditMyersDiff();
-console.log(audit.ok);
+if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
 console.log(audit.exhaustiveBinaryCases);
 console.table(audit.reports.map((row) => ({
   example: row.label,

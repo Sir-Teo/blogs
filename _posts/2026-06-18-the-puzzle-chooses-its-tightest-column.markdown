@@ -325,7 +325,7 @@ The browser file is also a CommonJS module:
 const lab = require("./assets/js/exact-cover-lab.js");
 
 const audit = lab.auditExactCover();
-console.log(audit.ok);
+if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
 console.table(audit.reports.map((row) => ({
   puzzle: row.label,
   solutions: row.exactSolutions,
