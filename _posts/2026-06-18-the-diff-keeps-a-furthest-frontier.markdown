@@ -335,7 +335,10 @@ const lab = require("./assets/js/myers-diff-lab.js");
 
 const audit = lab.auditMyersDiff();
 if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
-console.log(audit.exhaustiveBinaryCases);
+if (audit.exhaustiveBinaryCases !== 3969) {
+  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveBinaryCases);
+}
+console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
 console.table(audit.reports.map((row) => ({
   example: row.label,
   tie: row.tie,

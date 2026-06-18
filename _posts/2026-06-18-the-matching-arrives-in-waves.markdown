@@ -298,7 +298,10 @@ const lab = require("./assets/js/hopcroft-karp-lab.js");
 
 const audit = lab.auditHopcroftKarp();
 if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
-console.log(audit.exhaustiveCases);
+if (audit.exhaustiveCases !== 74954) {
+  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
+}
+console.log(audit.exhaustiveCases + " exhaustive bipartite graphs checked");
 console.table(audit.reports.map((row) => ({
   graph: row.label,
   matching: row.matching,

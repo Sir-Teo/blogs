@@ -273,7 +273,10 @@ const lab = require("./assets/js/tarjan-scc-lab.js");
 
 const audit = lab.auditTarjanScc();
 if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
-console.log(audit.exhaustiveCases);
+if (audit.exhaustiveCases !== 66066) {
+  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
+}
+console.log(audit.exhaustiveCases + " exhaustive graphs checked");
 console.table(audit.reports.map((row) => ({
   graph: row.label,
   components: row.components,
