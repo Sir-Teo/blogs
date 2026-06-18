@@ -339,6 +339,7 @@
   }
 
   function auditGrid() {
+    var criticalByName = {};
     var cases = [
       { field: "saddle", iso: 1, resolution: 17, ambiguity: "decider", noise: 0, seed: 19 },
       { field: "saddle", iso: 1, resolution: 17, ambiguity: "slash", noise: 0, seed: 19 },
@@ -349,8 +350,22 @@
     ];
     var rows = cases.map(function (params, index) {
       var result = evaluate(params);
+      var caseId = index + 1;
+      result.audit.checks.forEach(function (check) {
+        if (!criticalByName[check.name]) {
+          criticalByName[check.name] = {
+            check: check.name,
+            failedCases: [],
+            passed: 0,
+            total: 0
+          };
+        }
+        criticalByName[check.name].total += 1;
+        if (check.ok) criticalByName[check.name].passed += 1;
+        else criticalByName[check.name].failedCases.push(caseId);
+      });
       return {
-        caseId: index + 1,
+        caseId: caseId,
         field: result.params.field,
         iso: result.params.iso,
         resolution: result.params.resolution,
@@ -365,13 +380,69 @@
         lowDecisions: result.summary.lowDecisions,
         maxResidual: result.summary.maxResidual,
         passed: result.audit.passed,
+        passedChecks: result.audit.checks.filter(function (row) { return row.ok; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
       };
     });
+    function summarize(groupBy) {
+      var groups = {};
+      rows.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            activeCells: 0,
+            ambiguous: 0,
+            cases: 0,
+            cells: 0,
+            maxResidual: 0,
+            passed: 0,
+            passedChecks: 0,
+            segments: 0,
+            totalChecks: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].activeCells += row.activeCells;
+        groups[key].ambiguous += row.ambiguous;
+        groups[key].cases += 1;
+        groups[key].cells += row.cells;
+        groups[key].maxResidual = Math.max(groups[key].maxResidual, row.maxResidual);
+        groups[key].segments += row.segments;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passed = rows.filter(function (row) { return row.passed; }).length;
+    var passedChecks = rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = rows.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
     return {
+      byField: summarize("field"),
+      byRule: summarize("ambiguity"),
       cases: rows,
-      passed: rows.filter(function (row) { return row.passed; }).length,
-      total: rows.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: rows.length,
+      totalChecks: totalChecks
     };
   }
 
