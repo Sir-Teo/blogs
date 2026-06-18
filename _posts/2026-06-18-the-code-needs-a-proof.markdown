@@ -282,18 +282,122 @@ The simulator exports a small Node-testable API:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/oauth-pkce-lab.js");
-const EXPECTED_CASES = 27;
-const EXPECTED_CHECKS = 216;
+const EXPECTED_VECTOR = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+const EXPECTED_DEFAULT_SUMMARY = {
+  authCodeIssued: 1,
+  codeBound: 1,
+  attackerToken: 0,
+  clientToken: 1,
+  injectedToken: 0,
+  blocked: 1,
+  injected: 0
+};
+const EXPECTED_TOTALS = {
+  checked: 27,
+  rows: 27,
+  proofs: 3,
+  passed: 27,
+  total: 27,
+  passedChecks: 216,
+  totalChecks: 216
+};
+const EXPECTED_BY_PROOF = [
+  "none:9:4:0:2:9:72/72",
+  "plain:9:3:4:1:9:72/72",
+  "S256:9:0:7:1:9:72/72"
+];
+const EXPECTED_CASE_ROWS = [
+  "none/codeOnly/optional:1:0:1:0:0:1:8/8:true",
+  "none/codeOnly/downgradeGuard:1:0:1:0:0:1:8/8:true",
+  "none/codeOnly/requirePkce:0:0:0:0:0:1:8/8:true",
+  "none/requestAndCode/optional:1:0:1:0:0:1:8/8:true",
+  "none/requestAndCode/downgradeGuard:1:0:1:0:0:1:8/8:true",
+  "none/requestAndCode/requirePkce:0:0:0:0:0:1:8/8:true",
+  "none/injectedUnbound/optional:1:0:0:0:1:0:8/8:true",
+  "none/injectedUnbound/downgradeGuard:1:0:0:0:1:0:8/8:true",
+  "none/injectedUnbound/requirePkce:0:0:0:0:0:2:8/8:true",
+  "plain/codeOnly/optional:1:1:0:1:0:1:8/8:true",
+  "plain/codeOnly/downgradeGuard:1:1:0:1:0:1:8/8:true",
+  "plain/codeOnly/requirePkce:1:1:0:1:0:1:8/8:true",
+  "plain/requestAndCode/optional:1:1:1:0:0:1:8/8:true",
+  "plain/requestAndCode/downgradeGuard:1:1:1:0:0:1:8/8:true",
+  "plain/requestAndCode/requirePkce:1:1:1:0:0:1:8/8:true",
+  "plain/injectedUnbound/optional:1:1:0:0:1:0:8/8:true",
+  "plain/injectedUnbound/downgradeGuard:1:1:0:0:0:1:8/8:true",
+  "plain/injectedUnbound/requirePkce:1:1:0:1:0:1:8/8:true",
+  "S256/codeOnly/optional:1:1:0:1:0:1:8/8:true",
+  "S256/codeOnly/downgradeGuard:1:1:0:1:0:1:8/8:true",
+  "S256/codeOnly/requirePkce:1:1:0:1:0:1:8/8:true",
+  "S256/requestAndCode/optional:1:1:0:1:0:1:8/8:true",
+  "S256/requestAndCode/downgradeGuard:1:1:0:1:0:1:8/8:true",
+  "S256/requestAndCode/requirePkce:1:1:0:1:0:1:8/8:true",
+  "S256/injectedUnbound/optional:1:1:0:0:1:0:8/8:true",
+  "S256/injectedUnbound/downgradeGuard:1:1:0:0:0:1:8/8:true",
+  "S256/injectedUnbound/requirePkce:1:1:0:1:0:1:8/8:true"
+];
+const EXPECTED_CHECK_NAMES = [
+  "s256-rfc7636-vector",
+  "s256-blocks-intercepted-code",
+  "s256-allows-legitimate-client",
+  "plain-observer-can-redeem",
+  "no-pkce-first-redeemer",
+  "pkce-required-rejects-no-pkce",
+  "optional-shows-injected-unbound-risk",
+  "guarded-server-blocks-injected-unbound"
+];
 
-console.log(lab.challengeFor(
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const vector = lab.challengeFor(
   "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
   "S256"
-));
-console.log(lab.evaluate({}).summary);
+);
+const defaultSummary = lab.evaluate({}).summary;
+console.log(vector);
+console.log(defaultSummary);
 const audit = lab.auditOauthPkceLab();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const totals = {
+  checked: audit.checked,
+  rows: audit.cases.length,
+  proofs: audit.byProof.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const byProofRows = audit.byProof.map((row) => [
+  row.proof,
+  row.cases,
+  row.attackerTokens,
+  row.clientTokens,
+  row.injectedTokens,
+  row.passed,
+  `${row.passedChecks}/${row.totalChecks}`
+].join(":"));
+const caseRows = audit.cases.map((row) => [
+  `${row.proof}/${row.attacker}/${row.server}`,
+  row.authCodeIssued,
+  row.codeBound,
+  row.attackerToken,
+  row.clientToken,
+  row.injectedToken,
+  row.blocked,
+  `${row.passedChecks}/${row.totalChecks}`,
+  row.passed
+].join(":"));
+const checkRows = audit.cases.map((row) => ({
+  case: `${row.proof}/${row.attacker}/${row.server}`,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
+  case: row.split(":")[0],
+  checks: EXPECTED_CHECK_NAMES
+}));
 console.table(audit.byProof);
 console.table(audit.cases.map((row) => ({
   proof: row.proof,
@@ -307,10 +411,22 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+if (
+  vector !== EXPECTED_VECTOR ||
+  !sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ||
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(byProofRows, EXPECTED_BY_PROOF) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
+  !sameJson(checkRows, expectedCheckRows)
+) {
+  throw new Error("unexpected PKCE audit shape: " + JSON.stringify({
+    vector,
+    defaultSummary,
+    totals,
+    byProofRows,
+    caseRows,
+    checkRows
+  }, null, 2));
 }
 const summary =
   `${audit.passed}/${audit.total} policy cases and ` +
