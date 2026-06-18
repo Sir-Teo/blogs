@@ -325,7 +325,25 @@ To reproduce that parameter sweep from the repository root:
 node - <<'NODE'
 const lab = require("./assets/js/pid-windup-lab.js");
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 const seconds = (value) => value == null ? ">32" : value.toFixed(1);
+if (audit.total !== 5 || audit.totalChecks !== 90) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
   high: row.high.toFixed(2),
@@ -338,11 +356,6 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-const summary =
-  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
-}
 console.log(summary);
 NODE
 ```
