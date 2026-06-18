@@ -342,7 +342,7 @@ event together.
   <p class="alignment-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/affine-alignment-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/affine-alignment-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -371,17 +371,14 @@ The deterministic audit grid is:
 | repeat trap | 56 | 52 | 84 | 84 | 1 | 1 | 4 |
 | clustered gaps | 80 | 63 | 80 | 89 | 4 | 2 | 17 |
 
-Reproduce it from Node:
+Reproduce it from the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/affine-alignment-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  pattern: row.params.pattern,
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  pattern: row.pattern,
   source: row.sourceLength,
   target: row.targetLength,
   linear: row.linearScore,
@@ -391,6 +388,10 @@ console.table(rows.map((row) => ({
   affineGapChars: row.affineGapChars,
   passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 The one-long-gap row is a good caution. Its linear score is higher under these
