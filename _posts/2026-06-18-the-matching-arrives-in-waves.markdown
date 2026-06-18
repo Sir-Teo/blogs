@@ -269,7 +269,7 @@ nodes form the final cover certificate.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hopcroft-karp-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hopcroft-karp-lab.js?v=20260618c' | relative_url }}"></script>
 
 In the default graph, the maximum matching has 6 edges. A one-path-at-a-time
 baseline performs 6 flips. Hopcroft-Karp still flips 6 augmenting paths total,
@@ -302,6 +302,17 @@ console.table(audit.byPhaseCount);
 if (audit.exhaustiveCases !== 74954) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
 }
+if (!audit.ok || audit.passed !== 5 || audit.total !== 5 ||
+    audit.passedChecks !== 1174332 || audit.totalChecks !== 1174332) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    issues: audit.issues,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
+}
 console.log(audit.exhaustiveCases + " exhaustive bipartite graphs checked");
 console.table(audit.cases.map((row) => ({
   graph: row.label,
@@ -312,16 +323,14 @@ console.table(audit.cases.map((row) => ({
   cover: row.coverSize,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify(audit.issues, null, 2));
-}
-console.log(`${audit.passed}/${audit.total} audit groups passed`);
+console.log(`${audit.passed}/${audit.total} audit groups and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
 The current audit checks the four named graph scenarios and every bipartite
 graph with 1 to 4 left vertices and 1 to 4 right vertices. That is 74,954
-exhaustive small graphs. For each case it verifies:
+exhaustive small graphs and 1,174,332 named checks. For each case it verifies:
 
 - Hopcroft-Karp returns a valid matching;
 - the one-path DFS baseline returns a valid matching;

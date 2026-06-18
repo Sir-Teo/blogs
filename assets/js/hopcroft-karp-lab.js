@@ -445,29 +445,41 @@
   }
 
   function verifyResult(graph, hk, baseline, brute, cover) {
-    var issues = [];
-    if (!isMatchingValid(graph, hk.pairU, hk.pairV)) issues.push("Hopcroft-Karp matching is invalid");
-    if (!isMatchingValid(graph, baseline.pairU, baseline.pairV)) issues.push("single-path matching is invalid");
-    if (hk.matching !== brute.size) issues.push("Hopcroft-Karp size " + hk.matching + " != brute force " + brute.size);
-    if (baseline.matching !== brute.size) issues.push("single-path size " + baseline.matching + " != brute force " + brute.size);
-    if (!coverHitsEveryEdge(graph, cover)) issues.push("alternating cover misses an edge");
-    if (coverSize(cover) !== hk.matching) issues.push("cover size " + coverSize(cover) + " != matching size " + hk.matching);
+    var checks = [];
+    function addCheck(name, passed, failure) {
+      checks.push({ name: name, passed: passed, failure: failure || name });
+    }
+
+    addCheck("Hopcroft-Karp matching is valid", isMatchingValid(graph, hk.pairU, hk.pairV), "Hopcroft-Karp matching is invalid");
+    addCheck("single-path matching is valid", isMatchingValid(graph, baseline.pairU, baseline.pairV), "single-path matching is invalid");
+    addCheck("Hopcroft-Karp size equals brute force", hk.matching === brute.size, "Hopcroft-Karp size " + hk.matching + " != brute force " + brute.size);
+    addCheck("single-path size equals brute force", baseline.matching === brute.size, "single-path size " + baseline.matching + " != brute force " + brute.size);
+    addCheck("alternating cover hits every edge", coverHitsEveryEdge(graph, cover), "alternating cover misses an edge");
+    addCheck("cover size equals matching size", coverSize(cover) === hk.matching, "cover size " + coverSize(cover) + " != matching size " + hk.matching);
 
     hk.phases.forEach(function (phase) {
-      if (!phase.terminal && !phase.bfs.found) issues.push("phase " + phase.index + " augmented without BFS path");
-      if (!phase.terminal && phase.paths.length === 0) issues.push("phase " + phase.index + " found no paths");
-      if (!phase.terminal && !phasePathsAreVertexDisjoint(phase.paths)) issues.push("phase " + phase.index + " paths share a vertex");
-      phase.paths.forEach(function (path, index) {
-        if (!pathIsAugmenting(graph, path, phase.before.pairU, phase.before.pairV)) {
-          issues.push("phase " + phase.index + " path " + index + " is not augmenting");
-        }
-      });
-      if (phase.matchingAfter - phase.matchingBefore !== phase.paths.length) {
-        issues.push("phase " + phase.index + " matching delta does not equal path count");
+      if (!phase.terminal) {
+        addCheck("phase " + phase.index + " has a BFS augmenting layer", phase.bfs.found, "phase " + phase.index + " augmented without BFS path");
+        addCheck("phase " + phase.index + " finds at least one path", phase.paths.length > 0, "phase " + phase.index + " found no paths");
+        addCheck("phase " + phase.index + " paths are vertex-disjoint", phasePathsAreVertexDisjoint(phase.paths), "phase " + phase.index + " paths share a vertex");
       }
+      phase.paths.forEach(function (path, index) {
+        addCheck(
+          "phase " + phase.index + " path " + index + " is augmenting",
+          pathIsAugmenting(graph, path, phase.before.pairU, phase.before.pairV),
+          "phase " + phase.index + " path " + index + " is not augmenting"
+        );
+      });
+      addCheck(
+        "phase " + phase.index + " matching delta equals path count",
+        phase.matchingAfter - phase.matchingBefore === phase.paths.length,
+        "phase " + phase.index + " matching delta does not equal path count"
+      );
     });
 
+    var issues = checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.failure; });
     return {
+      checks: checks,
       ok: issues.length === 0,
       issues: issues
     };
@@ -497,13 +509,19 @@
   function auditHopcroftKarp() {
     var issues = [];
     var cases = [];
+    var failures = [];
+    var passedChecks = 0;
+    var totalChecks = 0;
     Object.keys(EXAMPLES).forEach(function (key) {
       var state = evaluate({ example: key });
       var failedChecks = state.audit.issues.slice();
+      totalChecks += state.audit.checks.length;
+      passedChecks += state.audit.checks.length - failedChecks.length;
       if (!state.audit.ok) {
         state.audit.issues.forEach(function (issue) {
           issues.push(key + ": " + issue);
         });
+        failures.push({ example: key, failedChecks: failedChecks });
       }
       cases.push({
         example: key,
@@ -521,12 +539,16 @@
         singlePathAugmentations: state.baseline.paths.length,
         coverSize: coverSize(state.cover),
         passed: failedChecks.length === 0,
-        failedChecks: failedChecks
+        failedChecks: failedChecks,
+        passedChecks: state.audit.checks.length - failedChecks.length,
+        totalChecks: state.audit.checks.length
       });
     });
 
     var exhaustiveCases = 0;
     var exhaustiveIssues = [];
+    var exhaustivePassedChecks = 0;
+    var exhaustiveTotalChecks = 0;
     for (var nU = 1; nU <= 4; nU += 1) {
       for (var nV = 1; nV <= 4; nV += 1) {
         var edgeCount = nU * nV;
@@ -545,6 +567,8 @@
           var state = evaluate({ example: key });
           delete EXAMPLES[key];
           exhaustiveCases += 1;
+          exhaustiveTotalChecks += state.audit.checks.length;
+          exhaustivePassedChecks += state.audit.checks.length - state.audit.issues.length;
           if (!state.audit.ok) {
             var label = "exhaustive " + nU + "x" + nV + " mask " + mask + ": " + state.audit.issues.join("; ");
             issues.push(label);
@@ -556,9 +580,13 @@
 
     var exhaustive = {
       checked: exhaustiveCases,
+      passedChecks: exhaustivePassedChecks,
       passed: exhaustiveIssues.length === 0,
-      failedChecks: exhaustiveIssues
+      failedChecks: exhaustiveIssues,
+      totalChecks: exhaustiveTotalChecks
     };
+    passedChecks += exhaustivePassedChecks;
+    totalChecks += exhaustiveTotalChecks;
     var byPhaseCount = {};
     cases.forEach(function (row) {
       var key = String(row.phases);
@@ -591,10 +619,13 @@
       byPhaseCount: phaseGroups,
       cases: cases,
       exhaustive: exhaustive,
+      failures: failures,
       issues: issues,
       passed: passed,
+      passedChecks: passedChecks,
       reports: cases,
       total: total,
+      totalChecks: totalChecks,
       exhaustiveCases: exhaustiveCases
     };
   }
