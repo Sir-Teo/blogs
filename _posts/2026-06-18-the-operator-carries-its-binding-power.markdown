@@ -336,7 +336,7 @@ to change only exponentiation's recursive right binding power.
   <p class="pratt-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/pratt-parser-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/pratt-parser-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Default Run Checks
 
@@ -379,13 +379,16 @@ The parser did not "forget" arithmetic. It obeyed a different local contract.
 
 The browser lab is also a CommonJS module:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/pratt-parser-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.audit.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-console.log(rows.length + " cases passed");
+const audit = lab.auditGrid();
+console.table(audit.byMode);
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+console.log(`${audit.passed}/${audit.total} cases passed`);
+NODE
 ```
 
 The current audit grid has 25 cases. It checks:

@@ -605,16 +605,18 @@
   }
 
   function auditGrid() {
-    var rows = [];
+    var cases = [];
     function add(name, raw, expected) {
       var result = evaluate(raw);
-      rows.push({
+      var audit = auditResult(result, expected);
+      cases.push({
         name: name,
         source: result.source,
         mode: result.params.mode,
         ast: result.astString,
         value: result.value,
-        audit: auditResult(result, expected)
+        passed: audit.passed,
+        failedChecks: audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       });
     }
 
@@ -652,7 +654,18 @@
       value: -64
     });
 
-    return rows;
+    var byMode = {};
+    cases.forEach(function (row) {
+      if (!byMode[row.mode]) byMode[row.mode] = { mode: row.mode, cases: 0, passed: 0 };
+      byMode[row.mode].cases += 1;
+      if (row.passed) byMode[row.mode].passed += 1;
+    });
+    return {
+      byMode: Object.keys(MODES).map(function (mode) { return byMode[mode]; }),
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function readParams(root) {
