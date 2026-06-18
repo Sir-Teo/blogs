@@ -324,6 +324,12 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/exact-cover-lab.js");
+const EXPECTED_GROUPS = 6;
+const EXPECTED_PUZZLES = 5;
+const EXPECTED_OUTCOMES = 3;
+const EXPECTED_MATRIX_ROWS = 64;
+const EXPECTED_MATRIX_COLUMNS = 64;
+const EXPECTED_CHECKS = 965;
 
 const audit = lab.auditExactCover();
 console.table([audit.matrix]);
@@ -338,15 +344,41 @@ console.table(audit.cases.map((row) => ({
   outcome: row.outcome,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== 6 || audit.total !== 6 ||
-    audit.passedChecks !== 965 || audit.totalChecks !== 965) {
+const auditShape = {
+  puzzleRows: audit.cases.length,
+  outcomeRows: audit.byOutcome.length,
+  matrixRows: audit.matrix.rows,
+  matrixColumns: audit.matrix.columns,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.puzzleRows !== EXPECTED_PUZZLES ||
+    auditShape.outcomeRows !== EXPECTED_OUTCOMES ||
+    auditShape.matrixRows !== EXPECTED_MATRIX_ROWS ||
+    auditShape.matrixColumns !== EXPECTED_MATRIX_COLUMNS ||
+    auditShape.total !== EXPECTED_GROUPS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedOutcomeGroups = audit.byOutcome.filter(
+  (row) => row.passed !== row.cases
+);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || !audit.matrix.passed || failedOutcomeGroups.length ||
+    failedCases.length || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
-    issues: audit.issues,
-    passed: audit.passed,
-    passedChecks: audit.passedChecks,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    issues: audit.issues.slice(0, 10),
+    matrix: audit.matrix,
+    failedOutcomeGroups,
+    failedCases,
+    auditShape
   }, null, 2));
 }
 console.log(`${audit.passed}/${audit.total} audit groups and ` +
