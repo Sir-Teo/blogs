@@ -361,7 +361,50 @@ and target-sweep lower bounds across five scenarios:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/elias-fano-lab.js");
+const EXPECTED_CASE_KEYS = [
+  "1:default-clustered:100000:900:6",
+  "2:uniform:4096:64:6",
+  "3:clustered:100000:1500:6",
+  "4:dense:2048:1200:0",
+  "5:runs:250000:2200:6"
+];
+const EXPECTED_CHECK_NAMES = [
+  "decode",
+  "monotone-input",
+  "high-bit-positions",
+  "one-bit-count",
+  "access-query",
+  "next-geq-query",
+  "target-sweep"
+];
+const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.caseId}:${row.scenario}:${row.universe}:${row.count}:${row.l}`
+    ),
+    checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name))
+  };
+}
+
 const audit = lab.auditEliasFanoLab();
+const shape = auditShape(audit);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+    ? null
+    : "checksByCase"
+].filter(Boolean);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   universe: row.universe,
@@ -376,8 +419,26 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} scenarios and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+if (
+  shapeErrors.length ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
+    failed,
+    errors: audit.errors,
+    expectedCases: EXPECTED_CASES,
+    expectedChecks: EXPECTED_CHECKS,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
