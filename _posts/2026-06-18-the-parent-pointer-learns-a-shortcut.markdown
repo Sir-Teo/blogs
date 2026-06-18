@@ -343,7 +343,7 @@ forests.
   <p class="union-find-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/union-find-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/union-find-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -360,6 +360,9 @@ The audit checks:
 - path compression shortens a deliberately constructed chain;
 - all variants execute the same operation counts;
 - all variants end with the same component count.
+
+The exported audit reports 35 named checks: seven invariants across each of the
+five deterministic workloads below.
 
 The current deterministic audit grid is:
 
@@ -386,11 +389,15 @@ console.table(audit.cases.map((row) => ({
   fastTraversals: row.fastTraversals,
   plainDepth: row.plainMaxDepth,
   fastDepth: row.fastMaxDepth,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
