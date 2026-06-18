@@ -311,6 +311,93 @@ const EXPECTED_CRITICAL_CHECKS = 12;
 const EXPECTED_ROWS = 72;
 const EXPECTED_CASES = 228;
 const EXPECTED_CHECKS = 228;
+const EXPECTED_DEFAULT_SHAPE =
+  "64:3:4:105.111:384:729.167:10000:128:1";
+const EXPECTED_MEMORY_SHAPE = [
+  "16:18/54:53.753:195.375:18",
+  "64:18/54:113.012:48.844:18",
+  "256:18/54:350.049:12.211:18",
+  "1024:18/54:1298.198:3.053:0"
+];
+const EXPECTED_PASSES_SHAPE = [
+  "1:24/72:159.926:18.316:18",
+  "3:24/72:411.778:6.105:18",
+  "6:24/72:789.556:3.053:18"
+];
+const EXPECTED_TRADEOFF_SHAPE = [
+  "full:24/72:453.753:10.392:18",
+  "half:24/72:453.753:7.607:18",
+  "quarter:24/72:453.753:3.053:18"
+];
+const EXPECTED_SALT_SHAPE = [
+  "shared:36/108:453.753:1.000:1585928.894:27",
+  "unique:36/108:453.753:1000.000:1585928894.382:27"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "72-case password hash grid completed:1/1",
+  "default latency is finite:1/1",
+  "quarter-memory tradeoff does not improve total rate in toy model:1/1",
+  "raising memory lowers attacker rate in model:1/1",
+  "raising memory raises defender latency:1/1",
+  "raising passes lowers attacker rate in model:1/1",
+  "raising passes raises defender latency:1/1",
+  "server concurrency budget is memory divided by per-login memory:1/1",
+  "shared salt accelerates breach-wide search:1/1",
+  "shared salt lets one KDF cover the breach word:1/1",
+  "toy tradeoff penalty is memory-hard shaped:1/1",
+  "unique salts force one KDF per account per word:1/1"
+];
+const EXPECTED_TOTALS = {
+  criticalChecks: EXPECTED_CRITICAL_CHECKS,
+  rows: EXPECTED_ROWS,
+  passed: true,
+  passedChecks: EXPECTED_CHECKS,
+  total: EXPECTED_CASES,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function defaultShape(row) {
+  return [
+    row.params.memory,
+    row.params.passes,
+    row.params.lanes,
+    fixed3(row.latencyMs),
+    row.attackerSlots,
+    fixed3(row.hashRate),
+    row.evalsPerDictionaryWord,
+    row.maxConcurrentLogins,
+    row.serverBudgetOk ? 1 : 0
+  ].join(":");
+}
+
+function groupShape(row, key) {
+  return [
+    row[key],
+    `${row.cases}/${row.totalChecks}`,
+    fixed3(row.avgLatencyMs),
+    fixed3(row.minHashRate),
+    row.serverBudgetOk
+  ].join(":");
+}
+
+function saltShape(row) {
+  return [
+    row.salt,
+    `${row.cases}/${row.totalChecks}`,
+    fixed3(row.avgLatencyMs),
+    fixed3(row.avgEvalsPerDictionaryWord),
+    fixed3(row.avgBreachMedianSeconds),
+    row.serverBudgetOk
+  ].join(":");
+}
 
 const audit = lab.auditPasswordHashLab();
 const failed = audit.cases.filter(
@@ -326,18 +413,37 @@ console.table(audit.byTradeoff);
 console.table(audit.bySalt);
 console.table(audit.criticalChecks);
 const auditShape = {
-  criticalChecks: audit.criticalTotal,
-  rows: audit.cases.length,
-  total: audit.total,
-  totalChecks: audit.totalChecks
+  defaultResult: defaultShape(audit.defaultResult),
+  totals: {
+    criticalChecks: audit.criticalTotal,
+    rows: audit.cases.length,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  },
+  byMemory: audit.byMemory.map((row) => groupShape(row, "memory")),
+  byPasses: audit.byPasses.map((row) => groupShape(row, "passes")),
+  byTradeoff: audit.byTradeoff.map((row) => groupShape(row, "tradeoff")),
+  bySalt: audit.bySalt.map(saltShape),
+  criticalChecks: audit.criticalChecks.map(
+    (row) => `${row.check}:${row.passedChecks}/${row.totalChecks}`
+  ).sort()
 };
-if (
-  auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
-  auditShape.rows !== EXPECTED_ROWS ||
-  auditShape.total !== EXPECTED_CASES ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.defaultResult, EXPECTED_DEFAULT_SHAPE) ? null : "defaultResult",
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.byMemory, EXPECTED_MEMORY_SHAPE) ? null : "byMemory",
+  sameJson(auditShape.byPasses, EXPECTED_PASSES_SHAPE) ? null : "byPasses",
+  sameJson(auditShape.byTradeoff, EXPECTED_TRADEOFF_SHAPE) ? null : "byTradeoff",
+  sameJson(auditShape.bySalt, EXPECTED_SALT_SHAPE) ? null : "bySalt",
+  sameJson(auditShape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit grid drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 if (
   failed.length ||
@@ -349,6 +455,8 @@ if (
   throw new Error(JSON.stringify({
     failed,
     failedCriticalChecks,
+    shapeErrors,
+    auditShape,
     passed: audit.passed,
     passedChecks: audit.passedChecks,
     totalChecks: audit.totalChecks
