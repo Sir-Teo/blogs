@@ -247,7 +247,7 @@ or both.
   <p class="bres-line-lab__note">The lab uses integer endpoints on a small pixel grid. It visualizes aliased line rasterization, not antialiasing, coverage masks, joins, caps, clipping, or subpixel stroke rules.</p>
 </div>
 
-<script defer src="{{ '/assets/js/bresenham-line-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bresenham-line-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Audit Checks
 
@@ -275,6 +275,26 @@ audit:       pass
 The vertical case is included for a boring reason: boring cases are where
 generalized octant code often leaks assumptions. The backward case forces a
 negative `x` direction. The steep case swaps the major axis.
+
+To reproduce those cases from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/bresenham-line-lab.js");
+const audit = lab.auditBresenhamLineLab();
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  dx: row.dx,
+  dy: row.dy,
+  points: row.points,
+  maxError: row.maxAxisError.toFixed(3),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## Why This Is Not Just Rounding
 

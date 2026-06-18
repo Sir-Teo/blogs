@@ -182,11 +182,35 @@
     };
   }
 
+  function auditCase(scenario) {
+    var result = evaluate({ scenario: scenario, step: 999 });
+    var failedChecks = Object.keys(result.audit).filter(function (name) {
+      return name !== "passed" && !result.audit[name];
+    });
+    return {
+      scenario: scenario,
+      label: result.line.label,
+      x0: result.line.x0,
+      y0: result.line.y0,
+      x1: result.line.x1,
+      y1: result.line.y1,
+      dx: result.run.dx,
+      dy: result.run.dy,
+      sx: result.run.sx,
+      sy: result.run.sy,
+      points: result.run.points.length,
+      expectedPoints: Math.max(result.run.dx, result.run.dy) + 1,
+      maxAxisError: result.maxAxisError,
+      passed: result.audit.passed,
+      failedChecks: failedChecks
+    };
+  }
+
   function auditBresenhamLineLab() {
-    Object.keys(SCENARIOS).forEach(function (scenario) {
-      var result = evaluate({ scenario: scenario, step: 999 });
-      assert(result.audit.passed, scenario + " audit failed");
-      assert(result.run.points.length === Math.max(result.run.dx, result.run.dy) + 1, scenario + " count mismatch");
+    var cases = Object.keys(SCENARIOS).map(auditCase);
+    cases.forEach(function (row) {
+      assert(row.passed, row.scenario + " audit failed");
+      assert(row.points === row.expectedPoints, row.scenario + " count mismatch");
     });
     var shallow = evaluate({ scenario: "shallow" });
     assert(shallow.run.points[1].x === 2, "shallow line should advance x on step 1");
@@ -196,8 +220,11 @@
     assert(backward.run.sx === -1 && backward.run.sy === 1, "backward scenario should exercise negative x direction");
     return {
       ok: true,
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
       scenarios: Object.keys(SCENARIOS).length,
       shallowPoints: shallow.run.points.length,
+      total: cases.length,
       verticalPoints: vertical.run.points.length
     };
   }
