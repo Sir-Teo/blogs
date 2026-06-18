@@ -307,7 +307,18 @@ generated checks over a 72-row memory/pass/tradeoff/salt grid:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/password-hash-lab.js");
+const EXPECTED_CRITICAL_CHECKS = 12;
+const EXPECTED_ROWS = 72;
+const EXPECTED_CASES = 228;
+const EXPECTED_CHECKS = 228;
+
 const audit = lab.auditPasswordHashLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedCriticalChecks = audit.criticalChecks.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.log(audit.defaultResult);
 console.table(audit.byMemory);
 console.table(audit.byPasses);
@@ -321,15 +332,27 @@ const auditShape = {
   totalChecks: audit.totalChecks
 };
 if (
-  auditShape.criticalChecks !== 12 ||
-  auditShape.rows !== 72 ||
-  auditShape.total !== 228 ||
-  auditShape.totalChecks !== 228
+  auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
+  auditShape.rows !== EXPECTED_ROWS ||
+  auditShape.total !== EXPECTED_CASES ||
+  auditShape.totalChecks !== EXPECTED_CHECKS
 ) {
   throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+if (
+  failed.length ||
+  failedCriticalChecks.length ||
+  !audit.ok ||
+  !audit.passed ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    failedCriticalChecks,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
