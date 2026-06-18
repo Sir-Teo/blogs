@@ -257,6 +257,32 @@ With the default `28 x 84` implicit matrix, the audited run reports:
 | adjacent Monge violations | `0` |
 | minima path | column `1` to column `84` |
 
+You can run the wider regression grid from Node:
+
+```js
+const lab = require("./assets/js/smawk-monge-lab.js");
+
+const rows = lab.auditGrid().map((result) => ({
+  scenario: result.params.scenario,
+  rows: result.params.rows,
+  cols: result.params.cols,
+  passed: result.audit.passed,
+  bruteCells: result.brute.stats.uniqueAccesses,
+  smawkCells: result.smawk.stats.uniqueAccesses,
+  savedPct: Number((result.savings * 100).toFixed(1)),
+  mongeViolations: result.audit.monge.violations,
+  checks: result.audit.checks.length
+}));
+
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed, null, 2));
+console.table(rows);
+```
+
+The grid covers wide, tall, tilted, staircase, and jittered Monge instances. It
+is a regression harness for this implementation, not a substitute for the
+total-monotonicity proof.
+
 The exact numbers are not universal. They depend on the table shape and on the
 implementation's caching policy. The important fact is structural: the brute
 force method scales with `rows * columns`, while SMAWK's recursion keeps asking
