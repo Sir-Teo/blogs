@@ -303,38 +303,69 @@
     var issues = [];
     var n = graph.nodes.length;
     var seen = new Array(n).fill(false);
+    var vertexPartitionOk = true;
 
     result.components.forEach(function (component, i) {
-      if (component.length === 0) issues.push("component " + i + " is empty");
+      if (component.length === 0) {
+        vertexPartitionOk = false;
+        issues.push("component " + i + " is empty");
+      }
       component.forEach(function (v) {
-        if (seen[v]) issues.push("vertex " + v + " appears twice");
+        if (seen[v]) {
+          vertexPartitionOk = false;
+          issues.push("vertex " + v + " appears twice");
+        }
         seen[v] = true;
       });
     });
     seen.forEach(function (hit, v) {
-      if (!hit) issues.push("vertex " + v + " is missing");
+      if (!hit) {
+        vertexPartitionOk = false;
+        issues.push("vertex " + v + " is missing");
+      }
     });
 
-    if (canonicalComponents(result.components) !== canonicalComponents(oracle.components)) {
+    var partitionMatchesOracle = canonicalComponents(result.components) === canonicalComponents(oracle.components);
+    if (!partitionMatchesOracle) {
       issues.push("Tarjan partition does not match reachability oracle");
     }
 
+    var componentsStronglyConnected = true;
     result.components.forEach(function (component) {
       for (var i = 0; i < component.length; i += 1) {
         for (var j = 0; j < component.length; j += 1) {
-          if (!oracle.reach[component[i]][component[j]]) issues.push("component is not strongly connected");
+          if (!oracle.reach[component[i]][component[j]]) {
+            componentsStronglyConnected = false;
+            issues.push("component is not strongly connected");
+          }
         }
       }
     });
 
-    if (!condensationAcyclic(graph, result.components)) issues.push("condensation graph has a cycle");
+    var condensationDag = condensationAcyclic(graph, result.components);
+    if (!condensationDag) issues.push("condensation graph has a cycle");
+    var lowlinksInRange = true;
     result.index.forEach(function (idx, v) {
-      if (idx < 0) issues.push("vertex " + v + " was never indexed");
-      if (result.low[v] < 0 || result.low[v] > idx) issues.push("vertex " + v + " lowlink out of range");
+      if (idx < 0) {
+        lowlinksInRange = false;
+        issues.push("vertex " + v + " was never indexed");
+      }
+      if (result.low[v] < 0 || result.low[v] > idx) {
+        lowlinksInRange = false;
+        issues.push("vertex " + v + " lowlink out of range");
+      }
     });
+    var checks = [
+      { name: "vertices-appear-once", ok: vertexPartitionOk },
+      { name: "partition-matches-oracle", ok: partitionMatchesOracle },
+      { name: "components-strongly-connected", ok: componentsStronglyConnected },
+      { name: "condensation-is-dag", ok: condensationDag },
+      { name: "lowlinks-in-index-range", ok: lowlinksInRange }
+    ];
 
     return {
       ok: issues.length === 0,
+      checks: checks,
       issues: issues
     };
   }
@@ -361,7 +392,7 @@
     var cases = [];
     Object.keys(EXAMPLES).forEach(function (key) {
       var state = evaluate({ example: key });
-      var failedChecks = state.audit.issues.slice();
+      var failedChecks = failedAuditChecks(state.audit.checks);
       if (!state.audit.ok) {
         state.audit.issues.forEach(function (issue) {
           issues.push(key + ": " + issue);
@@ -379,19 +410,27 @@
         }, 0),
         condensationEdges: condensationEdges(state.graph, state.result.components).length,
         passed: failedChecks.length === 0,
-        failedChecks: failedChecks
+        passedChecks: state.audit.checks.length - failedChecks.length,
+        totalChecks: state.audit.checks.length,
+        checks: state.audit.checks,
+        failedChecks: failedChecks,
+        issues: state.audit.issues
       });
     });
 
     var exhaustiveCases = 0;
     var exhaustiveIssues = [];
     var exhaustiveBySize = [];
+    var exhaustivePassedChecks = 0;
+    var exhaustiveTotalChecks = 0;
     for (var n = 1; n <= 4; n += 1) {
       var edgeSlots = n * n;
       var total = Math.pow(2, edgeSlots);
       var nodes = [];
       for (var i = 0; i < n; i += 1) nodes.push("v" + i);
       var sizeIssues = 0;
+      var sizePassedChecks = 0;
+      var sizeTotalChecks = 0;
       for (var mask = 0; mask < total; mask += 1) {
         var edges = [];
         for (var bit = 0; bit < edgeSlots; bit += 1) {
@@ -402,6 +441,11 @@
         var oracle = oracleScc(graph);
         var audit = verifyResult(graph, result, oracle);
         exhaustiveCases += 1;
+        var graphPassedChecks = audit.checks.filter(function (check) { return check.ok; }).length;
+        exhaustivePassedChecks += graphPassedChecks;
+        exhaustiveTotalChecks += audit.checks.length;
+        sizePassedChecks += graphPassedChecks;
+        sizeTotalChecks += audit.checks.length;
         if (!audit.ok) {
           var issue = n + "-node mask " + mask + ": " + audit.issues.join("; ");
           issues.push(issue);
@@ -413,7 +457,9 @@
         nodes: n,
         cases: total,
         failed: sizeIssues,
-        passed: sizeIssues === 0
+        passed: sizeIssues === 0,
+        passedChecks: sizePassedChecks,
+        totalChecks: sizeTotalChecks
       });
     }
 
@@ -421,7 +467,9 @@
       bySize: exhaustiveBySize,
       checked: exhaustiveCases,
       failedChecks: exhaustiveIssues,
-      passed: exhaustiveIssues.length === 0
+      passed: exhaustiveIssues.length === 0,
+      passedChecks: exhaustivePassedChecks,
+      totalChecks: exhaustiveTotalChecks
     };
     var byComponentCountMap = {};
     cases.forEach(function (row) {
@@ -433,7 +481,9 @@
           graphs: [],
           maxCondensationEdges: 0,
           maxStackDepth: 0,
-          passed: 0
+          passed: 0,
+          passedChecks: 0,
+          totalChecks: 0
         };
       }
       byComponentCountMap[key].cases += 1;
@@ -441,6 +491,8 @@
       byComponentCountMap[key].maxCondensationEdges = Math.max(byComponentCountMap[key].maxCondensationEdges, row.condensationEdges);
       byComponentCountMap[key].maxStackDepth = Math.max(byComponentCountMap[key].maxStackDepth, row.maxStackDepth);
       if (row.passed) byComponentCountMap[key].passed += 1;
+      byComponentCountMap[key].passedChecks += row.passedChecks;
+      byComponentCountMap[key].totalChecks += row.totalChecks;
     });
     var byComponentCount = Object.keys(byComponentCountMap).sort(function (a, b) {
       return Number(a) - Number(b);
@@ -451,18 +503,27 @@
     });
     var passed = cases.filter(function (row) { return row.passed; }).length + (exhaustive.passed ? 1 : 0);
     var total = cases.length + 1;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0) + exhaustive.passedChecks;
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0) + exhaustive.totalChecks;
 
     return {
       ok: issues.length === 0,
       byComponentCount: byComponentCount,
       cases: cases,
+      details: cases,
       exhaustive: exhaustive,
       issues: issues,
       passed: passed,
+      passedChecks: passedChecks,
       reports: cases,
       total: total,
+      totalChecks: totalChecks,
       exhaustiveCases: exhaustiveCases
     };
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
   }
 
   function compact(value, limit) {

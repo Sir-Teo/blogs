@@ -252,7 +252,7 @@ on the stack. Purple outlines are components that have already been emitted.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/tarjan-scc-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/tarjan-scc-lab.js?v=20260618c' | relative_url }}"></script>
 
 On the default graph, 7 vertices and 10 directed edges collapse into 3 strongly
 connected components. The condensation graph has 3 inter-component edges and is
@@ -278,6 +278,9 @@ console.table(audit.exhaustive.bySize);
 if (audit.exhaustiveCases !== 66066) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
 }
+if (audit.totalChecks !== 330350) {
+  throw new Error("unexpected audit check count: " + audit.totalChecks);
+}
 console.log(audit.exhaustiveCases + " exhaustive graphs checked");
 console.table(audit.cases.map((row) => ({
   graph: row.label,
@@ -285,18 +288,22 @@ console.table(audit.cases.map((row) => ({
   condensationEdges: row.condensationEdges,
   maxStack: row.maxStackDepth,
   events: row.events,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+const summary =
+  `${audit.passed}/${audit.total} audit groups and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.issues, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} audit groups passed`);
+console.log(summary);
 NODE
 ```
 
 The audit checks the named examples and every directed graph with self-loops on
-1 through 4 vertices. That is 66,066 exhaustive small graphs. For each case it
-verifies:
+1 through 4 vertices. That is 66,066 exhaustive small graphs and 330,350 named
+checks. For each case it verifies:
 
 - Tarjan's component partition matches a brute-force reachability oracle;
 - every vertex appears in exactly one component;
