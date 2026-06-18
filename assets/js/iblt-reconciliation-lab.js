@@ -336,7 +336,7 @@
       { scenario: "split", common: 1200, difference: 90, factor: 1.9, hashes: 3, seed: 31 },
       { scenario: "balanced", common: 3200, difference: 140, factor: 2.2, hashes: 5, seed: 101 }
     ];
-    var details = cases.map(function (params) {
+    var auditCases = cases.map(function (params, index) {
       var run = runOnce(params);
       var allEmpty = tableStats(emptyTable(run.cells)).nonempty === 0;
       var pureCellsValid = run.decoded.trace.every(function (row) {
@@ -350,25 +350,44 @@
         subtractionShape: run.audit.subtractionShape
       };
       return {
+        aOnly: run.sets.aOnly.length,
         bytesIblt: run.bytes.iblt,
         bytesLists: run.bytes.lists,
         cells: run.cells,
+        compressionRatio: run.bytes.iblt ? run.bytes.lists / run.bytes.iblt : 0,
         diffSize: run.diffSize,
+        decodedA: run.decoded.positives.length,
+        decodedB: run.decoded.negatives.length,
         failedChecks: Object.keys(checks).filter(function (key) { return !checks[key]; }),
         factor: run.params.factor,
         hashes: run.params.hashes,
+        initialPure: run.decoded.initialPure,
         passed: Object.keys(checks).every(function (key) { return checks[key]; }),
+        peeled: run.decoded.trace.length,
         residual: run.decoded.residual.nonempty,
-        scenario: run.params.scenario,
+        scenario: index === 0 ? "default-" + run.params.scenario : run.params.scenario,
         seed: run.params.seed
       };
     });
-    var passed = details.filter(function (row) { return row.passed; }).length;
+    var byScenario = auditCases.reduce(function (acc, row) {
+      acc[row.scenario] = {
+        cells: row.cells,
+        compressionRatio: row.compressionRatio,
+        diffSize: row.diffSize,
+        failedChecks: row.failedChecks,
+        passed: row.passed,
+        residual: row.residual
+      };
+      return acc;
+    }, {});
+    var passed = auditCases.filter(function (row) { return row.passed; }).length;
     return {
-      details: details,
-      ok: passed === details.length,
+      byScenario: byScenario,
+      cases: auditCases,
+      details: auditCases,
+      ok: passed === auditCases.length,
       passed: passed,
-      total: details.length
+      total: auditCases.length
     };
   }
 
