@@ -439,9 +439,12 @@
     }
 
     function addCritical(label, condition) {
+      var passed = record(condition, label);
       criticalChecks.push({
         check: label,
-        passed: record(condition, label)
+        passed: passed,
+        passedChecks: passed ? 1 : 0,
+        totalChecks: 1
       });
     }
 
@@ -491,9 +494,11 @@
           loaderHazards: result.summary.loaderHazards,
           parserInsertedBlockedByStrict: result.summary.parserInsertedBlockedByStrict,
           passed: failedChecks.length === 0,
+          passedChecks: 1 - failedChecks.length,
           policy: policy,
           scenario: scenario,
-          scripts: result.summary.scripts
+          scripts: result.summary.scripts,
+          totalChecks: 1
         });
       });
     });
@@ -511,7 +516,9 @@
             loaderHazards: 0,
             parserInsertedBlockedByStrict: 0,
             passed: 0,
-            scripts: 0
+            passedChecks: 0,
+            scripts: 0,
+            totalChecks: 0
           };
           groups[key][groupBy] = key;
         }
@@ -523,6 +530,8 @@
         groups[key].parserInsertedBlockedByStrict += row.parserInsertedBlockedByStrict;
         groups[key].scripts += row.scripts;
         if (row.passed) groups[key].passed += 1;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
       });
       return Object.keys(groups).sort().map(function (key) {
         return groups[key];
@@ -530,17 +539,25 @@
     }
 
     var passed = checked - errors.length;
+    var passedChecks = criticalChecks.reduce(function (sum, row) { return sum + row.passedChecks; }, 0) +
+      cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = criticalChecks.reduce(function (sum, row) { return sum + row.totalChecks; }, 0) +
+      cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
 
     return {
       byPolicy: summarize("policy"),
       byScenario: summarize("scenario"),
       cases: cases,
-      ok: errors.length === 0,
+      ok: errors.length === 0 && passedChecks === totalChecks,
       checked: checked,
       criticalChecks: criticalChecks,
+      criticalTotal: criticalChecks.length,
+      details: cases,
       errors: errors,
       passed: passed,
-      total: checked
+      passedChecks: passedChecks,
+      total: checked,
+      totalChecks: totalChecks
     };
   }
 

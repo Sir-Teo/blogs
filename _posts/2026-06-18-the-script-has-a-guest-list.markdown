@@ -281,7 +281,7 @@ model doing exactly what the policy asked.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/csp-script-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/csp-script-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Reproducing The Model
 
@@ -300,10 +300,17 @@ console.table(audit.criticalChecks);
 if (audit.checked !== 32) {
   throw new Error("unexpected check count: " + audit.checked);
 }
-if (!audit.ok || audit.passed !== audit.total) {
+if (audit.criticalTotal !== 12 || audit.cases.length !== 20 || audit.totalChecks !== 32) {
+  throw new Error(
+    `unexpected audit grid: ${audit.criticalTotal} critical checks, ` +
+    `${audit.cases.length} generated cases, ${audit.totalChecks} total checks`
+  );
+}
+const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.errors, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} checks passed`);
+console.log(summary);
 NODE
 ```
 
@@ -328,8 +335,9 @@ The default summary is:
 }
 ```
 
-The audit currently runs 32 checks. It verifies the SHA-256/base64 test vector,
-the host-allowlist CDN failure mode, the parser-inserted block under
+The audit currently runs 12 critical checks plus 20 generated policy/scenario
+partition checks, for 32 total checks. It verifies the SHA-256/base64 test
+vector, the host-allowlist CDN failure mode, the parser-inserted block under
 `strict-dynamic`, the nonce-only runtime-dependency block, the exact inline hash
 case, the `unsafe-inline` injection case, and the tainted-loader caveat.
 
