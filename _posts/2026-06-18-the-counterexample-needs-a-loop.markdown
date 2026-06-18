@@ -352,6 +352,23 @@ The lab exports the checker it uses:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/temporal-lasso-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CLAIMS = 5;
+const EXPECTED_CHECKS = 45;
+const EXPECTED_CASE_SHAPE = [
+  "bad switch:8",
+  "outage under fairness:12",
+  "safe baseline:8",
+  "unfair skip:10",
+  "weak fairness:7"
+];
+const EXPECTED_CLAIM_SHAPE = [
+  "capability loss:1:12:0:1",
+  "fairness filter:1:7:0:0",
+  "liveness lasso:1:10:0:1",
+  "no witness:1:8:0:0",
+  "safety prefix:1:8:1:0"
+];
 
 const audit = lab.audit();
 console.table(audit.byClaim);
@@ -365,15 +382,46 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (
-  !audit.ok ||
-  !audit.pass ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 45 ||
-  audit.totalChecks !== 45
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  caseChecks: audit.cases
+    .map((row) => `${row.name}:${row.totalChecks}`)
+    .sort(),
+  cases: audit.cases.length,
+  claimChecks: audit.byClaim
+    .map((row) => [
+      row.claim,
+      row.cases,
+      row.totalChecks,
+      row.safetyWitnesses,
+      row.lassoWitnesses
+    ].join(":"))
+    .sort(),
+  claims: audit.byClaim.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.cases !== EXPECTED_CASES ||
+    auditShape.claims !== EXPECTED_CLAIMS ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.claimChecks) !== JSON.stringify(EXPECTED_CLAIM_SHAPE)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || !audit.pass || failedCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} temporal lasso cases and ` +
