@@ -379,26 +379,80 @@ You can reproduce that table from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/union-find-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 35;
+const EXPECTED_CASE_SHAPE = [
+  "1:items=48:chain=20:random=90:finds=120:seed=111:4451/318:31/2:components=2:7/7",
+  "2:items=16:chain=15:random=0:finds=64:seed=3:657/59:15/1:components=1:7/7",
+  "3:items=48:chain=8:random=70:finds=120:seed=203:1323/247:13/1:components=3:7/7",
+  "4:items=72:chain=0:random=150:finds=120:seed=42:2468/374:19/1:components=2:7/7",
+  "5:items=96:chain=95:random=60:finds=200:seed=77:19123/356:95/1:components=1:7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "all variants match the oracle partition",
+  "rank variants keep rank invariants",
+  "fast variant is no deeper than plain",
+  "fast variant uses no more parent traversals than plain",
+  "path compression shortens the chain demo",
+  "operation counts are preserved",
+  "component counts agree"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:items=${row.items}:chain=${row.chainUnions}:` +
+    `random=${row.randomUnions}:finds=${row.repeatedFinds}:seed=${row.seed}:` +
+    `${row.plainTraversals}/${row.fastTraversals}:` +
+    `${row.plainMaxDepth}/${row.fastMaxDepth}:components=${row.components}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   items: row.items,
