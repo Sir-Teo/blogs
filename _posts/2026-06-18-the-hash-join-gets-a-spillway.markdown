@@ -312,25 +312,18 @@ The exported audit grid is reproducible from Node:
 
 ```js
 const lab = require("./assets/js/hash-join-spill-lab.js");
+const EXPECTED_CASES = 4;
+const EXPECTED_CHECKS = 44;
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byProfile);
-if (
-  failed.length ||
-  !audit.ok ||
-  audit.passed !== 4 ||
-  audit.total !== 4 ||
-  audit.passedChecks !== 44 ||
-  audit.totalChecks !== 44
-) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total,
-    passedChecks: audit.passedChecks,
-    totalChecks: audit.totalChecks
-  }, null, 2));
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
 
 console.table(audit.cases.map((row) => ({
@@ -343,7 +336,17 @@ console.table(audit.cases.map((row) => ({
   topKeyRows: row.topBuildKeyRows,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
+console.log(summary);
 ```
 
 The `hot` row is allowed to fail the fit test only because the audit also
