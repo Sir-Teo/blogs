@@ -315,16 +315,32 @@ three path rules:
 
 ```js
 const lab = require("./assets/js/residual-flow-lab.js");
+const EXPECTED_CASES = 9;
+const EXPECTED_CHECKS = 72;
 
 const audit = lab.auditResidualFlowLab();
-if (!audit.ok || audit.passed !== 9 || audit.total !== 9 ||
-    audit.passedChecks !== 72 || audit.totalChecks !== 72) {
+const auditShape = {
+  rows: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.rows !== EXPECTED_CASES ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
-    passed: audit.passed,
-    passedChecks: audit.passedChecks,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    failedCases,
+    auditShape
   }, null, 2));
 }
 
