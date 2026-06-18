@@ -349,6 +349,18 @@ const EXPECTED_CASE_SHAPE = [
   "stress-3:7:25000:500:24:300:11:24:0",
   "stress-4:7:70000:2500:48:560:17:48:0"
 ];
+const EXPECTED_TOTALS = {
+  scenarioRows: EXPECTED_SCENARIO_ROWS,
+  replayRows: EXPECTED_REPLAY_ROWS,
+  passed: EXPECTED_ROWS,
+  total: EXPECTED_ROWS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditSpaceSavingLab();
 console.table(audit.cases.map((row) => ({
@@ -366,6 +378,14 @@ console.table(audit.cases.map((row) => ({
 const scenarioRows = audit.cases.filter((row) => row.scenario !== "fixed-seed-replay");
 const replayRows = audit.cases.filter((row) => row.scenario === "fixed-seed-replay");
 const auditShape = {
+  totals: {
+    scenarioRows: scenarioRows.length,
+    replayRows: replayRows.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   caseChecks: audit.cases.map((row) => [
     row.scenario,
     row.totalChecks,
@@ -377,26 +397,28 @@ const auditShape = {
     row.reported,
     row.noMissCondition ? 1 : 0
   ].join(":")).sort(),
-  passed: audit.passed,
   replayCheckNames: Array.from(new Set(replayRows.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
-  replayRows: replayRows.length,
   scenarioCheckNames: Array.from(new Set(scenarioRows.flatMap(
     (row) => row.checks.map((check) => check.name)
-  ))).sort(),
-  scenarioRows: scenarioRows.length,
-  total: audit.total,
-  totalChecks: audit.totalChecks
+  ))).sort()
 };
-if (auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
-    auditShape.replayRows !== EXPECTED_REPLAY_ROWS ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES) ||
-    JSON.stringify(auditShape.replayCheckNames) !== JSON.stringify(EXPECTED_REPLAY_CHECK_NAMES)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.scenarioCheckNames, EXPECTED_SCENARIO_CHECK_NAMES)
+    ? null
+    : "scenarioCheckNames",
+  sameJson(auditShape.replayCheckNames, EXPECTED_REPLAY_CHECK_NAMES)
+    ? null
+    : "replayCheckNames"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const failedCases = audit.cases.filter(
@@ -408,6 +430,7 @@ if (!audit.ok || failedCases.length ||
   throw new Error(JSON.stringify({
     failures: audit.failures,
     failedCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
