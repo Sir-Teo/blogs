@@ -376,6 +376,7 @@
 
   function auditGrid() {
     var cases = [];
+    var criticalByName = {};
     var shapes = Object.keys(SHAPES);
     var counts = [8, 17, 31, 64, 96];
     var seeds = [1, 7, 23, 91];
@@ -383,7 +384,22 @@
       counts.forEach(function (count) {
         seeds.forEach(function (seed) {
           var result = evaluate({ shape: shape, count: count, seed: seed });
+          var caseId = cases.length + 1;
+          result.audit.checks.forEach(function (check) {
+            if (!criticalByName[check.name]) {
+              criticalByName[check.name] = {
+                check: check.name,
+                failedCases: [],
+                passed: 0,
+                total: 0
+              };
+            }
+            criticalByName[check.name].total += 1;
+            if (check.passed) criticalByName[check.name].passed += 1;
+            else criticalByName[check.name].failedCases.push(caseId);
+          });
           cases.push({
+            caseId: caseId,
             shape: shape,
             count: count,
             seed: seed,
@@ -392,16 +408,45 @@
             brutePairs: result.brute.checked,
             diameter: result.stats.diameter,
             passed: result.audit.passed,
+            passedChecks: result.audit.checks.filter(function (row) { return row.passed; }).length,
+            totalChecks: result.audit.checks.length,
             failedChecks: result.audit.checks.filter(function (row) { return !row.passed; }).map(function (row) { return row.name; })
           });
         });
       });
     });
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = cases.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
     var byShape = {};
     cases.forEach(function (row) {
-      if (!byShape[row.shape]) byShape[row.shape] = { shape: row.shape, cases: 0, passed: 0, hullTotal: 0, candidateTotal: 0, brutePairTotal: 0 };
+      if (!byShape[row.shape]) {
+        byShape[row.shape] = {
+          shape: row.shape,
+          cases: 0,
+          passed: 0,
+          passedChecks: 0,
+          totalChecks: 0,
+          hullTotal: 0,
+          candidateTotal: 0,
+          brutePairTotal: 0
+        };
+      }
       byShape[row.shape].cases += 1;
       if (row.passed) byShape[row.shape].passed += 1;
+      byShape[row.shape].passedChecks += row.passedChecks;
+      byShape[row.shape].totalChecks += row.totalChecks;
       byShape[row.shape].hullTotal += row.hull;
       byShape[row.shape].candidateTotal += row.candidates;
       byShape[row.shape].brutePairTotal += row.brutePairs;
@@ -412,6 +457,8 @@
         shape: row.shape,
         cases: row.cases,
         passed: row.passed,
+        passedChecks: row.passedChecks,
+        totalChecks: row.totalChecks,
         avgHull: row.hullTotal / row.cases,
         avgCandidates: row.candidateTotal / row.cases,
         avgBrutePairs: row.brutePairTotal / row.cases
@@ -420,8 +467,14 @@
     return {
       byShape: summary,
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 

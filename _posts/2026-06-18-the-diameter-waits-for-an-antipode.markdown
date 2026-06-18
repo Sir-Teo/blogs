@@ -244,7 +244,7 @@ all-pairs search over the original points.
   <p class="calipers-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/rotating-calipers-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/rotating-calipers-lab.js?v=20260618c' | relative_url }}"></script>
 
 In the default run, `44` generated points produce `14` hull vertices. Exhaustive
 search over the original points checks `946` distances. The caliper candidate
@@ -272,17 +272,22 @@ console.table(audit.byShape.map((row) => ({
   avgHull: row.avgHull.toFixed(1),
   avgCandidates: row.avgCandidates.toFixed(1),
   avgBrutePairs: row.avgBrutePairs.toFixed(1),
-  passed: row.passed
+  passed: row.passed,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+console.table(audit.criticalChecks);
+if (audit.total !== 100 || audit.totalChecks !== 800) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
 }
-console.log(`${audit.passed}/${audit.total} cases passed`);
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
-The current audit grid has 100 deterministic cases: five point-set families,
-five point counts, and four seeds. Each case checks:
+The current audit grid has 100 deterministic cases and 800 individual checks:
+five point-set families, five point counts, and four seeds. Each case verifies:
 
 - the monotone-chain hull is convex;
 - every generated point lies inside or on the hull;
