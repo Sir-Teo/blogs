@@ -252,7 +252,7 @@ on the stack. Purple outlines are components that have already been emitted.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/tarjan-scc-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/tarjan-scc-lab.js?v=20260618b' | relative_url }}"></script>
 
 On the default graph, 7 vertices and 10 directed edges collapse into 3 strongly
 connected components. The condensation graph has 3 inter-component edges and is
@@ -266,23 +266,32 @@ longer changes the identity of the current open component.
 
 ## Reproducibility Check
 
-The browser file is also a CommonJS module:
+The browser file is also a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/tarjan-scc-lab.js");
 
 const audit = lab.auditTarjanScc();
-if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
+console.table(audit.byComponentCount);
+console.table(audit.exhaustive.bySize);
 if (audit.exhaustiveCases !== 66066) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
 }
 console.log(audit.exhaustiveCases + " exhaustive graphs checked");
-console.table(audit.reports.map((row) => ({
+console.table(audit.cases.map((row) => ({
   graph: row.label,
   components: row.components,
   condensationEdges: row.condensationEdges,
-  events: row.events
+  maxStack: row.maxStackDepth,
+  events: row.events,
+  passed: row.passed
 })));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.issues, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} audit groups passed`);
+NODE
 ```
 
 The audit checks the named examples and every directed graph with self-loops on

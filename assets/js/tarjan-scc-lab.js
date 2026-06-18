@@ -358,31 +358,40 @@
 
   function auditTarjanScc() {
     var issues = [];
-    var reports = [];
+    var cases = [];
     Object.keys(EXAMPLES).forEach(function (key) {
       var state = evaluate({ example: key });
+      var failedChecks = state.audit.issues.slice();
       if (!state.audit.ok) {
         state.audit.issues.forEach(function (issue) {
           issues.push(key + ": " + issue);
         });
       }
-      reports.push({
+      cases.push({
         example: key,
         label: state.graph.label,
         nodes: state.graph.nodes.length,
         edges: state.graph.edges.length,
         components: state.result.components.length,
         events: state.result.events.length,
-        condensationEdges: condensationEdges(state.graph, state.result.components).length
+        maxStackDepth: state.result.events.reduce(function (max, event) {
+          return Math.max(max, event.state.stack.length);
+        }, 0),
+        condensationEdges: condensationEdges(state.graph, state.result.components).length,
+        passed: failedChecks.length === 0,
+        failedChecks: failedChecks
       });
     });
 
     var exhaustiveCases = 0;
+    var exhaustiveIssues = [];
+    var exhaustiveBySize = [];
     for (var n = 1; n <= 4; n += 1) {
       var edgeSlots = n * n;
       var total = Math.pow(2, edgeSlots);
       var nodes = [];
       for (var i = 0; i < n; i += 1) nodes.push("v" + i);
+      var sizeIssues = 0;
       for (var mask = 0; mask < total; mask += 1) {
         var edges = [];
         for (var bit = 0; bit < edgeSlots; bit += 1) {
@@ -393,14 +402,65 @@
         var oracle = oracleScc(graph);
         var audit = verifyResult(graph, result, oracle);
         exhaustiveCases += 1;
-        if (!audit.ok) issues.push(n + "-node mask " + mask + ": " + audit.issues.join("; "));
+        if (!audit.ok) {
+          var issue = n + "-node mask " + mask + ": " + audit.issues.join("; ");
+          issues.push(issue);
+          exhaustiveIssues.push(issue);
+          sizeIssues += 1;
+        }
       }
+      exhaustiveBySize.push({
+        nodes: n,
+        cases: total,
+        failed: sizeIssues,
+        passed: sizeIssues === 0
+      });
     }
+
+    var exhaustive = {
+      bySize: exhaustiveBySize,
+      checked: exhaustiveCases,
+      failedChecks: exhaustiveIssues,
+      passed: exhaustiveIssues.length === 0
+    };
+    var byComponentCountMap = {};
+    cases.forEach(function (row) {
+      var key = String(row.components);
+      if (!byComponentCountMap[key]) {
+        byComponentCountMap[key] = {
+          components: row.components,
+          cases: 0,
+          graphs: [],
+          maxCondensationEdges: 0,
+          maxStackDepth: 0,
+          passed: 0
+        };
+      }
+      byComponentCountMap[key].cases += 1;
+      byComponentCountMap[key].graphs.push(row.example);
+      byComponentCountMap[key].maxCondensationEdges = Math.max(byComponentCountMap[key].maxCondensationEdges, row.condensationEdges);
+      byComponentCountMap[key].maxStackDepth = Math.max(byComponentCountMap[key].maxStackDepth, row.maxStackDepth);
+      if (row.passed) byComponentCountMap[key].passed += 1;
+    });
+    var byComponentCount = Object.keys(byComponentCountMap).sort(function (a, b) {
+      return Number(a) - Number(b);
+    }).map(function (key) {
+      var group = byComponentCountMap[key];
+      group.graphs = group.graphs.join(", ");
+      return group;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length + (exhaustive.passed ? 1 : 0);
+    var total = cases.length + 1;
 
     return {
       ok: issues.length === 0,
+      byComponentCount: byComponentCount,
+      cases: cases,
+      exhaustive: exhaustive,
       issues: issues,
-      reports: reports,
+      passed: passed,
+      reports: cases,
+      total: total,
       exhaustiveCases: exhaustiveCases
     };
   }
