@@ -312,19 +312,82 @@ The exported audit grid is reproducible from Node:
 
 ```js
 const lab = require("./assets/js/hash-join-spill-lab.js");
-const EXPECTED_CASES = 4;
-const EXPECTED_CHECKS = 44;
+const EXPECTED_CASE_SHAPE = [
+  "1:uniform:120000/260000:mem=40000:4->4:growth=0:fits=true:30853:570148:12:11/11",
+  "2:zipf:240000/620000:mem=42000:8->16:growth=1:fits=true:35434:1638784:14233:11/11",
+  "3:hot:220000/500000:mem=35000:8->8:growth=0:fits=false:65129:1295540:42592:11/11",
+  "4:burst:360000/700000:mem=56000:8->8:growth=0:fits=true:47659:1858390:148:11/11"
+];
+const EXPECTED_BY_PROFILE_SHAPE = [
+  "uniform:4->4:fits=true:1/1:11/11",
+  "zipf:8->16:fits=true:1/1:11/11",
+  "hot:8->8:fits=false:1/1:11/11",
+  "burst:8->8:fits=true:1/1:11/11"
+];
+const EXPECTED_CHECK_NAMES = [
+  "build rows preserved",
+  "probe rows preserved",
+  "batch count power of two",
+  "partition build rows preserved",
+  "partition probe rows preserved",
+  "temp accounting nonnegative",
+  "hybrid does not spill more than grace",
+  "fits or has skew explanation",
+  "top key count agrees",
+  "uniform case fits after batching",
+  "hot key can exceed memory"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row, index) {
+  return `${index + 1}:${row.profile}:${row.buildRows}/${row.probeRows}:` +
+    `mem=${row.memoryRows}:${row.originalBatches}->${row.actualBatches}:` +
+    `growth=${row.growthEvents}:fits=${row.fits}:` +
+    `${row.maxBuildBatchRows}:${row.hybridTempRows}:${row.topBuildKeyRows}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
+function byProfileShape(row) {
+  return `${row.profile}:${row.batches}:fits=${row.fits}:` +
+    `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 console.table(audit.byProfile);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = {
+  byProfile: audit.byProfile.map(byProfileShape),
+  cases: audit.cases.map(caseShape)
+};
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
 }
+if (!sameList(shape.byProfile, EXPECTED_BY_PROFILE_SHAPE)) {
+  shapeErrors.push({
+    name: "byProfile",
+    actual: shape.byProfile,
+    expected: EXPECTED_BY_PROFILE_SHAPE
+  });
+}
+audit.cases.forEach((row, index) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${index + 1} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 
 console.table(audit.cases.map((row) => ({
   profile: row.profile,
@@ -339,12 +402,25 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.log(summary);
 ```
