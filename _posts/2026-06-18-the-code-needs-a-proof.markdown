@@ -287,7 +287,9 @@ console.log(lab.challengeFor(
   "S256"
 ));
 console.log(lab.evaluate({}).summary);
-console.log(lab.auditOauthPkceLab());
+const audit = lab.auditOauthPkceLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
+console.log(audit.checked + " checks passed");
 ```
 
 The S256 line prints the RFC 7636 Appendix B value:

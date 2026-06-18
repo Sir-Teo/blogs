@@ -287,7 +287,9 @@ const lab = require("./assets/js/samesite-cookie-lab.js");
 
 console.log(lab.siteFor("https://app.bank.example/dashboard"));
 console.log(lab.evaluate({}).summary);
-console.log(lab.auditSameSiteCookieLab());
+const audit = lab.auditSameSiteCookieLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
+console.log(audit.checked + " checks passed");
 ```
 
 Default output:

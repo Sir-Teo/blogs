@@ -292,7 +292,9 @@ const lab = require("./assets/js/csp-script-lab.js");
 
 console.log(lab.hashSourceFor("abc"));
 console.log(lab.evaluate({}).summary);
-console.log(lab.auditCspScriptLab());
+const audit = lab.auditCspScriptLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
+console.log(audit.checked + " checks passed");
 ```
 
 The hash line prints the CSP-style SHA-256 source expression for `abc`:

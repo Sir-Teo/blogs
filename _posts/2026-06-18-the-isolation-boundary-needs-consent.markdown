@@ -313,7 +313,9 @@ console.log(lab.evaluate({
   deployment: "credentialless",
   resources: "credentiallessCdn"
 }).summary);
-console.log(lab.auditCrossOriginIsolationLab());
+const audit = lab.auditCrossOriginIsolationLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
+console.log(audit.checked + " checks passed");
 ```
 
 Default summary:

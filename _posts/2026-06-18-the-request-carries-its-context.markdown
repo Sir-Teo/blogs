@@ -329,7 +329,9 @@ const lab = require("./assets/js/fetch-metadata-lab.js");
 
 console.log(lab.headersFor(lab.requests.crossSiteFormPost));
 console.log(lab.evaluate({}).summary);
-console.log(lab.auditFetchMetadataLab());
+const audit = lab.auditFetchMetadataLab();
+if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
+console.log(audit.checked + " checks passed");
 ```
 
 Default headers:
