@@ -319,26 +319,80 @@ estimator-consistency invariants across five scenarios.
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/median-of-means-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 35;
+const EXPECTED_CASE_SHAPE = [
+  "1:contaminated:n=120:blocks=9:trials=900:seed=31:2.127/0.204/0.503:0.24:1.082/0.404:7/7",
+  "2:gaussian:n=120:blocks=9:trials=800:seed=7:0.183/0.187/0.232:1.27:0.092/0.117:7/7",
+  "3:student:n=180:blocks=11:trials=850:seed=11:0.141/0.105/0.159:1.12:0.073/0.080:7/7",
+  "4:lognormal:n=150:blocks=9:trials=850:seed=23:0.159/0.262/0.171:1.08:0.084/0.094:7/7",
+  "5:pareto:n=180:blocks=15:trials=800:seed=41:0.689/0.321/0.495:0.72:0.478/0.262:7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "all summaries finite",
+  "median-of-means equals median block mean",
+  "block count is respected",
+  "histograms have fixed bin count",
+  "contamination favors MOM over sample mean in p95",
+  "Gaussian mean remains competitive",
+  "trimmed estimator finite"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.scenario}:n=${row.n}:blocks=${row.blocks}:` +
+    `trials=${row.trials}:seed=${row.seed}:` +
+    `${row.meanP95.toFixed(3)}/${row.trimmedP95.toFixed(3)}/${row.momP95.toFixed(3)}:` +
+    `${row.momMeanRatio.toFixed(2)}:${row.meanRmse.toFixed(3)}/${row.momRmse.toFixed(3)}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
