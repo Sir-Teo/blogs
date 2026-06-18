@@ -242,7 +242,7 @@ paint the matrix.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/smawk-monge-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/smawk-monge-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -257,7 +257,8 @@ With the default `28 x 84` implicit matrix, the audited run reports:
 | adjacent Monge violations | `0` |
 | minima path | column `1` to column `84` |
 
-You can run the wider regression grid from Node:
+You can run the wider regression grid from Node. It reports 35 named checks:
+seven invariants across five generated Monge-like matrices.
 
 ```bash
 node - <<'NODE'
@@ -271,11 +272,15 @@ console.table(audit.cases.map((row) => ({
   smawkCells: row.smawkCells,
   savedPct: row.savedPct.toFixed(1),
   mongeViolations: row.mongeViolations,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
