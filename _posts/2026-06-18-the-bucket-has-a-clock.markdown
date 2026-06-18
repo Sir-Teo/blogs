@@ -290,6 +290,10 @@ scenario/parameter combinations and 2,592 named invariant checks:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/token-bucket-lab.js");
+const EXPECTED_SCENARIOS = 4;
+const EXPECTED_CASES = 324;
+const EXPECTED_CHECKS = 2592;
+
 const audit = lab.auditTokenBucketLab();
 console.table(audit.byScenario.map((row) => ({
   scenario: row.scenario,
@@ -299,14 +303,37 @@ console.table(audit.byScenario.map((row) => ({
   maxFixedExcess: row.maxFixedExcess.toFixed(3),
   maxDelay: row.maxDelay.toFixed(3)
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 324 ||
-  audit.total !== 324 ||
-  audit.passedChecks !== 2592 ||
-  audit.totalChecks !== 2592
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  scenarioRows: audit.byScenario.length,
+  rows: audit.cases.length,
+  checked: audit.checked,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.scenarioRows !== EXPECTED_SCENARIOS ||
+    auditShape.rows !== EXPECTED_CASES ||
+    auditShape.checked !== EXPECTED_CASES ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedScenarioGroups = audit.byScenario.filter(
+  (row) => row.passed !== row.cases || row.passedChecks !== row.totalChecks
+);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedScenarioGroups.length || failedCases.length ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedScenarioGroups,
+    failedCases: failedCases.slice(0, 10),
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} parameter cases and ` +
