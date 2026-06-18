@@ -394,9 +394,34 @@ const EXPECTED_CASE_SHAPE = [
   "default-balanced:5:84:185:3:2.2:59:84:0:2220:20336",
   "split:5:90:171:3:1.9:61:90:0:2052:9960"
 ];
+const EXPECTED_RESIDUAL_SHAPE = [
+  "alice:0",
+  "balanced:0",
+  "bob:0",
+  "default-balanced:0",
+  "split:0"
+];
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditIBLTLab();
 const auditShape = {
+  totals: {
+    rows: audit.cases.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   caseChecks: audit.cases.map((row) => [
     row.scenario,
     row.totalChecks,
@@ -413,18 +438,23 @@ const auditShape = {
   checkNames: Array.from(new Set(audit.cases.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
-  passed: audit.passed,
-  residualByScenario: Object.fromEntries(Object.entries(audit.byScenario).map(
-    ([scenario, row]) => [scenario, row.residual]
-  )),
-  total: audit.total,
-  totalChecks: audit.totalChecks
+  residualByScenario: Object.entries(audit.byScenario)
+    .map(([scenario, row]) => `${scenario}:${row.residual}`)
+    .sort()
 };
-if (auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
+  sameJson(auditShape.residualByScenario, EXPECTED_RESIDUAL_SHAPE)
+    ? null
+    : "residualByScenario"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} scenarios and ` +
@@ -439,6 +469,7 @@ if (failedCases.length || !audit.ok ||
     summary,
     errors: audit.errors,
     failedCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
