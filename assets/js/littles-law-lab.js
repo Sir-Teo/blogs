@@ -559,8 +559,8 @@
 
   function auditLittlesLawLab() {
     var failures = [];
+    var rows = [];
     var maxResidual = 0;
-    var cases = 0;
     ["drain", "slice"].forEach(function (mode) {
       [45, 72, 93].forEach(function (load) {
         [0, 80, 160].forEach(function (arrivalCv) {
@@ -575,33 +575,121 @@
                 serviceCv: serviceCv,
                 windowSec: 16
               });
-              cases += 1;
+              var failedChecks = [];
               var residual = Math.abs(result.areaResidual);
               maxResidual = Math.max(maxResidual, residual);
               var tolerance = 1e-8 * Math.max(1, result.area);
               if (residual > tolerance) {
-                failures.push({ kind: "area ledger residual", mode: mode, residual: residual });
+                failedChecks.push("area ledger residual " + residual);
               }
               if (result.minN < -1e-9 || result.finalN < -1e-9) {
-                failures.push({ kind: "negative queue length", mode: mode, minN: result.minN, finalN: result.finalN });
+                failedChecks.push("negative queue length: min " + result.minN + ", final " + result.finalN);
               }
-              if (Math.abs(result.timeAverageL - result.closedProduct - result.edgeDebt) > 1e-10) {
-                failures.push({ kind: "component identity", mode: mode });
+              var componentResidual = Math.abs(result.timeAverageL - result.closedProduct - result.edgeDebt);
+              if (componentResidual > 1e-10) {
+                failedChecks.push("component identity residual " + componentResidual);
               }
               if (mode === "drain" && Math.abs(result.area - result.ledger.closed) > tolerance) {
-                failures.push({ kind: "drain should close all rectangles", residual: result.area - result.ledger.closed });
+                failedChecks.push("drain should close all rectangles, residual " + (result.area - result.ledger.closed));
               }
+              var row = {
+                mode: mode,
+                load: load,
+                arrivalCv: arrivalCv,
+                serviceCv: serviceCv,
+                seed: seed,
+                area: result.area,
+                areaResidual: residual,
+                closedProduct: result.closedProduct,
+                edgeDebt: result.edgeDebt,
+                finalN: result.finalN,
+                openAtEnd: result.metrics.openAtEnd,
+                openAtStart: result.metrics.openAtStart,
+                passed: failedChecks.length === 0,
+                failedChecks: failedChecks,
+                timeAverageL: result.timeAverageL,
+                window: result.window
+              };
+              rows.push(row);
+              failedChecks.forEach(function (failure) {
+                failures.push({
+                  arrivalCv: arrivalCv,
+                  kind: failure,
+                  load: load,
+                  mode: mode,
+                  seed: seed,
+                  serviceCv: serviceCv
+                });
+              });
             });
           });
         });
       });
     });
 
+    function summarize(groupBy) {
+      var groups = {};
+      rows.forEach(function (row) {
+        var key = String(row[groupBy]);
+        if (!groups[key]) {
+          groups[key] = {
+            cases: 0,
+            edgeDebt: 0,
+            maxResidual: 0,
+            openAtEnd: 0,
+            openAtStart: 0,
+            passed: 0
+          };
+          groups[key][groupBy] = row[groupBy];
+        }
+        groups[key].cases += 1;
+        groups[key].edgeDebt += row.edgeDebt;
+        groups[key].maxResidual = Math.max(groups[key].maxResidual, row.areaResidual);
+        groups[key].openAtEnd += row.openAtEnd;
+        groups[key].openAtStart += row.openAtStart;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort(function (a, b) {
+        if (groupBy === "load") return Number(a) - Number(b);
+        return a.localeCompare(b);
+      }).map(function (key) {
+        var group = groups[key];
+        group.meanEdgeDebt = group.edgeDebt / group.cases;
+        delete group.edgeDebt;
+        return group;
+      });
+    }
+
+    var byMode = summarize("mode");
+    var byLoad = summarize("load");
+    var worstResiduals = rows.slice().sort(function (a, b) {
+      return b.areaResidual - a.areaResidual;
+    }).slice(0, 6).map(function (row) {
+      return {
+        mode: row.mode,
+        load: row.load,
+        arrivalCv: row.arrivalCv,
+        serviceCv: row.serviceCv,
+        seed: row.seed,
+        residual: row.areaResidual,
+        edgeDebt: row.edgeDebt,
+        passed: row.passed
+      };
+    });
+    var passed = rows.filter(function (row) { return row.passed; }).length;
+
     return {
-      cases: cases,
+      byLoad: byLoad,
+      byMode: byMode,
+      caseCount: rows.length,
+      cases: rows,
       failures: failures,
       maxResidual: maxResidual,
-      pass: failures.length === 0
+      ok: failures.length === 0,
+      pass: failures.length === 0,
+      passed: passed,
+      total: rows.length,
+      worstResiduals: worstResiduals
     };
   }
 

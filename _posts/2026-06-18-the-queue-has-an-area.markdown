@@ -279,7 +279,7 @@ exact. Switch back to a cropped slice and the missing edge terms appear.
     grid is used for the identity check.
   </p>
 </div>
-<script defer src="{{ '/assets/js/littles-law-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/littles-law-lab.js?v=20260618b' | relative_url }}"></script>
 
 The default settings usually show a positive edge debt. That is not a violation
 of Little's Law. It is a bookkeeping error in the shortcut.
@@ -378,9 +378,15 @@ The lab exports the same audit:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/littles-law-lab.js");
+
 const audit = lab.audit();
-if (!audit.pass) throw new Error(JSON.stringify(audit.failures));
-console.log(`${audit.cases} cases passed; max residual ${audit.maxResidual}`);
+console.table(audit.byMode);
+console.table(audit.byLoad);
+console.table(audit.worstResiduals);
+if (!audit.pass || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} cases passed; max residual ${audit.maxResidual}`);
 NODE
 ```
 
