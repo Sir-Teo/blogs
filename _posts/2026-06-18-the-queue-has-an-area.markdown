@@ -279,7 +279,7 @@ exact. Switch back to a cropped slice and the missing edge terms appear.
     grid is used for the identity check.
   </p>
 </div>
-<script defer src="{{ '/assets/js/littles-law-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/littles-law-lab.js?v=20260618c' | relative_url }}"></script>
 
 The default settings usually show a positive edge debt. That is not a violation
 of Little's Law. It is a bookkeeping error in the shortcut.
@@ -383,17 +383,31 @@ const audit = lab.audit();
 console.table(audit.byMode);
 console.table(audit.byLoad);
 console.table(audit.worstResiduals);
-if (!audit.pass || audit.passed !== audit.total) {
+if (
+  !audit.ok ||
+  !audit.pass ||
+  audit.passed !== 108 ||
+  audit.total !== 108 ||
+  audit.passedChecks !== 1296 ||
+  audit.totalChecks !== 1296
+) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} cases passed; max residual ${audit.maxResidual}`);
+console.log(
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed; ` +
+  `max residual ${audit.maxResidual}`
+);
 NODE
 ```
 
-The check is deliberately mundane. It runs a grid of deterministic simulations,
-integrates the step function exactly, sums the residence-time intersections, and
-verifies that the residual is numerical noise. In empty-to-empty mode it also
-checks that the closed-job ledger equals the whole area.
+The check is deliberately mundane. The current grid runs 108 deterministic
+simulations and passes 1296 named checks. It integrates the step function
+exactly, sums the residence-time intersections, verifies that the residual is
+numerical noise, checks that the ledger components sum back to the whole window,
+and confirms that $$L$$ splits into completed-job $$\lambda W$$ plus boundary
+debt. In empty-to-empty mode it also checks that the closed-job ledger equals
+the whole area and that the window starts and ends empty.
 
 That is the right level of romance for a queue. The theorem is beautiful because
 the accounting is unforgiving. Jobs can wait in strange orders, arrive in bursts,

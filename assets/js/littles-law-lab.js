@@ -575,23 +575,42 @@
                 serviceCv: serviceCv,
                 windowSec: 16
               });
-              var failedChecks = [];
+              var checks = [];
+
+              function check(condition, name) {
+                checks.push({ name: name, ok: !!condition });
+              }
+
               var residual = Math.abs(result.areaResidual);
               maxResidual = Math.max(maxResidual, residual);
               var tolerance = 1e-8 * Math.max(1, result.area);
-              if (residual > tolerance) {
-                failedChecks.push("area ledger residual " + residual);
-              }
-              if (result.minN < -1e-9 || result.finalN < -1e-9) {
-                failedChecks.push("negative queue length: min " + result.minN + ", final " + result.finalN);
-              }
+              var componentTotal = result.ledger.closed + result.ledger.left + result.ledger.right + result.ledger.span;
+              var ledgerResidual = Math.abs(componentTotal - result.ledger.total);
               var componentResidual = Math.abs(result.timeAverageL - result.closedProduct - result.edgeDebt);
-              if (componentResidual > 1e-10) {
-                failedChecks.push("component identity residual " + componentResidual);
+              var closedProductResidual = Math.abs(result.closedProduct - result.closedRate * result.closedMeanW);
+              var timeAverageResidual = Math.abs(result.timeAverageL - result.area / result.window);
+              check(Number.isFinite(result.area) && result.area >= 0, "area is finite and nonnegative");
+              check(Number.isFinite(result.window) && result.window > 0, "window is finite and positive");
+              check(residual <= tolerance, "area equals residence-time ledger");
+              check(ledgerResidual <= tolerance, "ledger components sum to total");
+              check(componentResidual <= 1e-10, "time-average L splits into closed product plus edge debt");
+              check(closedProductResidual <= 1e-10, "closed lambda-W product matches closed rate times mean W");
+              check(timeAverageResidual <= 1e-10, "time-average L equals area divided by window");
+              check(result.minN >= -1e-9 && result.finalN >= -1e-9, "queue length stays nonnegative");
+              check(result.maxN >= result.initialN && result.maxN >= result.finalN, "max queue length bounds endpoints");
+              check(result.edgeDebt >= -1e-10, "edge debt is nonnegative");
+              if (mode === "drain") {
+                check(Math.abs(result.area - result.ledger.closed) <= tolerance, "drain closes all rectangles");
+                check(result.metrics.openAtStart === 0, "drain starts empty");
+                check(result.metrics.openAtEnd === 0, "drain ends empty");
+              } else {
+                check(Math.abs(result.edgeDebt - (result.ledger.left + result.ledger.right + result.ledger.span) / result.window) <= 1e-10, "slice edge debt equals boundary rectangles");
               }
-              if (mode === "drain" && Math.abs(result.area - result.ledger.closed) > tolerance) {
-                failedChecks.push("drain should close all rectangles, residual " + (result.area - result.ledger.closed));
-              }
+              var failedChecks = checks.filter(function (checkRow) {
+                return !checkRow.ok;
+              }).map(function (checkRow) {
+                return checkRow.name;
+              });
               var row = {
                 mode: mode,
                 load: load,
@@ -605,9 +624,12 @@
                 finalN: result.finalN,
                 openAtEnd: result.metrics.openAtEnd,
                 openAtStart: result.metrics.openAtStart,
+                passedChecks: checks.length - failedChecks.length,
                 passed: failedChecks.length === 0,
+                checks: checks,
                 failedChecks: failedChecks,
                 timeAverageL: result.timeAverageL,
+                totalChecks: checks.length,
                 window: result.window
               };
               rows.push(row);
@@ -638,7 +660,9 @@
             maxResidual: 0,
             openAtEnd: 0,
             openAtStart: 0,
-            passed: 0
+            passed: 0,
+            passedChecks: 0,
+            totalChecks: 0
           };
           groups[key][groupBy] = row[groupBy];
         }
@@ -648,6 +672,8 @@
         groups[key].openAtEnd += row.openAtEnd;
         groups[key].openAtStart += row.openAtStart;
         if (row.passed) groups[key].passed += 1;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
       });
       return Object.keys(groups).sort(function (a, b) {
         if (groupBy === "load") return Number(a) - Number(b);
@@ -673,10 +699,13 @@
         seed: row.seed,
         residual: row.areaResidual,
         edgeDebt: row.edgeDebt,
+        checks: row.passedChecks + "/" + row.totalChecks,
         passed: row.passed
       };
     });
     var passed = rows.filter(function (row) { return row.passed; }).length;
+    var passedChecks = rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
 
     return {
       byLoad: byLoad,
@@ -685,10 +714,12 @@
       cases: rows,
       failures: failures,
       maxResidual: maxResidual,
-      ok: failures.length === 0,
-      pass: failures.length === 0,
+      ok: failures.length === 0 && passedChecks === totalChecks,
+      pass: failures.length === 0 && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
       total: rows.length,
+      totalChecks: totalChecks,
       worstResiduals: worstResiduals
     };
   }
