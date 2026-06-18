@@ -327,6 +327,29 @@ The audit is part of the artifact, not just a visual sanity check:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/space-saving-lab.js");
+const EXPECTED_SCENARIO_ROWS = 5;
+const EXPECTED_REPLAY_ROWS = 1;
+const EXPECTED_ROWS = 6;
+const EXPECTED_CHECKS = 36;
+const EXPECTED_SCENARIO_CHECK_NAMES = [
+  "counter-total",
+  "guaranteed-threshold",
+  "minimum-n-over-k",
+  "monitored-intervals",
+  "threshold-no-miss",
+  "top-k-range",
+  "unmonitored-min-bound"
+];
+const EXPECTED_REPLAY_CHECK_NAMES = ["fixed-seed-replay"];
+const EXPECTED_CASE_SHAPE = [
+  "default:7:50000:2000:64:600:10:15:1",
+  "fixed-seed-replay:1:50000:2000:64:600:10:15:1",
+  "stress-1:7:5000:100:8:100:0:8:0",
+  "stress-2:7:120000:8000:160:240:38:39:1",
+  "stress-3:7:25000:500:24:300:11:24:0",
+  "stress-4:7:70000:2500:48:560:17:48:0"
+];
+
 const audit = lab.auditSpaceSavingLab();
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
@@ -340,14 +363,53 @@ console.table(audit.cases.map((row) => ({
   noMiss: row.noMissCondition,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 6 ||
-  audit.total !== 6 ||
-  audit.passedChecks !== 36 ||
-  audit.totalChecks !== 36
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const scenarioRows = audit.cases.filter((row) => row.scenario !== "fixed-seed-replay");
+const replayRows = audit.cases.filter((row) => row.scenario === "fixed-seed-replay");
+const auditShape = {
+  caseChecks: audit.cases.map((row) => [
+    row.scenario,
+    row.totalChecks,
+    row.events,
+    row.vocabulary,
+    row.counters,
+    row.thresholdCount,
+    row.trueHeavy,
+    row.reported,
+    row.noMissCondition ? 1 : 0
+  ].join(":")).sort(),
+  passed: audit.passed,
+  replayCheckNames: Array.from(new Set(replayRows.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  replayRows: replayRows.length,
+  scenarioCheckNames: Array.from(new Set(scenarioRows.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  scenarioRows: scenarioRows.length,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
+    auditShape.replayRows !== EXPECTED_REPLAY_ROWS ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES) ||
+    JSON.stringify(auditShape.replayCheckNames) !== JSON.stringify(EXPECTED_REPLAY_CHECK_NAMES)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} audit scenarios and ` +
