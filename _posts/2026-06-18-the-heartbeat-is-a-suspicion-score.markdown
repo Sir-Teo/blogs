@@ -328,33 +328,146 @@ You can reproduce the audit from Node:
 
 ```js
 const lab = require("./assets/js/phi-accrual-lab.js");
-const EXPECTED_CASES = 4;
-const EXPECTED_CHECKS = 28;
+const CASE_PARAMS = [
+  {
+    label: "default noisy path",
+    params: {
+      fixedTimeout: 1200,
+      heartbeat: 1000,
+      jitter: 140,
+      pauseChance: 10,
+      pauseMargin: 250,
+      pauseSize: 1800,
+      phiThreshold: 4,
+      seed: 92
+    }
+  },
+  {
+    label: "quiet path",
+    params: {
+      fixedTimeout: 1600,
+      heartbeat: 800,
+      jitter: 60,
+      pauseChance: 3,
+      pauseMargin: 150,
+      pauseSize: 900,
+      phiThreshold: 3,
+      seed: 7
+    }
+  },
+  {
+    label: "bursty path",
+    params: {
+      fixedTimeout: 3600,
+      heartbeat: 1200,
+      jitter: 260,
+      pauseChance: 12,
+      pauseMargin: 600,
+      pauseSize: 2400,
+      phiThreshold: 6,
+      seed: 87
+    }
+  },
+  {
+    label: "very noisy path",
+    params: {
+      fixedTimeout: 5200,
+      heartbeat: 1500,
+      jitter: 450,
+      pauseChance: 18,
+      pauseMargin: 900,
+      pauseSize: 3200,
+      phiThreshold: 8,
+      seed: 123
+    }
+  }
+];
+const EXPECTED_CASE_SHAPE = [
+  "default noisy path:seed=92:heartbeat=1000:threshold=4:pauseMargin=250:phiDetect=900:fixedDetect=300:phiFalse=0:fixedFalse=1:mean=962.3:std=156.8:checks=7/7",
+  "quiet path:seed=7:heartbeat=800:threshold=3:pauseMargin=150:phiDetect=1400:fixedDetect=1100:phiFalse=2:fixedFalse=2:mean=877.2:std=273.2:checks=7/7",
+  "bursty path:seed=87:heartbeat=1200:threshold=6:pauseMargin=600:phiDetect=5700:fixedDetect=2600:phiFalse=1:fixedFalse=1:mean=1660.7:std=932.0:checks=7/7",
+  "very noisy path:seed=123:heartbeat=1500:threshold=8:pauseMargin=900:phiDetect=3200:fixedDetect=4100:phiFalse=0:fixedFalse=0:mean=1462.9:std=339.4:checks=7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "arrivals are strictly increasing",
+  "arrivals stop before crash",
+  "phi scores are finite and nonnegative",
+  "sample window is bounded",
+  "phi eventually detects the crash",
+  "fixed timeout eventually detects the crash",
+  "higher phi threshold does not detect earlier"
+];
+const EXPECTED_CHECK_SHAPE = CASE_PARAMS.flatMap((entry) =>
+  EXPECTED_CHECK_NAMES.map((name) => `${entry.label}:${name}:true`)
+);
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CHECK_SHAPE.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.label}:seed=${row.seed}:heartbeat=${row.heartbeat}:` +
+    `threshold=${row.phiThreshold}:pauseMargin=${row.pauseMargin}:` +
+    `phiDetect=${row.phiDetectionMs}:fixedDetect=${row.fixedDetectionMs}:` +
+    `phiFalse=${row.phiFalse}:fixedFalse=${row.fixedFalse}:` +
+    `mean=${row.mean.toFixed(1)}:std=${row.std.toFixed(1)}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checksFor(entry) {
+  const result = lab.evaluate(entry.params);
+  return [
+    ["arrivals are strictly increasing", result.audit.arrivalsIncreasing],
+    ["arrivals stop before crash", result.audit.arrivalsBeforeCrash],
+    ["phi scores are finite and nonnegative", result.audit.finitePhi],
+    ["sample window is bounded", result.audit.windowBounded],
+    ["phi eventually detects the crash", result.audit.phiEventuallyDetects],
+    ["fixed timeout eventually detects the crash", result.audit.fixedEventuallyDetects],
+    ["higher phi threshold does not detect earlier", result.audit.thresholdMonotone]
+  ].map(([name, passed]) => `${entry.label}:${name}:${passed}`);
+}
 
 const audit = lab.auditPhiAccrualLab();
-const auditShape = {
-  rows: audit.cases.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checks: CASE_PARAMS.flatMap(checksFor)
 };
-if (
-  auditShape.rows !== EXPECTED_CASES ||
-  auditShape.total !== EXPECTED_CASES ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.checks, EXPECTED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "checks",
+    actual: shape.checks,
+    expected: EXPECTED_CHECK_SHAPE
+  });
 }
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+if (shapeErrors.length ||
+    !audit.ok ||
+    audit.cases.length !== EXPECTED_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    failedCases.length ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    shapeErrors,
     failures: audit.failures,
     failedCases,
-    auditShape
+    totals: {
+      rows: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
