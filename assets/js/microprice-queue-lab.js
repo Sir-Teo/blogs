@@ -202,6 +202,11 @@
       { bid: 35, ask: 35, pressure: -65, trials: 7000, seed: 43 }
     ].map(function (raw, index) {
       var result = evaluate(raw);
+      var failedChecks = result.audit.checks.filter(function (row) {
+        return !row.ok;
+      }).map(function (row) {
+        return row.name;
+      });
       return {
         caseId: index + 1,
         bid: result.params.bid,
@@ -216,13 +221,38 @@
         raceMicroTicks: result.raceMicroTicks,
         weightedTicks: result.weightedTicks,
         meanEvents: result.simulation.meanEvents,
+        checks: result.audit.checks,
+        passedChecks: result.audit.checks.length - failedChecks.length,
         passed: result.audit.passed,
-        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+        failedChecks: failedChecks,
+        totalChecks: result.audit.checks.length
+      };
+    });
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var byCase = cases.map(function (row) {
+      return {
+        caseId: row.caseId,
+        bid: row.bid,
+        ask: row.ask,
+        pressure: row.pressure,
+        passed: row.passed ? 1 : 0,
+        total: 1,
+        passedChecks: row.passedChecks,
+        totalChecks: row.totalChecks
       };
     });
     return {
+      byCase: byCase,
       cases: cases,
+      ok: cases.every(function (row) { return row.passed; }) && passedChecks === totalChecks,
       passed: cases.filter(function (row) { return row.passed; }).length,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

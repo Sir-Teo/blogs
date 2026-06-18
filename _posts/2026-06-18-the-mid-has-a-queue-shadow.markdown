@@ -227,7 +227,7 @@ mid-price adjustment.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/microprice-queue-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/microprice-queue-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -312,6 +312,8 @@ To reproduce the deterministic audit sweep from the repository root:
 node - <<'NODE'
 const lab = require("./assets/js/microprice-queue-lab.js");
 const audit = lab.auditGrid();
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+console.table(audit.byCase);
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
   bid: row.bid,
@@ -322,13 +324,34 @@ console.table(audit.cases.map((row) => ({
   mcError: row.monteCarloError.toFixed(4),
   raceTicks: row.raceMicroTicks.toFixed(3),
   weightedTicks: row.weightedTicks.toFixed(3),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 45 ||
+  audit.totalChecks !== 45
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
+
+The current sweep covers five queue states and 45 named checks. It verifies
+bounded exact probabilities, spread-bounded microprices, Monte Carlo agreement
+with the dynamic program, sample-path quote depletion, balanced-book symmetry,
+depth monotonicity under symmetric flow, pressure tilt, and the one-row-per-split
+curve shape used in the visualization.
 
 ## Boundaries
 
