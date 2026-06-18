@@ -242,17 +242,26 @@ The exported audit grid is reproducible from Node:
 
 ```js
 const lab = require("./assets/js/lis-patience-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 52;
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byScenario);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
   failed.length ||
   !audit.ok ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 52 ||
-  audit.totalChecks !== 52
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
     failed,
@@ -272,7 +281,7 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   witnessPrefix: row.lis.slice(0, 8).join(" ")
 })));
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 ```
 
 The current grid covers five scenario rows and 52 named checks. Each returned
