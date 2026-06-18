@@ -286,7 +286,7 @@ does not match the caller.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cors-preflight-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cors-preflight-lab.js?v=20260618b' | relative_url }}"></script>
 
 The browser check has two moments.
 
@@ -313,14 +313,28 @@ the mutation.
 
 The artifact is a plain JavaScript module:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/cors-preflight-lab.js");
 const result = lab.simulate({});
 const audit = lab.auditCorsPreflightLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
 
 console.log(result.summary);
-console.log(audit.checked + " checks passed");
+console.table(audit.byRequest.map((row) => ({
+  request: row.request,
+  cases: row.cases,
+  passed: row.passed,
+  preflights: row.preflights,
+  cacheHits: row.cacheHits,
+  exposed: row.exposed,
+  blockedBefore: row.blockedBefore,
+  blockedAfter: row.blockedAfter
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} policy/cache cases passed`);
+NODE
 ```
 
 Default output:

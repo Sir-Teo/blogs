@@ -408,18 +408,70 @@
   }
 
   function auditCorsPreflightLab() {
-    var failures = [];
-    var checked = 0;
+    var cases = [];
     Object.keys(REQUESTS).forEach(function (request) {
       Object.keys(POLICIES).forEach(function (policy) {
         [0, 5, 12, 40].forEach(function (maxAge) {
           var result = simulate({ request: request, policy: policy, maxAge: maxAge, gap: 3 });
-          checked += 1;
-          if (!result.audit.ok) failures.push({ request: request, policy: policy, maxAge: maxAge, issues: result.audit.issues });
+          cases.push({
+            blockedAfter: result.summary.blockedAfter,
+            blockedBefore: result.summary.blockedBefore,
+            cacheHits: result.summary.cacheHits,
+            exposed: result.summary.exposed,
+            failedChecks: result.audit.issues,
+            maxAge: maxAge,
+            passed: result.audit.ok,
+            policy: policy,
+            preflightNeeded: result.preflightNeeded,
+            preflights: result.summary.preflights,
+            request: request
+          });
         });
       });
     });
-    return { ok: failures.length === 0, checked: checked, failures: failures };
+    var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        issues: row.failedChecks,
+        maxAge: row.maxAge,
+        policy: row.policy,
+        request: row.request
+      };
+    });
+    var byRequest = Object.keys(REQUESTS).map(function (request) {
+      var rows = cases.filter(function (row) { return row.request === request; });
+      return {
+        blockedAfter: rows.reduce(function (sum, row) { return sum + row.blockedAfter; }, 0),
+        blockedBefore: rows.reduce(function (sum, row) { return sum + row.blockedBefore; }, 0),
+        cacheHits: rows.reduce(function (sum, row) { return sum + row.cacheHits; }, 0),
+        cases: rows.length,
+        exposed: rows.reduce(function (sum, row) { return sum + row.exposed; }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        preflights: rows.reduce(function (sum, row) { return sum + row.preflights; }, 0),
+        request: request
+      };
+    });
+    var byPolicy = Object.keys(POLICIES).map(function (policy) {
+      var rows = cases.filter(function (row) { return row.policy === policy; });
+      return {
+        blockedAfter: rows.reduce(function (sum, row) { return sum + row.blockedAfter; }, 0),
+        blockedBefore: rows.reduce(function (sum, row) { return sum + row.blockedBefore; }, 0),
+        cases: rows.length,
+        exposed: rows.reduce(function (sum, row) { return sum + row.exposed; }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        policy: policy
+      };
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    return {
+      byPolicy: byPolicy,
+      byRequest: byRequest,
+      cases: cases,
+      ok: failures.length === 0,
+      checked: cases.length,
+      failures: failures,
+      passed: passed,
+      total: cases.length
+    };
   }
 
   function setText(root, name, value) {
