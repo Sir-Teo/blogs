@@ -299,16 +299,28 @@ The controls expose the main engineering tradeoffs:
   <p class="morris-counter-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/morris-counter-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/morris-counter-lab.js?v=20260618b' | relative_url }}"></script>
 
 The artifact includes exact checks for small counts and seeded Monte Carlo
 checks for larger counts:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/morris-counter-lab.js");
 const audit = lab.auditMorrisCounterLab();
-if (!audit.passed) throw new Error(JSON.stringify(audit));
-console.log(audit.scenarios.length + audit.exact.length + " checks passed");
+console.table(audit.scenarios.map((row) => ({
+  events: row.events,
+  theoretical: row.theoreticalMean,
+  observed: row.observedMean.toFixed(1),
+  saturatedTrials: row.saturatedTrials,
+  deterministic: row.deterministic,
+  passed: row.passed
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+console.log(`${audit.passed}/${audit.total} checks passed`);
+NODE
 ```
 
 Those checks verify:

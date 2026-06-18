@@ -273,7 +273,8 @@
       return {
         events: events,
         meanOk: Math.abs(actual.mean - events) < 1e-9,
-        varianceOk: Math.abs(actual.variance - expected.variance) < 1e-7
+        varianceOk: Math.abs(actual.variance - expected.variance) < 1e-7,
+        passed: Math.abs(actual.mean - events) < 1e-9 && Math.abs(actual.variance - expected.variance) < 1e-7
       };
     });
     var scenarios = [
@@ -297,14 +298,19 @@
         meanOk: meanOk,
         noBadSaturation: noBadSaturation,
         observedMean: result.dist.summary.mean,
+        passed: meanOk && noBadSaturation && deterministic,
         saturatedTrials: result.dist.saturatedTrials,
         theoreticalMean: result.theory.mean
       };
     });
+    var passed = exact.filter(function (row) { return row.passed; }).length +
+      scenarios.filter(function (row) { return row.passed; }).length;
+    var total = exact.length + scenarios.length;
     return {
       exact: exact,
-      passed: exact.every(function (row) { return row.meanOk && row.varianceOk; }) &&
-        scenarios.every(function (row) { return row.meanOk && row.noBadSaturation && row.deterministic; }),
+      ok: passed === total,
+      passed: passed,
+      total: total,
       scenarios: scenarios
     };
   }
