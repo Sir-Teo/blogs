@@ -303,25 +303,36 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       {},
       { items: 16, chainUnions: 15, randomUnions: 0, repeatedFinds: 64, seed: 3 },
       { items: 48, chainUnions: 8, randomUnions: 70, repeatedFinds: 120, seed: 203 },
       { items: 72, chainUnions: 0, randomUnions: 150, repeatedFinds: 120, seed: 42 },
       { items: 96, chainUnions: 95, randomUnions: 60, repeatedFinds: 200, seed: 77 }
-    ].map(function (row) {
+    ].map(function (row, index) {
       var result = evaluate(row);
       return {
+        caseId: index + 1,
         params: result.params,
+        items: result.params.items,
+        chainUnions: result.params.chainUnions,
+        randomUnions: result.params.randomUnions,
+        repeatedFinds: result.params.repeatedFinds,
+        seed: result.params.seed,
         plainTraversals: result.plain.traversals,
         fastTraversals: result.fast.traversals,
         plainMaxDepth: result.plain.maxDepth,
         fastMaxDepth: result.fast.maxDepth,
         components: result.fast.components,
         passed: result.audit.passed,
-        checks: result.audit.checks
+        failedChecks: result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       };
     });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {

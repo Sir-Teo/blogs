@@ -343,7 +343,7 @@ forests.
   <p class="union-find-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/union-find-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/union-find-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -371,26 +371,27 @@ The current deterministic audit grid is:
 | 72 | 0 | 150 | 120 | 2468 | 374 | 19 | 1 |
 | 96 | 95 | 60 | 200 | 19123 | 356 | 95 | 1 |
 
-You can reproduce that table from Node:
+You can reproduce that table from the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/union-find-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  items: row.params.items,
-  chain: row.params.chainUnions,
-  random: row.params.randomUnions,
-  finds: row.params.repeatedFinds,
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  items: row.items,
+  chain: row.chainUnions,
+  random: row.randomUnions,
+  finds: row.repeatedFinds,
   plainTraversals: row.plainTraversals,
   fastTraversals: row.fastTraversals,
   plainDepth: row.plainMaxDepth,
   fastDepth: row.fastMaxDepth,
   passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 ## Why the Shortcut Is Safe
