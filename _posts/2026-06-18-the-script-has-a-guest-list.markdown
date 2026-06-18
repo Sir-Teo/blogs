@@ -290,25 +290,48 @@ The artifact is a plain JavaScript module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/csp-script-lab.js");
+const EXPECTED_CRITICAL_CHECKS = 12;
+const EXPECTED_CASES = 20;
+const EXPECTED_CHECKS = 32;
 
 console.log(lab.hashSourceFor("abc"));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditCspScriptLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedCriticalChecks = audit.criticalChecks.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byPolicy);
 console.table(audit.byScenario);
 console.table(audit.criticalChecks);
-if (audit.checked !== 32) {
+if (audit.checked !== EXPECTED_CHECKS) {
   throw new Error("unexpected check count: " + audit.checked);
 }
-if (audit.criticalTotal !== 12 || audit.cases.length !== 20 || audit.totalChecks !== 32) {
+if (
+  audit.criticalTotal !== EXPECTED_CRITICAL_CHECKS ||
+  audit.cases.length !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit grid: ${audit.criticalTotal} critical checks, ` +
     `${audit.cases.length} generated cases, ${audit.totalChecks} total checks`
   );
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+if (
+  failed.length ||
+  failedCriticalChecks.length ||
+  !audit.ok ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    failedCriticalChecks,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
