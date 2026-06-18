@@ -382,19 +382,131 @@ The browser lab is also a CommonJS module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/pratt-parser-lab.js");
-const EXPECTED_CASES = 25;
-const EXPECTED_CHECKS = 188;
+const EXPECTED_TOTALS = {
+  checked: 188,
+  rows: 25,
+  criticalRows: 18,
+  modes: 3,
+  examples: 6,
+  passed: 25,
+  total: 25,
+  passedChecks: 188,
+  totalChecks: 188
+};
+const EXPECTED_BY_MODE = [
+  "standard:11:32:57:11:86/86",
+  "flat:7:32:37:7:51/51",
+  "leftPower:7:32:37:7:51/51"
+];
+const EXPECTED_BY_EXAMPLE = [
+  "grouped:4:30:20:4:30/30",
+  "ladder:3:32:21:3:21/21",
+  "leftChain:4:23:20:4:30/30",
+  "powerChain:5:23:25:5:38/38",
+  "simple:5:23:25:5:39/39",
+  "unaryPostfix:4:23:20:4:30/30"
+];
+const EXPECTED_CRITICAL_CHECKS = [
+  "AST string is non-empty:25/25:true:none",
+  "evaluation is finite for the teaching environment:25/25:true:none",
+  "expected AST: (* (+ a b) c):2/2:true:none",
+  "expected AST: (+ a (* b c)):1/1:true:none",
+  "expected AST: (- (- a b) c):1/1:true:none",
+  "expected AST: (- (^ a (! b))):1/1:true:none",
+  "expected AST: (^ (^ a b) c):1/1:true:none",
+  "expected AST: (^ a (^ b c)):1/1:true:none",
+  "expected value: -5:1/1:true:none",
+  "expected value: -64:1/1:true:none",
+  "expected value: 14:1/1:true:none",
+  "expected value: 20:2/2:true:none",
+  "expected value: 4096:1/1:true:none",
+  "node and depth counts are finite:25/25:true:none",
+  "parse consumed exactly the expression:25/25:true:none",
+  "token stream ends with sentinel:25/25:true:none",
+  "trace has a stop decision:25/25:true:none",
+  "trace records nud and binding tests:25/25:true:none"
+];
+const EXPECTED_CASE_ROWS = [
+  "1:standard / simple:simple/standard:(+ a (* b c)):5:23:14:7/7:true",
+  "2:standard / ladder:ladder/standard:(+ a (* b (^ c d))):7:32:50:7/7:true",
+  "3:standard / grouped:grouped/standard:(* (+ a b) c):5:30:20:7/7:true",
+  "4:standard / leftChain:leftChain/standard:(- (- a b) c):5:23:-5:7/7:true",
+  "5:standard / powerChain:powerChain/standard:(^ a (^ b c)):5:23:2.4178516392292583e+24:7/7:true",
+  "6:standard / unaryPostfix:unaryPostfix/standard:(- (^ a (! b))):5:23:-64:7/7:true",
+  "7:flat / simple:simple/flat:(* (+ a b) c):5:23:20:7/7:true",
+  "8:flat / ladder:ladder/flat:(* (+ a b) (^ c d)):7:32:80:7/7:true",
+  "9:flat / grouped:grouped/flat:(* (+ a b) c):5:30:20:7/7:true",
+  "10:flat / leftChain:leftChain/flat:(- (- a b) c):5:23:-5:7/7:true",
+  "11:flat / powerChain:powerChain/flat:(^ a (^ b c)):5:23:2.4178516392292583e+24:7/7:true",
+  "12:flat / unaryPostfix:unaryPostfix/flat:(- (^ a (! b))):5:23:-64:7/7:true",
+  "13:leftPower / simple:simple/leftPower:(+ a (* b c)):5:23:14:7/7:true",
+  "14:leftPower / ladder:ladder/leftPower:(+ a (* b (^ c d))):7:32:50:7/7:true",
+  "15:leftPower / grouped:grouped/leftPower:(* (+ a b) c):5:30:20:7/7:true",
+  "16:leftPower / leftChain:leftChain/leftPower:(- (- a b) c):5:23:-5:7/7:true",
+  "17:leftPower / powerChain:powerChain/leftPower:(^ (^ a b) c):5:23:4096:7/7:true",
+  "18:leftPower / unaryPostfix:unaryPostfix/leftPower:(- (^ a (! b))):5:23:-64:7/7:true",
+  "19:standard multiplication binds tighter:simple/standard:(+ a (* b c)):5:23:14:9/9:true",
+  "20:flat table changes the tree:simple/flat:(* (+ a b) c):5:23:20:9/9:true",
+  "21:parentheses override table:grouped/standard:(* (+ a b) c):5:30:20:9/9:true",
+  "22:minus chains associate left:leftChain/standard:(- (- a b) c):5:23:-5:9/9:true",
+  "23:power chains associate right:powerChain/standard:(^ a (^ b c)):5:23:2.4178516392292583e+24:8/8:true",
+  "24:left power mode changes only caret:powerChain/leftPower:(^ (^ a b) c):5:23:4096:9/9:true",
+  "25:prefix and postfix compose through rbp:unaryPostfix/standard:(- (^ a (! b))):5:23:-64:9/9:true"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const totals = {
+  checked: audit.checked,
+  rows: audit.cases.length,
+  criticalRows: audit.criticalChecks.length,
+  modes: audit.byMode.length,
+  examples: audit.byExample.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const byModeRows = audit.byMode.map((row) =>
+  `${row.mode}:${row.cases}:${row.maxTraceSteps}:${row.nodes}:` +
+  `${row.passed}:${row.passedChecks}/${row.totalChecks}`
+);
+const byExampleRows = audit.byExample.map((row) =>
+  `${row.example}:${row.cases}:${row.maxTraceSteps}:${row.nodes}:` +
+  `${row.passed}:${row.passedChecks}/${row.totalChecks}`
+);
+const criticalRows = audit.criticalChecks.map((row) =>
+  `${row.check}:${row.passed}/${row.total}:${row.ok}:` +
+  `${row.failedCases.join(",") || "none"}`
+);
+const caseRows = audit.cases.map((row) =>
+  `${row.caseId}:${row.name}:${row.example}/${row.mode}:${row.ast}:` +
+  `${row.nodes}:${row.traceSteps}:${String(row.value)}:` +
+  `${row.passedChecks}/${row.totalChecks}:${row.passed}`
+);
 console.table(audit.byMode);
 console.table(audit.byExample);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(byModeRows, EXPECTED_BY_MODE) ||
+  !sameJson(byExampleRows, EXPECTED_BY_EXAMPLE) ||
+  !sameJson(criticalRows, EXPECTED_CRITICAL_CHECKS) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS)
+) {
+  throw new Error("unexpected Pratt parser audit shape: " + JSON.stringify({
+    totals,
+    byModeRows,
+    byExampleRows,
+    criticalRows,
+    caseRows
+  }, null, 2));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
