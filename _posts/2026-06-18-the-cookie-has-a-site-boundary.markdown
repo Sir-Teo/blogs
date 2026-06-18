@@ -285,18 +285,127 @@ The simulator exports a Node-testable API:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/samesite-cookie-lab.js");
-const EXPECTED_CASE_ROWS = 72;
-const EXPECTED_NAMED_CHECKS = 17;
-const EXPECTED_CHECKS = 161;
+const EXPECTED_SITE = "https://bank.example";
+const EXPECTED_DEFAULT_SUMMARY = {
+  stored: 1,
+  sameSite: 0,
+  sameOrigin: 0,
+  cookieSent: 0,
+  token: 0,
+  blocked: 0,
+  stateChanged: 0,
+  csrfRisk: 0
+};
+const EXPECTED_TOTALS = {
+  checked: 161,
+  caseRows: 72,
+  cookieGroups: 6,
+  namedChecks: 17,
+  passed: 161,
+  passedChecks: 161,
+  total: 161,
+  totalChecks: 161
+};
+const EXPECTED_BY_COOKIE = [
+  "strict:12:12:2:0:2:0:12:24/24",
+  "lax:12:12:4:0:2:0:12:24/24",
+  "defaultFresh:12:12:10:2:6:2:12:24/24",
+  "defaultOld:12:12:4:0:2:0:12:24/24",
+  "noneSecure:12:12:12:2:6:2:12:24/24",
+  "noneInsecure:12:0:0:0:0:0:12:24/24"
+];
+const EXPECTED_BY_REQUEST = [
+  "crossImage:12:2:0:0:0",
+  "crossLink:12:8:0:0:0",
+  "crossPost:12:4:2:2:2",
+  "idpPost:12:4:0:4:0",
+  "sameSitePost:12:10:0:10:0",
+  "schemePost:12:4:2:2:2"
+];
+const EXPECTED_NAMED_CHECKS = [
+  "site-subdomain:1/1:true",
+  "site-apex:1/1:true",
+  "origin-apex:1/1:true",
+  "schemeful-site:1/1:true",
+  "trailing-dot:1/1:true",
+  "public-suffix:1/1:true",
+  "strict-cross-link:1/1:true",
+  "lax-cross-link:1/1:true",
+  "lax-cross-post:1/1:true",
+  "lax-subresource:1/1:true",
+  "lax-same-site-post:1/1:true",
+  "fresh-default-post:1/1:true",
+  "old-default-post:1/1:true",
+  "none-requires-secure:1/1:true",
+  "none-cookie-only-risk:1/1:true",
+  "csrf-token-blocks-risk:1/1:true",
+  "fresh-default-idp-post:1/1:true"
+];
 
-console.log(lab.siteFor("https://app.bank.example/dashboard"));
-console.log(lab.evaluate({}).summary);
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const site = lab.siteFor("https://app.bank.example/dashboard");
+const defaultSummary = lab.evaluate({}).summary;
+console.log(site);
+console.log(defaultSummary);
 const audit = lab.auditSameSiteCookieLab();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const failedNamedChecks = audit.namedChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const totals = {
+  checked: audit.checked,
+  caseRows: audit.caseRows,
+  cookieGroups: audit.byCookie.length,
+  namedChecks: audit.namedChecks.length,
+  passed: audit.passed,
+  passedChecks: audit.passedChecks,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+const byCookieRows = audit.byCookie.map((row) => [
+  row.cookie,
+  row.cases,
+  row.stored,
+  row.cookieSent,
+  row.blocked,
+  row.stateChanged,
+  row.csrfRisk,
+  row.passed,
+  `${row.passedChecks}/${row.totalChecks}`
+].join(":"));
+const byRequestRows = Object.values(audit.cases.reduce((groups, row) => {
+  if (!groups[row.request]) {
+    groups[row.request] = {
+      blocked: 0,
+      cases: 0,
+      cookieSent: 0,
+      csrfRisk: 0,
+      request: row.request,
+      stateChanged: 0
+    };
+  }
+  const group = groups[row.request];
+  group.cases += 1;
+  group.cookieSent += row.cookieSent;
+  group.blocked += row.blocked;
+  group.stateChanged += row.stateChanged;
+  group.csrfRisk += row.csrfRisk;
+  return groups;
+}, {})).map((row) => [
+  row.request,
+  row.cases,
+  row.cookieSent,
+  row.blocked,
+  row.stateChanged,
+  row.csrfRisk
+].join(":")).sort();
+const namedRows = audit.namedChecks.map((row) =>
+  `${row.name}:${row.passedChecks}/${row.totalChecks}:${row.passed}`
 );
 console.table(audit.byCookie.map((row) => ({
   cookie: row.cookie,
@@ -310,14 +419,21 @@ console.table(audit.byCookie.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 if (
-  audit.caseRows !== EXPECTED_CASE_ROWS ||
-  audit.namedChecks.length !== EXPECTED_NAMED_CHECKS ||
-  audit.totalChecks !== EXPECTED_CHECKS
+  site !== EXPECTED_SITE ||
+  !sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ||
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(byCookieRows, EXPECTED_BY_COOKIE) ||
+  !sameJson(byRequestRows, EXPECTED_BY_REQUEST) ||
+  !sameJson(namedRows, EXPECTED_NAMED_CHECKS)
 ) {
-  throw new Error(
-    `unexpected audit size: ${audit.caseRows} rows, ` +
-    `${audit.namedChecks.length} named checks, ${audit.totalChecks} total checks`
-  );
+  throw new Error("unexpected SameSite audit shape: " + JSON.stringify({
+    site,
+    defaultSummary,
+    totals,
+    byCookieRows,
+    byRequestRows,
+    namedRows
+  }, null, 2));
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
