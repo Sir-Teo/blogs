@@ -496,29 +496,37 @@
 
   function auditHopcroftKarp() {
     var issues = [];
-    var reports = [];
+    var cases = [];
     Object.keys(EXAMPLES).forEach(function (key) {
       var state = evaluate({ example: key });
+      var failedChecks = state.audit.issues.slice();
       if (!state.audit.ok) {
         state.audit.issues.forEach(function (issue) {
           issues.push(key + ": " + issue);
         });
       }
-      reports.push({
+      cases.push({
         example: key,
         label: state.graph.label,
         left: state.graph.left.length,
         right: state.graph.right.length,
         edges: state.graph.edges.length,
         matching: state.hk.matching,
+        bruteForceSize: state.brute.size,
         phases: state.hk.phases.filter(function (phase) { return !phase.terminal; }).length,
+        phasePathCounts: state.hk.phases.filter(function (phase) { return !phase.terminal; }).map(function (phase) {
+          return phase.paths.length;
+        }).join("+"),
         hkAugmentingPaths: state.hk.phases.reduce(function (sum, phase) { return sum + phase.paths.length; }, 0),
         singlePathAugmentations: state.baseline.paths.length,
-        coverSize: coverSize(state.cover)
+        coverSize: coverSize(state.cover),
+        passed: failedChecks.length === 0,
+        failedChecks: failedChecks
       });
     });
 
     var exhaustiveCases = 0;
+    var exhaustiveIssues = [];
     for (var nU = 1; nU <= 4; nU += 1) {
       for (var nV = 1; nV <= 4; nV += 1) {
         var edgeCount = nU * nV;
@@ -538,16 +546,55 @@
           delete EXAMPLES[key];
           exhaustiveCases += 1;
           if (!state.audit.ok) {
-            issues.push("exhaustive " + nU + "x" + nV + " mask " + mask + ": " + state.audit.issues.join("; "));
+            var label = "exhaustive " + nU + "x" + nV + " mask " + mask + ": " + state.audit.issues.join("; ");
+            issues.push(label);
+            exhaustiveIssues.push(label);
           }
         }
       }
     }
 
+    var exhaustive = {
+      checked: exhaustiveCases,
+      passed: exhaustiveIssues.length === 0,
+      failedChecks: exhaustiveIssues
+    };
+    var byPhaseCount = {};
+    cases.forEach(function (row) {
+      var key = String(row.phases);
+      if (!byPhaseCount[key]) {
+        byPhaseCount[key] = {
+          phases: row.phases,
+          cases: 0,
+          graphs: [],
+          maxMatching: 0,
+          passed: 0
+        };
+      }
+      byPhaseCount[key].cases += 1;
+      byPhaseCount[key].graphs.push(row.example);
+      byPhaseCount[key].maxMatching = Math.max(byPhaseCount[key].maxMatching, row.matching);
+      if (row.passed) byPhaseCount[key].passed += 1;
+    });
+    var phaseGroups = Object.keys(byPhaseCount).sort(function (a, b) {
+      return Number(a) - Number(b);
+    }).map(function (key) {
+      var group = byPhaseCount[key];
+      group.graphs = group.graphs.join(", ");
+      return group;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length + (exhaustive.passed ? 1 : 0);
+    var total = cases.length + 1;
+
     return {
       ok: issues.length === 0,
+      byPhaseCount: phaseGroups,
+      cases: cases,
+      exhaustive: exhaustive,
       issues: issues,
-      reports: reports,
+      passed: passed,
+      reports: cases,
+      total: total,
       exhaustiveCases: exhaustiveCases
     };
   }

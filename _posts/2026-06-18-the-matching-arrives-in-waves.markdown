@@ -269,7 +269,7 @@ nodes form the final cover certificate.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hopcroft-karp-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hopcroft-karp-lab.js?v=20260618b' | relative_url }}"></script>
 
 In the default graph, the maximum matching has 6 edges. A one-path-at-a-time
 baseline performs 6 flips. Hopcroft-Karp still flips 6 augmenting paths total,
@@ -291,23 +291,32 @@ trusted blindly.
 
 ## Reproducibility Check
 
-The browser file is also a CommonJS module:
+The browser file is also a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/hopcroft-karp-lab.js");
 
 const audit = lab.auditHopcroftKarp();
-if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
+console.table(audit.byPhaseCount);
 if (audit.exhaustiveCases !== 74954) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
 }
 console.log(audit.exhaustiveCases + " exhaustive bipartite graphs checked");
-console.table(audit.reports.map((row) => ({
+console.table(audit.cases.map((row) => ({
   graph: row.label,
   matching: row.matching,
+  brute: row.bruteForceSize,
   phases: row.phases,
-  cover: row.coverSize
+  paths: row.phasePathCounts,
+  cover: row.coverSize,
+  passed: row.passed
 })));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.issues, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} audit groups passed`);
+NODE
 ```
 
 The current audit checks the four named graph scenarios and every bipartite
