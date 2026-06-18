@@ -316,14 +316,142 @@ The artifact is a plain JavaScript module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/cors-preflight-lab.js");
-const EXPECTED_CASES = 80;
-const EXPECTED_CHECKS = 560;
+const EXPECTED_REQUESTS = [
+  "publicGet",
+  "jsonPost",
+  "credentialedJson",
+  "authPatch"
+];
+const EXPECTED_POLICIES = [
+  "reflectCredentials",
+  "wildcardNoCookies",
+  "missingAuthHeader",
+  "wrongOrigin",
+  "rolloutChange"
+];
+const EXPECTED_MAX_AGES = [0, 5, 12, 40];
+const EXPECTED_CHECK_NAMES = [
+  "six-attempts-expected",
+  "simple-requests-skip-preflight",
+  "outcomes-partition-attempts",
+  "cache-hits-only-for-preflighted-requests",
+  "blocked-rows-hide-responses",
+  "wildcard-hides-credentialed-responses",
+  "authorization-requires-explicit-header"
+];
+const EXPECTED_DEFAULT_SUMMARY = {
+  attempts: 6,
+  preflights: 2,
+  cacheHits: 4,
+  exposed: 6,
+  blockedBefore: 0,
+  blockedAfter: 0
+};
+const EXPECTED_BY_REQUEST = [
+  "publicGet:20 cases/140 checks:0/0/96/0/24",
+  "jsonPost:20 cases/140 checks:72/48/96/24/0",
+  "credentialedJson:20 cases/140 checks:98/22/42/78/0",
+  "authPatch:20 cases/140 checks:98/22/42/78/0"
+];
+const EXPECTED_BY_POLICY = [
+  "reflectCredentials:16 cases/112 checks:96/0/0",
+  "wildcardNoCookies:16 cases/112 checks:48/48/0",
+  "missingAuthHeader:16 cases/112 checks:48/48/0",
+  "wrongOrigin:16 cases/112 checks:0/72/24",
+  "rolloutChange:16 cases/112 checks:84/12/0"
+];
+const EXPECTED_BY_MAX_AGE = [
+  "0:20 cases/140 checks:90/0/68/46/6",
+  "5:20 cases/140 checks:68/22/68/46/6",
+  "12:20 cases/140 checks:60/30/68/46/6",
+  "40:20 cases/140 checks:50/40/72/42/6"
+];
+const EXPECTED_CASE_KEYS = EXPECTED_REQUESTS.flatMap((request) =>
+  EXPECTED_POLICIES.flatMap((policy) =>
+    EXPECTED_MAX_AGES.map((maxAge) => `${request}/${policy}/${maxAge}`)
+  )
+);
+const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function sameRecord(left, right) {
+  return sameList(Object.keys(right), Object.keys(left)) &&
+    Object.keys(right).every((key) => left[key] === right[key]);
+}
+
+function byMaxAge(cases) {
+  const groups = new Map();
+  for (const row of cases) {
+    if (!groups.has(row.maxAge)) {
+      groups.set(row.maxAge, {
+        blockedAfter: 0,
+        blockedBefore: 0,
+        cacheHits: 0,
+        cases: 0,
+        exposed: 0,
+        maxAge: row.maxAge,
+        passed: 0,
+        passedChecks: 0,
+        preflights: 0,
+        totalChecks: 0
+      });
+    }
+    const group = groups.get(row.maxAge);
+    group.blockedAfter += row.blockedAfter;
+    group.blockedBefore += row.blockedBefore;
+    group.cacheHits += row.cacheHits;
+    group.cases += 1;
+    group.exposed += row.exposed;
+    if (row.passed) group.passed += 1;
+    group.passedChecks += row.passedChecks;
+    group.preflights += row.preflights;
+    group.totalChecks += row.totalChecks;
+  }
+  return Array.from(groups.values()).sort((left, right) => left.maxAge - right.maxAge);
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map((row) => `${row.request}/${row.policy}/${row.maxAge}`),
+    checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name)),
+    byRequest: audit.byRequest.map(
+      (row) => `${row.request}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.preflights}/${row.cacheHits}/${row.exposed}/` +
+        `${row.blockedBefore}/${row.blockedAfter}`
+    ),
+    byPolicy: audit.byPolicy.map(
+      (row) => `${row.policy}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.exposed}/${row.blockedBefore}/${row.blockedAfter}`
+    ),
+    byMaxAge: byMaxAge(audit.cases).map(
+      (row) => `${row.maxAge}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.preflights}/${row.cacheHits}/${row.exposed}/` +
+        `${row.blockedBefore}/${row.blockedAfter}`
+    )
+  };
+}
 
 const result = lab.simulate({});
 const audit = lab.auditCorsPreflightLab();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const shapeErrors = [
+  sameRecord(result.summary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
+  sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+    ? null
+    : "checksByCase",
+  sameList(shape.byRequest, EXPECTED_BY_REQUEST) ? null : "byRequest",
+  sameList(shape.byPolicy, EXPECTED_BY_POLICY) ? null : "byPolicy",
+  sameList(shape.byMaxAge, EXPECTED_BY_MAX_AGE) ? null : "byMaxAge"
+].filter(Boolean);
 
 console.log(result.summary);
 console.table(audit.byRequest.map((row) => ({
@@ -337,7 +465,13 @@ console.table(audit.byRequest.map((row) => ({
   blockedAfter: row.blockedAfter,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+console.table(audit.byPolicy);
+console.table(byMaxAge(audit.cases));
+if (
+  audit.checked !== EXPECTED_CASES ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
@@ -346,13 +480,19 @@ const summary =
   `${audit.passed}/${audit.total} policy/cache cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    defaultSummary: result.summary,
+    shape,
     failed,
+    failures: audit.failures,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
