@@ -373,17 +373,26 @@ The compact reproduction check is:
 
 ```js
 const lab = require("./assets/js/rto-estimator-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 92;
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byScenario);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
   failed.length ||
   !audit.ok ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 92 ||
-  audit.totalChecks !== 92
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
     failed,
@@ -406,7 +415,7 @@ console.table(audit.cases.map((row) => ({
   recentAccepted: row.recentAmbiguousAccepted,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 ```
 
 The radio rows are a good sanity check. A real lost original segment creates a
