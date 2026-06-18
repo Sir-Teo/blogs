@@ -331,12 +331,84 @@ To reproduce the deterministic audit grid from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/marching-squares-lab.js");
-const EXPECTED_CASES = 6;
-const EXPECTED_CHECKS = 47;
+const EXPECTED_CASE_SHAPE = [
+  "1:saddle:decider:0.01:17:0:19:289/33/34/1:0/1:6.418e-17:9",
+  "2:saddle:slash:0.01:17:0:19:289/33/34/1:0/1:6.418e-17:8",
+  "3:saddle:backslash:0.01:17:0:19:289/33/34/1:0/1:6.418e-17:8",
+  "4:hills:decider:0:24:0.08:33:576/48/48/0:0/0:1.388e-17:7",
+  "5:ring:decider:0:26:0:41:676/136/140/4:0/4:6.939e-18:8",
+  "6:waves:center:0.1:22:0.12:57:484/142/142/0:0/0:2.776e-17:7"
+];
+const EXPECTED_FIELD_SHAPE = [
+  "hills:1 cases/7 checks:576/48/48/0:1.388e-17",
+  "ring:1 cases/8 checks:676/136/140/4:6.939e-18",
+  "saddle:3 cases/25 checks:867/99/102/3:6.418e-17",
+  "waves:1 cases/7 checks:484/142/142/0:2.776e-17"
+];
+const EXPECTED_RULE_SHAPE = [
+  "backslash:1 cases/8 checks:289/33/34/1:6.418e-17",
+  "center:1 cases/7 checks:484/142/142/0:2.776e-17",
+  "decider:3 cases/24 checks:1541/217/222/5:6.418e-17",
+  "slash:1 cases/8 checks:289/33/34/1:6.418e-17"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "ambiguous count agrees:6/6",
+  "cell count:6/6",
+  "decider records all ambiguous votes:2/2",
+  "grid dimensions:6/6",
+  "histogram count:6/6",
+  "residual finite:6/6",
+  "saddle field has ambiguous cells:3/3",
+  "segment endpoints stay in unit square:6/6",
+  "segments finite:6/6"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASE_SHAPE.reduce((sum, row) => {
+  const parts = row.split(":");
+  return sum + Number(parts[parts.length - 1]);
+}, 0);
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.field}:${row.ambiguity}:${row.iso}:` +
+    `${row.resolution}:${row.noise}:${row.seed}:` +
+    `${row.cells}/${row.activeCells}/${row.segments}/${row.ambiguous}:` +
+    `${row.highDecisions}/${row.lowDecisions}:` +
+    `${row.maxResidual.toExponential(3)}:${row.totalChecks}`;
+}
+
+function aggregateShape(row, key) {
+  return `${row[key]}:${row.cases} cases/${row.totalChecks} checks:` +
+    `${row.cells}/${row.activeCells}/${row.segments}/${row.ambiguous}:` +
+    row.maxResidual.toExponential(3);
+}
+
+function criticalShape(row) {
+  return `${row.check}:${row.passed}/${row.total}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const shape = {
+  cases: audit.cases.map(caseShape),
+  byField: audit.byField.map((row) => aggregateShape(row, "field")),
+  byRule: audit.byRule.map((row) => aggregateShape(row, "ambiguity")),
+  criticalChecks: audit.criticalChecks.map(criticalShape)
+};
+const shapeErrors = [
+  ["cases", shape.cases, EXPECTED_CASE_SHAPE],
+  ["byField", shape.byField, EXPECTED_FIELD_SHAPE],
+  ["byRule", shape.byRule, EXPECTED_RULE_SHAPE],
+  ["criticalChecks", shape.criticalChecks, EXPECTED_CRITICAL_SHAPE]
+].filter((row) => !sameList(row[1], row[2]))
+  .map(([name, actual, expected]) => ({ name, actual, expected }));
+
 console.table(audit.cases.map((row) => ({
   field: row.field,
   rule: row.ambiguity,
@@ -352,20 +424,31 @@ console.table(audit.cases.map((row) => ({
 console.table(audit.byField);
 console.table(audit.byRule);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.checked !== EXPECTED_CHECKS ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      checked: audit.checked,
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.log(summary);
 NODE
