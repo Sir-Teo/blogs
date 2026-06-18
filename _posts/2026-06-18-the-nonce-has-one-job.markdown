@@ -349,13 +349,81 @@ Reproduce it from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/gcm-nonce-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 45;
+const EXPECTED_CASE_SHAPE = [
+  "1:payment:seed=41:nonce=7:len=24:xor=24:H=43/43:S=179/179:forge=33:tag=15:9/9",
+  "2:role:seed=12:nonce=3:len=29:xor=29:H=136/136:S=105/105:forge=65:tag=87:9/9",
+  "3:sensor:seed=99:nonce=201:len=28:xor=28:H=111/111:S=71/71:forge=90:tag=165:9/9",
+  "4:payment:seed=123:nonce=0:len=24:xor=24:H=244/244:S=9/9:forge=36:tag=40:9/9",
+  "5:role:seed=777:nonce=255:len=29:xor=29:H=60/60:S=233/233:forge=126:tag=25:9/9"
+];
+const EXPECTED_SCENARIO_SHAPE = [
+  "payment:cases=2:maxBytes=24:passed=2:18/18",
+  "role:cases=2:maxBytes=29:passed=2:18/18",
+  "sensor:cases=1:maxBytes=28:passed=1:9/9"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "ciphertext xor equals plaintext xor:5/5:ok=true",
+  "different nonce changes the toy keystream:5/5:ok=true",
+  "forged one-byte tag verifies:5/5:ok=true",
+  "known first plaintext recovers the second:5/5:ok=true",
+  "same nonce reuses the toy keystream prefix:5/5:ok=true",
+  "secret hash key is nonzero:5/5:ok=true",
+  "tampering without a new tag fails:5/5:ok=true",
+  "toy GHASH recovery finds H:5/5:ok=true",
+  "toy mask recovery finds S:5/5:ok=true"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CRITICAL_SHAPE.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.scenario}:seed=${row.seed}:nonce=${row.nonce}:` +
+    `len=${row.length}:xor=${row.xorBytes}:` +
+    `H=${row.hashKey}/${row.recoveredHashKey}:S=${row.mask}/${row.recoveredMask}:` +
+    `forge=${row.forgedByte}:tag=${row.forgedTag}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
+function scenarioShape(row) {
+  return `${row.scenario}:cases=${row.cases}:maxBytes=${row.maxBytes}:` +
+    `passed=${row.passed}:${row.passedChecks}/${row.totalChecks}`;
+}
+
+function criticalShape(row) {
+  return `${row.check}:${row.passed}/${row.total}:ok=${row.ok}`;
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const shape = {
+  byScenario: audit.byScenario.map(scenarioShape),
+  cases: audit.cases.map(caseShape),
+  criticalChecks: audit.criticalChecks.map(criticalShape)
+};
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.byScenario, EXPECTED_SCENARIO_SHAPE)) {
+  shapeErrors.push({
+    name: "byScenario",
+    actual: shape.byScenario,
+    expected: EXPECTED_SCENARIO_SHAPE
+  });
+}
+if (!sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE)) {
+  shapeErrors.push({
+    name: "criticalChecks",
+    actual: shape.criticalChecks,
+    expected: EXPECTED_CRITICAL_SHAPE
+  });
+}
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   seed: row.seed,
@@ -371,20 +439,31 @@ console.table(audit.cases.map((row) => ({
 })));
 console.table(audit.byScenario);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.checked !== EXPECTED_CHECKS ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      checked: audit.checked,
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.log(summary);
 NODE
