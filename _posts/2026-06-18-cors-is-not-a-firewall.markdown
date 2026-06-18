@@ -373,10 +373,25 @@ const EXPECTED_CASE_KEYS = EXPECTED_REQUESTS.flatMap((request) =>
 );
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
 const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  requests: EXPECTED_REQUESTS.length,
+  policies: EXPECTED_POLICIES.length,
+  maxAges: EXPECTED_MAX_AGES.length,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  checked: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function sameRecord(left, right) {
@@ -416,7 +431,19 @@ function byMaxAge(cases) {
 }
 
 function auditShape(audit) {
+  const maxAgeGroups = byMaxAge(audit.cases);
   return {
+    totals: {
+      rows: audit.cases.length,
+      requests: audit.byRequest.length,
+      policies: audit.byPolicy.length,
+      maxAges: maxAgeGroups.length,
+      passed: audit.passed,
+      total: audit.total,
+      checked: audit.checked,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    },
     cases: audit.cases.map((row) => `${row.request}/${row.policy}/${row.maxAge}`),
     checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name)),
     byRequest: audit.byRequest.map(
@@ -428,7 +455,7 @@ function auditShape(audit) {
       (row) => `${row.policy}:${row.cases} cases/${row.totalChecks} checks:` +
         `${row.exposed}/${row.blockedBefore}/${row.blockedAfter}`
     ),
-    byMaxAge: byMaxAge(audit.cases).map(
+    byMaxAge: maxAgeGroups.map(
       (row) => `${row.maxAge}:${row.cases} cases/${row.totalChecks} checks:` +
         `${row.preflights}/${row.cacheHits}/${row.exposed}/` +
         `${row.blockedBefore}/${row.blockedAfter}`
@@ -444,6 +471,7 @@ const failed = audit.cases.filter(
 );
 const shapeErrors = [
   sameRecord(result.summary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
+  sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
     ? null
@@ -467,15 +495,6 @@ console.table(audit.byRequest.map((row) => ({
 })));
 console.table(audit.byPolicy);
 console.table(byMaxAge(audit.cases));
-if (
-  audit.checked !== EXPECTED_CASES ||
-  audit.total !== EXPECTED_CASES ||
-  audit.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} policy/cache cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
