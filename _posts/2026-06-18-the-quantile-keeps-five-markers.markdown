@@ -250,7 +250,7 @@ only sees one observation at a time and keeps five marker heights.
   <p class="p2-lab__note">The exact reference stores the whole prefix and uses the paper-style rounded order statistic. P2 keeps only five marker heights for this one target quantile.</p>
 </div>
 
-<script defer src="{{ '/assets/js/p2-quantile-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/p2-quantile-lab.js?v=20260618b' | relative_url }}"></script>
 
 On the default run, the stored exact p95 and the P2 estimate nearly agree, but
 that is an empirical result of this stream, not a theorem. Change the stream to
@@ -273,15 +273,42 @@ the exact and estimated history are finite
 the final estimate has rank error no larger than 0.12
 ```
 
-The default run currently reports:
+Ignoring the returned case rows, the current top-level summary is:
 
 ```json
 {
   "defaultAbsError": 0.981,
   "defaultRankError": 0.0036,
   "ok": true,
-  "scenarios": 3
+  "passed": 9,
+  "scenarios": 3,
+  "total": 9
 }
+```
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/p2-quantile-lab.js");
+
+const audit = lab.auditP2QuantileLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  stream: row.scenario,
+  percentile: "p" + row.percentile,
+  absError: row.absError,
+  rankError: row.rankError,
+  parabolicMoves: row.parabolicMoves,
+  linearMoves: row.linearMoves
+})));
 ```
 
 That last rank-error threshold is deliberately loose because P2 is a heuristic.

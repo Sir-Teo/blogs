@@ -334,26 +334,47 @@
   }
 
   function auditP2QuantileLab() {
+    var cases = [];
+    var passed = 0;
     Object.keys(SCENARIOS).forEach(function (scenario) {
       [50, 90, 95].forEach(function (percentile) {
         var result = evaluate({ scenario: scenario, percentile: percentile, samples: 2600, seed: 23 });
-        assert(result.audit.sampleCount, scenario + " sample count failed");
-        assert(result.audit.markersOrdered, scenario + " marker heights not ordered");
-        assert(result.audit.positionsOrdered, scenario + " marker positions not ordered");
-        assert(result.audit.desiredOrdered, scenario + " desired positions not ordered");
-        assert(result.audit.inRange, scenario + " estimate left observed range");
-        assert(result.audit.finiteHistory, scenario + " history is not finite");
-        assert(result.audit.rankReasonable, scenario + " rank error too large");
+        var failedChecks = Object.keys(result.audit).filter(function (key) {
+          return !result.audit[key];
+        });
+        if (!failedChecks.length) passed += 1;
+        cases.push({
+          absError: Number(Math.abs(result.estimate - result.exact).toFixed(4)),
+          estimate: Number(result.estimate.toFixed(4)),
+          exact: Number(result.exact.toFixed(4)),
+          failedChecks: failedChecks,
+          linearMoves: result.snapshot.linearMoves,
+          parabolicMoves: result.snapshot.parabolicMoves,
+          passed: !failedChecks.length,
+          percentile: percentile,
+          rankError: Number(result.rankError.toFixed(4)),
+          samples: result.params.samples,
+          scenario: scenario,
+          scenarioLabel: SCENARIOS[scenario].label,
+          seed: result.params.seed
+        });
+        assert(
+          !failedChecks.length,
+          scenario + " p" + percentile + " failed: " + failedChecks.join(", ")
+        );
       });
     });
     var defaultResult = evaluate(DEFAULTS);
     assert(defaultResult.snapshot.q.length === 5, "default run has five markers");
     assert(defaultResult.snapshot.parabolicMoves > defaultResult.snapshot.linearMoves, "default run should usually use more parabolic than linear moves");
     return {
+      cases: cases,
       defaultAbsError: Number(Math.abs(defaultResult.estimate - defaultResult.exact).toFixed(4)),
       defaultRankError: Number(defaultResult.rankError.toFixed(4)),
       ok: true,
-      scenarios: Object.keys(SCENARIOS).length
+      passed: passed,
+      scenarios: Object.keys(SCENARIOS).length,
+      total: cases.length
     };
   }
 
