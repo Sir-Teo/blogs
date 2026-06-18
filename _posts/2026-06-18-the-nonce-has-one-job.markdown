@@ -349,7 +349,11 @@ Reproduce it from the repository root:
 ```js
 const lab = require("./assets/js/gcm-nonce-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   scenario: row.params.scenario,
   seed: row.params.seed,
   nonce: row.params.nonce,

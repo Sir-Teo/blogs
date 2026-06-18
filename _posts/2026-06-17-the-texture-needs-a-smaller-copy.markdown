@@ -318,7 +318,11 @@ headline numbers can be audited without a browser:
 ```js
 const lab = require("./assets/js/mipmap-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   frequency: row.params.frequency,
   footprint: row.params.footprint,
   pointRms: row.pointRms.toFixed(5),

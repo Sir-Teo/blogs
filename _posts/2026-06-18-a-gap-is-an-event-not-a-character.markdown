@@ -376,7 +376,11 @@ Reproduce it from Node:
 ```js
 const lab = require("./assets/js/affine-alignment-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   pattern: row.params.pattern,
   source: row.sourceLength,
   target: row.targetLength,

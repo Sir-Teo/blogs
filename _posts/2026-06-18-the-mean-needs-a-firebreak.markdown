@@ -317,7 +317,11 @@ simulation can run under Node:
 ```js
 const lab = require("./assets/js/median-of-means-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.audit.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   scenario: row.params.scenario,
   n: row.params.n,
   blocks: row.params.blocks,

@@ -418,7 +418,11 @@ The lab exports the same calculation for Node:
 ```js
 const lab = require("./assets/js/knight-deploy-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   stale: row.params.staleServers,
   check: row.params.deploymentCheck,
   router: row.params.routerGuard,

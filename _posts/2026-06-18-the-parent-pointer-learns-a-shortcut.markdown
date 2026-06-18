@@ -376,7 +376,11 @@ You can reproduce that table from Node:
 ```js
 const lab = require("./assets/js/union-find-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   items: row.params.items,
   chain: row.params.chainUnions,
   random: row.params.randomUnions,

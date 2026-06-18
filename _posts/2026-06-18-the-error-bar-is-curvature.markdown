@@ -414,7 +414,11 @@ The browser lab is backed by a CommonJS module:
 ```js
 const lab = require("./assets/js/fisher-information-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   model: row.params.model,
   n: row.params.sampleSize,
   fisher: row.fisher.toFixed(4),

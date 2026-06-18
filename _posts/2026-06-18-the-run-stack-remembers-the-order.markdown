@@ -367,7 +367,11 @@ You can reproduce the grid from the repository root:
 ```js
 const lab = require("./assets/js/timsort-run-lab.js");
 
-console.table(lab.auditGrid().map((row) => ({
+const rows = lab.auditGrid();
+const failed = rows.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(rows.map((row) => ({
   pattern: row.params.pattern,
   items: row.params.items,
   minRun: row.params.minRun,
