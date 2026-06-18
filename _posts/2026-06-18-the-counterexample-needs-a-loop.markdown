@@ -350,7 +350,12 @@ detector, or just one transition in the graph.
 The lab exports the checker it uses:
 
 ```bash
-node -e 'const lab = require("./assets/js/temporal-lasso-lab.js"); console.log(lab.audit())'
+node - <<'NODE'
+const lab = require("./assets/js/temporal-lasso-lab.js");
+const audit = lab.audit();
+if (!audit.pass) throw new Error(JSON.stringify(audit.failures));
+console.log("temporal lasso audit passed");
+NODE
 ```
 
 The audit checks the cases the prose depends on:

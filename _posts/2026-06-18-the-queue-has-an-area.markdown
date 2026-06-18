@@ -376,7 +376,12 @@ measurements describe the same population.
 The lab exports the same audit:
 
 ```bash
-node -e 'const lab = require("./assets/js/littles-law-lab.js"); console.log(lab.audit())'
+node - <<'NODE'
+const lab = require("./assets/js/littles-law-lab.js");
+const audit = lab.audit();
+if (!audit.pass) throw new Error(JSON.stringify(audit.failures));
+console.log(`${audit.cases} cases passed; max residual ${audit.maxResidual}`);
+NODE
 ```
 
 The check is deliberately mundane. It runs a grid of deterministic simulations,
