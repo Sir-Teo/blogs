@@ -376,7 +376,16 @@ Reproduce it from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/affine-alignment-lab.js");
+const EXPECTED_CASES = 6;
+const EXPECTED_CHECKS = 84;
+
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedCriticalChecks = audit.criticalChecks.filter(
+  (row) => !row.ok || row.passed !== row.total
+);
 console.table(audit.cases.map((row) => ({
   pattern: row.pattern,
   source: row.sourceLength,
@@ -390,13 +399,30 @@ console.table(audit.cases.map((row) => ({
 })));
 console.table(audit.byPattern);
 console.table(audit.criticalChecks);
-if (audit.total !== 6 || audit.totalChecks !== 84) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  failedCriticalChecks.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    failedCriticalChecks,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 NODE
 ```
 
