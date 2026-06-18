@@ -325,19 +325,105 @@ The module exports the same implementation used by the browser:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/wavelet-tree-lab.js");
-const EXPECTED_CASES = 30;
-const EXPECTED_CHECKS = 210;
+const EXPECTED_CASE_SHAPE = [
+  "1:genome:all:24/5:58:24/125/24/2600:7",
+  "2:genome:#:24/5:58:24/125/24/2600:7",
+  "3:genome:A:24/5:58:24/125/24/2600:7",
+  "4:genome:C:24/5:58:24/125/24/2600:7",
+  "5:genome:G:24/5:58:24/125/24/2600:7",
+  "6:genome:T:24/5:58:24/125/24/2600:7",
+  "7:mississippi:all:12/5:29:12/65/12/364:7",
+  "8:mississippi:#:12/5:29:12/65/12/364:7",
+  "9:mississippi:i:12/5:29:12/65/12/364:7",
+  "10:mississippi:m:12/5:29:12/65/12/364:7",
+  "11:mississippi:p:12/5:29:12/65/12/364:7",
+  "12:mississippi:s:12/5:29:12/65/12/364:7",
+  "13:abracadabra:all:12/6:32:12/78/12/364:7",
+  "14:abracadabra:#:12/6:32:12/78/12/364:7",
+  "15:abracadabra:a:12/6:32:12/78/12/364:7",
+  "16:abracadabra:b:12/6:32:12/78/12/364:7",
+  "17:abracadabra:c:12/6:32:12/78/12/364:7",
+  "18:abracadabra:d:12/6:32:12/78/12/364:7",
+  "19:abracadabra:r:12/6:32:12/78/12/364:7",
+  "20:prices:all:20/10:67:20/210/20/1540:7",
+  "21:prices:0:20/10:67:20/210/20/1540:7",
+  "22:prices:1:20/10:67:20/210/20/1540:7",
+  "23:prices:2:20/10:67:20/210/20/1540:7",
+  "24:prices:3:20/10:67:20/210/20/1540:7",
+  "25:prices:4:20/10:67:20/210/20/1540:7",
+  "26:prices:5:20/10:67:20/210/20/1540:7",
+  "27:prices:6:20/10:67:20/210/20/1540:7",
+  "28:prices:7:20/10:67:20/210/20/1540:7",
+  "29:prices:8:20/10:67:20/210/20/1540:7",
+  "30:prices:9:20/10:67:20/210/20/1540:7"
+];
+const EXPECTED_SAMPLE_SHAPE = [
+  "abracadabra:7 cases/49 checks:12/6:32:84/546/84/364",
+  "genome:6 cases/42 checks:24/5:58:144/750/144/2600",
+  "mississippi:6 cases/42 checks:12/5:29:72/390/72/364",
+  "prices:11 cases/77 checks:20/10:67:220/2310/220/1540"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "access agrees with the original sequence:30/30",
+  "compressed bitmap entropy sums to sequence H0:30/30",
+  "internal bitmaps preserve stable partition lengths:30/30",
+  "range quantile agrees with sorting every slice:30/30",
+  "rank agrees with naive prefix counts:30/30",
+  "raw bitmap budget is bounded by fixed-width storage:30/30",
+  "select agrees with naive occurrence positions:30/30"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CRITICAL_SHAPE.length;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function symbolKey(symbol) {
+  return symbol == null ? "all" : symbol;
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.caseId}:${row.sample}:${symbolKey(row.symbol)}:` +
+        `${row.length}/${row.alphabet}:${row.waveletBits}:` +
+        `${row.accessChecks}/${row.rankChecks}/` +
+        `${row.selectChecks}/${row.rangeQuantileChecks}:${row.totalChecks}`
+    ),
+    bySample: audit.bySample.map(
+      (row) => `${row.sample}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.length}/${row.alphabet}:${row.waveletBits}:` +
+        `${row.accessChecks}/${row.rankChecks}/` +
+        `${row.selectChecks}/${row.maxRangeQuantileChecks}`
+    ),
+    criticalChecks: audit.criticalChecks.map(
+      (row) => `${row.check}:${row.passed}/${row.total}`
+    )
+  };
+}
 
 const audit = lab.auditWaveletTreeLab();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.ok || row.passed !== row.total
 );
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  sameList(shape.bySample, EXPECTED_SAMPLE_SHAPE) ? null : "bySample",
+  sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks"
+].filter(Boolean);
 console.table(audit.bySample);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+if (
+  audit.checked !== EXPECTED_CHECKS ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
@@ -345,6 +431,7 @@ if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   failedCriticalChecks.length ||
   !audit.ok ||
@@ -352,8 +439,12 @@ if (
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
     failed,
     failedCriticalChecks,
+    errors: audit.errors,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
