@@ -269,19 +269,98 @@
 
   function auditZoneMapLab() {
     var cases = [
-      { rows: 2048, groupSize: 64, order: "x", predicate: "x", width: 8, outliers: 0, seed: 3 },
-      { rows: 4096, groupSize: 128, order: "random", predicate: "box", width: 12, outliers: 2, seed: 37 },
-      { rows: 4096, groupSize: 128, order: "z", predicate: "box", width: 12, outliers: 2, seed: 37 },
-      { rows: 8192, groupSize: 256, order: "y", predicate: "y", width: 5, outliers: 8, seed: 91 }
+      {
+        label: "time band sorted by time",
+        params: {
+          groupSize: 64,
+          order: "x",
+          outliers: 0,
+          predicate: "x",
+          rows: 2048,
+          seed: 3,
+          width: 8
+        }
+      },
+      {
+        label: "box predicate random ingest",
+        params: {
+          groupSize: 128,
+          order: "random",
+          outliers: 2,
+          predicate: "box",
+          rows: 4096,
+          seed: 37,
+          width: 12
+        }
+      },
+      {
+        label: "box predicate z-order",
+        params: {
+          groupSize: 128,
+          order: "z",
+          outliers: 2,
+          predicate: "box",
+          rows: 4096,
+          seed: 37,
+          width: 12
+        }
+      },
+      {
+        label: "tenant band with outliers",
+        params: {
+          groupSize: 256,
+          order: "y",
+          outliers: 8,
+          predicate: "y",
+          rows: 8192,
+          seed: 91,
+          width: 5
+        }
+      }
     ];
     var passed = 0;
-    cases.forEach(function (params) {
-      if (evaluate(params).audit.passed) passed += 1;
+    var rows = [];
+    cases.forEach(function (entry) {
+      var result = evaluate(entry.params);
+      if (result.audit.passed) passed += 1;
+      rows.push({
+        failedChecks: Object.keys(result.audit).filter(function (key) {
+          return key !== "passed" && result.audit[key] === false;
+        }),
+        falsePositiveGroups: result.analysis.falsePositiveGroups,
+        groupSize: result.params.groupSize,
+        groups: result.analysis.groups,
+        label: entry.label,
+        matchRows: result.analysis.matchRows,
+        order: result.params.order,
+        outliers: result.params.outliers,
+        passed: result.audit.passed,
+        predicate: result.params.predicate,
+        rows: result.params.rows,
+        rowsRead: result.analysis.rowsRead,
+        scannedGroups: result.analysis.scannedGroups,
+        seed: result.params.seed,
+        skipRate: result.analysis.skipRate,
+        width: result.params.width
+      });
     });
     var coarse = evaluate({ rows: 4096, groupSize: 256, order: "x", predicate: "x", width: 8, outliers: 0, seed: 14 });
     var fine = evaluate({ rows: 4096, groupSize: 64, order: "x", predicate: "x", width: 8, outliers: 0, seed: 14 });
     var monotone = fine.analysis.rowsRead <= coarse.analysis.rowsRead;
-    return { monotone: monotone, passed: passed + (monotone ? 1 : 0), total: cases.length + 1 };
+    return {
+      cases: rows,
+      comparisons: [{
+        coarseGroupSize: coarse.params.groupSize,
+        coarseRowsRead: coarse.analysis.rowsRead,
+        fineGroupSize: fine.params.groupSize,
+        fineRowsRead: fine.analysis.rowsRead,
+        label: "smaller row groups read no more rows for aligned range",
+        passed: monotone
+      }],
+      monotone: monotone,
+      passed: passed + (monotone ? 1 : 0),
+      total: cases.length + 1
+    };
   }
 
   function formatPct(value, digits) {

@@ -305,7 +305,7 @@ only if the summary proves disjointness.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/zone-map-pruning-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/zone-map-pruning-lab.js?v=20260618b' | relative_url }}"></script>
 
 With the default two-column predicate, `4096` rows, and `128` rows per group,
 the same logical table gives these deterministic outcomes:
@@ -316,6 +316,40 @@ the same logical table gives these deterministic outcomes:
 | time sort | 5 / 32 | 84.4% | 84 | 0 |
 | tenant sort | 5 / 32 | 84.4% | 84 | 0 |
 | z-order sort | 4 / 32 | 87.5% | 84 | 2 |
+
+The exported audit is reproducible from Node:
+
+```js
+const lab = require("./assets/js/zone-map-pruning-lab.js");
+
+const audit = lab.auditZoneMapLab();
+const failed = audit.cases.filter((row) => !row.passed)
+  .concat(audit.comparisons.filter((row) => !row.passed));
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.label,
+  order: row.order,
+  predicate: row.predicate,
+  groups: String(row.scannedGroups) + "/" + row.groups,
+  rowsRead: row.rowsRead,
+  skipPct: Number((row.skipRate * 100).toFixed(1)),
+  matches: row.matchRows,
+  falsePositiveGroups: row.falsePositiveGroups
+})));
+console.table(audit.comparisons);
+```
+
+Those checks are deliberately negative: skipped groups must contain no matching
+rows, min/max boxes must contain their rows, and the scan accounting must
+balance. The extra comparison checks that smaller aligned row groups do not read
+more rows than a coarser grouping on the same range query.
 
 The random layout is the cautionary case. Each group contains a little bit of
 almost everything, so its min/max box is wide. The zone maps are correct and
