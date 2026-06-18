@@ -277,7 +277,7 @@ the page-split mechanism.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/btree-split-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/btree-split-lab.js?v=20260618b' | relative_url }}"></script>
 
 With the default settings, the lab inserts keys `1` through `42` into pages that
 hold at most five keys. The final tree has:
@@ -320,8 +320,35 @@ many key comparisons.
 
 The implementation is inspectable:
 [`assets/js/btree-split-lab.js`]({{ '/assets/js/btree-split-lab.js' | relative_url }}).
-Its Node audit currently passes all `96` combinations of insert order, page
-capacity, count, and seed.
+
+You can reproduce the audit from Node:
+
+```js
+const lab = require("./assets/js/btree-split-lab.js");
+
+const audit = lab.auditBtreeSplitLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+if (audit.passed !== 96 || audit.total !== 96) {
+  throw new Error(`expected 96 passing cases, got ${audit.passed}/${audit.total}`);
+}
+
+console.table(audit.cases.slice(0, 8).map((row) => ({
+  pattern: row.patternLabel,
+  maxKeys: row.maxKeys,
+  count: row.count,
+  seed: row.seed,
+  height: row.height,
+  pages: row.pages,
+  leafPages: row.leafPages,
+  splits: row.splits,
+  fill: row.avgLeafFill.toFixed(3)
+})));
+```
+
+That grid covers four insert orders, four page capacities, three key counts, and
+two shuffle seeds. Each row carries the failed check names, so a broken
+separator or occupancy invariant has a concrete reproducing case.
 
 ## What A Split Certifies
 

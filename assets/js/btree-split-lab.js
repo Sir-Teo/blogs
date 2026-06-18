@@ -435,6 +435,7 @@
   function auditBtreeSplitLab() {
     var total = 0;
     var passed = 0;
+    var cases = [];
     ["append", "reverse", "shuffle", "alternating"].forEach(function (pattern) {
       [3, 5, 7, 9].forEach(function (maxKeys) {
         [12, 31, 64].forEach(function (count) {
@@ -442,11 +443,28 @@
             total += 1;
             var result = evaluate({ count: count, maxKeys: maxKeys, pattern: pattern, seed: seed, step: count });
             if (result.audit.passed) passed += 1;
+            cases.push({
+              avgLeafFill: result.summary.avgLeafFill,
+              avgPageWrites: result.summary.avgPageWrites,
+              count: result.params.count,
+              failedChecks: Object.keys(result.audit).filter(function (key) {
+                return key !== "passed" && !result.audit[key];
+              }),
+              height: result.summary.height,
+              leafPages: result.summary.leafPages,
+              maxKeys: result.params.maxKeys,
+              pages: result.summary.pages,
+              passed: result.audit.passed,
+              pattern: result.params.pattern,
+              patternLabel: PATTERNS[result.params.pattern],
+              seed: result.params.seed,
+              splits: result.summary.splits
+            });
           });
         });
       });
     });
-    return { passed: passed, total: total };
+    return { cases: cases, passed: passed, total: total };
   }
 
   function formatPercent(value) {
