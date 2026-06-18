@@ -378,20 +378,54 @@ The lab exports the same audit:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/littles-law-lab.js");
+const EXPECTED_MODES = 2;
+const EXPECTED_LOADS = 3;
+const EXPECTED_CASES = 108;
+const EXPECTED_CHECKS = 1296;
 
 const audit = lab.audit();
 console.table(audit.byMode);
 console.table(audit.byLoad);
 console.table(audit.worstResiduals);
-if (
-  !audit.ok ||
-  !audit.pass ||
-  audit.passed !== 108 ||
-  audit.total !== 108 ||
-  audit.passedChecks !== 1296 ||
-  audit.totalChecks !== 1296
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  modeRows: audit.byMode.length,
+  loadRows: audit.byLoad.length,
+  rows: audit.cases.length,
+  caseCount: audit.caseCount,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks,
+  maxResidual: audit.maxResidual
+};
+if (auditShape.modeRows !== EXPECTED_MODES ||
+    auditShape.loadRows !== EXPECTED_LOADS ||
+    auditShape.rows !== EXPECTED_CASES ||
+    auditShape.caseCount !== EXPECTED_CASES ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedModeGroups = audit.byMode.filter(
+  (row) => row.passed !== row.cases || row.passedChecks !== row.totalChecks
+);
+const failedLoadGroups = audit.byLoad.filter(
+  (row) => row.passed !== row.cases || row.passedChecks !== row.totalChecks
+);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || !audit.pass || failedModeGroups.length ||
+    failedLoadGroups.length || failedCases.length ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedModeGroups,
+    failedLoadGroups,
+    failedCases: failedCases.slice(0, 10),
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} cases and ` +
