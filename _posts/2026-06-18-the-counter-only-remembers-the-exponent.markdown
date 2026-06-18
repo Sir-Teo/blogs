@@ -307,6 +307,22 @@ checks for larger counts: 10 audit cases and 24 named checks.
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/morris-counter-lab.js");
+const EXPECTED_EXACT_ROWS = 6;
+const EXPECTED_SCENARIO_ROWS = 4;
+const EXPECTED_ROWS = 10;
+const EXPECTED_CHECKS = 24;
+const EXPECTED_EXACT_EVENTS = [0, 1, 2, 8, 35, 60];
+const EXPECTED_SCENARIO_EVENTS = [1000, 40000, 80000, 160000];
+const EXPECTED_EXACT_CHECK_NAMES = [
+  "exact expectation equals count",
+  "exact variance matches formula"
+];
+const EXPECTED_SCENARIO_CHECK_NAMES = [
+  "empirical mean is inside standard-error envelope",
+  "saturation is either absent or explicitly near capacity",
+  "seeded replay is deterministic"
+];
+
 const audit = lab.auditMorrisCounterLab();
 console.table(audit.exact.map((row) => ({
   events: row.events,
@@ -322,14 +338,55 @@ console.table(audit.scenarios.map((row) => ({
   deterministic: row.deterministic,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 10 ||
-  audit.total !== 10 ||
-  audit.passedChecks !== 24 ||
-  audit.totalChecks !== 24
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  exactCheckNames: Array.from(new Set(audit.exact.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  exactEvents: audit.exact.map((row) => row.events).sort((a, b) => a - b),
+  exactRows: audit.exact.length,
+  exactShape: audit.exact.map((row) => `${row.events}:${row.totalChecks}`).sort(),
+  passed: audit.passed,
+  scenarioCheckNames: Array.from(new Set(audit.scenarios.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  scenarioEvents: audit.scenarios.map((row) => row.events).sort((a, b) => a - b),
+  scenarioRows: audit.scenarios.length,
+  scenarioShape: audit.scenarios.map((row) => [
+    row.events,
+    row.totalChecks,
+    row.theoreticalMean,
+    row.deterministic ? 1 : 0,
+    row.saturatedTrials
+  ].join(":")).sort(),
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.exactRows !== EXPECTED_EXACT_ROWS ||
+    auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.exactEvents) !== JSON.stringify(EXPECTED_EXACT_EVENTS) ||
+    JSON.stringify(auditShape.scenarioEvents) !== JSON.stringify(EXPECTED_SCENARIO_EVENTS) ||
+    JSON.stringify(auditShape.exactCheckNames) !== JSON.stringify(EXPECTED_EXACT_CHECK_NAMES) ||
+    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedExactCases = audit.exact.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedScenarioCases = audit.scenarios.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedExactCases.length || failedScenarioCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedExactCases,
+    failedScenarioCases,
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} audit cases and ` +
