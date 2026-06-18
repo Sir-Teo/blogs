@@ -400,16 +400,91 @@ The sweep is reproducible from Node:
 
 ```js
 const lab = require("./assets/js/doubly-robust-lab.js");
+const EXPECTED_CASES = 8;
+const EXPECTED_CHECKS = 24;
+const EXPECTED_CHECK_NAMES = [
+  "aipw-quadrant-shape",
+  "finite-estimates",
+  "propensity-deciles-have-both-arms"
+];
+const EXPECTED_CASE_SHAPE = [
+  "600:45:14:40:31:3",
+  "600:45:6:40:31:3",
+  "600:90:14:40:31:3",
+  "600:90:6:40:31:3",
+  "900:45:14:40:31:3",
+  "900:45:6:40:31:3",
+  "900:90:14:40:31:3",
+  "900:90:6:40:31:3"
+];
+const EXPECTED_BIAS_SHAPE = [
+  "600:45:14:0.001:0.000:0.002:0.050:0.053",
+  "600:45:6:0.006:0.008:0.017:0.069:0.072",
+  "600:90:14:-0.028:-0.026:-0.014:0.070:0.080",
+  "600:90:6:-0.019:-0.011:-0.015:0.120:0.141",
+  "900:45:14:-0.002:-0.001:0.000:0.049:0.051",
+  "900:45:6:-0.002:-0.002:-0.007:0.052:0.056",
+  "900:90:14:0.001:-0.001:0.013:0.092:0.103",
+  "900:90:6:0.006:0.002:0.027:0.108:0.140"
+];
+const EXPECTED_DECILE_SHAPE = [
+  "600:45:14:14:18:0.109:543",
+  "600:45:6:9:15:0.048:497",
+  "600:90:14:13:13:0.033:419",
+  "600:90:6:8:10:0.012:291",
+  "900:45:14:22:32:0.087:813",
+  "900:45:6:15:24:0.044:753",
+  "900:90:14:14:20:0.025:608",
+  "900:90:6:4:15:0.010:430"
+];
 
 const audit = lab.auditDoublyRobustLab();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 
-if (audit.total !== 8 || audit.totalChecks !== 24) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const auditShape = {
+  biasShape: audit.cases.map((row) => [
+    row.rows,
+    row.confounding,
+    row.overlap,
+    row.aipwBothBias.toFixed(3),
+    row.aipwOutcomeBias.toFixed(3),
+    row.aipwPropensityBias.toFixed(3),
+    row.aipwNeitherBias.toFixed(3),
+    row.outcomeRegressionWrongBias.toFixed(3)
+  ].join(":")).sort(),
+  caseChecks: audit.cases.map((row) => [
+    row.rows,
+    row.confounding,
+    row.overlap,
+    row.runs,
+    row.seed,
+    row.totalChecks
+  ].join(":")).sort(),
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  decileShape: audit.cases.map((row) => [
+    row.rows,
+    row.confounding,
+    row.overlap,
+    row.minDecileTreated,
+    row.minDecileControl,
+    row.overlapMinPropensity.toFixed(3),
+    row.minEffectiveSampleSize.toFixed(0)
+  ].join(":")).sort(),
+  passed: audit.passed,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES) ||
+    JSON.stringify(auditShape.biasShape) !== JSON.stringify(EXPECTED_BIAS_SHAPE) ||
+    JSON.stringify(auditShape.decileShape) !== JSON.stringify(EXPECTED_DECILE_SHAPE)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 
 const summary =
@@ -423,6 +498,7 @@ if (
 ) {
   throw new Error(JSON.stringify({
     failed,
+    auditShape,
     passed: audit.passed,
     passedChecks: audit.passedChecks,
     total: audit.total
