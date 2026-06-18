@@ -516,35 +516,42 @@
   }
 
   function verifyResult(state) {
-    var issues = [];
+    var checks = [];
     var params = state.params;
-    Object.keys(state.policies).forEach(function (id) {
+    function check(name, ok) {
+      checks.push({ name: name, ok: !!ok });
+    }
+    var responseCountsMatch = Object.keys(state.policies).every(function (id) {
       var policy = state.policies[id];
-      if (policy.rows.length !== state.requests.length) issues.push(id + " response count mismatch");
-      policy.rows.forEach(function (row) {
-        if (row.wait < -1e-9) issues.push(id + " negative wait");
-        if (row.status === 200 && row.version == null) issues.push(id + " returned 200 without a version");
+      return policy.rows.length === state.requests.length;
+    });
+    var responseRowsValid = Object.keys(state.policies).every(function (id) {
+      return state.policies[id].rows.every(function (row) {
+        return row.wait >= -1e-9 && (row.status !== 200 || row.version != null);
       });
-      policy.originCalls.forEach(function (call) {
-        if (call.status === 304 && !call.validator) issues.push(id + " produced 304 without a validator");
+    });
+    var notModifiedValidatorsMatch = Object.keys(state.policies).every(function (id) {
+      return state.policies[id].originCalls.every(function (call) {
+        if (call.status !== 304) return true;
+        if (!call.validator) return false;
+        return call.validator === versionAt(state.config, call.done).etag;
       });
     });
     var validator = state.policies.validator;
     var ttl = state.policies.ttl;
-    if (validator.summary.bytes > ttl.summary.bytes + 1e-9) issues.push("validator used more bytes than expiry-only cache");
-    state.policies.swr.rows.forEach(function (row) {
-      if (row.action === "serve stale + revalidate" && !row.withinSwr) issues.push("SWR stale response outside SWR window");
+    var swrStaleInsideWindow = state.policies.swr.rows.every(function (row) {
+      return row.action !== "serve stale + revalidate" || row.withinSwr;
     });
-    if (state.params.swr > 0 && state.policies.swr.summary.maxWait > state.policies.validator.summary.maxWait + 1e-9) {
-      issues.push("SWR has larger max blocking wait than validator cache");
-    }
-    state.policies.validator.originCalls.forEach(function (call) {
-      if (call.status === 304) {
-        var origin = versionAt(state.config, call.done);
-        if (call.validator !== origin.etag) issues.push("304 does not match current ETag");
-      }
-    });
+    var swrWaitBound = params.swr === 0 || state.policies.swr.summary.maxWait <= state.policies.validator.summary.maxWait + 1e-9;
+    check("each policy returns one response per request", responseCountsMatch);
+    check("response rows have valid waits and versions", responseRowsValid);
+    check("304 responses carry matching current validators", notModifiedValidatorsMatch);
+    check("validator byte count never exceeds expiry-only cache", validator.summary.bytes <= ttl.summary.bytes + 1e-9);
+    check("SWR stale responses stay inside the SWR window", swrStaleInsideWindow);
+    check("SWR never increases max blocking wait", swrWaitBound);
+    var issues = checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
     return {
+      checks: checks,
       ok: issues.length === 0,
       issues: issues
     };
@@ -557,16 +564,19 @@
         [0, 6, 14].forEach(function (swr) {
           [120, 420, 900].forEach(function (latency) {
             var result = evaluate({ scenario: scenario, maxAge: maxAge, swr: swr, latency: latency, cadence: DEFAULTS.cadence });
+            var failedChecks = result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
             cases.push({
               blockingSaved: result.policies.validator.summary.blocking - result.policies.swr.summary.blocking,
-              failedChecks: result.audit.issues,
+              failedChecks: failedChecks,
               latency: latency,
               maxAge: maxAge,
               passed: result.audit.ok,
+              passedChecks: result.audit.checks.length - failedChecks.length,
               scenario: scenario,
               swr: swr,
               swrErrors: result.policies.swr.summary.errors,
               swrStale: result.policies.swr.summary.staleServed,
+              totalChecks: result.audit.checks.length,
               ttlBytes: result.policies.ttl.summary.bytes,
               validator304: result.policies.validator.summary.notModified,
               validatorBytes: result.policies.validator.summary.bytes,
@@ -592,21 +602,27 @@
         maxBlockingSaved: rows.reduce(function (max, row) { return Math.max(max, row.blockingSaved); }, 0),
         maxSwrErrors: rows.reduce(function (max, row) { return Math.max(max, row.swrErrors); }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
         scenario: scenario,
         swrStale: rows.reduce(function (sum, row) { return sum + row.swrStale; }, 0),
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0),
         validator304: rows.reduce(function (sum, row) { return sum + row.validator304; }, 0),
         validatorOriginCalls: rows.reduce(function (sum, row) { return sum + row.validatorOriginCalls; }, 0)
       };
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
     return {
       byScenario: byScenario,
       cases: cases,
-      ok: failures.length === 0,
+      ok: failures.length === 0 && passedChecks === totalChecks,
       checked: cases.length,
       failures: failures,
       passed: passed,
-      total: cases.length
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 

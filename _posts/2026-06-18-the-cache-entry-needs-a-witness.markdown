@@ -265,7 +265,7 @@ in the background.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/http-cache-validator-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/http-cache-validator-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The 304 Is Not A Cache Hit
 
@@ -296,10 +296,12 @@ The validator policy performs five origin requests, just like the expiry-only
 policy. Two of them are `304`, so it sends `123.5 KB` from origin instead of
 `203.5 KB`. That is a body-byte win, not an origin-trip win.
 
-The exported audit checks 108 scenario/parameter combinations:
+The exported audit checks 108 scenario/parameter combinations with six
+obligations per case:
 
 ```text
 each policy returns one response per request
+response rows have valid waits and versions
 304 responses occur only when the validator matches the current ETag
 validator byte count never exceeds expiry-only byte count
 SWR stale responses are served only inside the configured SWR window
@@ -316,15 +318,20 @@ console.table(audit.byScenario.map((row) => ({
   scenario: row.scenario,
   cases: row.cases,
   passed: row.passed,
+  passedChecks: row.passedChecks,
+  totalChecks: row.totalChecks,
   validator304: row.validator304,
   swrStale: row.swrStale,
   maxBlockingSaved: row.maxBlockingSaved.toFixed(2),
   maxSwrErrors: row.maxSwrErrors
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+if (audit.total !== 108 || audit.totalChecks !== 648) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+}
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} parameter cases passed`);
+console.log(`${audit.passed}/${audit.total} parameter cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
