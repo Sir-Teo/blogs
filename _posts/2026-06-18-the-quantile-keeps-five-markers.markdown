@@ -296,32 +296,99 @@ The compact reproduction check is:
 
 ```js
 const lab = require("./assets/js/p2-quantile-lab.js");
-const EXPECTED_SCENARIOS = 3;
-const EXPECTED_PERCENTILES = 3;
-const EXPECTED_CASES = 9;
-const EXPECTED_DETAIL_ROWS = 10;
-const EXPECTED_CHECKS = 65;
+const EXPECTED_CASE_SHAPE = [
+  "1:latency:p50:seed=23:samples=2600:exact=43.3848:estimate=43.325:abs=0.0598:rank=0.0015:moves=1514/0:checks=7/7",
+  "2:latency:p90:seed=23:samples=2600:exact=64.3657:estimate=64.1738:abs=0.1919:rank=0.0012:moves=724/3:checks=7/7",
+  "3:latency:p95:seed=23:samples=2600:exact=73.08:estimate=72.6664:abs=0.4136:rank=0.0019:moves=614/2:checks=7/7",
+  "4:drift:p50:seed=23:samples=2600:exact=47.0461:estimate=47.3382:abs=0.2921:rank=0.01:moves=2944/0:checks=7/7",
+  "5:drift:p90:seed=23:samples=2600:exact=65.1428:estimate=67.4667:abs=2.3239:rank=0.0331:moves=2566/0:checks=7/7",
+  "6:drift:p95:seed=23:samples=2600:exact=69.02:estimate=71.6067:abs=2.5867:rank=0.0192:moves=2133/2:checks=7/7",
+  "7:shift:p50:seed=23:samples=2600:exact=36.0931:estimate=46.2982:abs=10.2051:rank=0.0804:moves=2394/0:checks=7/7",
+  "8:shift:p90:seed=23:samples=2600:exact=84.0857:estimate=85.2701:abs=1.1844:rank=0.0146:moves=1545/1:checks=7/7",
+  "9:shift:p95:seed=23:samples=2600:exact=87.6772:estimate=88.7412:abs=1.0641:rank=0.0104:moves=1279/1:checks=7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "sample-count",
+  "marker-heights-ordered",
+  "marker-positions-increasing",
+  "desired-positions-monotone",
+  "estimate-inside-range",
+  "finite-history",
+  "rank-error-threshold"
+];
+const EXPECTED_DEFAULT_SHAPE =
+  "10:default stream sanity checks:checks=2/2";
+const EXPECTED_DEFAULT_CHECK_SHAPE = [
+  "10:default:default-run-has-five-markers:true",
+  "10:default:default-run-prefers-parabolic-moves:true"
+];
+const EXPECTED_CASE_IDS = EXPECTED_CASE_SHAPE.map((shape) =>
+  shape.split(":").slice(0, 3).join(":")
+);
+const EXPECTED_CHECK_SHAPE = EXPECTED_CASE_IDS.flatMap((caseId) =>
+  EXPECTED_CHECK_NAMES.map((name) => `${caseId}:${name}:true`)
+).concat(EXPECTED_DEFAULT_CHECK_SHAPE);
+const EXPECTED_SCENARIOS = new Set(
+  EXPECTED_CASE_IDS.map((caseId) => caseId.split(":")[1])
+).size;
+const EXPECTED_PERCENTILES = new Set(
+  EXPECTED_CASE_IDS.map((caseId) => caseId.split(":")[2])
+).size;
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_DETAIL_ROWS = EXPECTED_CASES + 1;
+const EXPECTED_CHECKS = EXPECTED_CHECK_SHAPE.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.scenario}:p${row.percentile}:` +
+    `seed=${row.seed}:samples=${row.samples}:` +
+    `exact=${row.exact}:estimate=${row.estimate}:abs=${row.absError}:` +
+    `rank=${row.rankError}:moves=${row.parabolicMoves}/${row.linearMoves}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function defaultShape(row) {
+  return `${row.caseId}:${row.label}:checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checkShape(row) {
+  const id = row.scenario
+    ? `${row.caseId}:${row.scenario}:p${row.percentile}`
+    : `${row.caseId}:default`;
+  return row.checks.map((check) => `${id}:${check.name}:${check.ok}`);
+}
 
 const audit = lab.auditP2QuantileLab();
-const auditShape = {
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checks: audit.details.flatMap(checkShape),
+  default: defaultShape(audit.defaultChecks),
   scenarios: audit.scenarios,
   scenarioRows: new Set(audit.cases.map((row) => row.scenario)).size,
   percentiles: new Set(audit.cases.map((row) => row.percentile)).size,
-  rows: audit.cases.length,
-  detailRows: audit.details.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+  detailRows: audit.details.length
 };
-if (auditShape.scenarios !== EXPECTED_SCENARIOS ||
-    auditShape.scenarioRows !== EXPECTED_SCENARIOS ||
-    auditShape.percentiles !== EXPECTED_PERCENTILES ||
-    auditShape.rows !== EXPECTED_CASES ||
-    auditShape.detailRows !== EXPECTED_DETAIL_ROWS ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.checks, EXPECTED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "checks",
+    actual: shape.checks,
+    expected: EXPECTED_CHECK_SHAPE
+  });
+}
+if (shape.default !== EXPECTED_DEFAULT_SHAPE) {
+  shapeErrors.push({
+    name: "default",
+    actual: shape.default,
+    expected: EXPECTED_DEFAULT_SHAPE
+  });
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
@@ -329,13 +396,31 @@ const summary =
 const failedCases = audit.details.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (failedCases.length || !audit.ok || audit.passed !== audit.total ||
+if (shapeErrors.length ||
+    failedCases.length ||
+    !audit.ok ||
+    shape.scenarios !== EXPECTED_SCENARIOS ||
+    shape.scenarioRows !== EXPECTED_SCENARIOS ||
+    shape.percentiles !== EXPECTED_PERCENTILES ||
+    audit.cases.length !== EXPECTED_CASES ||
+    shape.detailRows !== EXPECTED_DETAIL_ROWS ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     summary,
+    shapeErrors,
     errors: audit.errors.slice(0, 10),
     failedCases,
-    auditShape
+    totals: {
+      cases: audit.cases.length,
+      detailRows: shape.detailRows,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
