@@ -341,7 +341,7 @@
     };
   }
 
-  function failedAuditChecks(audit, targetSweepOk) {
+  function auditChecks(audit, targetSweepOk) {
     return [
       { name: "decode", ok: audit.decodeOk },
       { name: "monotone-input", ok: audit.monotone },
@@ -350,7 +350,11 @@
       { name: "access-query", ok: audit.queryOk },
       { name: "next-geq-query", ok: audit.nextOk },
       { name: "target-sweep", ok: targetSweepOk }
-    ].filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
   }
 
   function runAudit() {
@@ -375,25 +379,42 @@
         return idx === expected;
       });
       var passed = result.audit.passed && allTargetsOk;
+      var checks = auditChecks(result.audit, allTargetsOk);
+      var passedChecks = checks.filter(function (check) { return check.ok; }).length;
       return {
         bitsPerValue: result.encoded.count ? result.ledger.efBits / result.encoded.count : 0,
+        caseId: index + 1,
+        checks: checks,
         count: result.params.count,
-        failedChecks: failedAuditChecks(result.audit, allTargetsOk),
+        failedChecks: failedAuditChecks(checks),
         l: result.encoded.l,
         passed: passed,
+        passedChecks: passedChecks,
         scenario: index === 0 ? "default-" + result.params.scenario : result.params.scenario,
         targetOk: allTargetsOk,
+        totalChecks: checks.length,
         universe: result.params.universe,
         varbyteBitsPerValue: result.encoded.count ? result.ledger.varbyteBits / result.encoded.count : 0
       };
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        errors.push("case " + row.caseId + " " + row.scenario + ": " + name);
+      });
+    });
     return {
       cases: cases,
       details: cases,
-      ok: passed === cases.length,
+      errors: errors,
+      ok: passed === cases.length && passedChecks === totalChecks,
       passed: passed,
-      total: cases.length
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 

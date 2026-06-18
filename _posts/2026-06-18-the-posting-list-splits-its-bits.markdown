@@ -352,9 +352,11 @@ not to pretend a few dozen lines of JavaScript is a tuned search engine.
   <p class="elias-fano-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/elias-fano-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/elias-fano-lab.js?v=20260618c' | relative_url }}"></script>
 
-The lab has a built-in audit:
+The lab has a built-in audit. It reports 35 named checks: decode,
+monotonicity, high-bit placement, one-bit count, direct access, `nextGEQ`,
+and target-sweep lower bounds across five scenarios:
 
 ```bash
 node - <<'NODE'
@@ -367,13 +369,17 @@ console.table(audit.cases.map((row) => ({
   l: row.l,
   efBitsPerValue: row.bitsPerValue.toFixed(2),
   varbyteBitsPerValue: row.varbyteBitsPerValue.toFixed(2),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   targetOk: row.targetOk,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit scenarios passed`);
+const summary =
+  `${audit.passed}/${audit.total} scenarios and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
-console.log(`${audit.passed}/${audit.total} scenarios passed`);
+console.log(summary);
 NODE
 ```
 
