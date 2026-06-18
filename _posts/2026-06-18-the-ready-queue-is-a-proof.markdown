@@ -327,6 +327,28 @@ The compact reproduction check is:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/topological-ready-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 26;
+const EXPECTED_MAKESPANS = {
+  default: 13,
+  trapCritical: 16,
+  trapShortest: 17
+};
+const EXPECTED_CYCLE_REMAINING = ["types", "lower", "link", "test"];
+const EXPECTED_CASE_SHAPE = [
+  "cycle introduced:cycle:n/a:n/a:2:n/a:n/a:n/a:3",
+  "package build:build:critical:3:10:13:13:27:6",
+  "single worker build:build:critical:1:10:27:13:27:6",
+  "trap critical tail:trap:critical:2:8:16:16:21:6",
+  "trap shortest task:trap:shortest:2:8:17:16:21:5"
+];
+const EXPECTED_CHECK_SHAPE = [
+  "cycle introduced:cycle remainder has no zero-indegree node|cycle was detected|partial pass selected only zero-indegree nodes",
+  "package build:critical path names tasks|edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree",
+  "single worker build:edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|one worker takes total work time|schedule respects dependencies|selected node had zero indegree",
+  "trap critical tail:critical rule beats shortest in trap|edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree",
+  "trap shortest task:edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree"
+];
 
 const audit = lab.auditTopologicalReadyLab();
 console.table(audit.cases.map((row) => ({
@@ -341,14 +363,51 @@ console.table(audit.cases.map((row) => ({
   remaining: row.remaining ? row.remaining.join(" ") : "",
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 26 ||
-  audit.totalChecks !== 26
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  caseChecks: audit.cases.map((row) => [
+    row.label,
+    row.scenario,
+    row.rule || "n/a",
+    row.workers || "n/a",
+    row.emitted,
+    row.makespan || "n/a",
+    row.criticalPath || "n/a",
+    row.totalWork || "n/a",
+    row.totalChecks
+  ].join(":")).sort(),
+  checkNames: audit.cases.map((row) => (
+    row.label + ":" + row.checks.map((check) => check.name).sort().join("|")
+  )).sort(),
+  cycleRemaining: audit.cycleRemaining,
+  defaultMakespan: audit.defaultMakespan,
+  passed: audit.passed,
+  total: audit.total,
+  totalChecks: audit.totalChecks,
+  trapCritical: audit.trapCritical,
+  trapShortest: audit.trapShortest
+};
+if (auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    auditShape.defaultMakespan !== EXPECTED_MAKESPANS.default ||
+    auditShape.trapCritical !== EXPECTED_MAKESPANS.trapCritical ||
+    auditShape.trapShortest !== EXPECTED_MAKESPANS.trapShortest ||
+    JSON.stringify(auditShape.cycleRemaining) !== JSON.stringify(EXPECTED_CYCLE_REMAINING) ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_SHAPE)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} audit cases and ` +
