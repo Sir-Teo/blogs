@@ -270,6 +270,20 @@ const EXPECTED_NAMED_CHECKS = 11;
 const EXPECTED_GRID_CASES = 48;
 const EXPECTED_ROWS = 63;
 const EXPECTED_CHECKS = 365;
+const EXPECTED_TOTALS = {
+  graphRows: EXPECTED_GRAPHS,
+  gridSummaries: EXPECTED_GRAPHS,
+  gridRows: EXPECTED_GRID_CASES,
+  namedChecks: EXPECTED_NAMED_CHECKS,
+  passed: EXPECTED_ROWS,
+  total: EXPECTED_ROWS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 const audit = lab.auditKargerMincutLab();
 console.table(audit.byGraph.map((row) => ({
@@ -289,22 +303,25 @@ console.table(audit.gridSummary.map((row) => ({
   maxSuccessRate: row.maxSuccessRate.toFixed(3)
 })));
 const auditShape = {
-  graphRows: audit.byGraph.length,
-  gridSummaries: audit.gridSummary.length,
-  gridRows: audit.cases.length,
-  namedChecks: audit.namedChecks.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+  totals: {
+    graphRows: audit.byGraph.length,
+    gridSummaries: audit.gridSummary.length,
+    gridRows: audit.cases.length,
+    namedChecks: audit.namedChecks.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }
 };
-if (auditShape.graphRows !== EXPECTED_GRAPHS ||
-    auditShape.gridSummaries !== EXPECTED_GRAPHS ||
-    auditShape.gridRows !== EXPECTED_GRID_CASES ||
-    auditShape.namedChecks !== EXPECTED_NAMED_CHECKS ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const failedGraphRows = audit.byGraph.filter(
@@ -326,6 +343,7 @@ if (!audit.ok || failedGraphRows.length || failedNamedChecks.length ||
     failedNamedChecks,
     failedGridGroups,
     failedCases: failedCases.slice(0, 10),
+    shapeErrors,
     auditShape
   }, null, 2));
 }
