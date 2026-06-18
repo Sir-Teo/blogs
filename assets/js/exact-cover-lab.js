@@ -607,15 +607,19 @@
   function auditExactCover() {
     var matrix = buildExactCover();
     var issues = [];
-    var reports = [];
+    var cases = [];
+    var matrixChecks = [];
 
-    if (matrix.rows.length !== 64) issues.push("expected 64 assignment rows");
-    if (matrix.columns.length !== 64) issues.push("expected 64 constraint columns");
+    if (matrix.rows.length !== 64) matrixChecks.push("expected 64 assignment rows");
+    if (matrix.columns.length !== 64) matrixChecks.push("expected 64 constraint columns");
 
     matrix.rows.forEach(function (row) {
       var seen = {};
       row.cols.forEach(function (col) { seen[col] = true; });
-      if (Object.keys(seen).length !== 4) issues.push(row.name + " does not cover four unique constraints");
+      if (Object.keys(seen).length !== 4) matrixChecks.push(row.name + " does not cover four unique constraints");
+    });
+    matrixChecks.forEach(function (issue) {
+      issues.push("matrix: " + issue);
     });
 
     Object.keys(PUZZLES).forEach(function (key) {
@@ -625,33 +629,81 @@
       var brute = bruteSudoku(puzzle.grid, 1000);
       var bruteCount = brute.solutions.length;
       var exactCount = exact.solutions.length;
+      var failedChecks = [];
 
       if (exactCount !== bruteCount) {
-        issues.push(key + " exact-cover count " + exactCount + " != brute count " + bruteCount);
+        failedChecks.push("exact-cover count " + exactCount + " != brute count " + bruteCount);
       }
 
       exact.solutions.forEach(function (solution, index) {
         var grid = exact.grids[index];
-        if (!coversEveryColumnOnce(matrix, solution)) issues.push(key + " solution " + index + " misses exact cover");
-        if (!isValidSudokuGrid(grid)) issues.push(key + " solution " + index + " is not a valid grid");
-        if (!respectsGivens(grid, exact.parsed)) issues.push(key + " solution " + index + " violates givens");
+        if (!coversEveryColumnOnce(matrix, solution)) failedChecks.push("solution " + index + " misses exact cover");
+        if (!isValidSudokuGrid(grid)) failedChecks.push("solution " + index + " is not a valid grid");
+        if (!respectsGivens(grid, exact.parsed)) failedChecks.push("solution " + index + " violates givens");
+      });
+      failedChecks.forEach(function (issue) {
+        issues.push(key + ": " + issue);
       });
 
-      reports.push({
+      cases.push({
         puzzle: key,
         label: puzzle.label,
         exactSolutions: exactCount,
         bruteSolutions: bruteCount,
         minNodes: exact.stats.nodes,
         firstNodes: exactFirst.stats.nodes,
-        contradiction: exact.contradiction || null
+        nodeSavings: exactFirst.stats.nodes - exact.stats.nodes,
+        contradiction: exact.contradiction || null,
+        outcome: exact.contradiction ? "contradiction" : exactCount === 1 ? "unique" : exactCount > 1 ? "multiple" : "no solution",
+        passed: failedChecks.length === 0,
+        failedChecks: failedChecks
       });
     });
 
+    var byOutcomeMap = {};
+    cases.forEach(function (row) {
+      if (!byOutcomeMap[row.outcome]) {
+        byOutcomeMap[row.outcome] = {
+          outcome: row.outcome,
+          cases: 0,
+          exactSolutions: 0,
+          maxMinNodes: 0,
+          nodeSavings: 0,
+          passed: 0,
+          puzzles: []
+        };
+      }
+      byOutcomeMap[row.outcome].cases += 1;
+      byOutcomeMap[row.outcome].exactSolutions += row.exactSolutions;
+      byOutcomeMap[row.outcome].maxMinNodes = Math.max(byOutcomeMap[row.outcome].maxMinNodes, row.minNodes);
+      byOutcomeMap[row.outcome].nodeSavings += row.nodeSavings;
+      byOutcomeMap[row.outcome].puzzles.push(row.puzzle);
+      if (row.passed) byOutcomeMap[row.outcome].passed += 1;
+    });
+    var byOutcome = Object.keys(byOutcomeMap).sort().map(function (outcome) {
+      var group = byOutcomeMap[outcome];
+      group.puzzles = group.puzzles.join(", ");
+      return group;
+    });
+    var matrixReport = {
+      columns: matrix.columns.length,
+      failedChecks: matrixChecks,
+      passed: matrixChecks.length === 0,
+      rows: matrix.rows.length,
+      rowWidth: 4
+    };
+    var passed = cases.filter(function (row) { return row.passed; }).length + (matrixReport.passed ? 1 : 0);
+    var total = cases.length + 1;
+
     return {
+      byOutcome: byOutcome,
+      cases: cases,
+      matrix: matrixReport,
       ok: issues.length === 0,
       issues: issues,
-      reports: reports
+      passed: passed,
+      reports: cases,
+      total: total
     };
   }
 

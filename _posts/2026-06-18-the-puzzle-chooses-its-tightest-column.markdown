@@ -287,7 +287,7 @@ being tried.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/exact-cover-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/exact-cover-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Where Dancing Links Enters
 
@@ -319,20 +319,30 @@ instances.
 
 ## Reproducibility Check
 
-The browser file is also a CommonJS module:
+The browser file is also a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/exact-cover-lab.js");
 
 const audit = lab.auditExactCover();
-if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
-console.table(audit.reports.map((row) => ({
+console.table([audit.matrix]);
+console.table(audit.byOutcome);
+console.table(audit.cases.map((row) => ({
   puzzle: row.label,
   solutions: row.exactSolutions,
   brute: row.bruteSolutions,
   minNodes: row.minNodes,
-  firstNodes: row.firstNodes
+  firstNodes: row.firstNodes,
+  saved: row.nodeSavings,
+  outcome: row.outcome,
+  passed: row.passed
 })));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.issues, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} audit groups passed`);
+NODE
 ```
 
 The audit checks:
