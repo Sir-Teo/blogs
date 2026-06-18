@@ -368,16 +368,85 @@ You can reproduce the grid from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/timsort-run-lab.js");
-const EXPECTED_CASES = 6;
-const EXPECTED_CHECKS = 60;
+const EXPECTED_TOTALS = {
+  rows: 6,
+  passed: 6,
+  total: 6,
+  passedChecks: 60,
+  totalChecks: 60
+};
+const EXPECTED_CASE_ROWS = [
+  "1:runs:128:16:34:29:5:127:602:335:351:896:296:3:10/10:true",
+  "2:nearly:128:16:22:11:8:341:550:564:564:896:653:4:10/10:true",
+  "3:sawtooth:144:12:55:43:12:294:804:801:801:1040:897:4:10/10:true",
+  "4:descending:128:16:0:5:1:127:448:127:127:896:128:1:10/10:true",
+  "5:random:128:16:80:71:8:366:743:741:741:896:1027:4:10/10:true",
+  "6:runs:224:24:48:202:6:223:1129:678:678:1760:620:3:10/10:true"
+];
+const EXPECTED_CHECK_NAMES = [
+  "fixed merge sort matches stable reference",
+  "natural queue matches stable reference",
+  "run stack matches stable reference",
+  "all outputs are sorted and stable",
+  "detected runs cover the input",
+  "detected runs are sorted after extension",
+  "stack performs one merge per pending-run reduction",
+  "queue performs one merge per pending-run reduction",
+  "stack merge records conserve run length",
+  "run-aware methods include finite accounting"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const totals = {
+  rows: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const caseRows = audit.cases.map((row) => [
+  row.caseId,
+  row.pattern,
+  row.items,
+  row.minRun,
+  row.disorder,
+  row.seed,
+  row.runs,
+  row.naturalComparisons,
+  row.fixedComparisons,
+  row.queueComparisons,
+  row.stackComparisons,
+  row.fixedMoves,
+  row.stackMoves,
+  row.stackDepth,
+  `${row.passedChecks}/${row.totalChecks}`,
+  row.passed
+].join(":"));
+const checkRows = audit.cases.map((row) => ({
+  caseId: row.caseId,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = audit.cases.map((row) => ({
+  caseId: row.caseId,
+  checks: EXPECTED_CHECK_NAMES
+}));
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
+  !sameJson(checkRows, expectedCheckRows)
+) {
+  throw new Error("unexpected Timsort run-stack audit shape: " + JSON.stringify({
+    totals,
+    caseRows,
+    checkRows
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   pattern: row.pattern,
