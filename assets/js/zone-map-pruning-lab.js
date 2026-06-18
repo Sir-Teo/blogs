@@ -249,6 +249,19 @@
     };
   }
 
+  function auditChecks(audit) {
+    return [
+      { name: "rows-in-unit-square", ok: audit.bounded },
+      { name: "zone-boxes-bound-rows", ok: audit.boxesBoundRows },
+      { name: "no-skipped-matching-group", ok: audit.noFalseNegatives },
+      { name: "scan-accounting", ok: audit.accounting }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
   function evaluate(raw) {
     var params = normalize(raw);
     var rows = makeRows(params);
@@ -320,13 +333,15 @@
     ];
     var passed = 0;
     var rows = [];
-    cases.forEach(function (entry) {
+    cases.forEach(function (entry, index) {
       var result = evaluate(entry.params);
+      var checks = auditChecks(result.audit);
+      var passedChecks = checks.filter(function (check) { return check.ok; }).length;
       if (result.audit.passed) passed += 1;
       rows.push({
-        failedChecks: Object.keys(result.audit).filter(function (key) {
-          return key !== "passed" && result.audit[key] === false;
-        }),
+        caseId: index + 1,
+        checks: checks,
+        failedChecks: failedAuditChecks(checks),
         falsePositiveGroups: result.analysis.falsePositiveGroups,
         groupSize: result.params.groupSize,
         groups: result.analysis.groups,
@@ -335,31 +350,53 @@
         order: result.params.order,
         outliers: result.params.outliers,
         passed: result.audit.passed,
+        passedChecks: passedChecks,
         predicate: result.params.predicate,
         rows: result.params.rows,
         rowsRead: result.analysis.rowsRead,
         scannedGroups: result.analysis.scannedGroups,
         seed: result.params.seed,
         skipRate: result.analysis.skipRate,
+        totalChecks: checks.length,
         width: result.params.width
       });
     });
     var coarse = evaluate({ rows: 4096, groupSize: 256, order: "x", predicate: "x", width: 8, outliers: 0, seed: 14 });
     var fine = evaluate({ rows: 4096, groupSize: 64, order: "x", predicate: "x", width: 8, outliers: 0, seed: 14 });
     var monotone = fine.analysis.rowsRead <= coarse.analysis.rowsRead;
+    var comparisons = [{
+      caseId: rows.length + 1,
+      checks: [{ name: "finer-aligned-groups-read-no-more", ok: monotone }],
+      coarseGroupSize: coarse.params.groupSize,
+      coarseRowsRead: coarse.analysis.rowsRead,
+      failedChecks: monotone ? [] : ["finer-aligned-groups-read-no-more"],
+      fineGroupSize: fine.params.groupSize,
+      fineRowsRead: fine.analysis.rowsRead,
+      label: "smaller row groups read no more rows for aligned range",
+      passed: monotone,
+      passedChecks: monotone ? 1 : 0,
+      totalChecks: 1
+    }];
+    var allRows = rows.concat(comparisons);
+    var passedChecks = allRows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = allRows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    allRows.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        errors.push("case " + row.caseId + " " + row.label + ": " + name);
+      });
+    });
     return {
       cases: rows,
-      comparisons: [{
-        coarseGroupSize: coarse.params.groupSize,
-        coarseRowsRead: coarse.analysis.rowsRead,
-        fineGroupSize: fine.params.groupSize,
-        fineRowsRead: fine.analysis.rowsRead,
-        label: "smaller row groups read no more rows for aligned range",
-        passed: monotone
-      }],
+      comparisons: comparisons,
+      details: allRows,
+      errors: errors,
       monotone: monotone,
+      ok: passed === cases.length && monotone && passedChecks === totalChecks,
       passed: passed + (monotone ? 1 : 0),
-      total: cases.length + 1
+      passedChecks: passedChecks,
+      total: cases.length + 1,
+      totalChecks: totalChecks
     };
   }
 

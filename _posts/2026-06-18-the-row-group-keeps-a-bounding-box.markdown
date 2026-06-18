@@ -305,7 +305,7 @@ only if the summary proves disjointness.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/zone-map-pruning-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/zone-map-pruning-lab.js?v=20260618c' | relative_url }}"></script>
 
 With the default two-column predicate, `4096` rows, and `128` rows per group,
 the same logical table gives these deterministic outcomes:
@@ -317,20 +317,23 @@ the same logical table gives these deterministic outcomes:
 | tenant sort | 5 / 32 | 84.4% | 84 | 0 |
 | z-order sort | 4 / 32 | 87.5% | 84 | 2 |
 
-The exported audit is reproducible from Node:
+The exported audit is reproducible from Node. It reports 17 named checks: four
+correctness invariants for each synthetic layout, plus one aligned row-group-size
+comparison.
 
 ```js
 const lab = require("./assets/js/zone-map-pruning-lab.js");
 
 const audit = lab.auditZoneMapLab();
-const failed = audit.cases.filter((row) => !row.passed)
-  .concat(audit.comparisons.filter((row) => !row.passed));
-if (failed.length || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
+const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+if (audit.total !== 5 || audit.totalChecks !== 17) {
+  throw new Error(`unexpected audit size: ${audit.total} rows, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} audit rows and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
 
 console.table(audit.cases.map((row) => ({
@@ -341,9 +344,11 @@ console.table(audit.cases.map((row) => ({
   rowsRead: row.rowsRead,
   skipPct: Number((row.skipRate * 100).toFixed(1)),
   matches: row.matchRows,
-  falsePositiveGroups: row.falsePositiveGroups
+  falsePositiveGroups: row.falsePositiveGroups,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 console.table(audit.comparisons);
+console.log(summary);
 ```
 
 Those checks are deliberately negative: skipped groups must contain no matching
