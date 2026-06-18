@@ -328,17 +328,48 @@ state key counts, and finite summary metrics.
 
 ```js
 const lab = require("./assets/js/btree-split-lab.js");
+const EXPECTED_PATTERNS = 4;
+const EXPECTED_MAX_KEYS = 4;
+const EXPECTED_COUNTS = 3;
+const EXPECTED_SEEDS = 2;
+const EXPECTED_CASES = 96;
+const EXPECTED_CHECKS = 960;
 
 const audit = lab.auditBtreeSplitLab();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
-if (audit.total !== 96 || audit.totalChecks !== 960) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+const auditShape = {
+  patterns: new Set(audit.cases.map((row) => row.pattern)).size,
+  maxKeys: new Set(audit.cases.map((row) => row.maxKeys)).size,
+  counts: new Set(audit.cases.map((row) => row.count)).size,
+  seeds: new Set(audit.cases.map((row) => row.seed)).size,
+  rows: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.patterns !== EXPECTED_PATTERNS ||
+    auditShape.maxKeys !== EXPECTED_MAX_KEYS ||
+    auditShape.counts !== EXPECTED_COUNTS ||
+    auditShape.seeds !== EXPECTED_SEEDS ||
+    auditShape.rows !== EXPECTED_CASES ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (failedCases.length || !audit.ok || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    summary,
+    errors: audit.errors.slice(0, 10),
+    failedCases: failedCases.slice(0, 10),
+    auditShape
+  }, null, 2));
 }
 
 console.table(audit.cases.slice(0, 8).map((row) => ({
