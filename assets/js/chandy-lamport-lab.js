@@ -706,18 +706,44 @@
 
   function auditChandyLamportLab() {
     var cases = [
-      { starter: 0, snapshotAt: 8, appDelay: 5, markerDelay: 2, traffic: 8, fifo: true, seed: 37 },
-      { starter: 1, snapshotAt: 10, appDelay: 7, markerDelay: 2, traffic: 10, fifo: true, seed: 11 },
-      { starter: 2, snapshotAt: 6, appDelay: 4, markerDelay: 3, traffic: 6, fifo: true, seed: 91 },
-      { starter: 0, snapshotAt: 8, appDelay: 8, markerDelay: 1, traffic: 8, fifo: false, seed: 37 }
+      { expectOvertake: false, expectPass: true, label: "default FIFO", params: { starter: 0, snapshotAt: 8, appDelay: 5, markerDelay: 2, traffic: 8, fifo: true, seed: 37 } },
+      { expectOvertake: false, expectPass: true, label: "late starter FIFO", params: { starter: 1, snapshotAt: 10, appDelay: 7, markerDelay: 2, traffic: 10, fifo: true, seed: 11 } },
+      { expectOvertake: false, expectPass: true, label: "early starter FIFO", params: { starter: 2, snapshotAt: 6, appDelay: 4, markerDelay: 3, traffic: 6, fifo: true, seed: 91 } },
+      { expectOvertake: true, expectPass: false, label: "non-FIFO marker overtake", params: { starter: 0, snapshotAt: 8, appDelay: 8, markerDelay: 1, traffic: 8, fifo: false, seed: 37 } }
     ];
-    var passed = 0;
-    cases.forEach(function (params, index) {
-      var result = simulate(params);
-      if (index < 3 && result.analysis.pass) passed += 1;
-      if (index === 3 && !result.analysis.pass && result.analysis.markerOvertakes > 0) passed += 1;
+    var rows = cases.map(function (entry) {
+      var result = simulate(entry.params);
+      var checks = [
+        { name: "snapshot completes", passed: result.analysis.complete },
+        { name: "pass state matches expectation", passed: result.analysis.pass === entry.expectPass },
+        { name: "token ledger matches pass state", passed: (result.analysis.snapshotTotal === result.initialTotal) === entry.expectPass },
+        { name: "no receive without send", passed: result.analysis.receiveWithoutSend === 0 },
+        { name: "marker overtake matches expectation", passed: entry.expectOvertake ? result.analysis.markerOvertakes > 0 : result.analysis.markerOvertakes === 0 }
+      ];
+      if (entry.expectPass) {
+        checks.push({ name: "no missing channel messages", passed: result.analysis.missingChannel === 0 });
+        checks.push({ name: "no extra channel messages", passed: result.analysis.extraChannel === 0 });
+      } else {
+        checks.push({ name: "missing channel messages expose FIFO violation", passed: result.analysis.missingChannel > 0 });
+      }
+      return {
+        appMessages: result.analysis.appMessages,
+        channelAmount: result.analysis.channelAmount,
+        channelMessages: result.analysis.channelMessageCount,
+        checks: checks,
+        expectedPass: entry.expectPass,
+        label: entry.label,
+        markerOvertakes: result.analysis.markerOvertakes,
+        missingChannel: result.analysis.missingChannel,
+        passed: checks.every(function (check) { return check.passed; }),
+        snapshotTotal: result.analysis.snapshotTotal
+      };
     });
-    return { passed: passed, total: cases.length };
+    return {
+      cases: rows,
+      passed: rows.every(function (row) { return row.passed; }),
+      total: rows.length
+    };
   }
 
   var api = {

@@ -325,7 +325,7 @@ removed.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/chandy-lamport-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/chandy-lamport-lab.js?v=20260618b' | relative_url }}"></script>
 
 At the default setting, the snapshot starts at `P0` around time `8`. The lab's
 processes begin with token balances `[18, 14, 12]`, so the conserved total is
@@ -345,6 +345,31 @@ arrive before an older application message on the same channel. Then the
 receiver closes that channel too early. The later application message was sent
 before the sender's cut but is no longer recorded as channel state. The total
 can go missing.
+
+You can reproduce the audit from Node:
+
+```js
+const lab = require("./assets/js/chandy-lamport-lab.js");
+
+const audit = lab.auditChandyLamportLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.label,
+  expected: row.expectedPass ? "pass" : "fail",
+  snapshotTotal: row.snapshotTotal,
+  channelAmount: row.channelAmount,
+  missingChannel: row.missingChannel,
+  markerOvertakes: row.markerOvertakes,
+  passed: row.passed
+})));
+```
+
+The current deterministic grid has three FIFO cases that preserve the token
+ledger and one non-FIFO case that is supposed to fail. On the default failing
+case, the marker overtakes ten older application messages and the snapshot total
+drops from `44` to `25`.
 
 The source is intentionally small:
 [`assets/js/chandy-lamport-lab.js`]({{ '/assets/js/chandy-lamport-lab.js' | relative_url }}).
