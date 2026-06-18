@@ -346,12 +346,71 @@ To reproduce the deterministic audit grid from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/hash-flood-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 39;
+const EXPECTED_CASE_SHAPE = [
+  "1:flood:512/128:17/35:130816/961:512/9:512.000/7.000:9",
+  "2:flood:1024/256:91/50:523776/2003:1024/12:1024.000/6.000:9",
+  "3:mixed:768/128:23/20:61118/2246:348/12:288.100/8.000:6",
+  "4:random:768/128:23/20:2412/2334:15/13:9.000/10.000:6",
+  "5:flood:256/64:404/80:32640/497:256/9:256.000/6.050:9"
+];
+const COMMON_CHECK_NAMES = [
+  "weak rows match key count",
+  "keyed rows match key count",
+  "comparison counts finite",
+  "bucket accounting weak",
+  "bucket accounting keyed",
+  "lookup p95 finite"
+];
+const FLOOD_CHECK_NAMES = [
+  ...COMMON_CHECK_NAMES.slice(0, 5),
+  "flood keys share one weak bucket",
+  "flood comparisons are triangular",
+  "keyed mixer spreads flood set",
+  COMMON_CHECK_NAMES[5]
+];
+const EXPECTED_CHECKS_BY_CASE = [
+  FLOOD_CHECK_NAMES,
+  FLOOD_CHECK_NAMES,
+  COMMON_CHECK_NAMES,
+  COMMON_CHECK_NAMES,
+  FLOOD_CHECK_NAMES
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CHECKS_BY_CASE.reduce(
+  (sum, checks) => sum + checks.length,
+  0
+);
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.caseId}:${row.scenario}:${row.keys}/${row.buckets}:` +
+        `${row.seed}/${row.lookupMix}:` +
+        `${row.weakComparisons}/${row.keyedComparisons}:` +
+        `${row.weakMaxBucket}/${row.keyedMaxBucket}:` +
+        `${row.weakLookupP95.toFixed(3)}/${row.keyedLookupP95.toFixed(3)}:` +
+        `${row.totalChecks}`
+    ),
+    checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name))
+  };
+}
+
 const audit = lab.auditGrid();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  shape.checksByCase.every((checks, index) =>
+    sameList(checks, EXPECTED_CHECKS_BY_CASE[index] || [])
+  ) ? null : "checksByCase"
+].filter(Boolean);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   keys: row.keys,
@@ -371,12 +430,23 @@ if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
+    failed,
+    failures: audit.failures,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
