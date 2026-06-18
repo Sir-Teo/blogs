@@ -290,23 +290,97 @@ The artifact is a plain JavaScript module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/csp-script-lab.js");
-const EXPECTED_CRITICAL_CHECKS = 12;
-const EXPECTED_CASES = 20;
-const EXPECTED_CHECKS = 32;
+const EXPECTED_CRITICAL_CHECK_NAMES = [
+  "SHA-256 base64 test vector",
+  "strict-dynamic blocks parser-inserted CDN attacker",
+  "strict-dynamic records parser-inserted block",
+  "host allowlist admits compromised CDN script",
+  "strict-dynamic allows trusted runtime dependency",
+  "strict-dynamic dependency scenario stays non-attacker",
+  "nonce-only blocks un-nonced runtime dependency",
+  "unsafe-inline admits inline block and event handler",
+  "hash policy admits exact inline config",
+  "hash policy blocks injected inline attacker",
+  "strict-dynamic propagates to tainted runtime URL",
+  "tainted runtime URL is surfaced as a hazard"
+];
+const EXPECTED_CASE_KEYS = [
+  "hostAllowlist/inlineInjection",
+  "hostAllowlist/cdnCompromise",
+  "hostAllowlist/dynamicDependency",
+  "hostAllowlist/untrustedLoader",
+  "nonceOnly/inlineInjection",
+  "nonceOnly/cdnCompromise",
+  "nonceOnly/dynamicDependency",
+  "nonceOnly/untrustedLoader",
+  "nonceStrictDynamic/inlineInjection",
+  "nonceStrictDynamic/cdnCompromise",
+  "nonceStrictDynamic/dynamicDependency",
+  "nonceStrictDynamic/untrustedLoader",
+  "hashAndSelf/inlineInjection",
+  "hashAndSelf/cdnCompromise",
+  "hashAndSelf/dynamicDependency",
+  "hashAndSelf/untrustedLoader",
+  "unsafeInline/inlineInjection",
+  "unsafeInline/cdnCompromise",
+  "unsafeInline/dynamicDependency",
+  "unsafeInline/untrustedLoader"
+];
+const EXPECTED_POLICY_SHAPE = [
+  "hashAndSelf:4 cases/4 checks",
+  "hostAllowlist:4 cases/4 checks",
+  "nonceOnly:4 cases/4 checks",
+  "nonceStrictDynamic:4 cases/4 checks",
+  "unsafeInline:4 cases/4 checks"
+];
+const EXPECTED_SCENARIO_SHAPE = [
+  "cdnCompromise:5 cases/5 checks",
+  "dynamicDependency:5 cases/5 checks",
+  "inlineInjection:5 cases/5 checks",
+  "untrustedLoader:5 cases/5 checks"
+];
+const EXPECTED_CRITICAL_CHECKS = EXPECTED_CRITICAL_CHECK_NAMES.length;
+const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
+const EXPECTED_CHECKS = EXPECTED_CRITICAL_CHECKS + EXPECTED_CASES;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function auditShape(audit) {
+  return {
+    criticalChecks: audit.criticalChecks.map((row) => row.check),
+    cases: audit.cases.map((row) => `${row.policy}/${row.scenario}`),
+    byPolicy: audit.byPolicy.map(
+      (row) => `${row.policy}:${row.cases} cases/${row.totalChecks} checks`
+    ),
+    byScenario: audit.byScenario.map(
+      (row) => `${row.scenario}:${row.cases} cases/${row.totalChecks} checks`
+    )
+  };
+}
 
 console.log(lab.hashSourceFor("abc"));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditCspScriptLab();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const shapeErrors = [
+  sameList(shape.criticalChecks, EXPECTED_CRITICAL_CHECK_NAMES) ? null : "criticalChecks",
+  sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  sameList(shape.byPolicy, EXPECTED_POLICY_SHAPE) ? null : "byPolicy",
+  sameList(shape.byScenario, EXPECTED_SCENARIO_SHAPE) ? null : "byScenario"
+].filter(Boolean);
 console.table(audit.byPolicy);
 console.table(audit.byScenario);
 console.table(audit.criticalChecks);
-if (audit.checked !== EXPECTED_CHECKS) {
+if (audit.checked !== EXPECTED_CHECKS || audit.total !== EXPECTED_CHECKS) {
   throw new Error("unexpected check count: " + audit.checked);
 }
 if (
@@ -321,12 +395,16 @@ if (
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   failedCriticalChecks.length ||
   !audit.ok ||
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
     failed,
     failedCriticalChecks,
     passedChecks: audit.passedChecks,
