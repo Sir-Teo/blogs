@@ -296,17 +296,47 @@ The compact reproduction check is:
 
 ```js
 const lab = require("./assets/js/p2-quantile-lab.js");
+const EXPECTED_SCENARIOS = 3;
+const EXPECTED_PERCENTILES = 3;
+const EXPECTED_CASES = 9;
+const EXPECTED_DETAIL_ROWS = 10;
+const EXPECTED_CHECKS = 65;
 
 const audit = lab.auditP2QuantileLab();
-const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
-if (audit.total !== 9 || audit.totalChecks !== 65) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+const auditShape = {
+  scenarios: audit.scenarios,
+  scenarioRows: new Set(audit.cases.map((row) => row.scenario)).size,
+  percentiles: new Set(audit.cases.map((row) => row.percentile)).size,
+  rows: audit.cases.length,
+  detailRows: audit.details.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.scenarios !== EXPECTED_SCENARIOS ||
+    auditShape.scenarioRows !== EXPECTED_SCENARIOS ||
+    auditShape.percentiles !== EXPECTED_PERCENTILES ||
+    auditShape.rows !== EXPECTED_CASES ||
+    auditShape.detailRows !== EXPECTED_DETAIL_ROWS ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+const failedCases = audit.details.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (failedCases.length || !audit.ok || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    summary,
+    errors: audit.errors.slice(0, 10),
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 
 console.table(audit.cases.map((row) => ({
