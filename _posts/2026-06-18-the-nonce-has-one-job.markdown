@@ -349,7 +349,13 @@ Reproduce it from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/gcm-nonce-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 45;
+
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   seed: row.seed,
@@ -365,13 +371,22 @@ console.table(audit.cases.map((row) => ({
 })));
 console.table(audit.byScenario);
 console.table(audit.criticalChecks);
-if (audit.total !== 5 || audit.totalChecks !== 45) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
 }
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 NODE
 ```
 
