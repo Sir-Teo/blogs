@@ -308,16 +308,24 @@
     };
   }
 
-  function failedAuditChecks(audit) {
+  function auditChecks(audit) {
     return [
-      { name: "counter-total", ok: audit.counterTotalOk },
-      { name: "monitored-intervals", ok: audit.monitoredOk },
-      { name: "unmonitored-min-bound", ok: audit.unmonitoredOk },
-      { name: "threshold-no-miss", ok: audit.noMissOk },
-      { name: "guaranteed-threshold", ok: audit.guaranteedOk },
-      { name: "minimum-n-over-k", ok: audit.minBoundOk },
-      { name: "top-k-range", ok: audit.topKBounded }
-    ].filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+      { name: "counter-total", passed: audit.counterTotalOk },
+      { name: "monitored-intervals", passed: audit.monitoredOk },
+      { name: "unmonitored-min-bound", passed: audit.unmonitoredOk },
+      { name: "threshold-no-miss", passed: audit.noMissOk },
+      { name: "guaranteed-threshold", passed: audit.guaranteedOk },
+      { name: "minimum-n-over-k", passed: audit.minBoundOk },
+      { name: "top-k-range", passed: audit.topKBounded }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
+  }
+
+  function passedAuditChecks(checks) {
+    return checks.filter(function (check) { return check.passed; }).length;
   }
 
   function evaluate(raw) {
@@ -381,17 +389,21 @@
     ];
     var cases = scenarios.map(function (params, index) {
       var result = evaluate(params);
-      var failedChecks = failedAuditChecks(result.audit);
+      var checks = auditChecks(result.audit);
+      var failedChecks = failedAuditChecks(checks);
       return {
+        checks: checks,
         counters: result.params.counters,
         events: result.params.events,
         failedChecks: failedChecks,
         minCount: result.minCount,
         noMissCondition: result.threshold.noMissCondition,
-        passed: result.audit.passed,
+        passed: checks.every(function (check) { return check.passed; }),
+        passedChecks: passedAuditChecks(checks),
         reported: result.threshold.reported,
         scenario: index === 0 ? "default" : "stress-" + index,
         thresholdCount: result.thresholdCount,
+        totalChecks: checks.length,
         trueHeavy: result.threshold.trueHeavy,
         vocabulary: result.params.vocabulary
       };
@@ -403,26 +415,41 @@
       deterministicA.query.lower === deterministicB.query.lower &&
       deterministicA.query.upper === deterministicB.query.upper &&
       deterministicA.threshold.reported === deterministicB.threshold.reported;
+    var deterministicChecks = [{ name: "fixed-seed-replay", passed: deterministic }];
     cases.push({
+      checks: deterministicChecks,
       counters: deterministicA.params.counters,
       events: deterministicA.params.events,
-      failedChecks: deterministic ? [] : ["fixed-seed-replay"],
+      failedChecks: failedAuditChecks(deterministicChecks),
       minCount: deterministicA.minCount,
       noMissCondition: deterministicA.threshold.noMissCondition,
       passed: deterministic,
+      passedChecks: passedAuditChecks(deterministicChecks),
       reported: deterministicA.threshold.reported,
       scenario: "fixed-seed-replay",
       thresholdCount: deterministicA.thresholdCount,
+      totalChecks: deterministicChecks.length,
       trueHeavy: deterministicA.threshold.trueHeavy,
       vocabulary: deterministicA.params.vocabulary
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        failedChecks: row.failedChecks,
+        scenario: row.scenario
+      };
+    });
     return {
       cases: cases,
       details: cases,
       deterministic: deterministic,
-      ok: passed === cases.length,
+      failures: failures,
+      ok: passed === cases.length && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

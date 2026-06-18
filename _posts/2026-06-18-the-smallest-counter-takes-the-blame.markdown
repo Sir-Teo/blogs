@@ -320,7 +320,7 @@ That makes the no-miss certificate visible on first load.
   <p class="space-saving-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/space-saving-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/space-saving-lab.js?v=20260618c' | relative_url }}"></script>
 
 The audit is part of the artifact, not just a visual sanity check:
 
@@ -338,17 +338,26 @@ console.table(audit.cases.map((row) => ({
   trueHeavy: row.trueHeavy,
   reported: row.reported,
   noMiss: row.noMissCondition,
-  passed: row.passed
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit scenarios passed`);
+if (
+  !audit.ok ||
+  audit.passed !== 6 ||
+  audit.total !== 6 ||
+  audit.passedChecks !== 36 ||
+  audit.totalChecks !== 36
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} scenarios passed`);
+console.log(
+  `${audit.passed}/${audit.total} audit scenarios and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
-The checks cover five parameter settings plus a fixed-seed replay. They assert
-that:
+The 36 named checks cover five parameter settings plus a fixed-seed replay.
+They assert that:
 
 - the sum of stored counters equals the stream length;
 - every monitored item's exact count lies in its stored interval;
@@ -356,7 +365,7 @@ that:
 - when the threshold is above the minimum counter, no true heavy hitter is
   unmonitored;
 - any item whose lower bound crosses the threshold is truly above threshold;
-  and
+- the top-`k` precision/recall summaries stay in probability range; and
 - the implementation is deterministic for a fixed seed.
 
 ## Why This Is Not Just Misra-Gries With Different Labels
