@@ -346,7 +346,12 @@ To reproduce the deterministic audit grid from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/hash-flood-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 39;
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   keys: row.keys,
@@ -358,19 +363,22 @@ console.table(audit.cases.map((row) => ({
   amplification: row.amplification.toFixed(1) + "x",
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 39 ||
-  audit.totalChecks !== 39
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
-console.log(
-  `${audit.passed}/${audit.total} audit cases and ` +
-  `${audit.passedChecks}/${audit.totalChecks} checks passed`
-);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
+console.log(summary);
 NODE
 ```
 
