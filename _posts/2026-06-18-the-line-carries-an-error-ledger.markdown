@@ -283,7 +283,62 @@ To reproduce those cases from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/bresenham-line-lab.js");
+const EXPECTED_CASE_KEYS = [
+  "shallow:1,13->25,5:24/8:1/-1:25",
+  "steep:4,15->12,1:8/14:1/-1:15",
+  "backward:25,3->3,15:22/12:-1/1:23",
+  "diagonal:2,3->22,15:20/12:1/1:21",
+  "vertical:14,1->14,16:0/15:0/1:16"
+];
+const EXPECTED_LOCAL_CHECK_NAMES = [
+  "starts at requested endpoint",
+  "ends at requested endpoint",
+  "one adjacent move per pulse",
+  "point count is max delta + 1",
+  "integer decision state",
+  "half-cell error bound"
+];
+const EXPECTED_CRITICAL_CHECK_NAMES = [
+  "shallow line advances x on step 1",
+  "vertical x coordinate stays fixed",
+  "backward scenario exercises negative x direction"
+];
+const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
+const EXPECTED_CHECKS =
+  EXPECTED_CASES * EXPECTED_LOCAL_CHECK_NAMES.length +
+  EXPECTED_CRITICAL_CHECK_NAMES.length;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.scenario}:${row.x0},${row.y0}->${row.x1},${row.y1}:` +
+        `${row.dx}/${row.dy}:${row.sx}/${row.sy}:${row.points}`
+    ),
+    localChecksByCase: audit.cases.map(
+      (row) => row.checks.map((check) => check.name)
+    ),
+    criticalChecks: audit.criticalChecks.map((row) => row.name)
+  };
+}
+
 const audit = lab.auditBresenhamLineLab();
+const shape = auditShape(audit);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedCriticalChecks = audit.criticalChecks.filter((row) => !row.ok);
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  shape.localChecksByCase.every((checks) => sameList(checks, EXPECTED_LOCAL_CHECK_NAMES))
+    ? null
+    : "localChecksByCase",
+  sameList(shape.criticalChecks, EXPECTED_CRITICAL_CHECK_NAMES) ? null : "criticalChecks"
+].filter(Boolean);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   dx: row.dx,
@@ -297,9 +352,31 @@ console.table(audit.criticalChecks.map((row) => ({
   check: row.name,
   passed: row.ok
 })));
-const summary = `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  shapeErrors.length ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
+  failed.length ||
+  failedCriticalChecks.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
+    failed,
+    failedCriticalChecks,
+    errors: audit.errors,
+    expectedCases: EXPECTED_CASES,
+    expectedChecks: EXPECTED_CHECKS,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
