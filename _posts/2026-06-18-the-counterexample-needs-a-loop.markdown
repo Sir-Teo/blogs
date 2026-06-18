@@ -234,7 +234,7 @@ the debt is still owed.
     grant is continuously enabled around the loop.
   </p>
 </div>
-<script defer src="{{ '/assets/js/temporal-lasso-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/temporal-lasso-lab.js?v=20260618b' | relative_url }}"></script>
 
 With the default controls, the left side finds the finite trace:
 
@@ -352,9 +352,22 @@ The lab exports the checker it uses:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/temporal-lasso-lab.js");
+
 const audit = lab.audit();
-if (!audit.pass) throw new Error(JSON.stringify(audit.failures));
-console.log("temporal lasso audit passed");
+console.table(audit.byClaim);
+console.table(audit.cases.map((row) => ({
+  case: row.name,
+  claim: row.claim,
+  safety: row.safetyFound ? row.safetyTerminal : "none",
+  lasso: row.lassoFound ? row.cycleStates : "none",
+  events: row.cycleEvents || "none",
+  product: row.productNodes,
+  passed: row.passed
+})));
+if (!audit.pass || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} temporal lasso cases passed`);
 NODE
 ```
 

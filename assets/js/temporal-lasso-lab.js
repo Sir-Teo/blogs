@@ -642,44 +642,129 @@
 
   function auditTemporalLassoLab() {
     var failures = [];
+    var cases = [];
 
-    function check(condition, message) {
-      if (!condition) failures.push(message);
+    function cycleStates(result) {
+      if (!result.liveness.found) return "";
+      var states = result.liveness.cycle.map(function (edge) {
+        return productState(edge.from);
+      });
+      if (result.liveness.cycle.length) {
+        states.push(productState(result.liveness.cycle[result.liveness.cycle.length - 1].to));
+      }
+      return states.join(" -> ");
     }
 
-    var safe = evaluate({ conflict: "off", skip: "off", outage: "off", fairness: "none" });
-    check(!safe.safety.found, "conflict disabled should have no safety bad prefix");
-    check(!safe.liveness.found, "no skip or outage should have no liveness lasso");
-
-    var unsafe = evaluate({ conflict: "on", skip: "off", outage: "off", fairness: "none" });
-    check(unsafe.safety.found, "conflict enabled should produce a safety prefix");
-    check(unsafe.safety.terminal === "both", "safety prefix should end at both-green");
-
-    var unfair = evaluate({ conflict: "off", skip: "on", outage: "off", fairness: "none" });
-    check(unfair.liveness.found, "unfair skip loop should violate request-response liveness");
-    check(unfair.liveness.cycle.every(function (edge) { return edge.event !== "grant"; }), "lasso cycle should avoid grants");
-
-    var weakFair = evaluate({ conflict: "off", skip: "on", outage: "off", fairness: "weak" });
-    check(!weakFair.liveness.found, "weak grant fairness should rule out the pure skip lasso");
-
-    var outage = evaluate({ conflict: "off", skip: "on", outage: "on", fairness: "weak" });
-    check(outage.liveness.found, "outage loop should remain a liveness violation under grant fairness");
-    check(outage.liveness.cycle.some(function (edge) {
-      return productState(edge.from) === "outage" || productState(edge.to) === "outage";
-    }), "outage lasso should visit outage");
-
-    [safe, unsafe, unfair, weakFair, outage].forEach(function (result) {
-      check(result.productNodeCount <= 6, "product graph should stay tiny");
+    function hasWeakFairDisabledGrant(result) {
       if (result.liveness.found && result.params.fairness === "weak") {
-        check(result.liveness.component.some(function (key) {
+        return result.liveness.component.some(function (key) {
           return !result.liveGraph.grantEnabled(result.liveness.product.nodes[key].state);
-        }), "weak-fair lasso should include a state where grant is not enabled");
+        });
       }
+      return false;
+    }
+
+    function addCase(name, claim, raw, assertions) {
+      var result = evaluate(raw);
+      var failedChecks = [];
+
+      function check(condition, message) {
+        if (!condition) failedChecks.push(message);
+      }
+
+      assertions(result, check);
+      check(result.productNodeCount <= 6, "product graph should stay tiny");
+      if (result.liveness.found) {
+        check(result.liveness.cycle.every(function (edge) { return edge.event !== "grant"; }), "lasso cycle should avoid grants");
+      }
+      if (result.liveness.found && result.params.fairness === "weak") {
+        check(hasWeakFairDisabledGrant(result), "weak-fair lasso should include a state where grant is not enabled");
+      }
+
+      var row = {
+        claim: claim,
+        cycleEvents: result.liveness.found ? result.liveness.cycle.map(function (edge) { return edge.event; }).join(" -> ") : "",
+        cycleLength: result.liveness.cycle.length,
+        cycleStates: cycleStates(result),
+        failedChecks: failedChecks,
+        lassoFound: result.liveness.found,
+        name: name,
+        params: result.params,
+        passed: failedChecks.length === 0,
+        productNodes: result.productNodeCount,
+        safetyFound: result.safety.found,
+        safetySteps: result.safety.path.length,
+        safetyTerminal: result.safety.terminal,
+        weakFairDisabledGrant: hasWeakFairDisabledGrant(result)
+      };
+      cases.push(row);
+      failedChecks.forEach(function (failure) {
+        failures.push(name + ": " + failure);
+      });
+    }
+
+    addCase("safe baseline", "no witness", { conflict: "off", skip: "off", outage: "off", fairness: "none" }, function (result, check) {
+      check(!result.safety.found, "conflict disabled should have no safety bad prefix");
+      check(!result.liveness.found, "no skip or outage should have no liveness lasso");
     });
 
+    addCase("bad switch", "safety prefix", { conflict: "on", skip: "off", outage: "off", fairness: "none" }, function (result, check) {
+      check(result.safety.found, "conflict enabled should produce a safety prefix");
+      check(result.safety.terminal === "both", "safety prefix should end at both-green");
+    });
+
+    addCase("unfair skip", "liveness lasso", { conflict: "off", skip: "on", outage: "off", fairness: "none" }, function (result, check) {
+      check(result.liveness.found, "unfair skip loop should violate request-response liveness");
+    });
+
+    addCase("weak fairness", "fairness filter", { conflict: "off", skip: "on", outage: "off", fairness: "weak" }, function (result, check) {
+      check(!result.liveness.found, "weak grant fairness should rule out the pure skip lasso");
+    });
+
+    addCase("outage under fairness", "capability loss", { conflict: "off", skip: "on", outage: "on", fairness: "weak" }, function (result, check) {
+      check(result.liveness.found, "outage loop should remain a liveness violation under grant fairness");
+      check(result.liveness.cycle.some(function (edge) {
+        return productState(edge.from) === "outage" || productState(edge.to) === "outage";
+      }), "outage lasso should visit outage");
+    });
+
+    var byClaimMap = {};
+    cases.forEach(function (row) {
+      if (!byClaimMap[row.claim]) {
+        byClaimMap[row.claim] = {
+          claim: row.claim,
+          cases: 0,
+          lassoWitnesses: 0,
+          maxProductNodes: 0,
+          names: [],
+          passed: 0,
+          safetyWitnesses: 0
+        };
+      }
+      byClaimMap[row.claim].cases += 1;
+      byClaimMap[row.claim].names.push(row.name);
+      byClaimMap[row.claim].maxProductNodes = Math.max(byClaimMap[row.claim].maxProductNodes, row.productNodes);
+      if (row.lassoFound) byClaimMap[row.claim].lassoWitnesses += 1;
+      if (row.safetyFound) byClaimMap[row.claim].safetyWitnesses += 1;
+      if (row.passed) byClaimMap[row.claim].passed += 1;
+    });
+
+    var byClaim = Object.keys(byClaimMap).sort().map(function (claim) {
+      var group = byClaimMap[claim];
+      group.names = group.names.join(", ");
+      return group;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var total = cases.length;
+
     return {
+      byClaim: byClaim,
+      cases: cases,
       failures: failures,
-      pass: failures.length === 0
+      ok: failures.length === 0,
+      pass: failures.length === 0,
+      passed: passed,
+      total: total
     };
   }
 
