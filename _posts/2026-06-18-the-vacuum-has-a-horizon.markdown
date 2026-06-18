@@ -290,27 +290,62 @@ You can reproduce the audit from Node:
 
 ```js
 const lab = require("./assets/js/mvcc-vacuum-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_SCENARIO_ROWS = 4;
-const EXPECTED_COMPARISONS = 1;
+const EXPECTED_SCENARIO_SHAPE = [
+  "1:no reader, cool keys:reader=free:versions=32:pinned=0:bloat=1.00:reclaimed=180:avg=1.00:max=1:horizon=182:vacuumRuns=15:invalid=0:4/4",
+  "2:hot keys, long reader:reader=held:versions=176:pinned=144:bloat=5.50:reclaimed=36:avg=5.50:max=36:horizon=38:vacuumRuns=15:invalid=0:4/4",
+  "3:larger table, long reader:reader=held:versions=392:pinned=336:bloat=7.00:reclaimed=84:avg=7.00:max=49:horizon=86:vacuumRuns=15:invalid=0:4/4",
+  "4:larger table, free horizon:reader=free:versions=80:pinned=0:bloat=1.00:reclaimed=520:avg=1.00:max=1:horizon=522:vacuumRuns=13:invalid=0:4/4"
+];
+const EXPECTED_CONTRAST_SHAPE = [
+  "1:base=default, no reader:48/0/1.00/360:held=default, pinned reader:336/288/7.00/72:failed=none:11/11"
+];
+const EXPECTED_CASES = EXPECTED_SCENARIO_SHAPE.length + EXPECTED_CONTRAST_SHAPE.length;
 const EXPECTED_CHECKS = 27;
 
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function scenarioShape(row, index) {
+  return `${index + 1}:${row.label}:reader=${row.readerActiveAtEnd ? "held" : "free"}:` +
+    `versions=${row.versions}:pinned=${row.pinned}:bloat=${row.bloat.toFixed(2)}:` +
+    `reclaimed=${row.reclaimed}:avg=${row.avgReadSteps.toFixed(2)}:max=${row.maxReadSteps}:` +
+    `horizon=${row.horizon}:vacuumRuns=${row.vacuumRuns}:invalid=${row.invalidRemovals}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
+function contrastShape(row, index) {
+  return `${index + 1}:base=${row.base.label}:` +
+    `${row.base.versions}/${row.base.pinned}/${row.base.bloat.toFixed(2)}/${row.base.reclaimed}:` +
+    `held=${row.held.label}:` +
+    `${row.held.versions}/${row.held.pinned}/${row.held.bloat.toFixed(2)}/${row.held.reclaimed}:` +
+    `failed=${row.failedChecks.join("|") || "none"}:${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditMvccVacuumLab();
+const shape = {
+  comparisons: audit.comparisons.map(contrastShape),
+  scenarios: audit.cases.map(scenarioShape)
+};
 const auditShape = {
-  scenarioRows: audit.cases.length,
   comparisons: audit.comparisons.length,
+  scenarioRows: audit.cases.length,
   passed: audit.passed,
   total: audit.total,
   passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
-if (
-  auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
-  auditShape.comparisons !== EXPECTED_COMPARISONS ||
-  auditShape.total !== EXPECTED_CASES ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.scenarios, EXPECTED_SCENARIO_SHAPE)) {
+  shapeErrors.push({ name: "scenarios", actual: shape.scenarios, expected: EXPECTED_SCENARIO_SHAPE });
+}
+if (!sameList(shape.comparisons, EXPECTED_CONTRAST_SHAPE)) {
+  shapeErrors.push({
+    name: "comparisons",
+    actual: shape.comparisons,
+    expected: EXPECTED_CONTRAST_SHAPE
+  });
 }
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -319,11 +354,15 @@ const failedComparisons = audit.comparisons.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 if (!audit.ok || failedCases.length || failedComparisons.length ||
+    shapeErrors.length ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
     audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
     failedCases,
     failedComparisons,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
