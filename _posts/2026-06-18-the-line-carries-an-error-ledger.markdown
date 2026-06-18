@@ -247,7 +247,7 @@ or both.
   <p class="bres-line-lab__note">The lab uses integer endpoints on a small pixel grid. It visualizes aliased line rasterization, not antialiasing, coverage masks, joins, caps, clipping, or subpixel stroke rules.</p>
 </div>
 
-<script defer src="{{ '/assets/js/bresenham-line-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/bresenham-line-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Audit Checks
 
@@ -274,7 +274,9 @@ audit:       pass
 
 The vertical case is included for a boring reason: boring cases are where
 generalized octant code often leaks assumptions. The backward case forces a
-negative `x` direction. The steep case swaps the major axis.
+negative `x` direction. The steep case swaps the major axis. The exported audit
+reports 33 named checks: 30 segment-local invariants plus three cross-scenario
+guardrails for the shallow, vertical, and backward cases.
 
 To reproduce those cases from the repository root:
 
@@ -286,13 +288,20 @@ console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   dx: row.dx,
   dy: row.dy,
-  points: row.points,
+  points: `${row.points}/${row.expectedPoints}`,
   maxError: row.maxAxisError.toFixed(3),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+console.table(audit.criticalChecks.map((row) => ({
+  check: row.name,
+  passed: row.ok
+})));
+const summary = `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 

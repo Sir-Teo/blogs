@@ -61,6 +61,15 @@
     step: 12
   };
 
+  var AUDIT_CHECKS = [
+    { key: "start", label: "starts at requested endpoint" },
+    { key: "endpoint", label: "ends at requested endpoint" },
+    { key: "adjacent", label: "one adjacent move per pulse" },
+    { key: "count", label: "point count is max delta + 1" },
+    { key: "integerState", label: "integer decision state" },
+    { key: "axisErrorBound", label: "half-cell error bound" }
+  ];
+
   function clamp(value, lo, hi) {
     return Math.max(lo, Math.min(hi, value));
   }
@@ -184,8 +193,20 @@
 
   function auditCase(scenario) {
     var result = evaluate({ scenario: scenario, step: 999 });
-    var failedChecks = Object.keys(result.audit).filter(function (name) {
-      return name !== "passed" && !result.audit[name];
+    var checks = AUDIT_CHECKS.map(function (check) {
+      return {
+        key: check.key,
+        name: check.label,
+        ok: result.audit[check.key]
+      };
+    });
+    var passedChecks = checks.filter(function (check) {
+      return check.ok;
+    }).length;
+    var failedChecks = checks.filter(function (check) {
+      return !check.ok;
+    }).map(function (check) {
+      return check.name;
     });
     return {
       scenario: scenario,
@@ -202,7 +223,10 @@
       expectedPoints: Math.max(result.run.dx, result.run.dy) + 1,
       maxAxisError: result.maxAxisError,
       passed: result.audit.passed,
-      failedChecks: failedChecks
+      checks: checks,
+      failedChecks: failedChecks,
+      passedChecks: passedChecks,
+      totalChecks: checks.length
     };
   }
 
@@ -213,17 +237,53 @@
       assert(row.points === row.expectedPoints, row.scenario + " count mismatch");
     });
     var shallow = evaluate({ scenario: "shallow" });
-    assert(shallow.run.points[1].x === 2, "shallow line should advance x on step 1");
     var vertical = evaluate({ scenario: "vertical" });
-    assert(vertical.run.points.every(function (point) { return point.x === vertical.line.x0; }), "vertical x should stay fixed");
     var backward = evaluate({ scenario: "backward" });
-    assert(backward.run.sx === -1 && backward.run.sy === 1, "backward scenario should exercise negative x direction");
+    var criticalChecks = [
+      {
+        name: "shallow line advances x on step 1",
+        ok: shallow.run.points[1].x === 2
+      },
+      {
+        name: "vertical x coordinate stays fixed",
+        ok: vertical.run.points.every(function (point) { return point.x === vertical.line.x0; })
+      },
+      {
+        name: "backward scenario exercises negative x direction",
+        ok: backward.run.sx === -1 && backward.run.sy === 1
+      }
+    ];
+    criticalChecks.forEach(function (check) {
+      assert(check.ok, check.name);
+    });
+    var passedCases = cases.filter(function (row) { return row.passed; }).length;
+    var caseChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalCaseChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var passedChecks = caseChecks + criticalChecks.filter(function (check) { return check.ok; }).length;
+    var totalChecks = totalCaseChecks + criticalChecks.length;
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (check) {
+        errors.push(row.scenario + ": " + check);
+      });
+    });
+    criticalChecks.forEach(function (check) {
+      if (!check.ok) errors.push(check.name);
+    });
     return {
-      ok: true,
+      ok: passedCases === cases.length && passedChecks === totalChecks,
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      passed: passedCases,
+      passedChecks: passedChecks,
       scenarios: Object.keys(SCENARIOS).length,
       shallowPoints: shallow.run.points.length,
+      totalChecks: totalChecks,
       total: cases.length,
       verticalPoints: vertical.run.points.length
     };
@@ -388,14 +448,9 @@
 
   function drawAudit(ctx, box, result) {
     panel(ctx, box, "audit", "small enough to exhaust, strict enough to catch folklore");
-    var rows = [
-      ["starts at requested endpoint", result.audit.start],
-      ["ends at requested endpoint", result.audit.endpoint],
-      ["one adjacent move per pulse", result.audit.adjacent],
-      ["point count is max delta + 1", result.audit.count],
-      ["integer decision state", result.audit.integerState],
-      ["half-cell error bound", result.audit.axisErrorBound]
-    ];
+    var rows = AUDIT_CHECKS.map(function (check) {
+      return [check.label, result.audit[check.key]];
+    });
     var y = box.y + 66;
     var step = clamp(Math.floor((box.h - 78) / rows.length), 22, 30);
     rows.forEach(function (row) {
