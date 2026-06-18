@@ -296,21 +296,40 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/hopcroft-karp-lab.js");
+const EXPECTED_GROUPS = 5;
+const EXPECTED_NAMED_CASES = 4;
+const EXPECTED_EXHAUSTIVE_CASES = 74954;
+const EXPECTED_CHECKS = 1174332;
 
 const audit = lab.auditHopcroftKarp();
 console.table(audit.byPhaseCount);
-if (audit.exhaustiveCases !== 74954) {
-  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
+const auditShape = {
+  namedRows: audit.cases.length,
+  exhaustiveCases: audit.exhaustiveCases,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.namedRows !== EXPECTED_NAMED_CASES ||
+    auditShape.exhaustiveCases !== EXPECTED_EXHAUSTIVE_CASES ||
+    auditShape.total !== EXPECTED_GROUPS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passed !== 5 || audit.total !== 5 ||
-    audit.passedChecks !== 1174332 || audit.totalChecks !== 1174332) {
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const exhaustiveFailures = audit.exhaustive.failedChecks.slice(0, 10);
+if (!audit.ok || failedCases.length || !audit.exhaustive.passed ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
-    issues: audit.issues,
-    passed: audit.passed,
-    passedChecks: audit.passedChecks,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    issues: audit.issues.slice(0, 10),
+    failedCases,
+    exhaustiveFailures,
+    auditShape
   }, null, 2));
 }
 console.log(audit.exhaustiveCases + " exhaustive bipartite graphs checked");
