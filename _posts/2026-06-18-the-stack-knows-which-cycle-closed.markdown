@@ -271,15 +271,30 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/tarjan-scc-lab.js");
+const EXPECTED_NAMED_CASES = 4;
+const EXPECTED_AUDIT_GROUPS = 5;
+const EXPECTED_EXHAUSTIVE_SIZES = 4;
+const EXPECTED_EXHAUSTIVE_CASES = 66066;
+const EXPECTED_CHECKS = 330350;
 
 const audit = lab.auditTarjanScc();
 console.table(audit.byComponentCount);
 console.table(audit.exhaustive.bySize);
-if (audit.exhaustiveCases !== 66066) {
-  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveCases);
-}
-if (audit.totalChecks !== 330350) {
-  throw new Error("unexpected audit check count: " + audit.totalChecks);
+const auditShape = {
+  namedCases: audit.cases.length,
+  auditGroups: audit.total,
+  exhaustiveSizes: audit.exhaustive.bySize.length,
+  exhaustiveCases: audit.exhaustiveCases,
+  totalChecks: audit.totalChecks
+};
+if (
+  auditShape.namedCases !== EXPECTED_NAMED_CASES ||
+  auditShape.auditGroups !== EXPECTED_AUDIT_GROUPS ||
+  auditShape.exhaustiveSizes !== EXPECTED_EXHAUSTIVE_SIZES ||
+  auditShape.exhaustiveCases !== EXPECTED_EXHAUSTIVE_CASES ||
+  auditShape.totalChecks !== EXPECTED_CHECKS
+) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 console.log(audit.exhaustiveCases + " exhaustive graphs checked");
 console.table(audit.cases.map((row) => ({
@@ -294,8 +309,20 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} audit groups and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.issues, null, 2));
+const failedNamedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedExhaustiveSizes = audit.exhaustive.bySize.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedNamedCases.length || failedExhaustiveSizes.length ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    issues: audit.issues,
+    failedNamedCases,
+    failedExhaustiveSizes,
+    auditShape
+  }, null, 2));
 }
 console.log(summary);
 NODE
