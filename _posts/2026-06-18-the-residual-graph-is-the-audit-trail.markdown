@@ -287,7 +287,7 @@ cut certificate.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/residual-flow-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/residual-flow-lab.js?v=20260618c' | relative_url }}"></script>
 
 In the default rail network, BFS finds five augmenting paths:
 
@@ -317,15 +317,19 @@ three path rules:
 const lab = require("./assets/js/residual-flow-lab.js");
 
 const audit = lab.auditResidualFlowLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+if (!audit.ok || audit.passed !== 9 || audit.total !== 9 ||
+    audit.passedChecks !== 72 || audit.totalChecks !== 72) {
   throw new Error(JSON.stringify({
-    failed,
+    failures: audit.failures,
     passed: audit.passed,
-    total: audit.total
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
   }, null, 2));
 }
 
+console.log(`${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 console.table(audit.cases.map((row) => ({
   network: row.example,
   rule: row.rule,
@@ -339,8 +343,9 @@ console.table(audit.cases.map((row) => ({
 
 For each row, it checks every intermediate flow for capacity and conservation,
 checks that each augmenting path uses positive residual arcs with the stated
-bottleneck, and checks that the terminal flow equals both the terminal cut and
-a brute-force min-cut oracle.
+bottleneck, checks that the terminal residual graph has no $$s \to t$$ path,
+and checks that the terminal flow equals both the terminal cut and a brute-force
+min-cut oracle. The published sweep passed 72/72 named checks.
 
 ## Why The Final Cut Proves It
 

@@ -324,27 +324,57 @@
   }
 
   function auditResult(result) {
-    var phaseChecks = result.states.every(function (state) {
+    var finiteStates = result.states.every(function (state) {
+      return isFinite(state.flow) && isFinite(state.cut) && (state.path || isFinite(state.augment));
+    });
+    var capacityOk = true;
+    var conservationOk = true;
+    var positivePathResiduals = true;
+    var bottleneckMatchesPath = true;
+    result.states.forEach(function (state) {
       var flowCheck = checkFlow(result.graph, state.edges);
-      if (!flowCheck.capacityOk || !flowCheck.conservationOk) return false;
+      if (!flowCheck.capacityOk) capacityOk = false;
+      if (!flowCheck.conservationOk) conservationOk = false;
       if (state.path) {
         var bottleneck = state.path.reduce(function (min, arc) { return Math.min(min, arc.residual); }, Infinity);
-        if (bottleneck !== state.augment) return false;
-        return state.path.every(function (arc) { return arc.residual > 0; });
+        if (bottleneck !== state.augment) bottleneckMatchesPath = false;
+        if (!state.path.every(function (arc) { return arc.residual > 0; })) positivePathResiduals = false;
       }
-      return true;
     });
     var finalState = result.states[result.states.length - 1];
     var minCut = bruteForceMinCut(result.graph, result.graph.edges);
     var terminalNoPath = finalState.terminal && finalState.reachable[result.graph.sink] === false;
-    var equality = finalState.flow === finalState.cut && finalState.cut === minCut.capacity;
+    var flowEqualsTerminalCut = finalState.flow === finalState.cut;
+    var terminalCutEqualsOracle = finalState.cut === minCut.capacity;
+    var phaseChecks = finiteStates && capacityOk && conservationOk && positivePathResiduals && bottleneckMatchesPath;
+    var equality = flowEqualsTerminalCut && terminalCutEqualsOracle;
     return {
       passed: phaseChecks && terminalNoPath && equality,
+      bottleneckMatchesPath: bottleneckMatchesPath,
+      capacityOk: capacityOk,
+      conservationOk: conservationOk,
       equality: equality,
+      finiteStates: finiteStates,
+      flowEqualsTerminalCut: flowEqualsTerminalCut,
       minCut: minCut.capacity,
       phaseChecks: phaseChecks,
+      positivePathResiduals: positivePathResiduals,
+      terminalCutEqualsOracle: terminalCutEqualsOracle,
       terminalNoPath: terminalNoPath
     };
+  }
+
+  function auditChecks(audit) {
+    return [
+      { name: "state metrics are finite", passed: audit.finiteStates },
+      { name: "all states respect edge capacities", passed: audit.capacityOk },
+      { name: "all intermediate flows conserve mass", passed: audit.conservationOk },
+      { name: "augmenting paths use positive residual arcs", passed: audit.positivePathResiduals },
+      { name: "path bottlenecks match augmentation amounts", passed: audit.bottleneckMatchesPath },
+      { name: "terminal residual graph has no s-t path", passed: audit.terminalNoPath },
+      { name: "terminal flow equals terminal cut", passed: audit.flowEqualsTerminalCut },
+      { name: "terminal cut equals brute-force min cut", passed: audit.terminalCutEqualsOracle }
+    ];
   }
 
   function evaluate(input) {
@@ -356,32 +386,55 @@
   function auditResidualFlowLab() {
     var total = 0;
     var passed = 0;
+    var totalChecks = 0;
+    var passedChecks = 0;
+    var failures = [];
     var rows = [];
     Object.keys(EXAMPLES).forEach(function (example) {
       ["bfs", "dfs", "widest"].forEach(function (rule) {
         total += 1;
         var result = evaluate({ example: example, rule: rule });
         var finalState = result.states[result.states.length - 1];
-        if (result.audit.passed) passed += 1;
+        var checks = auditChecks(result.audit);
+        var failedChecks = checks.filter(function (check) { return !check.passed; });
+        var casePassed = failedChecks.length === 0;
+        totalChecks += checks.length;
+        passedChecks += checks.length - failedChecks.length;
+        if (casePassed) passed += 1;
+        if (failedChecks.length) {
+          failures.push({
+            example: example,
+            rule: rule,
+            failedChecks: failedChecks.map(function (check) { return check.name; })
+          });
+        }
         rows.push({
           augmentations: result.summary.augmentations,
           cut: result.summary.cut,
           example: example,
-          failedChecks: Object.keys(result.audit).filter(function (key) {
-            return key !== "passed" && result.audit[key] === false;
-          }),
+          failedChecks: failedChecks.map(function (check) { return check.name; }),
           flow: result.summary.flow,
           graph: result.graph.label,
           minCut: result.audit.minCut,
-          passed: result.audit.passed,
+          passed: casePassed,
+          passedChecks: checks.length - failedChecks.length,
           phaseChecks: result.audit.phaseChecks,
           reachableCount: finalState.reachable.filter(Boolean).length,
           rule: rule,
-          terminalNoPath: result.audit.terminalNoPath
+          terminalNoPath: result.audit.terminalNoPath,
+          totalChecks: checks.length
         });
       });
     });
-    return { cases: rows, passed: passed, total: total };
+    return {
+      cases: rows,
+      failures: failures,
+      ok: passed === total && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: total,
+      totalChecks: totalChecks
+    };
   }
 
   function fmt(value) {
