@@ -369,6 +369,18 @@ const EXPECTED_CLAIM_SHAPE = [
   "no witness:1:8:0:0",
   "safety prefix:1:8:1:0"
 ];
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  claims: EXPECTED_CLAIMS,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 const audit = lab.audit();
 console.table(audit.byClaim);
@@ -383,10 +395,17 @@ console.table(audit.cases.map((row) => ({
   passed: row.passed
 })));
 const auditShape = {
+  totals: {
+    rows: audit.cases.length,
+    claims: audit.byClaim.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   caseChecks: audit.cases
     .map((row) => `${row.name}:${row.totalChecks}`)
     .sort(),
-  cases: audit.cases.length,
   claimChecks: audit.byClaim
     .map((row) => [
       row.claim,
@@ -395,20 +414,18 @@ const auditShape = {
       row.safetyWitnesses,
       row.lassoWitnesses
     ].join(":"))
-    .sort(),
-  claims: audit.byClaim.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+    .sort()
 };
-if (auditShape.cases !== EXPECTED_CASES ||
-    auditShape.claims !== EXPECTED_CLAIMS ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.claimChecks) !== JSON.stringify(EXPECTED_CLAIM_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.claimChecks, EXPECTED_CLAIM_SHAPE) ? null : "claimChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const failedCases = audit.cases.filter(
@@ -420,6 +437,7 @@ if (!audit.ok || !audit.pass || failedCases.length ||
   throw new Error(JSON.stringify({
     failures: audit.failures,
     failedCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
