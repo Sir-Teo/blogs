@@ -344,7 +344,7 @@ comparison is what each line was allowed to know when it made its decision.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/online-fdr-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/online-fdr-lab.js?v=20260618b' | relative_url }}"></script>
 
 At the default setting, the stream has 260 tests, about 31 true signals, early
 signal ordering, signal strength 5.5, and target $$q=10\%$$. Across 160
@@ -376,6 +376,41 @@ alpha-spending-is-contained-in-LOND decision invariant, and the summable
 $$6/(\pi^2 i^2)$$ schedule check. A 24-case sweep over horizon, signal rate,
 signal order, and target $$q$$ passed the same invariants; in the all-null
 cases, the largest empirical LOND FDR in that sweep was 3.05%.
+
+You can reproduce that sweep directly:
+
+```js
+const lab = require("./assets/js/online-fdr-lab.js");
+
+const audit = lab.auditOnlineFdrLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.log(`max all-null LOND FDR: ${(audit.maxNullLond * 100).toFixed(2)}%`);
+console.table(audit.cases.map((row) => ({
+  tests: row.tests,
+  signals: row.signalRate + "%",
+  order: row.order,
+  q: row.target + "%",
+  rawFdr: (row.rawFdr * 100).toFixed(1),
+  spendFdr: (row.spendFdr * 100).toFixed(1),
+  londFdr: (row.londFdr * 100).toFixed(1),
+  bhFdr: (row.bhFdr * 100).toFixed(1),
+  londDiscoveries: row.londDiscoveries.toFixed(1),
+  bhDiscoveries: row.bhDiscoveries.toFixed(1)
+})));
+```
+
+The all-null bound in that snippet is an audit tolerance for this finite
+simulation grid, not the theoretical FDR guarantee. It is there to catch
+implementation regressions that would make the displayed operating curves
+misleading.
 
 ## What I Would Put In The Run Log
 

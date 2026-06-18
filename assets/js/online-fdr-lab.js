@@ -330,6 +330,7 @@
     var total = 0;
     var passed = 0;
     var maxNullLond = 0;
+    var cases = [];
     [160, 260].forEach(function (tests) {
       [0, 8, 18].forEach(function (signalRate) {
         ["early", "late"].forEach(function (order) {
@@ -342,16 +343,41 @@
               target: target,
               order: order
             });
+            var raw = result.summary.filter(function (row) { return row.key === "raw"; })[0];
+            var spend = result.summary.filter(function (row) { return row.key === "spend"; })[0];
             var lond = result.summary.filter(function (row) { return row.key === "lond"; })[0];
+            var bh = result.summary.filter(function (row) { return row.key === "bh"; })[0];
+            var nullLondOk = signalRate > 0 || lond.fdr <= Math.max(0.18, target / 100 * 2.6);
+            var casePassed = result.audit.passed && nullLondOk;
             if (signalRate === 0) maxNullLond = Math.max(maxNullLond, lond.fdr);
-            if (result.audit.passed && (signalRate > 0 || lond.fdr <= Math.max(0.18, target / 100 * 2.6))) {
-              passed += 1;
-            }
+            if (casePassed) passed += 1;
+            cases.push({
+              avgSignals: result.meta.avgSignals,
+              bhDiscoveries: bh.avgRejected,
+              bhFdr: bh.fdr,
+              bhPower: bh.power,
+              failedChecks: Object.keys(result.audit).filter(function (key) {
+                return key !== "passed" && result.audit[key] === false;
+              }),
+              londDiscoveries: lond.avgRejected,
+              londFdr: lond.fdr,
+              londPower: lond.power,
+              nullLondOk: nullLondOk,
+              order: order,
+              passed: casePassed,
+              rawDiscoveries: raw.avgRejected,
+              rawFdr: raw.fdr,
+              signalRate: signalRate,
+              spendDiscoveries: spend.avgRejected,
+              spendFdr: spend.fdr,
+              target: target,
+              tests: tests
+            });
           });
         });
       });
     });
-    return { total: total, passed: passed, maxNullLond: maxNullLond };
+    return { cases: cases, total: total, passed: passed, maxNullLond: maxNullLond };
   }
 
   function pct(value, digits) {
