@@ -311,29 +311,151 @@ const lab = require("./assets/js/cross-origin-isolation-lab.js");
 const EXPECTED_CRITICAL_CHECKS = 17;
 const EXPECTED_CASES = 40;
 const EXPECTED_CHECKS = 137;
+const EXPECTED_SUMMARY_KEYS = [
+  "total",
+  "loaded",
+  "blocked",
+  "reported",
+  "stripped",
+  "openerSevered",
+  "groupIsolated",
+  "crossOriginIsolated",
+  "sharedMemory"
+];
+const EXPECTED_DEFAULT_SUMMARY_SHAPE = [
+  "total:4",
+  "loaded:1",
+  "blocked:3",
+  "reported:0",
+  "stripped:0",
+  "openerSevered:1",
+  "groupIsolated:1",
+  "crossOriginIsolated:1",
+  "sharedMemory:1"
+];
+const EXPECTED_CREDENTIALLESS_SUMMARY_SHAPE = [
+  "total:4",
+  "loaded:3",
+  "blocked:1",
+  "reported:0",
+  "stripped:2",
+  "openerSevered:0",
+  "groupIsolated:1",
+  "crossOriginIsolated:1",
+  "sharedMemory:1"
+];
+const EXPECTED_TOTALS = {
+  criticalChecks: EXPECTED_CRITICAL_CHECKS,
+  rows: EXPECTED_CASES,
+  checked: EXPECTED_CHECKS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+const EXPECTED_BY_DEPLOYMENT_SHAPE = [
+  "coepOnly:5/15:10/8/0/0:0/0/0/0",
+  "coopOnly:5/15:16/2/0/0:1/0/0/0",
+  "credentialless:5/15:14/4/0/7:1/5/5/5",
+  "duplicateCoep:5/15:16/2/0/0:1/0/0/0",
+  "openWeb:5/15:16/2/0/0:0/0/0/0",
+  "permissionBlocked:5/15:10/8/0/0:1/5/0/0",
+  "reportOnly:5/15:16/2/9/0:0/0/0/0",
+  "requireCorp:5/15:10/8/0/0:1/5/5/5"
+];
+const EXPECTED_BY_RESOURCE_SHAPE = [
+  "cleanWasm:8/24:32/0/0/0:0/3/2/2",
+  "credentiallessCdn:8/24:22/10/3/2:0/3/2/2",
+  "defensiveCorp:8/24:16/8/1/1:0/3/2/2",
+  "sameSiteAssets:8/24:16/8/1/2:0/3/2/2",
+  "thirdPartyPage:8/24:22/10/4/2:5/3/2/2"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "COEP alone does not isolate:1/1",
+  "COOP alone does not isolate:1/1",
+  "COOP plus credentialless isolates clean app:1/1",
+  "COOP plus require-corp isolates clean app:1/1",
+  "COOP same-origin severs cross-origin popup opener:1/1",
+  "CORP same-origin protects resource even without COEP:1/1",
+  "credentialless still blocks credentialed CORS without permission:1/1",
+  "credentialless strips no-CORS credentials:1/1",
+  "invalid combined COEP fails open:1/1",
+  "open CORP workload loads non-protected resources:1/1",
+  "open defaults keep popup opener:1/1",
+  "permission policy can deny gated APIs:1/1",
+  "report-only does not block resources:1/1",
+  "report-only records violations:1/1",
+  "require-corp blocks missing CORP no-CORS resources:1/1",
+  "require-corp blocks unopted third-party resources:1/1",
+  "same-site CORP secure mismatch blocks one resource:1/1"
+];
 
-console.log(lab.evaluate({}).summary);
-console.log(lab.evaluate({
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function summaryShape(summary) {
+  return EXPECTED_SUMMARY_KEYS.map((key) => `${key}:${summary[key]}`);
+}
+
+function groupShape(row, key) {
+  return [
+    row[key],
+    `${row.cases}/${row.totalChecks}`,
+    `${row.loaded}/${row.blocked}/${row.reported}/${row.stripped}`,
+    `${row.openerSevered}/${row.groupIsolated}/` +
+      `${row.crossOriginIsolated}/${row.sharedMemory}`
+  ].join(":");
+}
+
+const defaultSummary = lab.evaluate({}).summary;
+const credentiallessSummary = lab.evaluate({
   deployment: "credentialless",
   resources: "credentiallessCdn"
-}).summary);
+}).summary;
+console.log(defaultSummary);
+console.log(credentiallessSummary);
 const audit = lab.auditCrossOriginIsolationLab();
 console.table(audit.byDeployment);
 console.table(audit.byResourceSet);
 console.table(audit.criticalChecks);
 const auditShape = {
-  criticalChecks: audit.criticalTotal,
-  rows: audit.cases.length,
-  checked: audit.checked,
-  totalChecks: audit.totalChecks
+  defaultSummary: summaryShape(defaultSummary),
+  credentiallessSummary: summaryShape(credentiallessSummary),
+  totals: {
+    criticalChecks: audit.criticalTotal,
+    rows: audit.cases.length,
+    checked: audit.checked,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
+  byDeployment: audit.byDeployment.map((row) => groupShape(row, "deployment")),
+  byResourceSet: audit.byResourceSet.map((row) => groupShape(row, "resources")),
+  criticalChecks: audit.criticalChecks.map(
+    (row) => `${row.check}:${row.passedChecks}/${row.totalChecks}`
+  ).sort()
 };
-if (
-  auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
-  auditShape.rows !== EXPECTED_CASES ||
-  auditShape.checked !== EXPECTED_CHECKS ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.defaultSummary, EXPECTED_DEFAULT_SUMMARY_SHAPE)
+    ? null
+    : "defaultSummary",
+  sameJson(auditShape.credentiallessSummary, EXPECTED_CREDENTIALLESS_SUMMARY_SHAPE)
+    ? null
+    : "credentiallessSummary",
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.byDeployment, EXPECTED_BY_DEPLOYMENT_SHAPE)
+    ? null
+    : "byDeployment",
+  sameJson(auditShape.byResourceSet, EXPECTED_BY_RESOURCE_SHAPE)
+    ? null
+    : "byResourceSet",
+  sameJson(auditShape.criticalChecks, EXPECTED_CRITICAL_SHAPE)
+    ? null
+    : "criticalChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit grid drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -345,7 +467,9 @@ if (!audit.ok || failedCriticalChecks.length || failedCases.length || audit.pass
   throw new Error(JSON.stringify({
     errors: audit.errors,
     failedCriticalChecks,
-    failedCases
+    failedCases,
+    shapeErrors,
+    auditShape
   }, null, 2));
 }
 console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
