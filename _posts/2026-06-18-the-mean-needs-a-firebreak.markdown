@@ -319,11 +319,13 @@ estimator-consistency invariants across five scenarios.
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/median-of-means-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 35;
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== 5 || audit.totalChecks !== 35) {
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
