@@ -311,8 +311,13 @@ To reproduce the deterministic audit sweep from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/microprice-queue-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 45;
+
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byCase);
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
@@ -327,13 +332,18 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
   failed.length ||
   !audit.ok ||
-  audit.passed !== 5 ||
-  audit.total !== 5 ||
-  audit.passedChecks !== 45 ||
-  audit.totalChecks !== 45
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
     failed,
@@ -343,7 +353,7 @@ if (
     totalChecks: audit.totalChecks
   }, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 NODE
 ```
 
