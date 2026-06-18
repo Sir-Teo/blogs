@@ -342,10 +342,32 @@ const EXPECTED_CASE_SHAPE = [
 const EXPECTED_COMPARISON_SHAPE = [
   "smaller row groups read no more rows for aligned range:256:512:64:384:1"
 ];
+const EXPECTED_TOTALS = {
+  cases: EXPECTED_CASES,
+  comparisons: EXPECTED_COMPARISONS,
+  passed: EXPECTED_ROWS,
+  total: EXPECTED_ROWS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS,
+  monotone: true
+};
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditZoneMapLab();
 const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
 const auditShape = {
+  totals: {
+    cases: audit.cases.length,
+    comparisons: audit.comparisons.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks,
+    monotone: audit.monotone
+  },
   caseChecks: audit.cases.map((row) => [
     row.label,
     row.order,
@@ -369,21 +391,21 @@ const auditShape = {
     row.fineGroupSize,
     row.fineRowsRead,
     row.totalChecks
-  ].join(":")).sort(),
-  comparisons: audit.comparisons.length,
-  monotone: audit.monotone,
-  passed: audit.passed,
-  total: audit.total,
-  totalChecks: audit.totalChecks
+  ].join(":")).sort()
 };
-if (auditShape.cases !== EXPECTED_CASES ||
-    auditShape.comparisons !== EXPECTED_COMPARISONS ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES) ||
-    JSON.stringify(auditShape.comparisonChecks) !== JSON.stringify(EXPECTED_COMPARISON_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
+  sameJson(auditShape.comparisonChecks, EXPECTED_COMPARISON_SHAPE)
+    ? null
+    : "comparisonChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} audit rows and ` +
@@ -393,6 +415,7 @@ if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedCh
     summary,
     errors: audit.errors,
     failed,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
