@@ -334,6 +334,13 @@ const EXPECTED_MAKESPANS = {
   trapCritical: 16,
   trapShortest: 17
 };
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 const EXPECTED_CYCLE_REMAINING = ["types", "lower", "link", "test"];
 const EXPECTED_CASE_SHAPE = [
   "cycle introduced:cycle:n/a:n/a:2:n/a:n/a:n/a:3",
@@ -350,6 +357,10 @@ const EXPECTED_CHECK_SHAPE = [
   "trap shortest task:edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree"
 ];
 
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 const audit = lab.auditTopologicalReadyLab();
 console.table(audit.cases.map((row) => ({
   case: row.label,
@@ -364,6 +375,18 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 const auditShape = {
+  totals: {
+    rows: audit.cases.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
+  makespans: {
+    default: audit.defaultMakespan,
+    trapCritical: audit.trapCritical,
+    trapShortest: audit.trapShortest
+  },
   caseChecks: audit.cases.map((row) => [
     row.label,
     row.scenario,
@@ -378,23 +401,20 @@ const auditShape = {
   checkNames: audit.cases.map((row) => (
     row.label + ":" + row.checks.map((check) => check.name).sort().join("|")
   )).sort(),
-  cycleRemaining: audit.cycleRemaining,
-  defaultMakespan: audit.defaultMakespan,
-  passed: audit.passed,
-  total: audit.total,
-  totalChecks: audit.totalChecks,
-  trapCritical: audit.trapCritical,
-  trapShortest: audit.trapShortest
+  cycleRemaining: audit.cycleRemaining
 };
-if (auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    auditShape.defaultMakespan !== EXPECTED_MAKESPANS.default ||
-    auditShape.trapCritical !== EXPECTED_MAKESPANS.trapCritical ||
-    auditShape.trapShortest !== EXPECTED_MAKESPANS.trapShortest ||
-    JSON.stringify(auditShape.cycleRemaining) !== JSON.stringify(EXPECTED_CYCLE_REMAINING) ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.makespans, EXPECTED_MAKESPANS) ? null : "makespans",
+  sameJson(auditShape.cycleRemaining, EXPECTED_CYCLE_REMAINING) ? null : "cycleRemaining",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.checkNames, EXPECTED_CHECK_SHAPE) ? null : "checkNames"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const failedCases = audit.cases.filter(
@@ -406,6 +426,7 @@ if (!audit.ok || failedCases.length ||
   throw new Error(JSON.stringify({
     failures: audit.failures,
     failedCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
