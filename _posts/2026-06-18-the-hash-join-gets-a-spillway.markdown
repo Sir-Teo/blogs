@@ -269,7 +269,7 @@ The purpose is narrower:
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hash-join-spill-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hash-join-spill-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -307,6 +307,36 @@ The hybrid spill ledger reports:
 The last number is a separate warning. A spill strategy controls memory. It
 does not make a high-multiplicity join small. If many build and probe tuples
 share a key, the output can still be enormous.
+
+The exported audit grid is reproducible from Node:
+
+```js
+const lab = require("./assets/js/hash-join-spill-lab.js");
+
+const audit = lab.auditGrid();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  profile: row.profile,
+  batches: `${row.originalBatches}->${row.actualBatches}`,
+  fits: row.fits,
+  maxBuildBatch: row.maxBuildBatchRows,
+  memoryRows: row.memoryRows,
+  tempRows: row.hybridTempRows,
+  topKeyRows: row.topBuildKeyRows
+})));
+```
+
+The `hot` row is allowed to fail the fit test only because the audit also
+requires a skew explanation. A spill plan that silently overflows memory is not
+a valid plan.
 
 ## The Spill Invariant
 

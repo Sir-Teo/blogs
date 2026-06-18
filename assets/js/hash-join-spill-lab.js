@@ -320,12 +320,36 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { profile: "uniform", buildRows: 120000, probeRows: 260000, keys: 12000, memoryRows: 40000, skew: 0, seed: 3 },
       { profile: "zipf", buildRows: 240000, probeRows: 620000, keys: 12000, memoryRows: 42000, skew: 95, seed: 29 },
       { profile: "hot", buildRows: 220000, probeRows: 500000, keys: 9000, memoryRows: 35000, skew: 140, seed: 41 },
       { profile: "burst", buildRows: 360000, probeRows: 700000, keys: 16000, memoryRows: 56000, skew: 120, seed: 77 }
-    ].map(evaluate);
+    ].map(function (params) {
+      var result = evaluate(params);
+      return {
+        actualBatches: result.plan.batches,
+        buildRows: result.params.buildRows,
+        failedChecks: result.audit.checks
+          .filter(function (row) { return !row.ok; })
+          .map(function (row) { return row.name; }),
+        fits: result.plan.fits,
+        growthEvents: result.plan.growthEvents,
+        hybridTempRows: result.plan.hybridTempRows,
+        maxBuildBatchRows: result.plan.maxBuildBatchRows,
+        memoryRows: result.params.memoryRows,
+        originalBatches: result.plan.originalBatches,
+        passed: result.audit.passed,
+        probeRows: result.params.probeRows,
+        profile: result.params.profile,
+        topBuildKeyRows: result.keySummary.maxBuild
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function metric(label, value, className) {
