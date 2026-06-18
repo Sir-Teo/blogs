@@ -666,23 +666,59 @@
 
     function addCase(name, claim, raw, assertions) {
       var result = evaluate(raw);
-      var failedChecks = [];
+      var checks = [];
 
       function check(condition, message) {
-        if (!condition) failedChecks.push(message);
+        checks.push({ name: message, ok: !!condition });
       }
 
       assertions(result, check);
-      check(result.productNodeCount <= 6, "product graph should stay tiny");
+      check(result.productNodeCount > 0 && result.productNodeCount <= 6, "product graph should stay tiny");
+      check(
+        result.safety.states.length === result.safety.path.length + 1,
+        "safety prefix should have one more state than edge"
+      );
+      check(
+        result.safety.states[result.safety.states.length - 1] === result.safety.terminal,
+        "safety terminal should be final prefix state"
+      );
+      if (result.safety.found) {
+        check(result.safetyGraph.bad(result.safety.terminal), "safety witness should end in a bad state");
+      } else {
+        check(!result.safetyGraph.bad(result.safety.terminal), "safe result should not stop in a bad state");
+      }
       if (result.liveness.found) {
         check(result.liveness.cycle.every(function (edge) { return edge.event !== "grant"; }), "lasso cycle should avoid grants");
+        check(result.liveness.cycle.length > 0, "lasso cycle should be nonempty");
+        check(
+          result.liveness.cycle.every(function (edge, index) {
+            var next = result.liveness.cycle[(index + 1) % result.liveness.cycle.length];
+            return edge.to === next.from;
+          }),
+          "lasso cycle should close"
+        );
+        check(
+          result.liveness.cycle.every(function (edge) {
+            return result.liveness.product.nodes[edge.from].owed && result.liveness.product.nodes[edge.to].owed;
+          }),
+          "lasso cycle should stay in owed states"
+        );
+        check(
+          !result.liveness.prefix.length || result.liveness.prefix[result.liveness.prefix.length - 1].to === result.liveness.start,
+          "lasso prefix should reach the cycle start"
+        );
+      } else {
+        check(result.liveness.cycle.length === 0, "no-lasso result should have empty cycle");
+        check(result.liveness.prefix.length === 0, "no-lasso result should have empty prefix");
       }
       if (result.liveness.found && result.params.fairness === "weak") {
         check(hasWeakFairDisabledGrant(result), "weak-fair lasso should include a state where grant is not enabled");
       }
+      var failedChecks = checks.filter(function (item) { return !item.ok; }).map(function (item) { return item.name; });
 
       var row = {
         claim: claim,
+        checks: checks,
         cycleEvents: result.liveness.found ? result.liveness.cycle.map(function (edge) { return edge.event; }).join(" -> ") : "",
         cycleLength: result.liveness.cycle.length,
         cycleStates: cycleStates(result),
@@ -691,10 +727,12 @@
         name: name,
         params: result.params,
         passed: failedChecks.length === 0,
+        passedChecks: checks.length - failedChecks.length,
         productNodes: result.productNodeCount,
         safetyFound: result.safety.found,
         safetySteps: result.safety.path.length,
         safetyTerminal: result.safety.terminal,
+        totalChecks: checks.length,
         weakFairDisabledGrant: hasWeakFairDisabledGrant(result)
       };
       cases.push(row);
@@ -738,7 +776,9 @@
           maxProductNodes: 0,
           names: [],
           passed: 0,
-          safetyWitnesses: 0
+          passedChecks: 0,
+          safetyWitnesses: 0,
+          totalChecks: 0
         };
       }
       byClaimMap[row.claim].cases += 1;
@@ -747,6 +787,8 @@
       if (row.lassoFound) byClaimMap[row.claim].lassoWitnesses += 1;
       if (row.safetyFound) byClaimMap[row.claim].safetyWitnesses += 1;
       if (row.passed) byClaimMap[row.claim].passed += 1;
+      byClaimMap[row.claim].passedChecks += row.passedChecks;
+      byClaimMap[row.claim].totalChecks += row.totalChecks;
     });
 
     var byClaim = Object.keys(byClaimMap).sort().map(function (claim) {
@@ -756,14 +798,18 @@
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
     var total = cases.length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
 
     return {
       byClaim: byClaim,
       cases: cases,
       failures: failures,
-      ok: failures.length === 0,
-      pass: failures.length === 0,
+      ok: failures.length === 0 && passedChecks === totalChecks,
+      pass: failures.length === 0 && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: total
     };
   }

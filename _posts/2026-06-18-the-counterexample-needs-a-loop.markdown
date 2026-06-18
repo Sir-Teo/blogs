@@ -234,7 +234,7 @@ the debt is still owed.
     grant is continuously enabled around the loop.
   </p>
 </div>
-<script defer src="{{ '/assets/js/temporal-lasso-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/temporal-lasso-lab.js?v=20260618c' | relative_url }}"></script>
 
 With the default controls, the left side finds the finite trace:
 
@@ -362,23 +362,36 @@ console.table(audit.cases.map((row) => ({
   lasso: row.lassoFound ? row.cycleStates : "none",
   events: row.cycleEvents || "none",
   product: row.productNodes,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (!audit.pass || audit.passed !== audit.total) {
+if (
+  !audit.ok ||
+  !audit.pass ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 45 ||
+  audit.totalChecks !== 45
+) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} temporal lasso cases passed`);
+console.log(
+  `${audit.passed}/${audit.total} temporal lasso cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
-The audit checks the cases the prose depends on:
+The current deterministic grid passes five scenario cases and 45 named checks.
+It checks the cases the prose depends on:
 
 - disabling the bad switch removes the safety prefix;
 - enabling it produces a prefix ending at `both green`;
 - an unfair skip loop violates request-response liveness;
 - weak grant fairness removes that pure skip loop;
 - an outage loop remains a liveness violation even under weak grant fairness;
-- every lasso cycle avoids `grant`.
+- every lasso cycle avoids `grant`, stays inside owed states, closes, and is
+  reached by its finite prefix.
 
 That is intentionally tiny. The point is not to replace TLA+, SPIN, nuXmv, or a
 real protocol model. The point is to make the counterexample shape visible
