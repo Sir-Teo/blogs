@@ -305,7 +305,7 @@ Green is the final kept-token path; red and blue are deletes and inserts.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/myers-diff-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/myers-diff-lab.js?v=20260618c' | relative_url }}"></script>
 
 In the default example, the old sequence has 7 tokens and the new sequence has
 8. The LCS keeps 7 tokens, so the shortest script has:
@@ -339,6 +339,9 @@ console.table(audit.byTie);
 if (audit.exhaustiveBinaryCases !== 3969) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveBinaryCases);
 }
+if (audit.totalChecks !== 35811) {
+  throw new Error("unexpected audit check count: " + audit.totalChecks);
+}
 console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
 console.table(audit.cases.map((row) => ({
   example: row.label,
@@ -346,18 +349,22 @@ console.table(audit.cases.map((row) => ({
   distance: row.distance,
   lcs: row.lcsLength,
   layers: row.layers,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+const summary =
+  `${audit.passed}/${audit.total} audit groups and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.issues, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} audit groups passed`);
+console.log(summary);
 NODE
 ```
 
 The audit checks all included examples under both tie-break rules, then checks
 every pair of binary sequences of length 0 through 5. That is 3,969 exhaustive
-small cases. For each case it verifies:
+small cases and 35,811 named checks. For each case it verifies:
 
 - the Myers edit distance equals the dynamic-programming LCS distance;
 - the reconstructed script replays from the old sequence to the new sequence;

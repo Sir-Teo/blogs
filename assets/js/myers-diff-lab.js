@@ -403,21 +403,42 @@
     return true;
   }
 
+  function auditCheck(name, passed) {
+    return { name: name, passed: !!passed };
+  }
+
+  function passedCheckCount(checks) {
+    return checks.filter(function (check) { return check.passed; }).length;
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
+  }
+
   function verifyResult(result) {
     var issues = [];
     var dp = lcsDp(result.old, result.neu);
     var replay = applyOps(result.old, result.ops);
     var edits = result.ops.filter(function (op) { return op.type !== "equal"; }).length;
     var equals = result.ops.filter(function (op) { return op.type === "equal"; }).length;
-
-    if (result.distance !== dp.distance) issues.push("frontier distance " + result.distance + " != DP distance " + dp.distance);
-    if (result.lcsLength !== dp.lcsLength) issues.push("frontier LCS " + result.lcsLength + " != DP LCS " + dp.lcsLength);
-    if (!sameArray(replay, result.neu)) issues.push("operation replay does not produce new sequence");
-    if (edits !== result.distance) issues.push("edit operation count " + edits + " != distance " + result.distance);
-    if (equals !== result.lcsLength) issues.push("equal operation count " + equals + " != LCS " + result.lcsLength);
-    if (!result.path.length || result.path[0].x !== 0 || result.path[0].y !== 0) issues.push("path does not start at origin");
+    var distanceMatchesDp = result.distance === dp.distance;
+    var lcsMatchesDp = result.lcsLength === dp.lcsLength;
+    var scriptReplaysNewSequence = sameArray(replay, result.neu);
+    var editCountEqualsDistance = edits === result.distance;
+    var equalCountEqualsLcs = equals === result.lcsLength;
+    var pathStartsAtOrigin = result.path.length > 0 && result.path[0].x === 0 && result.path[0].y === 0;
     var last = result.path[result.path.length - 1];
-    if (last.x !== result.old.length || last.y !== result.neu.length) issues.push("path does not end at target");
+    var pathEndsAtTarget = !!last && last.x === result.old.length && last.y === result.neu.length;
+    var pathStepsMonotone = true;
+    var equalOpsMatchTokens = true;
+
+    if (!distanceMatchesDp) issues.push("frontier distance " + result.distance + " != DP distance " + dp.distance);
+    if (!lcsMatchesDp) issues.push("frontier LCS " + result.lcsLength + " != DP LCS " + dp.lcsLength);
+    if (!scriptReplaysNewSequence) issues.push("operation replay does not produce new sequence");
+    if (!editCountEqualsDistance) issues.push("edit operation count " + edits + " != distance " + result.distance);
+    if (!equalCountEqualsLcs) issues.push("equal operation count " + equals + " != LCS " + result.lcsLength);
+    if (!pathStartsAtOrigin) issues.push("path does not start at origin");
+    if (!pathEndsAtTarget) issues.push("path does not end at target");
 
     for (var i = 1; i < result.path.length; i += 1) {
       var prev = result.path[i - 1];
@@ -425,6 +446,7 @@
       var dx = cur.x - prev.x;
       var dy = cur.y - prev.y;
       if (!((dx === 1 && dy === 0) || (dx === 0 && dy === 1) || (dx === 1 && dy === 1))) {
+        pathStepsMonotone = false;
         issues.push("path step " + i + " is not monotone");
         break;
       }
@@ -432,12 +454,26 @@
 
     result.ops.forEach(function (op, index) {
       if (op.type === "equal" && result.old[op.oldIndex] !== result.neu[op.newIndex]) {
+        equalOpsMatchTokens = false;
         issues.push("equal op " + index + " joins different tokens");
       }
     });
 
+    var checks = [
+      auditCheck("distance-matches-dp", distanceMatchesDp),
+      auditCheck("lcs-matches-dp", lcsMatchesDp),
+      auditCheck("script-replays-new-sequence", scriptReplaysNewSequence),
+      auditCheck("edit-count-equals-distance", editCountEqualsDistance),
+      auditCheck("equal-count-equals-lcs", equalCountEqualsLcs),
+      auditCheck("path-starts-at-origin", pathStartsAtOrigin),
+      auditCheck("path-ends-at-target", pathEndsAtTarget),
+      auditCheck("path-steps-monotone", pathStepsMonotone),
+      auditCheck("equal-ops-match-tokens", equalOpsMatchTokens)
+    ];
+
     return {
       ok: issues.length === 0,
+      checks: checks,
       issues: issues,
       dp: dp,
       replay: replay
@@ -465,14 +501,14 @@
         var data = exampleData(key);
         var result = myersDiff(data.old, data.neu, { tie: tie });
         var audit = verifyResult(result);
-        var failedChecks = [];
+        var failedChecks = failedAuditChecks(audit.checks);
         if (!audit.ok) {
           audit.issues.forEach(function (issue) {
             issues.push(key + "/" + tie + ": " + issue);
-            failedChecks.push(issue);
           });
         }
         cases.push({
+          checks: audit.checks,
           example: key,
           failedChecks: failedChecks,
           label: data.label,
@@ -483,6 +519,8 @@
           lcsLength: result.lcsLength,
           layers: result.layers.length,
           operations: result.ops.length,
+          passedChecks: passedCheckCount(audit.checks),
+          totalChecks: audit.checks.length,
           passed: audit.ok
         });
       });
@@ -494,12 +532,16 @@
     }
 
     var checked = 0;
+    var exhaustivePassedChecks = 0;
+    var exhaustiveTotalChecks = 0;
     var binaryIssues = [];
     small.forEach(function (a) {
       small.forEach(function (b) {
         var result = myersDiff(a, b, { tie: "delete" });
         var audit = verifyResult(result);
         checked += 1;
+        exhaustivePassedChecks += passedCheckCount(audit.checks);
+        exhaustiveTotalChecks += audit.checks.length;
         if (!audit.ok) {
           var issue = "binary case " + a.join("") + " -> " + b.join("") + ": " + audit.issues.join("; ");
           issues.push(issue);
@@ -510,6 +552,8 @@
     var exhaustive = {
       checked: checked,
       failedChecks: binaryIssues,
+      passedChecks: exhaustivePassedChecks,
+      totalChecks: exhaustiveTotalChecks,
       passed: binaryIssues.length === 0
     };
     var byTie = ["delete", "insert"].map(function (tie) {
@@ -518,21 +562,28 @@
         cases: rows.length,
         maxDistance: rows.reduce(function (max, row) { return Math.max(max, row.distance); }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0),
         tie: tie
       };
     });
     var total = cases.length + 1;
     var passed = cases.filter(function (row) { return row.passed; }).length + (exhaustive.passed ? 1 : 0);
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0) + exhaustive.passedChecks;
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0) + exhaustive.totalChecks;
 
     return {
       byTie: byTie,
       cases: cases,
+      details: cases,
       exhaustive: exhaustive,
       ok: issues.length === 0,
       issues: issues,
       passed: passed,
+      passedChecks: passedChecks,
       reports: cases,
       total: total,
+      totalChecks: totalChecks,
       exhaustiveBinaryCases: checked
     };
   }
