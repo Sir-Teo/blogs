@@ -262,12 +262,13 @@ is to make the structural reduction visible.
   <p class="cart-rmq-lab__note">This is a structural RMQ/LCA lab, not a full constant-time RMQ implementation. The displayed LCA is found by parent climbing because the examples are intentionally small.</p>
 </div>
 
-<script defer src="{{ '/assets/js/cartesian-rmq-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cartesian-rmq-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Audit Proves
 
-The exported Node audit runs all four arrays under both duplicate policies. For
-each case it checks:
+The exported Node audit reports 43 named checks: five invariants for each of the
+eight array/tie-policy cases, plus three duplicate and single-point edge checks.
+For each main case it checks:
 
 ```text
 inorder traversal is exactly 0,1,2,...,n-1
@@ -298,14 +299,15 @@ The compact reproduction check is:
 const lab = require("./assets/js/cartesian-rmq-lab.js");
 
 const audit = lab.auditCartesianRmqLab();
-const failed = audit.cases.filter((row) => !row.passed)
-  .concat(audit.edgeCases.filter((row) => !row.passed));
-if (failed.length || !audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
+const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+if (audit.total !== 11 || audit.totalChecks !== 43) {
+  throw new Error(`unexpected audit size: ${audit.total} rows, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} audit rows and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
 
 console.table(audit.cases.map((row) => ({
@@ -316,9 +318,15 @@ console.table(audit.cases.map((row) => ({
   lca: row.lcaIndex,
   value: row.value,
   height: row.height,
-  pops: row.pops
+  pops: row.pops,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-console.table(audit.edgeCases);
+console.table(audit.edgeCases.map((row) => ({
+  edge: row.name,
+  rmqIndex: row.rmqIndex,
+  checks: `${row.passedChecks}/${row.totalChecks}`
+})));
+console.log(summary);
 ```
 
 The duplicate-minimum case is the useful edge. The array contains several `2`

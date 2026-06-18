@@ -249,58 +249,88 @@
     Object.keys(SCENARIOS).forEach(function (scenario) {
       ["left", "right"].forEach(function (tie) {
         var result = evaluate({ scenario: scenario, tie: tie, start: 0, end: SCENARIOS[scenario].values.length - 1 });
+        var checks = auditChecks(result.audit);
+        var failedChecks = failedAuditChecks(checks);
         cases.push({
-          failedChecks: Object.keys(result.audit).filter(function (key) {
-            return key !== "passed" && result.audit[key] === false;
-          }),
+          caseId: cases.length + 1,
+          checks: checks,
+          failedChecks: failedChecks,
           height: result.tree.height,
           intervalsChecked: result.values.length * (result.values.length + 1) / 2,
           lcaIndex: result.lcaIndex,
           maxStack: result.tree.maxStack,
           minIndex: result.minIndex,
           passed: result.audit.passed,
+          passedChecks: checks.length - failedChecks.length,
           pops: result.tree.pops,
           scenario: scenario,
           tie: tie,
+          totalChecks: checks.length,
           value: result.values[result.minIndex]
         });
-        assert(result.audit.passed, scenario + "/" + tie + " audit failed");
       });
     });
     var plateauLeft = evaluate({ scenario: "plateau", tie: "left", start: 4, end: 8 });
     var plateauRight = evaluate({ scenario: "plateau", tie: "right", start: 4, end: 8 });
-    assert(plateauLeft.minIndex === 4, "left tie should pick first duplicate minimum");
-    assert(plateauRight.minIndex === 8, "right tie should pick last duplicate minimum");
     var single = evaluate({ scenario: "saw", start: 5, end: 5 });
-    assert(single.minIndex === 5 && single.lcaIndex === 5, "single-point query should return itself");
     var edgeCases = [
-      {
-        name: "plateau left tie",
-        passed: plateauLeft.minIndex === 4,
-        rmqIndex: plateauLeft.minIndex
-      },
-      {
-        name: "plateau right tie",
-        passed: plateauRight.minIndex === 8,
-        rmqIndex: plateauRight.minIndex
-      },
-      {
-        name: "single point",
-        passed: single.minIndex === 5 && single.lcaIndex === 5,
-        rmqIndex: single.minIndex
-      }
+      edgeAuditRow(cases.length + 1, "plateau left tie", "left-tie-picks-first-duplicate-minimum", plateauLeft.minIndex === 4, plateauLeft.minIndex),
+      edgeAuditRow(cases.length + 2, "plateau right tie", "right-tie-picks-last-duplicate-minimum", plateauRight.minIndex === 8, plateauRight.minIndex),
+      edgeAuditRow(cases.length + 3, "single point", "single-point-query-is-own-lca", single.minIndex === 5 && single.lcaIndex === 5, single.minIndex)
     ];
-    var passed = cases.filter(function (row) { return row.passed; }).length
-      + edgeCases.filter(function (row) { return row.passed; }).length;
+    var details = cases.concat(edgeCases);
+    var passed = details.filter(function (row) { return row.passed; }).length;
+    var passedChecks = details.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = details.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    details.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        var label = row.name || row.scenario + "/" + row.tie;
+        errors.push("case " + row.caseId + " " + label + ": " + name);
+      });
+    });
     return {
       cases: cases,
+      details: details,
       edgeCases: edgeCases,
-      ok: true,
+      errors: errors,
+      ok: passed === details.length && passedChecks === totalChecks,
       plateauLeft: plateauLeft.minIndex,
       plateauRight: plateauRight.minIndex,
       passed: passed,
+      passedChecks: passedChecks,
       scenarios: Object.keys(SCENARIOS).length,
-      total: cases.length + edgeCases.length
+      total: details.length,
+      totalChecks: totalChecks
+    };
+  }
+
+  function auditChecks(audit) {
+    return [
+      { name: "inorder-equals-array-order", ok: audit.inorder },
+      { name: "heap-property", ok: audit.heap },
+      { name: "single-root", ok: audit.parentCount },
+      { name: "displayed-rmq-equals-lca", ok: audit.queryMatches },
+      { name: "all-intervals-match", ok: audit.allIntervals }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
+  function edgeAuditRow(caseId, name, checkName, ok, rmqIndex) {
+    var checks = [{ name: checkName, ok: ok }];
+    var failedChecks = failedAuditChecks(checks);
+    return {
+      caseId: caseId,
+      checks: checks,
+      failedChecks: failedChecks,
+      name: name,
+      passed: !failedChecks.length,
+      passedChecks: checks.length - failedChecks.length,
+      rmqIndex: rmqIndex,
+      totalChecks: checks.length
     };
   }
 
