@@ -394,33 +394,101 @@
     };
   }
 
+  function auditCheck(name, passed, detail) {
+    return {
+      detail: detail || "",
+      name: name,
+      passed: Boolean(passed)
+    };
+  }
+
   function verifyResult(state) {
-    var issues = [];
+    var checks = [];
     var params = state.params;
     var tokenRows = state.token.rows;
     var gcraRows = state.gcra.rows;
+    var eventCount = state.trace.events.length;
+    var tokenRowsMatch = tokenRows.length === eventCount;
+    var gcraRowsMatch = gcraRows.length === eventCount;
+    var gcraAgreement = true;
+    var gcraDetail = "";
+    var tokenBounds = true;
+    var tokenBoundsDetail = "";
+    var shaperOrdered = true;
+    var shaperDetail = "";
+    var fixedWithinQuota = true;
+    var fixedDetail = "";
 
-    if (tokenRows.length !== state.trace.events.length) issues.push("token row count mismatch");
-    if (gcraRows.length !== state.trace.events.length) issues.push("gcra row count mismatch");
+    checks.push(auditCheck(
+      "token row count matches arrivals",
+      tokenRowsMatch,
+      tokenRows.length + " rows for " + eventCount + " arrivals"
+    ));
+    checks.push(auditCheck(
+      "GCRA row count matches arrivals",
+      gcraRowsMatch,
+      gcraRows.length + " rows for " + eventCount + " arrivals"
+    ));
     for (var i = 0; i < tokenRows.length; i += 1) {
-      if (tokenRows[i].ok !== gcraRows[i].ok) issues.push("token bucket and GCRA disagree at request " + i);
+      if (gcraRows[i] && tokenRows[i].ok !== gcraRows[i].ok && gcraAgreement) {
+        gcraAgreement = false;
+        gcraDetail = "request " + i + " token=" + tokenRows[i].ok + " gcra=" + gcraRows[i].ok;
+      }
       if (tokenRows[i].tokensAfter < -1e-7 || tokenRows[i].tokensAfter > params.burst + 1e-7) {
-        issues.push("token count out of bounds at request " + i);
+        tokenBounds = false;
+        if (!tokenBoundsDetail) tokenBoundsDetail = "request " + i + " tokensAfter=" + tokenRows[i].tokensAfter;
       }
     }
-    if (state.tokenWorst.excess > 1e-7) issues.push("token accepted stream violates burst envelope");
+    checks.push(auditCheck(
+      "token bucket and GCRA agree request-by-request",
+      gcraAgreement,
+      gcraDetail
+    ));
+    checks.push(auditCheck(
+      "token count stays within bucket capacity",
+      tokenBounds,
+      tokenBoundsDetail
+    ));
+    checks.push(auditCheck(
+      "accepted token stream respects burst envelope",
+      state.tokenWorst.excess <= 1e-7,
+      "excess=" + state.tokenWorst.excess
+    ));
     for (i = 1; i < state.shaper.outputTimes.length; i += 1) {
-      if (state.shaper.outputTimes[i] + 1e-9 < state.shaper.outputTimes[i - 1]) issues.push("shaper output is not ordered");
+      if (state.shaper.outputTimes[i] + 1e-9 < state.shaper.outputTimes[i - 1]) {
+        shaperOrdered = false;
+        if (!shaperDetail) shaperDetail = "output " + i + " is before output " + (i - 1);
+      }
     }
     state.fixed.windows.forEach(function (window) {
-      if (window.accepted > params.rate * params.window) issues.push("fixed window exceeds its own quota");
+      if (window.accepted > params.rate * params.window) {
+        fixedWithinQuota = false;
+        if (!fixedDetail) fixedDetail = "window " + window.id + " accepted " + window.accepted;
+      }
     });
-    if (params.scenario === "edge" && params.burst < params.rate * params.window * 0.8 && state.fixedWorst.excess <= 0) {
-      issues.push("edge scenario failed to expose fixed-window burst excess");
-    }
+    checks.push(auditCheck(
+      "shaper output stays ordered",
+      shaperOrdered,
+      shaperDetail
+    ));
+    checks.push(auditCheck(
+      "fixed window stays within its own quota",
+      fixedWithinQuota,
+      fixedDetail
+    ));
+    var tightEdgeApplies = params.scenario === "edge" && params.burst < params.rate * params.window * 0.8;
+    checks.push(auditCheck(
+      "tight edge case exposes fixed-window burst excess",
+      !tightEdgeApplies || state.fixedWorst.excess > 0,
+      tightEdgeApplies ? "excess=" + state.fixedWorst.excess : "not applicable"
+    ));
+    var issues = checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
     return {
+      checks: checks,
       ok: issues.length === 0,
-      issues: issues
+      issues: issues,
+      passedChecks: checks.filter(function (check) { return check.passed; }).length,
+      totalChecks: checks.length
     };
   }
 
@@ -436,17 +504,20 @@
               cases.push({
                 arrivals: result.trace.events.length,
                 burst: burst,
+                checks: result.audit.checks,
                 failedChecks: result.audit.issues,
                 fixedAccepted: result.fixed.accepted,
                 fixedExcess: result.fixedWorst.excess,
                 maxDelay: result.shaper.maxDelay,
                 passed: result.audit.ok,
+                passedChecks: result.audit.passedChecks,
                 queue: queue,
                 rate: rate,
                 scenario: scenario,
                 shaperAccepted: result.shaper.accepted,
                 tokenAccepted: result.token.accepted,
                 tokenExcess: result.tokenWorst.excess,
+                totalChecks: result.audit.totalChecks,
                 window: window
               });
             });
@@ -478,10 +549,14 @@
         maxFixedExcess: rows.reduce(function (max, row) { return Math.max(max, row.fixedExcess); }, 0),
         maxTokenExcess: rows.reduce(function (max, row) { return Math.max(max, row.tokenExcess); }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0),
         scenario: scenario
       };
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
     return {
       byScenario: byScenario,
       cases: cases,
@@ -489,6 +564,8 @@
       checked: cases.length,
       failures: failures,
       passed: passed,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

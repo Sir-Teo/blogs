@@ -264,7 +264,7 @@ queue, but its worst delay is `3.6s`; that is not free capacity, only waiting.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/token-bucket-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/token-bucket-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Timestamp Form Is The Same Contract
 
@@ -285,7 +285,7 @@ else:
 For unit-cost requests, this is equivalent to a token bucket that starts full.
 The lab audits that equivalence for every request in every built-in scenario.
 The default browser run is only one view; the exported verifier checks 324
-scenario/parameter combinations:
+scenario/parameter combinations and 2,592 named invariant checks:
 
 ```bash
 node - <<'NODE'
@@ -293,27 +293,39 @@ const lab = require("./assets/js/token-bucket-lab.js");
 const audit = lab.auditTokenBucketLab();
 console.table(audit.byScenario.map((row) => ({
   scenario: row.scenario,
-  cases: row.cases,
-  passed: row.passed,
+  cases: `${row.passed}/${row.cases}`,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   maxTokenExcess: row.maxTokenExcess.toFixed(3),
   maxFixedExcess: row.maxFixedExcess.toFixed(3),
   maxDelay: row.maxDelay.toFixed(3)
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+if (
+  !audit.ok ||
+  audit.passed !== 324 ||
+  audit.total !== 324 ||
+  audit.passedChecks !== 2592 ||
+  audit.totalChecks !== 2592
+) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} parameter cases passed`);
+console.log(
+  `${audit.passed}/${audit.total} parameter cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
-The checks are deliberately mechanical:
+The eight checks per row are deliberately mechanical:
 
 ```text
+token row count matches arrivals
+GCRA row count matches arrivals
 token bucket and timestamp limiter agree request-by-request
+token count stays inside [0, B]
 accepted token stream never exceeds B + rT over any interval
 fixed windows never exceed their own per-window quota
 shaper output stays ordered
-the edge scenario exposes the fixed-window seam when burst is tight enough
+tight edge cases expose the fixed-window seam
 ```
 
 The token-bucket rule is simple enough that bugs are usually not in the formula.
