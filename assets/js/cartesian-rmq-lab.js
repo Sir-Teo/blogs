@@ -245,9 +245,25 @@
   }
 
   function auditCartesianRmqLab() {
+    var cases = [];
     Object.keys(SCENARIOS).forEach(function (scenario) {
       ["left", "right"].forEach(function (tie) {
         var result = evaluate({ scenario: scenario, tie: tie, start: 0, end: SCENARIOS[scenario].values.length - 1 });
+        cases.push({
+          failedChecks: Object.keys(result.audit).filter(function (key) {
+            return key !== "passed" && result.audit[key] === false;
+          }),
+          height: result.tree.height,
+          intervalsChecked: result.values.length * (result.values.length + 1) / 2,
+          lcaIndex: result.lcaIndex,
+          maxStack: result.tree.maxStack,
+          minIndex: result.minIndex,
+          passed: result.audit.passed,
+          pops: result.tree.pops,
+          scenario: scenario,
+          tie: tie,
+          value: result.values[result.minIndex]
+        });
         assert(result.audit.passed, scenario + "/" + tie + " audit failed");
       });
     });
@@ -257,11 +273,34 @@
     assert(plateauRight.minIndex === 8, "right tie should pick last duplicate minimum");
     var single = evaluate({ scenario: "saw", start: 5, end: 5 });
     assert(single.minIndex === 5 && single.lcaIndex === 5, "single-point query should return itself");
+    var edgeCases = [
+      {
+        name: "plateau left tie",
+        passed: plateauLeft.minIndex === 4,
+        rmqIndex: plateauLeft.minIndex
+      },
+      {
+        name: "plateau right tie",
+        passed: plateauRight.minIndex === 8,
+        rmqIndex: plateauRight.minIndex
+      },
+      {
+        name: "single point",
+        passed: single.minIndex === 5 && single.lcaIndex === 5,
+        rmqIndex: single.minIndex
+      }
+    ];
+    var passed = cases.filter(function (row) { return row.passed; }).length
+      + edgeCases.filter(function (row) { return row.passed; }).length;
     return {
+      cases: cases,
+      edgeCases: edgeCases,
       ok: true,
-      scenarios: Object.keys(SCENARIOS).length,
       plateauLeft: plateauLeft.minIndex,
-      plateauRight: plateauRight.minIndex
+      plateauRight: plateauRight.minIndex,
+      passed: passed,
+      scenarios: Object.keys(SCENARIOS).length,
+      total: cases.length + edgeCases.length
     };
   }
 

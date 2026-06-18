@@ -262,7 +262,7 @@ is to make the structural reduction visible.
   <p class="cart-rmq-lab__note">This is a structural RMQ/LCA lab, not a full constant-time RMQ implementation. The displayed LCA is found by parent climbing because the examples are intentionally small.</p>
 </div>
 
-<script defer src="{{ '/assets/js/cartesian-rmq-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cartesian-rmq-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Audit Proves
 
@@ -290,6 +290,35 @@ duplicate minima, query 4..8:
 
 sawtooth, query 0..11:
   RMQ index 11, LCA index 11, value 0
+```
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/cartesian-rmq-lab.js");
+
+const audit = lab.auditCartesianRmqLab();
+const failed = audit.cases.filter((row) => !row.passed)
+  .concat(audit.edgeCases.filter((row) => !row.passed));
+if (failed.length || !audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  tie: row.tie,
+  intervals: row.intervalsChecked,
+  rmq: row.minIndex,
+  lca: row.lcaIndex,
+  value: row.value,
+  height: row.height,
+  pops: row.pops
+})));
+console.table(audit.edgeCases);
 ```
 
 The duplicate-minimum case is the useful edge. The array contains several `2`
