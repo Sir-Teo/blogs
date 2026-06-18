@@ -332,7 +332,7 @@ plus rotations is not a full CPU model, but it keeps the rotation bill visible.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/splay-tree-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/splay-tree-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -400,6 +400,27 @@ The audit checks that:
 
 Those checks do not prove the theorem. They make the visualization less likely
 to be a decorative lie.
+
+To reproduce the deterministic audit cases from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/splay-tree-lab.js");
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  keys: row.keys,
+  accesses: row.accesses,
+  splayAvg: row.splayAveragePrimitive.toFixed(2),
+  balancedAvg: row.balancedAverageSearch.toFixed(2),
+  rotations: row.splayAverageRotations.toFixed(2),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## When Would I Use This?
 

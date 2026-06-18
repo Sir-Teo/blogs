@@ -450,13 +450,35 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { keys: 31, accesses: 300, hotSet: 5, scenario: "hot", seed: 7 },
       { keys: 63, accesses: 1200, hotSet: 8, scenario: "phase", seed: 31 },
       { keys: 63, accesses: 256, hotSet: 6, scenario: "scan", seed: 11 },
       { keys: 127, accesses: 1600, hotSet: 12, scenario: "walk", seed: 19 },
       { keys: 127, accesses: 2000, hotSet: 10, scenario: "zipf", seed: 23 }
-    ].map(evaluate);
+    ].map(function (params) {
+      var result = evaluate(params);
+      return {
+        keys: result.params.keys,
+        accesses: result.params.accesses,
+        hotSet: result.params.hotSet,
+        scenario: result.params.scenario,
+        seed: result.params.seed,
+        splayAveragePrimitive: result.summary.splayAveragePrimitive,
+        splayAverageSearch: result.summary.splayAverageSearch,
+        splayAverageRotations: result.summary.splayAverageRotations,
+        balancedAverageSearch: result.summary.balancedAverageSearch,
+        repeatedSameKeyCost: result.summary.repeatedSameKeyCost,
+        totalRotations: result.summary.totalRotations,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {
