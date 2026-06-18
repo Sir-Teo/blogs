@@ -282,13 +282,33 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { scenario: "classic", length: 10, seed: 23, focus: 10 },
       { scenario: "random", length: 48, seed: 11, focus: 32 },
       { scenario: "nearly", length: 64, seed: 41, focus: 40 },
       { scenario: "layered", length: 72, seed: 19, focus: 45 },
       { scenario: "zigzag", length: 60, seed: 77, focus: 50 }
-    ].map(evaluate);
+    ].map(function (params) {
+      var result = evaluate(params);
+      return {
+        dpComparisons: result.dp.comparisons,
+        failedChecks: result.audit.checks
+          .filter(function (row) { return !row.ok; })
+          .map(function (row) { return row.name; }),
+        length: result.params.length,
+        lis: result.patience.lis.map(function (card) { return card.value; }),
+        lisLength: result.patience.length,
+        passed: result.audit.passed,
+        patienceComparisons: result.patience.comparisons,
+        scenario: result.params.scenario,
+        seed: result.params.seed
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {

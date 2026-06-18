@@ -224,7 +224,7 @@ the dynamic program uses exactly `n(n-1)/2` pair comparisons.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/lis-patience-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/lis-patience-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -237,6 +237,34 @@ For the ten-card example, the lab reports:
 | patience comparisons | `16` |
 | DP comparisons | `45` |
 | recovered LIS | `1 3 4 6 9` |
+
+The exported audit grid is reproducible from Node:
+
+```js
+const lab = require("./assets/js/lis-patience-lab.js");
+
+const audit = lab.auditGrid();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  n: row.length,
+  lisLength: row.lisLength,
+  patienceComparisons: row.patienceComparisons,
+  dpComparisons: row.dpComparisons,
+  witnessPrefix: row.lis.slice(0, 8).join(" ")
+})));
+```
+
+Each returned row also carries the full reconstructed `lis` array, so the audit
+checks both the length and an actual witness sequence.
 
 The piles are not themselves the subsequence. The final top cards can even be
 misleading. Aldous and Diaconis point this out in the example: the top cards are
