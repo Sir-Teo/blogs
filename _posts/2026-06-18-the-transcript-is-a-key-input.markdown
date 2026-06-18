@@ -339,7 +339,7 @@ Default measured values:
   </table>
 </div>
 
-<script defer src="{{ '/assets/js/tls-transcript-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/tls-transcript-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What Each Scenario Teaches
 
@@ -379,11 +379,29 @@ const lab = require("./assets/js/tls-transcript-lab.js");
 (async () => {
   const audit = await lab.auditGrid();
   const failed = audit.rows.filter((row) => !row.passed);
-  if (failed.length || audit.passed !== audit.total) {
+  console.table(audit.byScenario);
+  console.table(audit.criticalChecks);
+  const auditShape = {
+    criticalChecks: audit.criticalTotal,
+    rows: audit.rows.length,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  };
+  if (
+    auditShape.criticalChecks !== 1 ||
+    auditShape.rows !== 6 ||
+    auditShape.total !== 7 ||
+    auditShape.totalChecks !== 30
+  ) {
+    throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
+  }
+  if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
     throw new Error(JSON.stringify({
       failed,
       hkdfVectorOk: audit.hkdfVectorOk,
       passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks,
       total: audit.total
     }, null, 2));
   }
@@ -396,12 +414,14 @@ const lab = require("./assets/js/tls-transcript-lab.js");
     certificateVerify: row.certificateVerifyOk ? "ok" : "fail",
     finished: row.finishedOk ? "ok" : "fail"
   })));
+  console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 })();
 ```
 
-The extra audit case is the RFC 5869 HKDF test vector used by the toy key
-schedule. That check is not about TLS transcript binding directly; it keeps the
-small cryptographic plumbing honest.
+The audit runs six scenario rows and one named RFC 5869 HKDF vector. Inside
+those rows it checks 29 transcript-binding obligations, plus the HKDF vector,
+for 30 checks total. The vector is not about TLS transcript binding directly;
+it keeps the small cryptographic plumbing honest.
 
 ## Why Not Just Sign The Certificate?
 

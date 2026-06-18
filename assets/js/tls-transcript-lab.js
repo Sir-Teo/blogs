@@ -501,25 +501,77 @@
     ];
     return Promise.all(cases.map(function (params) {
       return evaluate(params).then(function (result) {
+        var failedChecks = result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
         return {
-          params: result.params,
-          verdict: result.verdict,
-          helloHashMatch: result.summary.helloHashMatch,
-          trafficSecretMatch: result.summary.trafficSecretMatch,
-          secretOnlyDemoMatch: result.summary.secretOnlyDemoMatch,
           certificateVerifyOk: result.summary.certificateVerifyOk,
+          checks: result.audit.checks,
+          failedChecks: failedChecks,
           finishedOk: result.summary.finishedOk,
-          passed: result.audit.passed
+          helloHashMatch: result.summary.helloHashMatch,
+          params: result.params,
+          passed: result.audit.passed,
+          passedChecks: result.audit.checks.length - failedChecks.length,
+          secretOnlyDemoMatch: result.summary.secretOnlyDemoMatch,
+          totalChecks: result.audit.checks.length,
+          trafficSecretMatch: result.summary.trafficSecretMatch,
+          verdict: result.verdict
         };
       });
     })).then(function (rows) {
       return hkdfVectorOk().then(function (ok) {
         var passed = rows.filter(function (row) { return row.passed; }).length;
+        var criticalChecks = [{
+          check: "RFC 5869 HKDF test vector",
+          failedChecks: ok ? [] : ["RFC 5869 HKDF test vector"],
+          passed: ok,
+          passedChecks: ok ? 1 : 0,
+          totalChecks: 1
+        }];
+        var passedChecks = criticalChecks.reduce(function (sum, row) {
+          return sum + row.passedChecks;
+        }, 0) + rows.reduce(function (sum, row) {
+          return sum + row.passedChecks;
+        }, 0);
+        var totalChecks = criticalChecks.reduce(function (sum, row) {
+          return sum + row.totalChecks;
+        }, 0) + rows.reduce(function (sum, row) {
+          return sum + row.totalChecks;
+        }, 0);
+        var errors = criticalChecks.reduce(function (acc, row) {
+          return acc.concat(row.failedChecks);
+        }, []).concat(rows.reduce(function (acc, row) {
+          return acc.concat(row.failedChecks);
+        }, []));
+        var byScenario = {};
+        rows.forEach(function (row) {
+          var key = row.params.scenario;
+          if (!byScenario[key]) {
+            byScenario[key] = {
+              cases: 0,
+              passed: 0,
+              passedChecks: 0,
+              scenario: key,
+              totalChecks: 0
+            };
+          }
+          byScenario[key].cases += 1;
+          byScenario[key].passed += row.passed ? 1 : 0;
+          byScenario[key].passedChecks += row.passedChecks;
+          byScenario[key].totalChecks += row.totalChecks;
+        });
         return {
+          byScenario: Object.keys(byScenario).sort().map(function (key) { return byScenario[key]; }),
+          caseTotal: rows.length,
+          criticalChecks: criticalChecks,
+          criticalTotal: criticalChecks.length,
+          errors: errors,
           hkdfVectorOk: ok,
+          ok: errors.length === 0 && passedChecks === totalChecks,
           passed: passed + (ok ? 1 : 0),
+          passedChecks: passedChecks,
           rows: rows,
-          total: rows.length + 1
+          total: rows.length + criticalChecks.length,
+          totalChecks: totalChecks
         };
       });
     });
