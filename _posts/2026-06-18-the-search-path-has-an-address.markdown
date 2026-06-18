@@ -249,16 +249,106 @@ the default vEB-vs-inorder comparison:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/cache-layout-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 151;
+const EXPECTED_TOTALS = {
+  cases: 5,
+  passed: 5,
+  total: 5,
+  passedChecks: 151,
+  totalChecks: 151
+};
+const EXPECTED_CASE_ROWS = [
+  "1:8:255:4:129:8:3.997177:5.788235:5.788235:4.270588:4.223529:6:4:30/30:true",
+  "2:10:1023:8:513:10:3.332863:6.889541:6.889541:4.693060:4.313783:6:4:31/31:true",
+  "3:11:2047:16:1025:11:2.749824:6.948705:6.948705:4.596483:3.813385:6:4:30/30:true",
+  "4:12:4095:32:3021:12:2.399930:6.978266:6.978266:4.548230:3.414408:5:4:30/30:true",
+  "5:13:8191:8:7777:13:4.333275:9.877182:9.877182:6.375900:5.848126:8:6:30/30:true"
+];
+const EXPECTED_BASE_CHECK_NAMES = [
+  "inorder key count",
+  "inorder first and last key",
+  "inorder unique keys",
+  "bfs key count",
+  "bfs first and last key",
+  "bfs unique keys",
+  "dfs key count",
+  "dfs first and last key",
+  "dfs unique keys",
+  "veb key count",
+  "veb first and last key",
+  "veb unique keys",
+  "search ends at query key",
+  "search length bounded by height",
+  "inorder finite average",
+  "inorder finite worst",
+  "inorder selected path length",
+  "inorder block accounting",
+  "bfs finite average",
+  "bfs finite worst",
+  "bfs selected path length",
+  "bfs block accounting",
+  "dfs finite average",
+  "dfs finite worst",
+  "dfs selected path length",
+  "dfs block accounting",
+  "veb finite average",
+  "veb finite worst",
+  "veb selected path length",
+  "veb block accounting"
+];
+const EXPECTED_DEFAULT_CHECK_NAME = "default vEB improves average over inorder";
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const totals = {
+  cases: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const caseRows = audit.cases.map((row) => [
+  row.caseId,
+  row.height,
+  row.n,
+  row.blockSize,
+  row.key,
+  row.comparisons,
+  row.logBaseB.toFixed(6),
+  row.inorderAverageBlocks.toFixed(6),
+  row.bfsAverageBlocks.toFixed(6),
+  row.dfsAverageBlocks.toFixed(6),
+  row.vebAverageBlocks.toFixed(6),
+  row.vebWorstBlocks,
+  row.vebSelectedBlocks,
+  `${row.passedChecks}/${row.totalChecks}`,
+  row.passed
+].join(":"));
+const checkRows = audit.cases.map((row) => ({
+  caseId: row.caseId,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = audit.cases.map((row) => ({
+  caseId: row.caseId,
+  checks: row.caseId === 2
+    ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_DEFAULT_CHECK_NAME])
+    : EXPECTED_BASE_CHECK_NAMES
+}));
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
+  !sameJson(checkRows, expectedCheckRows)
+) {
+  throw new Error("unexpected cache-layout audit shape: " + JSON.stringify({
+    totals,
+    caseRows,
+    checkRows
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
