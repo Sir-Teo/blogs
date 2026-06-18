@@ -322,6 +322,14 @@ const EXPECTED_SCENARIO_CHECK_NAMES = [
   "saturation is either absent or explicitly near capacity",
   "seeded replay is deterministic"
 ];
+const EXPECTED_TOTALS = {
+  exactRows: EXPECTED_EXACT_ROWS,
+  scenarioRows: EXPECTED_SCENARIO_ROWS,
+  passed: EXPECTED_ROWS,
+  total: EXPECTED_ROWS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 const EXPECTED_EXACT_SHAPE = [
   "0:meanOk=true:varianceOk=true:checks=2/2",
   "1:meanOk=true:varianceOk=true:checks=2/2",
@@ -368,6 +376,10 @@ function sameList(actual, expected) {
     actual.every((value, index) => value === expected[index]);
 }
 
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 function exactShape(row) {
   return `${row.events}:meanOk=${row.meanOk}:varianceOk=${row.varianceOk}:` +
     `checks=${row.passedChecks}/${row.totalChecks}`;
@@ -401,36 +413,44 @@ console.table(audit.scenarios.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 const auditShape = {
+  totals: {
+    exactRows: audit.exact.length,
+    scenarioRows: audit.scenarios.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   exactCheckNames: Array.from(new Set(audit.exact.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
   exactEvents: audit.exact.map((row) => row.events).sort((a, b) => a - b),
-  exactRows: audit.exact.length,
   exactShape: audit.exact.map(exactShape),
-  passed: audit.passed,
   scenarioCheckNames: Array.from(new Set(audit.scenarios.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
   scenarioEvents: audit.scenarios.map((row) => row.events).sort((a, b) => a - b),
-  scenarioRows: audit.scenarios.length,
   scenarioShape: audit.scenarios.map(scenarioShape),
   checkShape: audit.exact.flatMap((row) => checkShape(row, "exact"))
-    .concat(audit.scenarios.flatMap((row) => checkShape(row, "scenario"))),
-  total: audit.total,
-  totalChecks: audit.totalChecks
+    .concat(audit.scenarios.flatMap((row) => checkShape(row, "scenario")))
 };
-if (auditShape.exactRows !== EXPECTED_EXACT_ROWS ||
-    auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.exactEvents) !== JSON.stringify(EXPECTED_EXACT_EVENTS) ||
-    JSON.stringify(auditShape.scenarioEvents) !== JSON.stringify(EXPECTED_SCENARIO_EVENTS) ||
-    JSON.stringify(auditShape.exactCheckNames) !== JSON.stringify(EXPECTED_EXACT_CHECK_NAMES) ||
-    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES) ||
-    !sameList(auditShape.exactShape, EXPECTED_EXACT_SHAPE) ||
-    !sameList(auditShape.scenarioShape, EXPECTED_SCENARIO_SHAPE) ||
-    !sameList(auditShape.checkShape, EXPECTED_CHECK_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.exactEvents, EXPECTED_EXACT_EVENTS) ? null : "exactEvents",
+  sameJson(auditShape.scenarioEvents, EXPECTED_SCENARIO_EVENTS) ? null : "scenarioEvents",
+  sameJson(auditShape.exactCheckNames, EXPECTED_EXACT_CHECK_NAMES) ? null : "exactCheckNames",
+  sameJson(auditShape.scenarioCheckNames, EXPECTED_SCENARIO_CHECK_NAMES)
+    ? null
+    : "scenarioCheckNames",
+  sameList(auditShape.exactShape, EXPECTED_EXACT_SHAPE) ? null : "exactShape",
+  sameList(auditShape.scenarioShape, EXPECTED_SCENARIO_SHAPE) ? null : "scenarioShape",
+  sameList(auditShape.checkShape, EXPECTED_CHECK_SHAPE) ? null : "checkShape"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const failedExactCases = audit.exact.filter(
@@ -446,6 +466,7 @@ if (!audit.ok || failedExactCases.length || failedScenarioCases.length ||
     failures: audit.failures,
     failedExactCases,
     failedScenarioCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
