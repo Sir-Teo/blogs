@@ -254,7 +254,7 @@ The interesting question is what happens immediately after the drop.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/pid-windup-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/pid-windup-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Default Run Measures
 
@@ -316,7 +316,8 @@ The lab is deliberately simple. It uses a first-order plant, fixed time step
 Euler integration, a small input delay implemented as a queue, and symmetric
 input saturation. The exported audit checks finite samples, actuator bounds,
 post-drop error area, integral growth, and settlement for the two anti-windup
-modes across several parameter sets.
+modes across several parameter sets. The parameter sweep below reports 90 named
+checks: 18 invariants for each of five saturated step/drop scenarios.
 
 To reproduce that parameter sweep from the repository root:
 
@@ -334,11 +335,15 @@ console.table(audit.cases.map((row) => ({
   backcalcIAE: row.backcalcIaeAfterDrop.toFixed(2),
   noneReentry: seconds(row.noneReentryTime),
   backcalcReentry: seconds(row.backcalcReentryTime),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
