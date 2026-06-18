@@ -265,7 +265,12 @@ The browser lab is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/rotating-calipers-lab.js");
+const EXPECTED_CASES = 100;
+const EXPECTED_CHECKS = 800;
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byShape.map((row) => ({
   shape: row.shape,
   cases: row.cases,
@@ -276,13 +281,22 @@ console.table(audit.byShape.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 console.table(audit.criticalChecks);
-if (audit.total !== 100 || audit.totalChecks !== 800) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
 }
-console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 NODE
 ```
 
