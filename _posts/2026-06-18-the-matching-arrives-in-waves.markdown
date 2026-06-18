@@ -296,40 +296,126 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/hopcroft-karp-lab.js");
-const EXPECTED_GROUPS = 5;
-const EXPECTED_NAMED_CASES = 4;
+const EXPECTED_NAMED_SHAPE = [
+  "traps:two chain traps:left=6:right=6:edges=10:matching=6:brute=6:phases=2:paths=4+2:cover=6:single=6:checks=21/21",
+  "applicants:applicant shortlist:left=7:right=7:edges=17:matching=7:brute=7:phases=1:paths=7:cover=7:single=7:checks=18/18",
+  "bottleneck:shared bottleneck:left=8:right=6:edges=16:matching=6:brute=6:phases=1:paths=6:cover=6:single=6:checks=17/17",
+  "grid:staggered grid:left=8:right=8:edges=19:matching=8:brute=8:phases=1:paths=8:cover=8:single=8:checks=19/19"
+];
+const EXPECTED_PHASE_SHAPE = [
+  "phases=1:cases=3:passed=3:graphs=applicants, bottleneck, grid:maxMatching=8",
+  "phases=2:cases=1:passed=1:graphs=traps:maxMatching=6"
+];
+const EXPECTED_NAMED_CHECK_SHAPE = [
+  "traps:Hopcroft-Karp matching is valid|single-path matching is valid|Hopcroft-Karp size equals brute force|single-path size equals brute force|alternating cover hits every edge|cover size equals matching size|phase 0 has a BFS augmenting layer|phase 0 finds at least one path|phase 0 paths are vertex-disjoint|phase 0 path 0 is augmenting|phase 0 path 1 is augmenting|phase 0 path 2 is augmenting|phase 0 path 3 is augmenting|phase 0 matching delta equals path count|phase 1 has a BFS augmenting layer|phase 1 finds at least one path|phase 1 paths are vertex-disjoint|phase 1 path 0 is augmenting|phase 1 path 1 is augmenting|phase 1 matching delta equals path count|phase 2 matching delta equals path count",
+  "applicants:Hopcroft-Karp matching is valid|single-path matching is valid|Hopcroft-Karp size equals brute force|single-path size equals brute force|alternating cover hits every edge|cover size equals matching size|phase 0 has a BFS augmenting layer|phase 0 finds at least one path|phase 0 paths are vertex-disjoint|phase 0 path 0 is augmenting|phase 0 path 1 is augmenting|phase 0 path 2 is augmenting|phase 0 path 3 is augmenting|phase 0 path 4 is augmenting|phase 0 path 5 is augmenting|phase 0 path 6 is augmenting|phase 0 matching delta equals path count|phase 1 matching delta equals path count",
+  "bottleneck:Hopcroft-Karp matching is valid|single-path matching is valid|Hopcroft-Karp size equals brute force|single-path size equals brute force|alternating cover hits every edge|cover size equals matching size|phase 0 has a BFS augmenting layer|phase 0 finds at least one path|phase 0 paths are vertex-disjoint|phase 0 path 0 is augmenting|phase 0 path 1 is augmenting|phase 0 path 2 is augmenting|phase 0 path 3 is augmenting|phase 0 path 4 is augmenting|phase 0 path 5 is augmenting|phase 0 matching delta equals path count|phase 1 matching delta equals path count",
+  "grid:Hopcroft-Karp matching is valid|single-path matching is valid|Hopcroft-Karp size equals brute force|single-path size equals brute force|alternating cover hits every edge|cover size equals matching size|phase 0 has a BFS augmenting layer|phase 0 finds at least one path|phase 0 paths are vertex-disjoint|phase 0 path 0 is augmenting|phase 0 path 1 is augmenting|phase 0 path 2 is augmenting|phase 0 path 3 is augmenting|phase 0 path 4 is augmenting|phase 0 path 5 is augmenting|phase 0 path 6 is augmenting|phase 0 path 7 is augmenting|phase 0 matching delta equals path count|phase 1 matching delta equals path count"
+];
+const EXPECTED_GROUPS = EXPECTED_NAMED_SHAPE.length + 1;
+const EXPECTED_NAMED_CASES = EXPECTED_NAMED_SHAPE.length;
 const EXPECTED_EXHAUSTIVE_CASES = 74954;
+const EXPECTED_EXHAUSTIVE_CHECKS = 1174257;
 const EXPECTED_CHECKS = 1174332;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function namedShape(row) {
+  return `${row.example}:${row.label}:left=${row.left}:right=${row.right}:` +
+    `edges=${row.edges}:matching=${row.matching}:brute=${row.bruteForceSize}:` +
+    `phases=${row.phases}:paths=${row.phasePathCounts}:cover=${row.coverSize}:` +
+    `single=${row.singlePathAugmentations}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function phaseShape(row) {
+  return `phases=${row.phases}:cases=${row.cases}:passed=${row.passed}:` +
+    `graphs=${row.graphs}:maxMatching=${row.maxMatching}`;
+}
+
+function namedCheckShape(row) {
+  const state = lab.evaluate({ example: row.example });
+  return `${row.example}:${state.audit.checks.map((check) => check.name).join("|")}`;
+}
 
 const audit = lab.auditHopcroftKarp();
 console.table(audit.byPhaseCount);
-const auditShape = {
-  namedRows: audit.cases.length,
-  exhaustiveCases: audit.exhaustiveCases,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+const shape = {
+  exhaustive: {
+    checked: audit.exhaustive.checked,
+    failed: audit.exhaustive.failedChecks.length,
+    passed: audit.exhaustive.passed,
+    passedChecks: audit.exhaustive.passedChecks,
+    totalChecks: audit.exhaustive.totalChecks
+  },
+  named: audit.cases.map(namedShape),
+  namedChecks: audit.cases.map(namedCheckShape),
+  phaseGroups: audit.byPhaseCount.map(phaseShape)
 };
-if (auditShape.namedRows !== EXPECTED_NAMED_CASES ||
-    auditShape.exhaustiveCases !== EXPECTED_EXHAUSTIVE_CASES ||
-    auditShape.total !== EXPECTED_GROUPS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.named, EXPECTED_NAMED_SHAPE)) {
+  shapeErrors.push({ name: "named", actual: shape.named, expected: EXPECTED_NAMED_SHAPE });
+}
+if (!sameList(shape.phaseGroups, EXPECTED_PHASE_SHAPE)) {
+  shapeErrors.push({
+    name: "phaseGroups",
+    actual: shape.phaseGroups,
+    expected: EXPECTED_PHASE_SHAPE
+  });
+}
+if (!sameList(shape.namedChecks, EXPECTED_NAMED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "namedChecks",
+    actual: shape.namedChecks,
+    expected: EXPECTED_NAMED_CHECK_SHAPE
+  });
+}
+if (shape.exhaustive.checked !== EXPECTED_EXHAUSTIVE_CASES ||
+    shape.exhaustive.totalChecks !== EXPECTED_EXHAUSTIVE_CHECKS ||
+    shape.exhaustive.failed !== 0 ||
+    !shape.exhaustive.passed) {
+  shapeErrors.push({
+    name: "exhaustive",
+    actual: shape.exhaustive,
+    expected: {
+      checked: EXPECTED_EXHAUSTIVE_CASES,
+      failed: 0,
+      passed: true,
+      totalChecks: EXPECTED_EXHAUSTIVE_CHECKS
+    }
+  });
 }
 
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const exhaustiveFailures = audit.exhaustive.failedChecks.slice(0, 10);
-if (!audit.ok || failedCases.length || !audit.exhaustive.passed ||
+if (shapeErrors.length ||
+    !audit.ok ||
+    audit.cases.length !== EXPECTED_NAMED_CASES ||
+    audit.exhaustiveCases !== EXPECTED_EXHAUSTIVE_CASES ||
+    audit.total !== EXPECTED_GROUPS ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    failedCases.length ||
+    !audit.exhaustive.passed ||
     audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    shapeErrors,
     failures: audit.failures,
     issues: audit.issues.slice(0, 10),
     failedCases,
     exhaustiveFailures,
-    auditShape
+    totals: {
+      exhaustiveCases: audit.exhaustiveCases,
+      namedRows: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 console.log(audit.exhaustiveCases + " exhaustive bipartite graphs checked");
