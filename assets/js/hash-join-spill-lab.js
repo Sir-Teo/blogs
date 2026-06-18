@@ -327,27 +327,52 @@
       { profile: "burst", buildRows: 360000, probeRows: 700000, keys: 16000, memoryRows: 56000, skew: 120, seed: 77 }
     ].map(function (params) {
       var result = evaluate(params);
+      var failedChecks = result.audit.checks
+        .filter(function (row) { return !row.ok; })
+        .map(function (row) { return row.name; });
       return {
         actualBatches: result.plan.batches,
         buildRows: result.params.buildRows,
-        failedChecks: result.audit.checks
-          .filter(function (row) { return !row.ok; })
-          .map(function (row) { return row.name; }),
+        checks: result.audit.checks,
+        failedChecks: failedChecks,
         fits: result.plan.fits,
         growthEvents: result.plan.growthEvents,
         hybridTempRows: result.plan.hybridTempRows,
         maxBuildBatchRows: result.plan.maxBuildBatchRows,
         memoryRows: result.params.memoryRows,
         originalBatches: result.plan.originalBatches,
+        passedChecks: result.audit.checks.length - failedChecks.length,
         passed: result.audit.passed,
         probeRows: result.params.probeRows,
         profile: result.params.profile,
-        topBuildKeyRows: result.keySummary.maxBuild
+        topBuildKeyRows: result.keySummary.maxBuild,
+        totalChecks: result.audit.checks.length
+      };
+    });
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var byProfile = cases.map(function (row) {
+      return {
+        profile: row.profile,
+        batches: row.originalBatches + "->" + row.actualBatches,
+        fits: row.fits,
+        passed: row.passed ? 1 : 0,
+        total: 1,
+        passedChecks: row.passedChecks,
+        totalChecks: row.totalChecks
       };
     });
     return {
+      byProfile: byProfile,
       cases: cases,
+      ok: cases.every(function (row) { return row.passed; }) && passedChecks === totalChecks,
       passed: cases.filter(function (row) { return row.passed; }).length,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

@@ -269,7 +269,7 @@ The purpose is narrower:
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hash-join-spill-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hash-join-spill-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -314,12 +314,22 @@ The exported audit grid is reproducible from Node:
 const lab = require("./assets/js/hash-join-spill-lab.js");
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+console.table(audit.byProfile);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== 4 ||
+  audit.total !== 4 ||
+  audit.passedChecks !== 44 ||
+  audit.totalChecks !== 44
+) {
   throw new Error(JSON.stringify({
     failed,
     passed: audit.passed,
-    total: audit.total
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
   }, null, 2));
 }
 
@@ -330,13 +340,22 @@ console.table(audit.cases.map((row) => ({
   maxBuildBatch: row.maxBuildBatchRows,
   memoryRows: row.memoryRows,
   tempRows: row.hybridTempRows,
-  topKeyRows: row.topBuildKeyRows
+  topKeyRows: row.topBuildKeyRows,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 ```
 
 The `hot` row is allowed to fail the fit test only because the audit also
 requires a skew explanation. A spill plan that silently overflows memory is not
 a valid plan.
+
+The current grid covers four key profiles and 44 named checks. Those checks
+verify row preservation before and after partitioning, power-of-two batch
+counts, nonnegative temporary I/O, hybrid-vs-GRACE spill accounting, top-key
+bookkeeping, and the two regression cases the prose leans on: uniform data fits
+after batching, while a single hot key can exceed memory even after batch
+growth.
 
 ## The Spill Invariant
 
