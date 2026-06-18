@@ -380,14 +380,32 @@ const EXPECTED_CHECKS = EXPECTED_CHECKS_BY_CASE.reduce(
   (sum, checks) => sum + checks.length,
   0
 );
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
 }
 
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function auditShape(audit) {
   return {
+    totals: {
+      rows: audit.cases.length,
+      passed: audit.passed,
+      total: audit.total,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    },
     cases: audit.cases.map(
       (row) => `${row.caseId}:${row.scenario}:${row.keys}/${row.buckets}:` +
         `${row.seed}/${row.lookupMix}:` +
@@ -406,6 +424,7 @@ const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const shapeErrors = [
+  sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
   shape.checksByCase.every((checks, index) =>
     sameList(checks, EXPECTED_CHECKS_BY_CASE[index] || [])
@@ -422,11 +441,6 @@ console.table(audit.cases.map((row) => ({
   amplification: row.amplification.toFixed(1) + "x",
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
