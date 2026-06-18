@@ -316,7 +316,7 @@ slice of each built-in sequence.
   <p class="wavelet-tree-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/wavelet-tree-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/wavelet-tree-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Lab Audits
 
@@ -327,10 +327,14 @@ node - <<'NODE'
 const lab = require("./assets/js/wavelet-tree-lab.js");
 const audit = lab.auditWaveletTreeLab();
 console.table(audit.bySample);
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+console.table(audit.criticalChecks);
+if (audit.total !== 30 || audit.totalChecks !== 210) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
 }
-console.log(`${audit.passed}/${audit.total} cases passed`);
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 

@@ -535,20 +535,48 @@
 
   function auditWaveletTreeLab() {
     var cases = [];
-    var bySample = [];
+    var criticalByName = {};
+
+    function rangeQueryCount(length) {
+      return length * (length + 1) * (length + 2) / 6;
+    }
+
+    function addCase(row, auditChecks) {
+      auditChecks.forEach(function (check) {
+        if (!criticalByName[check.name]) {
+          criticalByName[check.name] = {
+            check: check.name,
+            failedCases: [],
+            passed: 0,
+            total: 0
+          };
+        }
+        criticalByName[check.name].total += 1;
+        if (check.ok) criticalByName[check.name].passed += 1;
+        else criticalByName[check.name].failedCases.push(row.caseId);
+      });
+      row.passedChecks = auditChecks.filter(function (check) { return check.ok; }).length;
+      row.totalChecks = auditChecks.length;
+      row.failedChecks = auditChecks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+      cases.push(row);
+    }
+
     Object.keys(SAMPLES).forEach(function (sample) {
       var base = evaluate({ sample: sample });
-      var baseCase = {
+      addCase({
+        caseId: cases.length + 1,
         sample: sample,
         symbol: null,
         passed: base.audit.passed,
         length: base.stats.length,
         alphabet: base.stats.alphabet,
+        accessChecks: base.stats.length,
+        rankChecks: base.stats.alphabet * (base.stats.length + 1),
+        selectChecks: base.stats.length,
+        rangeQuantileChecks: rangeQueryCount(base.stats.length),
         waveletBits: base.stats.waveletBits,
-        entropyBits: Number(base.stats.entropyBits.toFixed(6)),
-        failedChecks: base.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
-      };
-      cases.push(baseCase);
+        entropyBits: Number(base.stats.entropyBits.toFixed(6))
+      }, base.audit.checks);
       base.tree.alphabet.forEach(function (symbol) {
         var result = evaluate({
           sample: sample,
@@ -559,32 +587,90 @@
           rangeEnd: base.stats.length,
           kth: Math.ceil(base.stats.length / 2)
         });
-        cases.push({
+        addCase({
+          caseId: cases.length + 1,
           sample: sample,
           symbol: symbol,
           passed: result.audit.passed,
           length: result.stats.length,
           alphabet: result.stats.alphabet,
+          accessChecks: result.stats.length,
+          rankChecks: result.stats.alphabet * (result.stats.length + 1),
+          selectChecks: result.stats.length,
+          rangeQuantileChecks: rangeQueryCount(result.stats.length),
           waveletBits: result.stats.waveletBits,
-          entropyBits: Number(result.stats.entropyBits.toFixed(6)),
-          failedChecks: result.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
-        });
-      });
-      bySample.push({
-        sample: sample,
-        cases: cases.filter(function (row) { return row.sample === sample; }).length,
-        passed: cases.filter(function (row) { return row.sample === sample && row.passed; }).length,
-        length: base.stats.length,
-        alphabet: base.stats.alphabet,
-        waveletBits: base.stats.waveletBits,
-        entropyBits: Number(base.stats.entropyBits.toFixed(6))
+          entropyBits: Number(result.stats.entropyBits.toFixed(6))
+        }, result.audit.checks);
       });
     });
+
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy] == null ? "all-symbols" : String(row[groupBy]);
+        if (!groups[key]) {
+          groups[key] = {
+            accessChecks: 0,
+            cases: 0,
+            maxRangeQuantileChecks: 0,
+            passed: 0,
+            passedChecks: 0,
+            rangeQuantileChecks: 0,
+            rankChecks: 0,
+            selectChecks: 0,
+            totalChecks: 0
+          };
+          groups[key][groupBy] = row[groupBy];
+        }
+        groups[key].accessChecks += row.accessChecks;
+        groups[key].cases += 1;
+        groups[key].maxRangeQuantileChecks = Math.max(groups[key].maxRangeQuantileChecks, row.rangeQuantileChecks);
+        groups[key].rangeQuantileChecks += row.rangeQuantileChecks;
+        groups[key].rankChecks += row.rankChecks;
+        groups[key].selectChecks += row.selectChecks;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = cases.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
+
     return {
-      bySample: bySample,
+      bySample: summarize("sample").map(function (row) {
+        var first = cases.filter(function (item) { return item.sample === row.sample; })[0];
+        row.length = first.length;
+        row.alphabet = first.alphabet;
+        row.waveletBits = first.waveletBits;
+        row.entropyBits = first.entropyBits;
+        return row;
+      }),
+      bySymbol: summarize("symbol"),
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
