@@ -497,19 +497,27 @@
       && Math.abs(propensity.bias) < 0.12
       && Math.abs(neither.bias) > Math.abs(both.bias) + 0.015;
     var overlapValid = result.eBins.every(function (bin) {
-      return bin.treated >= 0 && bin.control >= 0 && bin.count > 0;
+      return bin.treated > 0 && bin.control > 0 && bin.count > 0;
     });
+    var checks = [
+      { name: "finite-estimates", passed: finite },
+      { name: "aipw-quadrant-shape", passed: robustShape },
+      { name: "propensity-deciles-have-both-arms", passed: overlapValid }
+    ];
     return {
-      passed: finite && robustShape && overlapValid,
+      passed: checks.every(function (check) { return check.passed; }),
       finite: finite,
       robustShape: robustShape,
-      overlapValid: overlapValid
+      overlapValid: overlapValid,
+      checks: checks
     };
   }
 
   function auditDoublyRobustLab() {
     var total = 0;
     var passed = 0;
+    var totalChecks = 0;
+    var passedChecks = 0;
     var cases = [];
     [600, 900].forEach(function (rows) {
       [45, 90].forEach(function (confounding) {
@@ -529,17 +537,36 @@
           var outcome = result.simulation.scenarios.outcome;
           var propensity = result.simulation.scenarios.propensity;
           var neither = result.simulation.scenarios.neither;
-          var failedChecks = Object.keys(result.audit).filter(function (key) {
-            return key !== "passed" && result.audit[key] === false;
+          var minDecileTreated = Math.min.apply(null, result.eBins.map(function (bin) {
+            return bin.treated;
+          }));
+          var minDecileControl = Math.min.apply(null, result.eBins.map(function (bin) {
+            return bin.control;
+          }));
+          var checks = result.audit.checks.map(function (check) {
+            return { name: check.name, passed: check.passed };
           });
+          var casePassedChecks = checks.filter(function (check) {
+            return check.passed;
+          }).length;
+          var failedChecks = checks.filter(function (check) {
+            return !check.passed;
+          }).map(function (check) {
+            return check.name;
+          });
+          totalChecks += checks.length;
+          passedChecks += casePassedChecks;
           if (result.audit.passed) passed += 1;
           cases.push({
             aipwBothBias: both.byKey.aipw.bias,
             aipwNeitherBias: neither.byKey.aipw.bias,
             aipwOutcomeBias: outcome.byKey.aipw.bias,
             aipwPropensityBias: propensity.byKey.aipw.bias,
+            checks: checks,
             confounding: result.params.confounding,
             failedChecks: failedChecks,
+            minDecileControl: minDecileControl,
+            minDecileTreated: minDecileTreated,
             minEffectiveSampleSize: Math.min(
               both.weightEss,
               outcome.weightEss,
@@ -555,15 +582,24 @@
             ),
             outcomeRegressionWrongBias: propensity.byKey.outcome.bias,
             passed: result.audit.passed,
+            passedChecks: casePassedChecks,
             rows: result.params.rows,
             runs: result.params.runs,
             seed: result.params.seed,
+            totalChecks: checks.length,
             trueAte: both.trueAte
           });
         });
       });
     });
-    return { cases: cases, total: total, passed: passed };
+    return {
+      cases: cases,
+      ok: passed === total && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: total,
+      totalChecks: totalChecks
+    };
   }
 
   function pct(value, digits) {

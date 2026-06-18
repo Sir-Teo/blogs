@@ -373,7 +373,7 @@ the failure modes are visible.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/doubly-robust-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/doubly-robust-lab.js?v=20260618c' | relative_url }}"></script>
 
 At the default setting, the true ATE is about `0.550`. Across 80 repeated
 samples with 900 rows each:
@@ -392,7 +392,9 @@ its bias is about `+0.500`. It is precise about the wrong contrast.
 The source is intentionally inspectable:
 [`assets/js/doubly-robust-lab.js`]({{ '/assets/js/doubly-robust-lab.js' | relative_url }}).
 Its audit checks finite estimates, the expected four-quadrant robustness shape,
-and nonempty treated/control counts across propensity deciles.
+and true-propensity deciles that contain both observed treatment arms.
+The current sweep covers eight sample-size, confounding, and overlap settings,
+for 24 named checks total.
 
 The sweep is reproducible from Node:
 
@@ -400,11 +402,29 @@ The sweep is reproducible from Node:
 const lab = require("./assets/js/doubly-robust-lab.js");
 
 const audit = lab.auditDoublyRobustLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+
+if (audit.total !== 8 || audit.totalChecks !== 24) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
   throw new Error(JSON.stringify({
     failed,
     passed: audit.passed,
+    passedChecks: audit.passedChecks,
     total: audit.total
   }, null, 2));
 }
@@ -413,13 +433,16 @@ console.table(audit.cases.map((row) => ({
   rows: row.rows,
   confounding: row.confounding,
   overlap: row.overlap,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   aipwBoth: row.aipwBothBias.toFixed(3),
   aipwOutcome: row.aipwOutcomeBias.toFixed(3),
   aipwPropensity: row.aipwPropensityBias.toFixed(3),
   aipwNeither: row.aipwNeitherBias.toFixed(3),
+  minDecileArms: `${row.minDecileTreated}/${row.minDecileControl}`,
   minEss: row.minEffectiveSampleSize.toFixed(0),
   minEhat: row.overlapMinPropensity.toFixed(3)
 })));
+console.log(summary);
 ```
 
 This is not a proof of double robustness. It is a regression check for the toy
