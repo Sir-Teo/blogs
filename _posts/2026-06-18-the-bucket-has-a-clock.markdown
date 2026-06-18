@@ -290,9 +290,68 @@ scenario/parameter combinations and 2,592 named invariant checks:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/token-bucket-lab.js");
-const EXPECTED_SCENARIOS = 4;
-const EXPECTED_CASES = 324;
-const EXPECTED_CHECKS = 2592;
+const EXPECTED_SCENARIO_SHAPE = [
+  "edge:cases=81:passed=81:checks=648/648:tokenExcess=0.000:fixedExcess=43.700:maxDelay=10.240",
+  "burst:cases=81:passed=81:checks=648/648:tokenExcess=0.000:fixedExcess=4.600:maxDelay=12.000",
+  "steady:cases=81:passed=81:checks=648/648:tokenExcess=0.000:fixedExcess=0.000:maxDelay=0.037",
+  "herd:cases=81:passed=81:checks=648/648:tokenExcess=0.000:fixedExcess=7.560:maxDelay=11.999"
+];
+const EXPECTED_GRID_SHAPE = [
+  "edge:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=16..59:tokenAccepted=7..29:fixedAccepted=16..59:shaperAccepted=3..38",
+  "burst:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=38..62:tokenAccepted=28..62:fixedAccepted=28..62:shaperAccepted=24..62",
+  "steady:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=70..70:tokenAccepted=70..70:fixedAccepted=70..70:shaperAccepted=60..70",
+  "herd:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=46..78:tokenAccepted=25..68:fixedAccepted=28..78:shaperAccepted=19..78"
+];
+const EXPECTED_CHECK_NAMES = [
+  "GCRA row count matches arrivals",
+  "accepted token stream respects burst envelope",
+  "fixed window stays within its own quota",
+  "shaper output stays ordered",
+  "tight edge case exposes fixed-window burst excess",
+  "token bucket and GCRA agree request-by-request",
+  "token count stays within bucket capacity",
+  "token row count matches arrivals"
+];
+const EXPECTED_SCENARIOS = EXPECTED_SCENARIO_SHAPE.length;
+const EXPECTED_CASES = EXPECTED_SCENARIOS * 3 * 3 * 3 * 3;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+function uniqueNumbers(values) {
+  return Array.from(new Set(values)).sort((a, b) => a - b).join("/");
+}
+
+function numericRange(values) {
+  return `${Math.min(...values)}..${Math.max(...values)}`;
+}
+
+function scenarioShape(row) {
+  return `${row.scenario}:cases=${row.cases}:passed=${row.passed}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:` +
+    `tokenExcess=${fixed3(row.maxTokenExcess)}:` +
+    `fixedExcess=${fixed3(row.maxFixedExcess)}:maxDelay=${fixed3(row.maxDelay)}`;
+}
+
+function gridShape(audit, scenario) {
+  const rows = audit.cases.filter((row) => row.scenario === scenario);
+  return `${scenario}:cases=${rows.length}:` +
+    `rates=${uniqueNumbers(rows.map((row) => row.rate))}:` +
+    `bursts=${uniqueNumbers(rows.map((row) => row.burst))}:` +
+    `windows=${uniqueNumbers(rows.map((row) => row.window))}:` +
+    `queues=${uniqueNumbers(rows.map((row) => row.queue))}:` +
+    `arrivals=${numericRange(rows.map((row) => row.arrivals))}:` +
+    `tokenAccepted=${numericRange(rows.map((row) => row.tokenAccepted))}:` +
+    `fixedAccepted=${numericRange(rows.map((row) => row.fixedAccepted))}:` +
+    `shaperAccepted=${numericRange(rows.map((row) => row.shaperAccepted))}`;
+}
 
 const audit = lab.auditTokenBucketLab();
 console.table(audit.byScenario.map((row) => ({
@@ -303,21 +362,30 @@ console.table(audit.byScenario.map((row) => ({
   maxFixedExcess: row.maxFixedExcess.toFixed(3),
   maxDelay: row.maxDelay.toFixed(3)
 })));
-const auditShape = {
-  scenarioRows: audit.byScenario.length,
-  rows: audit.cases.length,
-  checked: audit.checked,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+const shape = {
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  grid: audit.byScenario.map((row) => gridShape(audit, row.scenario)),
+  scenarios: audit.byScenario.map(scenarioShape)
 };
-if (auditShape.scenarioRows !== EXPECTED_SCENARIOS ||
-    auditShape.rows !== EXPECTED_CASES ||
-    auditShape.checked !== EXPECTED_CASES ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.scenarios, EXPECTED_SCENARIO_SHAPE)) {
+  shapeErrors.push({
+    name: "scenarios",
+    actual: shape.scenarios,
+    expected: EXPECTED_SCENARIO_SHAPE
+  });
+}
+if (!sameList(shape.grid, EXPECTED_GRID_SHAPE)) {
+  shapeErrors.push({ name: "grid", actual: shape.grid, expected: EXPECTED_GRID_SHAPE });
+}
+if (!sameList(shape.checkNames, EXPECTED_CHECK_NAMES)) {
+  shapeErrors.push({
+    name: "checkNames",
+    actual: shape.checkNames,
+    expected: EXPECTED_CHECK_NAMES
+  });
 }
 
 const failedScenarioGroups = audit.byScenario.filter(
@@ -326,19 +394,38 @@ const failedScenarioGroups = audit.byScenario.filter(
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedScenarioGroups.length || failedCases.length ||
-    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+const summary =
+  `${audit.passed}/${audit.total} parameter cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (shapeErrors.length ||
+    !audit.ok ||
+    audit.byScenario.length !== EXPECTED_SCENARIOS ||
+    audit.cases.length !== EXPECTED_CASES ||
+    audit.checked !== EXPECTED_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    failedScenarioGroups.length ||
+    failedCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
     failures: audit.failures,
     failedScenarioGroups,
     failedCases: failedCases.slice(0, 10),
-    auditShape
+    totals: {
+      checked: audit.checked,
+      cases: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      scenarioRows: audit.byScenario.length,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
-console.log(
-  `${audit.passed}/${audit.total} parameter cases and ` +
-  `${audit.passedChecks}/${audit.totalChecks} checks passed`
-);
+console.log(summary);
 NODE
 ```
 
