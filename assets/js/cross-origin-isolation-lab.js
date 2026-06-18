@@ -529,44 +529,118 @@
 
   function auditCrossOriginIsolationLab() {
     var errors = [];
+    var criticalChecks = [];
+    var cases = [];
     var checked = 0;
 
-    function check(condition, label) {
+    function record(condition, label) {
       checked += 1;
       if (!condition) errors.push(label);
+      return !!condition;
     }
 
-    check(evaluate({ deployment: "requireCorp", resources: "cleanWasm" }).summary.crossOriginIsolated === 1, "COOP plus require-corp isolates clean app");
-    check(evaluate({ deployment: "credentialless", resources: "cleanWasm" }).summary.crossOriginIsolated === 1, "COOP plus credentialless isolates clean app");
-    check(evaluate({ deployment: "coopOnly", resources: "cleanWasm" }).summary.crossOriginIsolated === 0, "COOP alone does not isolate");
-    check(evaluate({ deployment: "coepOnly", resources: "cleanWasm" }).summary.crossOriginIsolated === 0, "COEP alone does not isolate");
-    check(evaluate({ deployment: "permissionBlocked", resources: "cleanWasm" }).summary.sharedMemory === 0, "permission policy can deny gated APIs");
-    check(evaluate({ deployment: "duplicateCoep", resources: "cleanWasm" }).summary.crossOriginIsolated === 0, "invalid combined COEP fails open");
-    check(evaluate({ deployment: "reportOnly", resources: "thirdPartyPage" }).summary.blocked === 0, "report-only does not block resources");
-    check(evaluate({ deployment: "reportOnly", resources: "thirdPartyPage" }).summary.reported > 0, "report-only records violations");
-    check(evaluate({ deployment: "requireCorp", resources: "thirdPartyPage" }).summary.blocked >= 2, "require-corp blocks unopted third-party resources");
-    check(evaluate({ deployment: "requireCorp", resources: "thirdPartyPage" }).summary.openerSevered === 1, "COOP same-origin severs cross-origin popup opener");
-    check(evaluate({ deployment: "openWeb", resources: "thirdPartyPage" }).summary.openerSevered === 0, "open defaults keep popup opener");
-    check(evaluate({ deployment: "credentialless", resources: "credentiallessCdn" }).summary.stripped === 2, "credentialless strips no-CORS credentials");
-    check(evaluate({ deployment: "credentialless", resources: "credentiallessCdn" }).summary.blocked === 1, "credentialless still blocks credentialed CORS without permission");
-    check(evaluate({ deployment: "requireCorp", resources: "credentiallessCdn" }).summary.blocked >= 2, "require-corp blocks missing CORP no-CORS resources");
-    check(evaluate({ deployment: "requireCorp", resources: "sameSiteAssets" }).summary.blocked === 1, "same-site CORP secure mismatch blocks one resource");
-    check(evaluate({ deployment: "openWeb", resources: "defensiveCorp" }).summary.blocked === 1, "CORP same-origin protects resource even without COEP");
-    check(evaluate({ deployment: "openWeb", resources: "defensiveCorp" }).summary.loaded === 2, "open CORP workload loads non-protected resources");
+    function addCritical(label, condition) {
+      criticalChecks.push({
+        check: label,
+        passed: record(condition, label)
+      });
+    }
+
+    addCritical("COOP plus require-corp isolates clean app", evaluate({ deployment: "requireCorp", resources: "cleanWasm" }).summary.crossOriginIsolated === 1);
+    addCritical("COOP plus credentialless isolates clean app", evaluate({ deployment: "credentialless", resources: "cleanWasm" }).summary.crossOriginIsolated === 1);
+    addCritical("COOP alone does not isolate", evaluate({ deployment: "coopOnly", resources: "cleanWasm" }).summary.crossOriginIsolated === 0);
+    addCritical("COEP alone does not isolate", evaluate({ deployment: "coepOnly", resources: "cleanWasm" }).summary.crossOriginIsolated === 0);
+    addCritical("permission policy can deny gated APIs", evaluate({ deployment: "permissionBlocked", resources: "cleanWasm" }).summary.sharedMemory === 0);
+    addCritical("invalid combined COEP fails open", evaluate({ deployment: "duplicateCoep", resources: "cleanWasm" }).summary.crossOriginIsolated === 0);
+    addCritical("report-only does not block resources", evaluate({ deployment: "reportOnly", resources: "thirdPartyPage" }).summary.blocked === 0);
+    addCritical("report-only records violations", evaluate({ deployment: "reportOnly", resources: "thirdPartyPage" }).summary.reported > 0);
+    addCritical("require-corp blocks unopted third-party resources", evaluate({ deployment: "requireCorp", resources: "thirdPartyPage" }).summary.blocked >= 2);
+    addCritical("COOP same-origin severs cross-origin popup opener", evaluate({ deployment: "requireCorp", resources: "thirdPartyPage" }).summary.openerSevered === 1);
+    addCritical("open defaults keep popup opener", evaluate({ deployment: "openWeb", resources: "thirdPartyPage" }).summary.openerSevered === 0);
+    addCritical("credentialless strips no-CORS credentials", evaluate({ deployment: "credentialless", resources: "credentiallessCdn" }).summary.stripped === 2);
+    addCritical("credentialless still blocks credentialed CORS without permission", evaluate({ deployment: "credentialless", resources: "credentiallessCdn" }).summary.blocked === 1);
+    addCritical("require-corp blocks missing CORP no-CORS resources", evaluate({ deployment: "requireCorp", resources: "credentiallessCdn" }).summary.blocked >= 2);
+    addCritical("same-site CORP secure mismatch blocks one resource", evaluate({ deployment: "requireCorp", resources: "sameSiteAssets" }).summary.blocked === 1);
+    addCritical("CORP same-origin protects resource even without COEP", evaluate({ deployment: "openWeb", resources: "defensiveCorp" }).summary.blocked === 1);
+    addCritical("open CORP workload loads non-protected resources", evaluate({ deployment: "openWeb", resources: "defensiveCorp" }).summary.loaded === 2);
 
     Object.keys(DEPLOYMENTS).forEach(function (deploymentKey) {
       Object.keys(RESOURCE_SETS).forEach(function (setKey) {
         var result = evaluate({ deployment: deploymentKey, resources: setKey });
-        check(result.summary.loaded + result.summary.blocked === result.summary.total, deploymentKey + "/" + setKey + " accounts for all resources");
-        check(result.summary.sharedMemory <= result.summary.crossOriginIsolated, deploymentKey + "/" + setKey + " shared memory requires crossOriginIsolated");
-        check(result.summary.crossOriginIsolated <= result.summary.groupIsolated, deploymentKey + "/" + setKey + " API isolation implies group isolation");
+        var failedChecks = [];
+        var label = deploymentKey + "/" + setKey + " accounts for all resources";
+        if (!record(result.summary.loaded + result.summary.blocked === result.summary.total, label)) failedChecks.push(label);
+        label = deploymentKey + "/" + setKey + " shared memory requires crossOriginIsolated";
+        if (!record(result.summary.sharedMemory <= result.summary.crossOriginIsolated, label)) failedChecks.push(label);
+        label = deploymentKey + "/" + setKey + " API isolation implies group isolation";
+        if (!record(result.summary.crossOriginIsolated <= result.summary.groupIsolated, label)) failedChecks.push(label);
+        cases.push({
+          blocked: result.summary.blocked,
+          crossOriginIsolated: result.summary.crossOriginIsolated,
+          deployment: deploymentKey,
+          failedChecks: failedChecks,
+          groupIsolated: result.summary.groupIsolated,
+          loaded: result.summary.loaded,
+          openerSevered: result.summary.openerSevered,
+          passed: failedChecks.length === 0,
+          reported: result.summary.reported,
+          resources: setKey,
+          sharedMemory: result.summary.sharedMemory,
+          stripped: result.summary.stripped,
+          totalResources: result.summary.total
+        });
       });
     });
 
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            blocked: 0,
+            cases: 0,
+            crossOriginIsolated: 0,
+            groupIsolated: 0,
+            loaded: 0,
+            openerSevered: 0,
+            passed: 0,
+            reported: 0,
+            sharedMemory: 0,
+            stripped: 0,
+            totalResources: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].blocked += row.blocked;
+        groups[key].cases += 1;
+        groups[key].crossOriginIsolated += row.crossOriginIsolated;
+        groups[key].groupIsolated += row.groupIsolated;
+        groups[key].loaded += row.loaded;
+        groups[key].openerSevered += row.openerSevered;
+        groups[key].reported += row.reported;
+        groups[key].sharedMemory += row.sharedMemory;
+        groups[key].stripped += row.stripped;
+        groups[key].totalResources += row.totalResources;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+
+    var passed = checked - errors.length;
+
     return {
+      byDeployment: summarize("deployment"),
+      byResourceSet: summarize("resources"),
+      cases: cases,
       ok: errors.length === 0,
       checked: checked,
-      errors: errors
+      criticalChecks: criticalChecks,
+      errors: errors,
+      passed: passed,
+      total: checked
     };
   }
 

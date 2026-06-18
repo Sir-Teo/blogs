@@ -299,13 +299,14 @@ with CORS or CORP.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cross-origin-isolation-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cross-origin-isolation-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Reproducing The Model
 
 The simulator exports a Node-testable API:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/cross-origin-isolation-lab.js");
 
 console.log(lab.evaluate({}).summary);
@@ -314,8 +315,17 @@ console.log(lab.evaluate({
   resources: "credentiallessCdn"
 }).summary);
 const audit = lab.auditCrossOriginIsolationLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
-console.log(audit.checked + " checks passed");
+console.table(audit.byDeployment);
+console.table(audit.byResourceSet);
+console.table(audit.criticalChecks);
+if (audit.checked !== 137) {
+  throw new Error("unexpected check count: " + audit.checked);
+}
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} checks passed`);
+NODE
 ```
 
 Default summary:
@@ -350,7 +360,8 @@ Credentialless CDN summary:
 }
 ```
 
-The audit currently runs 137 checks. Among the invariants:
+The audit currently runs 137 checks over a 40-row deployment/resource grid.
+Among the invariants:
 
 - COOP alone and COEP alone do not set `crossOriginIsolated`;
 - `COOP: same-origin` plus `COEP: require-corp` or `credentialless` can set it;
