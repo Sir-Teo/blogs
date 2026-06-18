@@ -308,7 +308,7 @@ That is a 45% error reduction against the lab's supersampled reference.
   <p class="mipmap-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/mipmap-lab.js?v=20260617a' | relative_url }}"></script>
+<script src="{{ '/assets/js/mipmap-lab.js?v=20260617b' | relative_url }}"></script>
 
 ## Reproducibility Check
 
@@ -318,18 +318,40 @@ headline numbers can be audited without a browser:
 ```js
 const lab = require("./assets/js/mipmap-lab.js");
 
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
+const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 
-console.table(rows.map((row) => ({
+if (audit.total !== 4 || audit.totalChecks !== 24) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
+
+console.table(audit.cases.map((row) => ({
   frequency: row.params.frequency,
   footprint: row.params.footprint,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   pointRms: row.pointRms.toFixed(5),
   mipRms: row.mipRms.toFixed(5),
+  reduction: `${Math.round(100 * row.errorReduction)}%`,
   lod: row.selectedLod.toFixed(3),
   passed: row.passed
 })));
+console.log(summary);
 ```
 
 On my run, the cases are:
@@ -345,6 +367,9 @@ These numbers should not be read as universal benchmark results. They are for
 this procedural texture, this square footprint, this finite supersampled
 reference, and this box-filtered pyramid. They do show the qualitative failure:
 point sampling has no way to know that the pixel covers many texels.
+The current audit grid covers four minification settings and 24 named checks:
+pyramid shape, minification error, bounded sample means, LOD selection, and
+constant-preserving downsampling.
 
 ## What the Pyramid Hides
 

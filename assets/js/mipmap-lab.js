@@ -193,7 +193,10 @@
     check("pyramid sizes halve", result.levels.every(function (level, i, arr) {
       return i === 0 || level.size === Math.max(1, arr[i - 1].size >> 1);
     }));
-    check("mipmap beats point on default minification", result.params.footprint < 2 || result.mipRms <= result.pointRms);
+    check(
+      "mipmap RMS does not exceed point RMS under minification",
+      result.params.footprint < 2 || result.mipRms <= result.pointRms
+    );
     check("sample means remain bounded", [result.pointMean, result.mipMean, result.refMean].every(function (value) {
       return value >= 0 && value <= 1 && Number.isFinite(value);
     }));
@@ -211,22 +214,50 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       {},
       { frequency: 8, footprint: 2, phase: 0, contrast: 60, levels: 6 },
       { frequency: 28, footprint: 12, phase: 91, contrast: 90, levels: 8 },
       { frequency: 40, footprint: 24, phase: 43, contrast: 75, levels: 8 }
     ].map(function (row) {
       var result = evaluate(row);
+      var passedChecks = result.audit.checks.filter(function (check) {
+        return check.passed;
+      }).length;
       return {
         params: result.params,
         pointRms: result.pointRms,
         mipRms: result.mipRms,
+        errorReduction: result.pointRms > 0
+          ? 1 - result.mipRms / result.pointRms
+          : 0,
         selectedLod: result.selectedLod,
         passed: result.audit.passed,
+        passedChecks: passedChecks,
+        failedChecks: result.audit.checks.filter(function (check) {
+          return !check.passed;
+        }).map(function (check) {
+          return check.name;
+        }),
+        totalChecks: result.audit.checks.length,
         checks: result.audit.checks
       };
     });
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    return {
+      cases: cases,
+      ok: passed === cases.length && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
+    };
   }
 
   function metric(label, value, className) {
