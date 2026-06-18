@@ -323,7 +323,7 @@ the wrong event.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/rto-estimator-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/rto-estimator-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Bad Clock Learns
 
@@ -368,6 +368,34 @@ timer created, while the comparison clocks accept them.
 | bursty queue | 600 ms | 85% | 0% | 3 | 15 | 10 | 3 |
 | lossy radio | 1000 ms | 90% | 0% | 0 | 0 | 0 | 5 |
 | lossy radio | 700 ms | 110% | 6% | 1 | 2 | 0 | 9 |
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/rto-estimator-lab.js");
+
+const audit = lab.auditGrid();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.params.scenario,
+  minRto: row.params.minRto,
+  jitter: row.params.jitter,
+  extraLoss: row.params.extraLoss,
+  rfcSpurious: row.rfcSpurious,
+  recentSpurious: row.recentSpurious,
+  meanSpurious: row.meanSpurious,
+  rfcIgnored: row.rfcIgnored,
+  recentAccepted: row.recentAmbiguousAccepted
+})));
+```
 
 The radio rows are a good sanity check. A real lost original segment creates a
 necessary retransmission, not a spurious one. Karn still ignores the ACK sample,

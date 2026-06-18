@@ -324,17 +324,29 @@
       { scenario: "radio", minRto: 1000, jitter: 90, extraLoss: 0 },
       { scenario: "radio", minRto: 700, jitter: 110, extraLoss: 6 }
     ];
-    return cases.map(function (params) {
+    var rows = cases.map(function (params) {
       var result = evaluate(params);
       return {
+        failedChecks: result.audit.checks.filter(function (row) {
+          return !row.ok;
+        }).map(function (row) {
+          return row.name;
+        }),
+        meanAmbiguousAccepted: result.algorithms.mean.summary.ambiguousAccepted,
         params: result.params,
-        rfcSpurious: result.algorithms.rfc.summary.spurious,
-        recentSpurious: result.algorithms.recent.summary.spurious,
         meanSpurious: result.algorithms.mean.summary.spurious,
+        passed: result.audit.passed,
+        recentAmbiguousAccepted: result.algorithms.recent.summary.ambiguousAccepted,
+        recentSpurious: result.algorithms.recent.summary.spurious,
         rfcIgnored: result.algorithms.rfc.summary.ignored,
-        passed: result.audit.passed
+        rfcSpurious: result.algorithms.rfc.summary.spurious
       };
     });
+    return {
+      cases: rows,
+      passed: rows.filter(function (row) { return row.passed; }).length,
+      total: rows.length
+    };
   }
 
   function fmt(value, digits) {
