@@ -325,7 +325,13 @@
     var namedChecks = [];
     function named(name, condition, label) {
       var ok = check(condition, label);
-      namedChecks.push({ failedChecks: ok ? [] : [label], name: name, passed: ok });
+      namedChecks.push({
+        failedChecks: ok ? [] : [label],
+        name: name,
+        passed: ok,
+        passedChecks: ok ? 1 : 0,
+        totalChecks: 1
+      });
     }
 
     named("site-subdomain", siteFor("https://app.bank.example/x") === "https://bank.example", "subdomain collapses to schemeful registrable site");
@@ -366,11 +372,13 @@
             csrfRisk: result.summary.csrfRisk,
             failedChecks: failedChecks,
             passed: failedChecks.length === 0,
+            passedChecks: 2 - failedChecks.length,
             request: requestKey,
             sameSite: result.summary.sameSite,
             server: serverKey,
             stateChanged: result.summary.stateChanged,
-            stored: result.summary.stored
+            stored: result.summary.stored,
+            totalChecks: 2
           });
         });
       });
@@ -385,20 +393,30 @@
         cookieSent: rows.reduce(function (sum, row) { return sum + row.cookieSent; }, 0),
         csrfRisk: rows.reduce(function (sum, row) { return sum + row.csrfRisk; }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
         stateChanged: rows.reduce(function (sum, row) { return sum + row.stateChanged; }, 0),
-        stored: rows.reduce(function (sum, row) { return sum + row.stored; }, 0)
+        stored: rows.reduce(function (sum, row) { return sum + row.stored; }, 0),
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0)
       };
     });
+    var passedChecks = namedChecks.reduce(function (sum, row) { return sum + row.passedChecks; }, 0) +
+      cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = namedChecks.reduce(function (sum, row) { return sum + row.totalChecks; }, 0) +
+      cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
 
     return {
       byCookie: byCookie,
+      caseRows: cases.length,
       cases: cases,
-      ok: errors.length === 0,
+      ok: errors.length === 0 && passedChecks === totalChecks,
       checked: checked,
+      details: cases,
       errors: errors,
       namedChecks: namedChecks,
       passed: checked - errors.length,
-      total: checked
+      passedChecks: passedChecks,
+      total: checked,
+      totalChecks: totalChecks
     };
   }
 

@@ -276,7 +276,7 @@ substitute for origin-level authorization.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/samesite-cookie-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/samesite-cookie-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Reproducing The Artifact
 
@@ -297,12 +297,20 @@ console.table(audit.byCookie.map((row) => ({
   sent: row.cookieSent,
   blocked: row.blocked,
   changed: row.stateChanged,
-  csrfRisk: row.csrfRisk
+  csrfRisk: row.csrfRisk,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+if (audit.caseRows !== 72 || audit.namedChecks.length !== 17 || audit.totalChecks !== 161) {
+  throw new Error(
+    `unexpected audit size: ${audit.caseRows} rows, ` +
+    `${audit.namedChecks.length} named checks, ${audit.totalChecks} total checks`
+  );
+}
+const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.errors, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} checks passed`);
+console.log(summary);
 NODE
 ```
 
@@ -321,7 +329,8 @@ Default output:
 }
 ```
 
-The audit currently runs 161 checks. Among the invariants:
+The audit currently runs 17 named site/cookie checks plus 72 generated
+cookie/request/server rows, for 161 total checks. Among the invariants:
 
 - `https://app.bank.example` and `https://bank.example` are same-site but not
   same-origin;
