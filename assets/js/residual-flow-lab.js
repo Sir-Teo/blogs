@@ -356,14 +356,32 @@
   function auditResidualFlowLab() {
     var total = 0;
     var passed = 0;
+    var rows = [];
     Object.keys(EXAMPLES).forEach(function (example) {
       ["bfs", "dfs", "widest"].forEach(function (rule) {
         total += 1;
         var result = evaluate({ example: example, rule: rule });
+        var finalState = result.states[result.states.length - 1];
         if (result.audit.passed) passed += 1;
+        rows.push({
+          augmentations: result.summary.augmentations,
+          cut: result.summary.cut,
+          example: example,
+          failedChecks: Object.keys(result.audit).filter(function (key) {
+            return key !== "passed" && result.audit[key] === false;
+          }),
+          flow: result.summary.flow,
+          graph: result.graph.label,
+          minCut: result.audit.minCut,
+          passed: result.audit.passed,
+          phaseChecks: result.audit.phaseChecks,
+          reachableCount: finalState.reachable.filter(Boolean).length,
+          rule: rule,
+          terminalNoPath: result.audit.terminalNoPath
+        });
       });
     });
-    return { passed: passed, total: total };
+    return { cases: rows, passed: passed, total: total };
   }
 
   function fmt(value) {

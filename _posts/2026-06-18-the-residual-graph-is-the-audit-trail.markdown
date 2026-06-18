@@ -287,7 +287,7 @@ cut certificate.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/residual-flow-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/residual-flow-lab.js?v=20260618b' | relative_url }}"></script>
 
 In the default rail network, BFS finds five augmenting paths:
 
@@ -310,8 +310,37 @@ choices, and the residual graph is the common accounting system.
 
 The implementation is inspectable:
 [`assets/js/residual-flow-lab.js`]({{ '/assets/js/residual-flow-lab.js' | relative_url }}).
-Its module audit currently passes all `9` combinations of the three example
-networks and three path rules.
+Its module audit checks all `9` combinations of the three example networks and
+three path rules:
+
+```js
+const lab = require("./assets/js/residual-flow-lab.js");
+
+const audit = lab.auditResidualFlowLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  network: row.example,
+  rule: row.rule,
+  augmentations: row.augmentations,
+  flow: row.flow,
+  terminalCut: row.cut,
+  bruteForceMinCut: row.minCut,
+  reachableSideSize: row.reachableCount
+})));
+```
+
+For each row, it checks every intermediate flow for capacity and conservation,
+checks that each augmenting path uses positive residual arcs with the stated
+bottleneck, and checks that the terminal flow equals both the terminal cut and
+a brute-force min-cut oracle.
 
 ## Why The Final Cut Proves It
 
