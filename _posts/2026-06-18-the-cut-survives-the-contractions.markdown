@@ -265,6 +265,12 @@ receipt: 63 audit rows, backed by 365 individual invariant checks.
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/karger-mincut-lab.js");
+const EXPECTED_GRAPHS = 4;
+const EXPECTED_NAMED_CHECKS = 11;
+const EXPECTED_GRID_CASES = 48;
+const EXPECTED_ROWS = 63;
+const EXPECTED_CHECKS = 365;
+
 const audit = lab.auditKargerMincutLab();
 console.table(audit.byGraph.map((row) => ({
   graph: row.graph,
@@ -282,14 +288,46 @@ console.table(audit.gridSummary.map((row) => ({
   minSuccessRate: row.minSuccessRate.toFixed(3),
   maxSuccessRate: row.maxSuccessRate.toFixed(3)
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 63 ||
-  audit.total !== 63 ||
-  audit.passedChecks !== 365 ||
-  audit.totalChecks !== 365
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  graphRows: audit.byGraph.length,
+  gridSummaries: audit.gridSummary.length,
+  gridRows: audit.cases.length,
+  namedChecks: audit.namedChecks.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.graphRows !== EXPECTED_GRAPHS ||
+    auditShape.gridSummaries !== EXPECTED_GRAPHS ||
+    auditShape.gridRows !== EXPECTED_GRID_CASES ||
+    auditShape.namedChecks !== EXPECTED_NAMED_CHECKS ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedGraphRows = audit.byGraph.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedNamedChecks = audit.namedChecks.filter((row) => !row.passed);
+const failedGridGroups = audit.gridSummary.filter(
+  (row) => row.passed !== row.cases || row.passedChecks !== row.totalChecks
+);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedGraphRows.length || failedNamedChecks.length ||
+    failedGridGroups.length || failedCases.length ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedGraphRows,
+    failedNamedChecks,
+    failedGridGroups,
+    failedCases: failedCases.slice(0, 10),
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} audit rows and ` +
