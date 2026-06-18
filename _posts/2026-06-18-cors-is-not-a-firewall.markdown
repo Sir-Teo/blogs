@@ -286,7 +286,7 @@ does not match the caller.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cors-preflight-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cors-preflight-lab.js?v=20260618c' | relative_url }}"></script>
 
 The browser check has two moments.
 
@@ -328,12 +328,19 @@ console.table(audit.byRequest.map((row) => ({
   cacheHits: row.cacheHits,
   exposed: row.exposed,
   blockedBefore: row.blockedBefore,
-  blockedAfter: row.blockedAfter
+  blockedAfter: row.blockedAfter,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (!audit.ok || audit.passed !== audit.total) {
+if (audit.total !== 80 || audit.totalChecks !== 560) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} policy/cache cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} policy/cache cases passed`);
+console.log(summary);
 NODE
 ```
 
@@ -350,8 +357,8 @@ Default output:
 }
 ```
 
-The audit currently checks 80 request/policy/max-age combinations. Among the
-invariants:
+The audit currently checks 80 request/policy/max-age combinations and 560 named
+invariants. Among them:
 
 - simple public GETs do not generate preflights;
 - outcomes partition attempts into exposed, blocked-before-send, and hidden-200;

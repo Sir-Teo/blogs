@@ -389,22 +389,51 @@
 
   function verify(result) {
     var issues = [];
-    if (result.attempts.length !== 6) issues.push("six attempts expected");
-    if (!result.preflightNeeded && result.summary.preflights !== 0) issues.push("simple requests should not preflight");
-    if (result.summary.exposed + result.summary.blockedBefore + result.summary.blockedAfter !== result.summary.attempts) {
+    var sixAttemptsExpected = result.attempts.length === 6;
+    var simpleRequestsSkipPreflight = result.preflightNeeded || result.summary.preflights === 0;
+    var outcomesPartitionAttempts = result.summary.exposed + result.summary.blockedBefore + result.summary.blockedAfter === result.summary.attempts;
+    var cacheHitsOnlyForPreflightedRequests = true;
+    var blockedRowsHideResponses = true;
+    var wildcardHidesCredentialedResponses =
+      result.request.credentials !== "include" ||
+      result.params.policy !== "wildcardNoCookies" ||
+      result.summary.exposed === 0;
+    var authorizationRequiresExplicitHeader =
+      result.params.request !== "authPatch" ||
+      result.params.policy !== "wildcardNoCookies" ||
+      result.summary.blockedBefore === result.summary.attempts;
+
+    if (!sixAttemptsExpected) issues.push("six attempts expected");
+    if (!simpleRequestsSkipPreflight) issues.push("simple requests should not preflight");
+    if (!outcomesPartitionAttempts) {
       issues.push("outcomes should partition attempts");
     }
     result.attempts.forEach(function (row) {
-      if (row.preflight === "cache hit" && !result.preflightNeeded) issues.push("cache hit without preflight need");
-      if (row.actual === "blocked before send" && row.exposed) issues.push("blocked row exposed response");
+      if (row.preflight === "cache hit" && !result.preflightNeeded) {
+        cacheHitsOnlyForPreflightedRequests = false;
+        issues.push("cache hit without preflight need");
+      }
+      if (row.actual === "blocked before send" && row.exposed) {
+        blockedRowsHideResponses = false;
+        issues.push("blocked row exposed response");
+      }
     });
-    if (result.request.credentials === "include" && result.params.policy === "wildcardNoCookies" && result.summary.exposed !== 0) {
+    if (!wildcardHidesCredentialedResponses) {
       issues.push("wildcard must not expose credentialed responses");
     }
-    if (result.params.request === "authPatch" && result.params.policy === "wildcardNoCookies" && result.summary.blockedBefore !== result.summary.attempts) {
+    if (!authorizationRequiresExplicitHeader) {
       issues.push("Authorization should not be satisfied by wildcard headers");
     }
-    return { ok: issues.length === 0, issues: issues };
+    var checks = [
+      { name: "six-attempts-expected", passed: sixAttemptsExpected },
+      { name: "simple-requests-skip-preflight", passed: simpleRequestsSkipPreflight },
+      { name: "outcomes-partition-attempts", passed: outcomesPartitionAttempts },
+      { name: "cache-hits-only-for-preflighted-requests", passed: cacheHitsOnlyForPreflightedRequests },
+      { name: "blocked-rows-hide-responses", passed: blockedRowsHideResponses },
+      { name: "wildcard-hides-credentialed-responses", passed: wildcardHidesCredentialedResponses },
+      { name: "authorization-requires-explicit-header", passed: authorizationRequiresExplicitHeader }
+    ];
+    return { ok: issues.length === 0, checks: checks, issues: issues };
   }
 
   function auditCorsPreflightLab() {
@@ -413,25 +442,31 @@
       Object.keys(POLICIES).forEach(function (policy) {
         [0, 5, 12, 40].forEach(function (maxAge) {
           var result = simulate({ request: request, policy: policy, maxAge: maxAge, gap: 3 });
+          var failedChecks = result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
           cases.push({
             blockedAfter: result.summary.blockedAfter,
             blockedBefore: result.summary.blockedBefore,
             cacheHits: result.summary.cacheHits,
+            checks: result.audit.checks,
             exposed: result.summary.exposed,
-            failedChecks: result.audit.issues,
+            failedChecks: failedChecks,
+            issues: result.audit.issues,
             maxAge: maxAge,
             passed: result.audit.ok,
+            passedChecks: result.audit.checks.length - failedChecks.length,
             policy: policy,
             preflightNeeded: result.preflightNeeded,
             preflights: result.summary.preflights,
-            request: request
+            request: request,
+            totalChecks: result.audit.checks.length
           });
         });
       });
     });
     var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
       return {
-        issues: row.failedChecks,
+        failedChecks: row.failedChecks,
+        issues: row.issues,
         maxAge: row.maxAge,
         policy: row.policy,
         request: row.request
@@ -446,8 +481,10 @@
         cases: rows.length,
         exposed: rows.reduce(function (sum, row) { return sum + row.exposed; }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
         preflights: rows.reduce(function (sum, row) { return sum + row.preflights; }, 0),
-        request: request
+        request: request,
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0)
       };
     });
     var byPolicy = Object.keys(POLICIES).map(function (policy) {
@@ -458,19 +495,26 @@
         cases: rows.length,
         exposed: rows.reduce(function (sum, row) { return sum + row.exposed; }, 0),
         passed: rows.filter(function (row) { return row.passed; }).length,
-        policy: policy
+        passedChecks: rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0),
+        policy: policy,
+        totalChecks: rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0)
       };
     });
     var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
     return {
       byPolicy: byPolicy,
       byRequest: byRequest,
       cases: cases,
-      ok: failures.length === 0,
+      details: cases,
+      ok: failures.length === 0 && passedChecks === totalChecks,
       checked: cases.length,
       failures: failures,
       passed: passed,
-      total: cases.length
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
