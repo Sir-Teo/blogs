@@ -323,17 +323,78 @@ comparison.
 
 ```js
 const lab = require("./assets/js/zone-map-pruning-lab.js");
+const EXPECTED_CASES = 4;
+const EXPECTED_COMPARISONS = 1;
+const EXPECTED_ROWS = 5;
+const EXPECTED_CHECKS = 17;
+const EXPECTED_CHECK_NAMES = [
+  "no-skipped-matching-group",
+  "rows-in-unit-square",
+  "scan-accounting",
+  "zone-boxes-bound-rows"
+];
+const EXPECTED_CASE_SHAPE = [
+  "box predicate random ingest:random:box:32:32:4096:0:84:1:4",
+  "box predicate z-order:z:box:4:32:512:87.5:84:2:4",
+  "tenant band with outliers:y:y:3:32:768:90.6:468:0:4",
+  "time band sorted by time:x:x:4:32:256:87.5:165:0:4"
+];
+const EXPECTED_COMPARISON_SHAPE = [
+  "smaller row groups read no more rows for aligned range:256:512:64:384:1"
+];
 
 const audit = lab.auditZoneMapLab();
 const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
-if (audit.total !== 5 || audit.totalChecks !== 17) {
-  throw new Error(`unexpected audit size: ${audit.total} rows, ${audit.totalChecks} checks`);
+const auditShape = {
+  caseChecks: audit.cases.map((row) => [
+    row.label,
+    row.order,
+    row.predicate,
+    row.scannedGroups,
+    row.groups,
+    row.rowsRead,
+    Number((row.skipRate * 100).toFixed(1)),
+    row.matchRows,
+    row.falsePositiveGroups,
+    row.totalChecks
+  ].join(":")).sort(),
+  cases: audit.cases.length,
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  comparisonChecks: audit.comparisons.map((row) => [
+    row.label,
+    row.coarseGroupSize,
+    row.coarseRowsRead,
+    row.fineGroupSize,
+    row.fineRowsRead,
+    row.totalChecks
+  ].join(":")).sort(),
+  comparisons: audit.comparisons.length,
+  monotone: audit.monotone,
+  passed: audit.passed,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.cases !== EXPECTED_CASES ||
+    auditShape.comparisons !== EXPECTED_COMPARISONS ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES) ||
+    JSON.stringify(auditShape.comparisonChecks) !== JSON.stringify(EXPECTED_COMPARISON_SHAPE)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 const summary =
   `${audit.passed}/${audit.total} audit rows and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+  throw new Error(JSON.stringify({
+    summary,
+    errors: audit.errors,
+    failed,
+    auditShape
+  }, null, 2));
 }
 
 console.table(audit.cases.map((row) => ({
