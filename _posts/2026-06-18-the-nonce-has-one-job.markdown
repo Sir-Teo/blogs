@@ -319,7 +319,7 @@ authentication structure that was meant to be one-time.
   <p class="gcm-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/gcm-nonce-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/gcm-nonce-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -346,23 +346,24 @@ The deterministic audit grid is:
 
 Reproduce it from the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/gcm-nonce-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  scenario: row.params.scenario,
-  seed: row.params.seed,
-  nonce: row.params.nonce,
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  seed: row.seed,
+  nonce: row.nonce,
   bytes: row.length,
   hashKey: row.hashKey,
   recoveredHashKey: row.recoveredHashKey,
   forgedByte: row.forgedByte,
   passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 ## What This Toy Leaves Out

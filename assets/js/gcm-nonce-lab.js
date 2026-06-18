@@ -257,16 +257,20 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       {},
       { scenario: "role", seed: 12, nonce: 3, forgeByte: 65 },
       { scenario: "sensor", seed: 99, nonce: 201, forgeByte: 90 },
       { scenario: "payment", seed: 123, nonce: 0, forgeByte: 36 },
       { scenario: "role", seed: 777, nonce: 255, forgeByte: 126 }
-    ].map(function (row) {
+    ].map(function (row, index) {
       var result = evaluate(row);
       return {
+        caseId: index + 1,
         params: result.params,
+        scenario: result.params.scenario,
+        seed: result.params.seed,
+        nonce: result.params.nonce,
         length: result.plainA.length,
         xorBytes: result.cipherXor.length,
         recoveredText: textFromBytes(result.recoveredB),
@@ -274,9 +278,14 @@
         recoveredHashKey: result.recovered.h,
         forgedByte: result.forged.opened.plain[0],
         passed: result.audit.passed,
-        checks: result.audit.checks
+        failedChecks: result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       };
     });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function metric(label, value, className) {
