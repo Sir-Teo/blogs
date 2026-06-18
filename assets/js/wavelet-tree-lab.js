@@ -534,34 +534,58 @@
   }
 
   function auditWaveletTreeLab() {
-    var rows = [];
+    var cases = [];
+    var bySample = [];
     Object.keys(SAMPLES).forEach(function (sample) {
       var base = evaluate({ sample: sample });
-      rows.push({
+      var baseCase = {
         sample: sample,
-        ok: base.audit.passed,
+        symbol: null,
+        passed: base.audit.passed,
+        length: base.stats.length,
+        alphabet: base.stats.alphabet,
+        waveletBits: base.stats.waveletBits,
+        entropyBits: Number(base.stats.entropyBits.toFixed(6)),
+        failedChecks: base.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
+      };
+      cases.push(baseCase);
+      base.tree.alphabet.forEach(function (symbol) {
+        var result = evaluate({
+          sample: sample,
+          symbol: symbol,
+          prefixEnd: base.stats.length,
+          selectK: 1,
+          rangeStart: 0,
+          rangeEnd: base.stats.length,
+          kth: Math.ceil(base.stats.length / 2)
+        });
+        cases.push({
+          sample: sample,
+          symbol: symbol,
+          passed: result.audit.passed,
+          length: result.stats.length,
+          alphabet: result.stats.alphabet,
+          waveletBits: result.stats.waveletBits,
+          entropyBits: Number(result.stats.entropyBits.toFixed(6)),
+          failedChecks: result.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
+        });
+      });
+      bySample.push({
+        sample: sample,
+        cases: cases.filter(function (row) { return row.sample === sample; }).length,
+        passed: cases.filter(function (row) { return row.sample === sample && row.passed; }).length,
         length: base.stats.length,
         alphabet: base.stats.alphabet,
         waveletBits: base.stats.waveletBits,
         entropyBits: Number(base.stats.entropyBits.toFixed(6))
       });
-      base.tree.alphabet.forEach(function (symbol) {
-        rows.push({
-          sample: sample,
-          symbol: symbol,
-          ok: evaluate({
-            sample: sample,
-            symbol: symbol,
-            prefixEnd: base.stats.length,
-            selectK: 1,
-            rangeStart: 0,
-            rangeEnd: base.stats.length,
-            kth: Math.ceil(base.stats.length / 2)
-          }).audit.passed
-        });
-      });
     });
-    return rows;
+    return {
+      bySample: bySample,
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {

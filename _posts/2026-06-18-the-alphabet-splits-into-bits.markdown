@@ -316,19 +316,22 @@ slice of each built-in sequence.
   <p class="wavelet-tree-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/wavelet-tree-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/wavelet-tree-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Lab Audits
 
 The module exports the same implementation used by the browser:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/wavelet-tree-lab.js");
-
-const rows = lab.auditWaveletTreeLab();
-const ok = rows.every((row) => row.ok);
-if (!ok) throw new Error(JSON.stringify(rows.filter((row) => !row.ok)));
-console.log(rows.length + " checks passed");
+const audit = lab.auditWaveletTreeLab();
+console.table(audit.bySample);
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+console.log(`${audit.passed}/${audit.total} cases passed`);
+NODE
 ```
 
 For every built-in sequence, the audit checks:
