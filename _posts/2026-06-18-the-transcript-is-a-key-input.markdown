@@ -375,10 +375,19 @@ You can reproduce the scenario grid from Node:
 
 ```js
 const lab = require("./assets/js/tls-transcript-lab.js");
+const EXPECTED_CRITICAL_CHECKS = 1;
+const EXPECTED_ROWS = 6;
+const EXPECTED_CASES = 7;
+const EXPECTED_CHECKS = 30;
 
 (async () => {
   const audit = await lab.auditGrid();
-  const failed = audit.rows.filter((row) => !row.passed);
+  const failedRows = audit.rows.filter(
+    (row) => !row.passed || row.passedChecks !== row.totalChecks
+  );
+  const failedCriticalChecks = audit.criticalChecks.filter(
+    (row) => !row.passed || row.passedChecks !== row.totalChecks
+  );
   console.table(audit.byScenario);
   console.table(audit.criticalChecks);
   const auditShape = {
@@ -388,16 +397,23 @@ const lab = require("./assets/js/tls-transcript-lab.js");
     totalChecks: audit.totalChecks
   };
   if (
-    auditShape.criticalChecks !== 1 ||
-    auditShape.rows !== 6 ||
-    auditShape.total !== 7 ||
-    auditShape.totalChecks !== 30
+    auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
+    auditShape.rows !== EXPECTED_ROWS ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS
   ) {
     throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
   }
-  if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  if (
+    failedRows.length ||
+    failedCriticalChecks.length ||
+    !audit.ok ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks
+  ) {
     throw new Error(JSON.stringify({
-      failed,
+      failedRows,
+      failedCriticalChecks,
       hkdfVectorOk: audit.hkdfVectorOk,
       passed: audit.passed,
       passedChecks: audit.passedChecks,
