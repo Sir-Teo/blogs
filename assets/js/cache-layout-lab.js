@@ -289,12 +289,37 @@
         vebWorstBlocks: byLayout.veb.worstBlocks,
         vebSelectedBlocks: byLayout.veb.selectedBlocks,
         passed: result.audit.passed,
+        checks: result.audit.checks.map(function (row) {
+          return {
+            name: row.name,
+            ok: row.ok
+          };
+        }),
+        passedChecks: result.audit.checks.filter(function (row) { return row.ok; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
       };
     });
+    var passedCases = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (check) {
+        errors.push("case " + row.caseId + ": " + check);
+      });
+    });
     return {
+      ok: passedCases === cases.length && passedChecks === totalChecks,
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
+      errors: errors,
+      passed: passedCases,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

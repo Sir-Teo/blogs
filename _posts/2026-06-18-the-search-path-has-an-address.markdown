@@ -212,7 +212,7 @@ if B adjacent node records arrive together, how many blocks does this path need?
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cache-layout-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cache-layout-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -242,7 +242,9 @@ preorder layout hugs one subtree tightly. Its worst case is still poor in this
 complete-tree experiment. Locality should be evaluated over the query
 distribution, not over the prettiest path.
 
-To reproduce the deterministic layout sweep from the repository root:
+To reproduce the deterministic layout sweep from the repository root, including
+151 named checks for layout coverage, search-path accounting, block counts, and
+the default vEB-vs-inorder comparison:
 
 ```bash
 node - <<'NODE'
@@ -257,11 +259,15 @@ console.table(audit.cases.map((row) => ({
   dfsAvg: row.dfsAverageBlocks.toFixed(2),
   vebAvg: row.vebAverageBlocks.toFixed(2),
   vebWorst: row.vebWorstBlocks,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
