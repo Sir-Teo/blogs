@@ -194,13 +194,37 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { bid: 30, ask: 26, pressure: 0, trials: 5000, seed: 29 },
       { bid: 20, ask: 20, pressure: 0, trials: 5000, seed: 11 },
       { bid: 15, ask: 55, pressure: 35, trials: 6000, seed: 71 },
       { bid: 70, ask: 12, pressure: -40, trials: 6000, seed: 9 },
       { bid: 35, ask: 35, pressure: -65, trials: 7000, seed: 43 }
-    ].map(evaluate);
+    ].map(function (raw, index) {
+      var result = evaluate(raw);
+      return {
+        caseId: index + 1,
+        bid: result.params.bid,
+        ask: result.params.ask,
+        pressure: result.params.pressure,
+        trials: result.params.trials,
+        seed: result.params.seed,
+        askEventProbability: result.sideProbability,
+        exactUp: result.exactUp,
+        simulatedUp: result.simulation.upRate,
+        monteCarloError: Math.abs(result.simulation.upRate - result.exactUp),
+        raceMicroTicks: result.raceMicroTicks,
+        weightedTicks: result.weightedTicks,
+        meanEvents: result.simulation.meanEvents,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {

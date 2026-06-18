@@ -227,7 +227,7 @@ mid-price adjustment.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/microprice-queue-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/microprice-queue-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -305,6 +305,30 @@ Real markets add everything the lab leaves out: replenishment, queue priority,
 large orders, hidden size, adverse selection, latency, correlated order flow,
 and trader reaction. Gould et al.'s survey is a useful antidote to over-trusting
 any single stylized limit-order-book model.[^gould]
+
+To reproduce the deterministic audit sweep from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/microprice-queue-lab.js");
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  case: row.caseId,
+  bid: row.bid,
+  ask: row.ask,
+  pressure: row.pressure,
+  exactUp: (100 * row.exactUp).toFixed(1) + "%",
+  simulatedUp: (100 * row.simulatedUp).toFixed(1) + "%",
+  mcError: row.monteCarloError.toFixed(4),
+  raceTicks: row.raceMicroTicks.toFixed(3),
+  weightedTicks: row.weightedTicks.toFixed(3),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## Boundaries
 
