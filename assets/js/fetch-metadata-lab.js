@@ -314,40 +314,106 @@
 
   function auditFetchMetadataLab() {
     var errors = [];
+    var criticalChecks = [];
+    var cases = [];
     var checked = 0;
 
-    function check(condition, label) {
+    function record(condition, label) {
       checked += 1;
       if (!condition) errors.push(label);
+      return !!condition;
     }
 
-    check(headersFor(REQUESTS.crossSiteFormPost).some(function (row) { return row[0] === "Sec-Fetch-User" && row[1] === "?1"; }), "user activation emits Sec-Fetch-User ?1");
-    check(!headersFor(REQUESTS.publicImage).some(function (row) { return row[0] === "Sec-Fetch-User"; }), "subresource omits Sec-Fetch-User");
+    function addCritical(label, condition) {
+      criticalChecks.push({
+        check: label,
+        passed: record(condition, label)
+      });
+    }
 
-    check(evaluate({ request: "crossSiteFormPost", defense: "metadataOnly" }).summary.blocked === 1, "metadata gate blocks cross-site form POST");
-    check(evaluate({ request: "crossSiteApiRead", defense: "metadataOnly" }).summary.blocked === 1, "metadata gate blocks cross-site API read");
-    check(evaluate({ request: "publicImage", defense: "metadataOnly" }).summary.blocked === 0, "metadata gate allows public image");
-    check(evaluate({ request: "directNavigation", defense: "metadataOnly" }).summary.blocked === 0, "metadata gate allows direct navigation");
-    check(evaluate({ request: "crossSiteLink", defense: "metadataOnly" }).summary.blocked === 0, "metadata gate allows user top-level link");
-    check(evaluate({ request: "sameSitePostNoToken", defense: "metadataOnly" }).summary.stateChanged === 1, "metadata alone allows same-site write without token");
-    check(evaluate({ request: "sameSitePostNoToken", defense: "metadataAndToken" }).summary.blocked === 1, "token layer blocks same-site write without token");
-    check(evaluate({ request: "sameOriginPost", defense: "metadataAndToken" }).summary.stateChanged === 1, "same-origin token-bearing write succeeds");
-    check(evaluate({ request: "legacyPost", defense: "metadataOnly" }).summary.blocked === 1, "metadata gate blocks missing headers on browser endpoint");
-    check(evaluate({ request: "signedWebhook", defense: "metadataOnly" }).summary.stateChanged === 1, "signed webhook bypasses browser metadata requirement");
-    check(evaluate({ request: "crossSiteFormPost", defense: "reportOnly" }).summary.risk === 1, "report-only cross-site form reaches cookie-only write");
+    addCritical("user activation emits Sec-Fetch-User ?1", headersFor(REQUESTS.crossSiteFormPost).some(function (row) { return row[0] === "Sec-Fetch-User" && row[1] === "?1"; }));
+    addCritical("subresource omits Sec-Fetch-User", !headersFor(REQUESTS.publicImage).some(function (row) { return row[0] === "Sec-Fetch-User"; }));
+    addCritical("metadata gate blocks cross-site form POST", evaluate({ request: "crossSiteFormPost", defense: "metadataOnly" }).summary.blocked === 1);
+    addCritical("metadata gate blocks cross-site API read", evaluate({ request: "crossSiteApiRead", defense: "metadataOnly" }).summary.blocked === 1);
+    addCritical("metadata gate allows public image", evaluate({ request: "publicImage", defense: "metadataOnly" }).summary.blocked === 0);
+    addCritical("metadata gate allows direct navigation", evaluate({ request: "directNavigation", defense: "metadataOnly" }).summary.blocked === 0);
+    addCritical("metadata gate allows user top-level link", evaluate({ request: "crossSiteLink", defense: "metadataOnly" }).summary.blocked === 0);
+    addCritical("metadata alone allows same-site write without token", evaluate({ request: "sameSitePostNoToken", defense: "metadataOnly" }).summary.stateChanged === 1);
+    addCritical("token layer blocks same-site write without token", evaluate({ request: "sameSitePostNoToken", defense: "metadataAndToken" }).summary.blocked === 1);
+    addCritical("same-origin token-bearing write succeeds", evaluate({ request: "sameOriginPost", defense: "metadataAndToken" }).summary.stateChanged === 1);
+    addCritical("metadata gate blocks missing headers on browser endpoint", evaluate({ request: "legacyPost", defense: "metadataOnly" }).summary.blocked === 1);
+    addCritical("signed webhook bypasses browser metadata requirement", evaluate({ request: "signedWebhook", defense: "metadataOnly" }).summary.stateChanged === 1);
+    addCritical("report-only cross-site form reaches cookie-only write", evaluate({ request: "crossSiteFormPost", defense: "reportOnly" }).summary.risk === 1);
 
     Object.keys(REQUESTS).forEach(function (requestKey) {
       Object.keys(DEFENSES).forEach(function (defenseKey) {
         var result = evaluate({ request: requestKey, defense: defenseKey });
-        check(!(result.summary.blocked && result.summary.stateChanged), requestKey + "/" + defenseKey + " cannot both block and mutate");
-        check(result.summary.appReached || result.summary.blocked, requestKey + "/" + defenseKey + " either reaches app or blocks");
+        var failedChecks = [];
+        var blockOrMutate = !(result.summary.blocked && result.summary.stateChanged);
+        var reachedOrBlocked = result.summary.appReached || result.summary.blocked;
+        var label = requestKey + "/" + defenseKey + " cannot both block and mutate";
+        if (!record(blockOrMutate, label)) failedChecks.push(label);
+        label = requestKey + "/" + defenseKey + " either reaches app or blocks";
+        if (!record(reachedOrBlocked, label)) failedChecks.push(label);
+        cases.push({
+          appReached: result.summary.appReached,
+          blocked: result.summary.blocked,
+          defense: defenseKey,
+          failedChecks: failedChecks,
+          metadataPresent: result.summary.metadataPresent,
+          metadataWouldBlock: result.summary.wouldBlock,
+          passed: failedChecks.length === 0,
+          request: requestKey,
+          risk: result.summary.risk,
+          stateChanged: result.summary.stateChanged,
+          tokenChecked: result.summary.tokenChecked
+        });
       });
     });
 
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            appReached: 0,
+            blocked: 0,
+            cases: 0,
+            metadataWouldBlock: 0,
+            passed: 0,
+            risk: 0,
+            stateChanged: 0,
+            tokenChecked: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].appReached += row.appReached;
+        groups[key].blocked += row.blocked;
+        groups[key].cases += 1;
+        groups[key].metadataWouldBlock += row.metadataWouldBlock;
+        groups[key].risk += row.risk;
+        groups[key].stateChanged += row.stateChanged;
+        groups[key].tokenChecked += row.tokenChecked;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+
+    var passed = checked - errors.length;
+
     return {
+      byDefense: summarize("defense"),
+      byRequest: summarize("request"),
+      cases: cases,
       ok: errors.length === 0,
       checked: checked,
-      errors: errors
+      criticalChecks: criticalChecks,
+      errors: errors,
+      passed: passed,
+      total: checked
     };
   }
 

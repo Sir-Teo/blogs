@@ -318,20 +318,30 @@ application-level proof.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/fetch-metadata-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fetch-metadata-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Reproducing The Classifier
 
 The simulator exports a Node-testable API:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/fetch-metadata-lab.js");
 
 console.log(lab.headersFor(lab.requests.crossSiteFormPost));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditFetchMetadataLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
-console.log(audit.checked + " checks passed");
+console.table(audit.byDefense);
+console.table(audit.byRequest);
+console.table(audit.criticalChecks);
+if (audit.checked !== 67) {
+  throw new Error("unexpected check count: " + audit.checked);
+}
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} checks passed`);
+NODE
 ```
 
 Default headers:
