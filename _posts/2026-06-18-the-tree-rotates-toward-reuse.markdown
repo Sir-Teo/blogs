@@ -410,17 +410,72 @@ To reproduce the deterministic audit cases from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/splay-tree-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 51;
+const EXPECTED_CASE_SHAPE = [
+  "1:hot:keys=31:accesses=300:hot=5:seed=7:5.73/3.37/2.37/3.85:rot=710:repeat=1:10/10",
+  "2:phase:keys=63:accesses=1200:hot=8:seed=31:7.47/4.24/3.24/5.07:rot=3885:repeat=1:10/10",
+  "3:scan:keys=63:accesses=256:hot=6:seed=11:8.83/4.91/3.91/5.10:rot=1002:repeat=none:11/11",
+  "4:walk:keys=127:accesses=1600:hot=12:seed=19:5.03/3.01/2.01/6.02:rot=3223:repeat=1:10/10",
+  "5:zipf:keys=127:accesses=2000:hot=10:seed=23:11.89/6.45/5.45/6.27:rot=10890:repeat=1:10/10"
+];
+const EXPECTED_COMMON_CHECK_NAMES = [
+  "inorder key count",
+  "inorder sorted",
+  "root parent is null",
+  "parent pointers",
+  "all accesses found",
+  "accessed key becomes root",
+  "finite averages",
+  "nonnegative rotations",
+  "balanced comparison bound",
+  "repeat access becomes root-cheap"
+];
+const EXPECTED_SCAN_CHECK_NAMES = EXPECTED_COMMON_CHECK_NAMES.concat([
+  "scan generated in order"
+]);
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS =
+  EXPECTED_CASES * EXPECTED_COMMON_CHECK_NAMES.length +
+  (EXPECTED_SCAN_CHECK_NAMES.length - EXPECTED_COMMON_CHECK_NAMES.length);
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function repeatCost(value) {
+  return value == null ? "none" : String(value);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.scenario}:keys=${row.keys}:` +
+    `accesses=${row.accesses}:hot=${row.hotSet}:seed=${row.seed}:` +
+    `${row.splayAveragePrimitive.toFixed(2)}/${row.splayAverageSearch.toFixed(2)}/` +
+    `${row.splayAverageRotations.toFixed(2)}/${row.balancedAverageSearch.toFixed(2)}:` +
+    `rot=${row.totalRotations}:repeat=${repeatCost(row.repeatedSameKeyCost)}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  const expected =
+    row.scenario === "scan" ? EXPECTED_SCAN_CHECK_NAMES : EXPECTED_COMMON_CHECK_NAMES;
+  if (!sameList(names, expected)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected
+    });
+  }
+});
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   keys: row.keys,
@@ -434,12 +489,26 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.log(summary);
 NODE
