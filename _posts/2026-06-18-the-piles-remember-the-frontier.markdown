@@ -224,7 +224,7 @@ the dynamic program uses exactly `n(n-1)/2` pair comparisons.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/lis-patience-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/lis-patience-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -244,12 +244,22 @@ The exported audit grid is reproducible from Node:
 const lab = require("./assets/js/lis-patience-lab.js");
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+console.table(audit.byScenario);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 52 ||
+  audit.totalChecks !== 52
+) {
   throw new Error(JSON.stringify({
     failed,
     passed: audit.passed,
-    total: audit.total
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
   }, null, 2));
 }
 
@@ -259,12 +269,18 @@ console.table(audit.cases.map((row) => ({
   lisLength: row.lisLength,
   patienceComparisons: row.patienceComparisons,
   dpComparisons: row.dpComparisons,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   witnessPrefix: row.lis.slice(0, 8).join(" ")
 })));
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 ```
 
-Each returned row also carries the full reconstructed `lis` array, so the audit
-checks both the length and an actual witness sequence.
+The current grid covers five scenario rows and 52 named checks. Each returned
+row also carries the full reconstructed `lis` array, so the audit checks both
+the length and an actual witness sequence. The named checks include permutation
+validity, patience/DP agreement, increasing reconstructed witnesses, increasing
+pile-top frontiers after every prefix, exact quadratic DP comparison counts,
+and the two classic-example facts used in the prose.
 
 The piles are not themselves the subsequence. The final top cards can even be
 misleading. Aldous and Diaconis point this out in the example: the top cards are

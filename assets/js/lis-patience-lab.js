@@ -290,23 +290,48 @@
       { scenario: "zigzag", length: 60, seed: 77, focus: 50 }
     ].map(function (params) {
       var result = evaluate(params);
+      var failedChecks = result.audit.checks
+        .filter(function (row) { return !row.ok; })
+        .map(function (row) { return row.name; });
       return {
+        checks: result.audit.checks,
         dpComparisons: result.dp.comparisons,
-        failedChecks: result.audit.checks
-          .filter(function (row) { return !row.ok; })
-          .map(function (row) { return row.name; }),
+        failedChecks: failedChecks,
         length: result.params.length,
         lis: result.patience.lis.map(function (card) { return card.value; }),
         lisLength: result.patience.length,
+        passedChecks: result.audit.checks.length - failedChecks.length,
         passed: result.audit.passed,
         patienceComparisons: result.patience.comparisons,
         scenario: result.params.scenario,
-        seed: result.params.seed
+        seed: result.params.seed,
+        totalChecks: result.audit.checks.length
+      };
+    });
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var byScenario = cases.map(function (row) {
+      return {
+        scenario: row.scenario,
+        length: row.length,
+        lisLength: row.lisLength,
+        passed: row.passed ? 1 : 0,
+        total: 1,
+        passedChecks: row.passedChecks,
+        totalChecks: row.totalChecks
       };
     });
     return {
+      byScenario: byScenario,
       cases: cases,
+      ok: cases.every(function (row) { return row.passed; }) && passedChecks === totalChecks,
       passed: cases.filter(function (row) { return row.passed; }).length,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }
