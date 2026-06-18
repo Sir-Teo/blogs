@@ -670,7 +670,21 @@
     }
 
     function failedNames(checks) {
-      return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+      return checks.filter(function (check) { return !check.passed; }).reduce(function (names, check) {
+        if (names.indexOf(check.name) < 0) names.push(check.name);
+        return names;
+      }, []);
+    }
+
+    function passedCount(checks) {
+      return checks.filter(function (check) { return check.passed; }).length;
+    }
+
+    function auditCheck(name, condition, message) {
+      return {
+        name: name,
+        passed: assert(condition, message)
+      };
     }
 
     function summarizeGrid(rows) {
@@ -683,12 +697,16 @@
             graph: row.graph,
             maxSuccessRate: 0,
             minSuccessRate: Infinity,
-            passed: 0
+            passed: 0,
+            passedChecks: 0,
+            totalChecks: 0
           };
         }
         var bucket = byGraph[row.graph];
         bucket.cases += 1;
         if (row.passed) bucket.passed += 1;
+        bucket.passedChecks += row.passedChecks;
+        bucket.totalChecks += row.totalChecks;
         bucket.minSuccessRate = Math.min(bucket.minSuccessRate, row.successRate);
         bucket.maxSuccessRate = Math.max(bucket.maxSuccessRate, row.successRate);
         row.failedChecks.forEach(function (name) {
@@ -707,29 +725,24 @@
       var graph = buildGraph(key);
       var exact = exactMinCut(graph);
       var checks = [
-        { name: "vertex-count", ok: assert(graph.nodes.length >= 10, key + " has enough vertices") },
-        { name: "edge-count", ok: assert(graph.edges.length >= graph.nodes.length, key + " has enough edges") },
-        { name: "nontrivial-mincut", ok: assert(exact.lambda >= 2, key + " min cut is nontrivial") },
-        { name: "mincut-exists", ok: assert(exact.count >= 1, key + " has at least one min cut") }
+        auditCheck("vertex-count", graph.nodes.length >= 10, key + " has enough vertices"),
+        auditCheck("edge-count", graph.edges.length >= graph.nodes.length, key + " has enough edges"),
+        auditCheck("nontrivial-mincut", exact.lambda >= 2, key + " min cut is nontrivial"),
+        auditCheck("mincut-exists", exact.count >= 1, key + " has at least one min cut")
       ];
-      var trialLowerBoundOk = true;
-      var fixedCutSurvivalOk = true;
       var optimalTrials = 0;
       var survivals = 0;
       for (var i = 0; i < 32; i += 1) {
         var trial = runTrial(graph, rng(1000 + i * 37 + graph.edges.length), exact.mask, exact.lambda);
         if (trial.optimal) optimalTrials += 1;
-        var lowerOk = assert(trial.cutValue >= exact.lambda, key + " trial never beats exact oracle");
-        if (!lowerOk) trialLowerBoundOk = false;
+        checks.push(auditCheck("trial-lower-bound", trial.cutValue >= exact.lambda, key + " trial never beats exact oracle"));
         if (trial.survivedFixedCut) {
           survivals += 1;
-          var survivalOk = assert(trial.cutValue === exact.lambda, key + " fixed-cut survival returns a min cut");
-          if (!survivalOk) fixedCutSurvivalOk = false;
+          checks.push(auditCheck("fixed-cut-survival", trial.cutValue === exact.lambda, key + " fixed-cut survival returns a min cut"));
         }
       }
-      checks.push({ name: "trial-lower-bound", ok: trialLowerBoundOk });
-      checks.push({ name: "fixed-cut-survival", ok: fixedCutSurvivalOk });
       byGraph.push({
+        checks: checks,
         edges: graph.edges.length,
         failedChecks: failedNames(checks),
         graph: key,
@@ -737,8 +750,10 @@
         minCuts: exact.count,
         nodes: graph.nodes.length,
         optimalTrials: optimalTrials,
-        passed: checks.every(function (check) { return check.ok; }),
+        passed: checks.every(function (check) { return check.passed; }),
+        passedChecks: passedCount(checks),
         survivals: survivals,
+        totalChecks: checks.length,
         trials: 32
       });
     });
@@ -749,7 +764,9 @@
       namedChecks.push({
         failedChecks: ok ? [] : [name],
         name: name,
-        passed: ok
+        passed: ok,
+        passedChecks: ok ? 1 : 0,
+        totalChecks: 1
       });
       return ok;
     }
@@ -781,21 +798,24 @@
         [40, 120, 240].forEach(function (trials) {
           var result = evaluate({ graph: graphKey, seed: seed, trials: trials, trace: 3 });
           var checks = [
-            { name: "bound-probability", ok: assert(result.bound > 0 && result.bound <= 1, graphKey + " bound is a probability") },
-            { name: "success-rate-probability", ok: assert(result.simulation.successRate >= 0 && result.simulation.successRate <= 1, graphKey + " success rate is a probability") },
-            { name: "best-respects-oracle", ok: assert(result.simulation.bestValue >= result.exact.lambda, graphKey + " repeated best respects exact oracle") },
-            { name: "histogram-populated", ok: assert(Object.keys(result.simulation.histogram).length >= 1, graphKey + " histogram is populated") }
+            auditCheck("bound-probability", result.bound > 0 && result.bound <= 1, graphKey + " bound is a probability"),
+            auditCheck("success-rate-probability", result.simulation.successRate >= 0 && result.simulation.successRate <= 1, graphKey + " success rate is a probability"),
+            auditCheck("best-respects-oracle", result.simulation.bestValue >= result.exact.lambda, graphKey + " repeated best respects exact oracle"),
+            auditCheck("histogram-populated", Object.keys(result.simulation.histogram).length >= 1, graphKey + " histogram is populated")
           ];
           gridCases.push({
             bestValue: result.simulation.bestValue,
+            checks: checks,
             failedChecks: failedNames(checks),
             graph: graphKey,
             histogramBins: Object.keys(result.simulation.histogram).length,
             lambda: result.exact.lambda,
-            passed: checks.every(function (check) { return check.ok; }),
+            passed: checks.every(function (check) { return check.passed; }),
+            passedChecks: passedCount(checks),
             seed: seed,
             successRate: result.simulation.successRate,
             successes: result.simulation.successes,
+            totalChecks: checks.length,
             trials: trials
           });
         });
@@ -807,6 +827,12 @@
     var passed = byGraph.filter(function (row) { return row.passed; }).length +
       namedChecks.filter(function (row) { return row.passed; }).length +
       gridCases.filter(function (row) { return row.passed; }).length;
+    var totalChecks = byGraph.concat(namedChecks, gridCases).reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var passedChecks = byGraph.concat(namedChecks, gridCases).reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
 
     return {
       byGraph: byGraph,
@@ -827,6 +853,8 @@
       namedChecks: namedChecks,
       ok: failures.length === 0,
       passed: passed,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: total
     };
   }

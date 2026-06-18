@@ -257,10 +257,10 @@ Karger lower-bound chance.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/karger-mincut-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/karger-mincut-lab.js?v=20260618c' | relative_url }}"></script>
 
 The audit exported by the script gives the randomized experiment a deterministic
-receipt:
+receipt: 63 audit rows, backed by 365 individual invariant checks.
 
 ```bash
 node - <<'NODE'
@@ -273,26 +273,37 @@ console.table(audit.byGraph.map((row) => ({
   trialChecks: row.trials,
   optimalTrials: row.optimalTrials,
   survivals: row.survivals,
-  passed: row.passed
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
 console.table(audit.gridSummary.map((row) => ({
   graph: row.graph,
-  cases: row.cases,
-  passed: row.passed,
+  cases: `${row.passed}/${row.cases}`,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   minSuccessRate: row.minSuccessRate.toFixed(3),
   maxSuccessRate: row.maxSuccessRate.toFixed(3)
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit rows passed`);
+if (
+  !audit.ok ||
+  audit.passed !== 63 ||
+  audit.total !== 63 ||
+  audit.passedChecks !== 365 ||
+  audit.totalChecks !== 365
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} audit rows passed`);
+console.log(
+  `${audit.passed}/${audit.total} audit rows and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
 It verifies the brute-force oracle on every preset, checks 32 single
 contractions per graph against the oracle, checks that fixed-cut survival
 implies an optimal result, confirms that the ten-cycle always returns a min
-cut, and runs a 48-case grid over graph presets, seeds, and trial counts.
+cut, and runs a 48-case grid over graph presets, seeds, and trial counts. The
+365 checks count each lower-bound trial, each fixed-cut survival witness, each
+named regression, and four grid invariants per parameter case.
 
 ## Keep The Parallel Edges
 
