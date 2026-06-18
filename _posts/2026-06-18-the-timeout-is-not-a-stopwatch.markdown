@@ -323,7 +323,7 @@ the wrong event.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/rto-estimator-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/rto-estimator-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Bad Clock Learns
 
@@ -375,12 +375,22 @@ The compact reproduction check is:
 const lab = require("./assets/js/rto-estimator-lab.js");
 
 const audit = lab.auditGrid();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+console.table(audit.byScenario);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 92 ||
+  audit.totalChecks !== 92
+) {
   throw new Error(JSON.stringify({
     failed,
     passed: audit.passed,
-    total: audit.total
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
   }, null, 2));
 }
 
@@ -393,8 +403,10 @@ console.table(audit.cases.map((row) => ({
   recentSpurious: row.recentSpurious,
   meanSpurious: row.meanSpurious,
   rfcIgnored: row.rfcIgnored,
-  recentAccepted: row.recentAmbiguousAccepted
+  recentAccepted: row.recentAmbiguousAccepted,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 ```
 
 The radio rows are a good sanity check. A real lost original segment creates a
@@ -402,6 +414,13 @@ necessary retransmission, not a spurious one. Karn still ignores the ACK sample,
 because the sender cannot tell from the ordinary cumulative ACK alone which
 copy produced the acknowledgment. If TCP timestamps are available, RFC 6298
 notes that the ambiguity can be removed.[^rfc6298-karn]
+
+The current grid covers five scenario/parameter rows and 92 named checks. Those
+checks include finite-output guards, per-clock event and retransmission
+accounting, the Karn evidence rule for ignored ambiguous samples, the comparison
+clock rule for accepted ambiguous samples, and the route-step regression that
+the latest-send sampler is at least as vulnerable to spurious retransmission as
+the RFC/Karn clock.
 
 ## The One-Second Floor Is A Policy, Too
 

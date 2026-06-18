@@ -326,25 +326,65 @@
     ];
     var rows = cases.map(function (params) {
       var result = evaluate(params);
+      var failedChecks = result.audit.checks.filter(function (row) {
+        return !row.ok;
+      }).map(function (row) {
+        return row.name;
+      });
       return {
-        failedChecks: result.audit.checks.filter(function (row) {
-          return !row.ok;
-        }).map(function (row) {
-          return row.name;
-        }),
+        failedChecks: failedChecks,
         meanAmbiguousAccepted: result.algorithms.mean.summary.ambiguousAccepted,
         params: result.params,
         meanSpurious: result.algorithms.mean.summary.spurious,
+        passedChecks: result.audit.checks.length - failedChecks.length,
         passed: result.audit.passed,
         recentAmbiguousAccepted: result.algorithms.recent.summary.ambiguousAccepted,
         recentSpurious: result.algorithms.recent.summary.spurious,
         rfcIgnored: result.algorithms.rfc.summary.ignored,
-        rfcSpurious: result.algorithms.rfc.summary.spurious
+        rfcSpurious: result.algorithms.rfc.summary.spurious,
+        checks: result.audit.checks,
+        totalChecks: result.audit.checks.length
       };
     });
+    var passedChecks = rows.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = rows.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var byScenarioMap = {};
+    rows.forEach(function (row) {
+      var scenario = row.params.scenario;
+      if (!byScenarioMap[scenario]) {
+        byScenarioMap[scenario] = {
+          scenario: scenario,
+          cases: 0,
+          passed: 0,
+          passedChecks: 0,
+          totalChecks: 0,
+          rfcSpurious: 0,
+          recentSpurious: 0,
+          meanSpurious: 0
+        };
+      }
+      byScenarioMap[scenario].cases += 1;
+      if (row.passed) byScenarioMap[scenario].passed += 1;
+      byScenarioMap[scenario].passedChecks += row.passedChecks;
+      byScenarioMap[scenario].totalChecks += row.totalChecks;
+      byScenarioMap[scenario].rfcSpurious += row.rfcSpurious;
+      byScenarioMap[scenario].recentSpurious += row.recentSpurious;
+      byScenarioMap[scenario].meanSpurious += row.meanSpurious;
+    });
+    var byScenario = Object.keys(byScenarioMap).sort().map(function (key) {
+      return byScenarioMap[key];
+    });
     return {
+      byScenario: byScenario,
       cases: rows,
+      ok: rows.every(function (row) { return row.passed; }) && passedChecks === totalChecks,
       passed: rows.filter(function (row) { return row.passed; }).length,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: rows.length
     };
   }
