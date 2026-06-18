@@ -324,17 +324,44 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/exact-cover-lab.js");
-const EXPECTED_GROUPS = 6;
-const EXPECTED_PUZZLES = 5;
-const EXPECTED_OUTCOMES = 3;
-const EXPECTED_MATRIX_ROWS = 64;
-const EXPECTED_MATRIX_COLUMNS = 64;
-const EXPECTED_CHECKS = 965;
+const EXPECTED_TOTALS = {
+  puzzleRows: 5,
+  outcomeRows: 3,
+  passed: 6,
+  total: 6,
+  passedChecks: 965,
+  totalChecks: 965
+};
+const EXPECTED_MATRIX = {
+  columns: 64,
+  failedChecks: 0,
+  passed: true,
+  passedChecks: 66,
+  rows: 64,
+  rowWidth: 4,
+  totalChecks: 66
+};
+const EXPECTED_OUTCOME_ROWS = [
+  "contradiction:1 cases:0 solutions:maxMin=0:saved=0:1/1 passed:conflict",
+  "multiple:3 cases:292 solutions:maxMin=2157:saved=612:3/3 passed:six, thin, blank",
+  "unique:1 cases:1 solutions:maxMin=11:saved=1:1/1 passed:diagonal"
+];
+const EXPECTED_CASE_ROWS = [
+  "six:six clues:2/2 solutions:min=19:first=25:saved=6:multiple:10/10:true:none",
+  "diagonal:diagonal clues:1/1 solutions:min=11:first=12:saved=1:unique:7/7:true:none",
+  "thin:four corners:2/2 solutions:min=21:first=31:saved=10:multiple:10/10:true:none",
+  "blank:blank grid:288/288 solutions:min=2157:first=2753:saved=596:multiple:868/868:true:none",
+  "conflict:conflicting clues:0/0 solutions:min=0:first=0:saved=0:contradiction:4/4:true:clue r1c2=1 conflicts with an earlier clue"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditExactCover();
 console.table([audit.matrix]);
 console.table(audit.byOutcome);
-console.table(audit.cases.map((row) => ({
+const caseRowsForDisplay = audit.cases.map((row) => ({
   puzzle: row.label,
   solutions: row.exactSolutions,
   brute: row.bruteSolutions,
@@ -343,24 +370,48 @@ console.table(audit.cases.map((row) => ({
   saved: row.nodeSavings,
   outcome: row.outcome,
   passed: row.passed
-})));
+}));
+console.table(caseRowsForDisplay);
 const auditShape = {
   puzzleRows: audit.cases.length,
   outcomeRows: audit.byOutcome.length,
-  matrixRows: audit.matrix.rows,
-  matrixColumns: audit.matrix.columns,
   passed: audit.passed,
   total: audit.total,
   passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
-if (auditShape.puzzleRows !== EXPECTED_PUZZLES ||
-    auditShape.outcomeRows !== EXPECTED_OUTCOMES ||
-    auditShape.matrixRows !== EXPECTED_MATRIX_ROWS ||
-    auditShape.matrixColumns !== EXPECTED_MATRIX_COLUMNS ||
-    auditShape.total !== EXPECTED_GROUPS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const matrixShape = {
+  columns: audit.matrix.columns,
+  failedChecks: audit.matrix.failedChecks.length,
+  passed: audit.matrix.passed,
+  passedChecks: audit.matrix.passedChecks,
+  rows: audit.matrix.rows,
+  rowWidth: audit.matrix.rowWidth,
+  totalChecks: audit.matrix.totalChecks
+};
+const outcomeRows = audit.byOutcome.map((row) =>
+  `${row.outcome}:${row.cases} cases:${row.exactSolutions} solutions:` +
+  `maxMin=${row.maxMinNodes}:saved=${row.nodeSavings}:` +
+  `${row.passed}/${row.cases} passed:${row.puzzles}`
+);
+const caseRows = audit.cases.map((row) =>
+  `${row.puzzle}:${row.label}:${row.exactSolutions}/${row.bruteSolutions} solutions:` +
+  `min=${row.minNodes}:first=${row.firstNodes}:saved=${row.nodeSavings}:` +
+  `${row.outcome}:${row.passedChecks}/${row.totalChecks}:${row.passed}:` +
+  `${row.contradiction || "none"}`
+);
+if (
+  !sameJson(auditShape, EXPECTED_TOTALS) ||
+  !sameJson(matrixShape, EXPECTED_MATRIX) ||
+  !sameJson(outcomeRows, EXPECTED_OUTCOME_ROWS) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS)
+) {
+  throw new Error("unexpected exact-cover audit shape: " + JSON.stringify({
+    auditShape,
+    matrixShape,
+    outcomeRows,
+    caseRows
+  }, null, 2));
 }
 
 const failedOutcomeGroups = audit.byOutcome.filter(
