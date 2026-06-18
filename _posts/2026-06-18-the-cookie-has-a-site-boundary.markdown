@@ -285,10 +285,19 @@ The simulator exports a Node-testable API:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/samesite-cookie-lab.js");
+const EXPECTED_CASE_ROWS = 72;
+const EXPECTED_NAMED_CHECKS = 17;
+const EXPECTED_CHECKS = 161;
 
 console.log(lab.siteFor("https://app.bank.example/dashboard"));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditSameSiteCookieLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedNamedChecks = audit.namedChecks.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byCookie.map((row) => ({
   cookie: row.cookie,
   cases: row.cases,
@@ -300,15 +309,29 @@ console.table(audit.byCookie.map((row) => ({
   csrfRisk: row.csrfRisk,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.caseRows !== 72 || audit.namedChecks.length !== 17 || audit.totalChecks !== 161) {
+if (
+  audit.caseRows !== EXPECTED_CASE_ROWS ||
+  audit.namedChecks.length !== EXPECTED_NAMED_CHECKS ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit size: ${audit.caseRows} rows, ` +
     `${audit.namedChecks.length} named checks, ${audit.totalChecks} total checks`
   );
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+if (
+  failed.length ||
+  failedNamedChecks.length ||
+  !audit.ok ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    failedNamedChecks,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
