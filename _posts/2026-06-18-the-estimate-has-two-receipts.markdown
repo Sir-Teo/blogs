@@ -373,7 +373,7 @@ the failure modes are visible.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/doubly-robust-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/doubly-robust-lab.js?v=20260618b' | relative_url }}"></script>
 
 At the default setting, the true ATE is about `0.550`. Across 80 repeated
 samples with 900 rows each:
@@ -393,6 +393,38 @@ The source is intentionally inspectable:
 [`assets/js/doubly-robust-lab.js`]({{ '/assets/js/doubly-robust-lab.js' | relative_url }}).
 Its audit checks finite estimates, the expected four-quadrant robustness shape,
 and nonempty treated/control counts across propensity deciles.
+
+The sweep is reproducible from Node:
+
+```js
+const lab = require("./assets/js/doubly-robust-lab.js");
+
+const audit = lab.auditDoublyRobustLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  rows: row.rows,
+  confounding: row.confounding,
+  overlap: row.overlap,
+  aipwBoth: row.aipwBothBias.toFixed(3),
+  aipwOutcome: row.aipwOutcomeBias.toFixed(3),
+  aipwPropensity: row.aipwPropensityBias.toFixed(3),
+  aipwNeither: row.aipwNeitherBias.toFixed(3),
+  minEss: row.minEffectiveSampleSize.toFixed(0),
+  minEhat: row.overlapMinPropensity.toFixed(3)
+})));
+```
+
+This is not a proof of double robustness. It is a regression check for the toy
+data-generating process used by the figure: if the nuisance-model quadrants stop
+having the advertised shape, the post should fail loudly.
 
 ## What Breaks the Spell
 

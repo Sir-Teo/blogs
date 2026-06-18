@@ -510,6 +510,7 @@
   function auditDoublyRobustLab() {
     var total = 0;
     var passed = 0;
+    var cases = [];
     [600, 900].forEach(function (rows) {
       [45, 90].forEach(function (confounding) {
         [6, 14].forEach(function (overlap) {
@@ -524,11 +525,45 @@
             scenario: "outcome",
             seed: 31
           });
+          var both = result.simulation.scenarios.both;
+          var outcome = result.simulation.scenarios.outcome;
+          var propensity = result.simulation.scenarios.propensity;
+          var neither = result.simulation.scenarios.neither;
+          var failedChecks = Object.keys(result.audit).filter(function (key) {
+            return key !== "passed" && result.audit[key] === false;
+          });
           if (result.audit.passed) passed += 1;
+          cases.push({
+            aipwBothBias: both.byKey.aipw.bias,
+            aipwNeitherBias: neither.byKey.aipw.bias,
+            aipwOutcomeBias: outcome.byKey.aipw.bias,
+            aipwPropensityBias: propensity.byKey.aipw.bias,
+            confounding: result.params.confounding,
+            failedChecks: failedChecks,
+            minEffectiveSampleSize: Math.min(
+              both.weightEss,
+              outcome.weightEss,
+              propensity.weightEss,
+              neither.weightEss
+            ),
+            overlap: result.params.overlap,
+            overlapMinPropensity: Math.min(
+              both.minEhat,
+              outcome.minEhat,
+              propensity.minEhat,
+              neither.minEhat
+            ),
+            outcomeRegressionWrongBias: propensity.byKey.outcome.bias,
+            passed: result.audit.passed,
+            rows: result.params.rows,
+            runs: result.params.runs,
+            seed: result.params.seed,
+            trueAte: both.trueAte
+          });
         });
       });
     });
-    return { total: total, passed: passed };
+    return { cases: cases, total: total, passed: passed };
   }
 
   function pct(value, digits) {
