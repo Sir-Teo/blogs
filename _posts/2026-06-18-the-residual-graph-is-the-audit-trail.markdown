@@ -315,37 +315,112 @@ three path rules:
 
 ```js
 const lab = require("./assets/js/residual-flow-lab.js");
-const EXPECTED_CASES = 9;
-const EXPECTED_CHECKS = 72;
+const EXPECTED_CASE_SHAPE = [
+  "rail:bfs:rail bottleneck:aug=5:flow=18:cut=18:min=18:reach=1:true:true:8/8",
+  "rail:dfs:rail bottleneck:aug=5:flow=18:cut=18:min=18:reach=1:true:true:8/8",
+  "rail:widest:rail bottleneck:aug=4:flow=18:cut=18:min=18:reach=1:true:true:8/8",
+  "backedge:bfs:undo lane:aug=5:flow=13:cut=13:min=13:reach=4:true:true:8/8",
+  "backedge:dfs:undo lane:aug=5:flow=13:cut=13:min=13:reach=4:true:true:8/8",
+  "backedge:widest:undo lane:aug=4:flow=13:cut=13:min=13:reach=4:true:true:8/8",
+  "layers:bfs:layered supply:aug=5:flow=17:cut=17:min=17:reach=6:true:true:8/8",
+  "layers:dfs:layered supply:aug=5:flow=17:cut=17:min=17:reach=6:true:true:8/8",
+  "layers:widest:layered supply:aug=4:flow=17:cut=17:min=17:reach=6:true:true:8/8"
+];
+const EXPECTED_CHECK_NAMES = [
+  "state metrics are finite",
+  "all states respect edge capacities",
+  "all intermediate flows conserve mass",
+  "augmenting paths use positive residual arcs",
+  "path bottlenecks match augmentation amounts",
+  "terminal residual graph has no s-t path",
+  "terminal flow equals terminal cut",
+  "terminal cut equals brute-force min cut"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CASE_IDS = EXPECTED_CASE_SHAPE.map(
+  (shape) => shape.split(":").slice(0, 2).join(":")
+);
+const EXPECTED_CHECK_SHAPE = EXPECTED_CASE_IDS.flatMap((caseId) =>
+  EXPECTED_CHECK_NAMES.map((name) => `${caseId}:${name}:true`)
+);
 
-const audit = lab.auditResidualFlowLab();
-const auditShape = {
-  rows: audit.cases.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
-};
-if (auditShape.rows !== EXPECTED_CASES ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
 }
 
+function caseShape(row) {
+  return `${row.example}:${row.rule}:${row.graph}:` +
+    `aug=${row.augmentations}:flow=${row.flow}:cut=${row.cut}:` +
+    `min=${row.minCut}:reach=${row.reachableCount}:` +
+    `${row.phaseChecks}:${row.terminalNoPath}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checkRowsFor(example, rule) {
+  const result = lab.evaluate({ example, rule });
+  return [
+    ["state metrics are finite", result.audit.finiteStates],
+    ["all states respect edge capacities", result.audit.capacityOk],
+    ["all intermediate flows conserve mass", result.audit.conservationOk],
+    ["augmenting paths use positive residual arcs", result.audit.positivePathResiduals],
+    ["path bottlenecks match augmentation amounts", result.audit.bottleneckMatchesPath],
+    ["terminal residual graph has no s-t path", result.audit.terminalNoPath],
+    ["terminal flow equals terminal cut", result.audit.flowEqualsTerminalCut],
+    ["terminal cut equals brute-force min cut", result.audit.terminalCutEqualsOracle]
+  ].map(([name, passed]) => ({ name, passed }));
+}
+
+const audit = lab.auditResidualFlowLab();
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checks: audit.cases.flatMap((row) =>
+    checkRowsFor(row.example, row.rule).map(
+      (check) => `${row.example}:${row.rule}:${check.name}:${check.passed}`
+    )
+  )
+};
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.checks, EXPECTED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "checks",
+    actual: shape.checks,
+    expected: EXPECTED_CHECK_SHAPE
+  });
+}
+
+const summary =
+  `${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (shapeErrors.length ||
+    !audit.ok ||
+    failedCases.length ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
     failures: audit.failures,
     failedCases,
-    auditShape
+    totals: {
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
-console.log(`${audit.passed}/${audit.total} audit cases and ` +
-  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 console.table(audit.cases.map((row) => ({
   network: row.example,
   rule: row.rule,
