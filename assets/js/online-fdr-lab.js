@@ -329,8 +329,23 @@
   function auditOnlineFdrLab() {
     var total = 0;
     var passed = 0;
+    var totalChecks = 0;
+    var passedChecks = 0;
     var maxNullLond = 0;
+    var failures = [];
     var cases = [];
+    function namedChecks(result, includeNullGuard, nullLondOk) {
+      var checks = [
+        { name: "finite outputs", passed: result.audit.finite },
+        { name: "valid thresholds", passed: result.audit.levelsValid },
+        { name: "alpha-spending contained in LOND", passed: result.audit.spendInsideLond },
+        { name: "gamma mass is summable", passed: result.audit.gammaOk }
+      ];
+      if (includeNullGuard) {
+        checks.push({ name: "all-null LOND FDR guard", passed: nullLondOk });
+      }
+      return checks;
+    }
     [160, 260].forEach(function (tests) {
       [0, 8, 18].forEach(function (signalRate) {
         ["early", "late"].forEach(function (order) {
@@ -348,36 +363,58 @@
             var lond = result.summary.filter(function (row) { return row.key === "lond"; })[0];
             var bh = result.summary.filter(function (row) { return row.key === "bh"; })[0];
             var nullLondOk = signalRate > 0 || lond.fdr <= Math.max(0.18, target / 100 * 2.6);
-            var casePassed = result.audit.passed && nullLondOk;
+            var checks = namedChecks(result, signalRate === 0, nullLondOk);
+            var failedChecks = checks.filter(function (check) { return !check.passed; });
+            var casePassed = failedChecks.length === 0;
+            totalChecks += checks.length;
+            passedChecks += checks.length - failedChecks.length;
             if (signalRate === 0) maxNullLond = Math.max(maxNullLond, lond.fdr);
             if (casePassed) passed += 1;
+            if (failedChecks.length) {
+              failures.push({
+                tests: tests,
+                signalRate: signalRate,
+                order: order,
+                target: target,
+                failedChecks: failedChecks.map(function (check) { return check.name; })
+              });
+            }
             cases.push({
               avgSignals: result.meta.avgSignals,
               bhDiscoveries: bh.avgRejected,
               bhFdr: bh.fdr,
               bhPower: bh.power,
-              failedChecks: Object.keys(result.audit).filter(function (key) {
-                return key !== "passed" && result.audit[key] === false;
-              }),
+              failedChecks: failedChecks.map(function (check) { return check.name; }),
               londDiscoveries: lond.avgRejected,
               londFdr: lond.fdr,
               londPower: lond.power,
               nullLondOk: nullLondOk,
               order: order,
               passed: casePassed,
+              passedChecks: checks.length - failedChecks.length,
               rawDiscoveries: raw.avgRejected,
               rawFdr: raw.fdr,
               signalRate: signalRate,
               spendDiscoveries: spend.avgRejected,
               spendFdr: spend.fdr,
               target: target,
-              tests: tests
+              tests: tests,
+              totalChecks: checks.length
             });
           });
         });
       });
     });
-    return { cases: cases, total: total, passed: passed, maxNullLond: maxNullLond };
+    return {
+      cases: cases,
+      failures: failures,
+      maxNullLond: maxNullLond,
+      ok: passed === total && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: total,
+      totalChecks: totalChecks
+    };
   }
 
   function pct(value, digits) {

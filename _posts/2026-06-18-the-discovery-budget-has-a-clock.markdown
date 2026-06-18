@@ -344,7 +344,7 @@ comparison is what each line was allowed to know when it made its decision.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/online-fdr-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/online-fdr-lab.js?v=20260618c' | relative_url }}"></script>
 
 At the default setting, the stream has 260 tests, about 31 true signals, early
 signal ordering, signal strength 5.5, and target $$q=10\%$$. Across 160
@@ -374,8 +374,10 @@ Before publishing, I ran the JavaScript lab through its Node API. The default
 case passed finite-output checks, threshold-validity checks, the
 alpha-spending-is-contained-in-LOND decision invariant, and the summable
 $$6/(\pi^2 i^2)$$ schedule check. A 24-case sweep over horizon, signal rate,
-signal order, and target $$q$$ passed the same invariants; in the all-null
-cases, the largest empirical LOND FDR in that sweep was 3.05%.
+signal order, and target $$q$$ passed 104/104 applicable checks: those four
+structural invariants in every case, plus an all-null finite-grid FDR guard on
+the eight no-signal rows. In the all-null cases, the largest empirical LOND FDR
+in that sweep was 3.05%.
 
 You can reproduce that sweep directly:
 
@@ -383,15 +385,19 @@ You can reproduce that sweep directly:
 const lab = require("./assets/js/online-fdr-lab.js");
 
 const audit = lab.auditOnlineFdrLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || audit.passed !== audit.total) {
+if (!audit.ok || audit.passed !== 24 || audit.total !== 24 ||
+    audit.passedChecks !== 104 || audit.totalChecks !== 104) {
   throw new Error(JSON.stringify({
-    failed,
+    failures: audit.failures,
     passed: audit.passed,
-    total: audit.total
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
   }, null, 2));
 }
 
+console.log(`${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 console.log(`max all-null LOND FDR: ${(audit.maxNullLond * 100).toFixed(2)}%`);
 console.table(audit.cases.map((row) => ({
   tests: row.tests,
