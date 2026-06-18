@@ -420,6 +420,25 @@
     };
   }
 
+  function auditChecks(audit) {
+    return [
+      { name: "all-leaves-balanced", ok: audit.balanced },
+      { name: "finite-summary-metrics", ok: audit.finiteMetrics },
+      { name: "internal-child-counts", ok: audit.internalShape },
+      { name: "leaf-chain-sorted", ok: audit.leavesSorted },
+      { name: "page-occupancy", ok: audit.occupancy },
+      { name: "search-routes-to-key", ok: audit.routesOk },
+      { name: "separator-min-keys", ok: audit.separatorShape },
+      { name: "keys-sorted-within-pages", ok: audit.sortedPages },
+      { name: "split-accounting", ok: audit.splitAccounting },
+      { name: "state-key-counts", ok: audit.stateCounts }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
   function minKeyFromSnapshot(page, byId) {
     var current = page;
     while (current && !current.leaf) current = byId[current.childIds[0]];
@@ -442,29 +461,54 @@
           [3, 17].forEach(function (seed) {
             total += 1;
             var result = evaluate({ count: count, maxKeys: maxKeys, pattern: pattern, seed: seed, step: count });
+            var checks = auditChecks(result.audit);
+            var passedChecks = checks.filter(function (check) { return check.ok; }).length;
             if (result.audit.passed) passed += 1;
             cases.push({
               avgLeafFill: result.summary.avgLeafFill,
               avgPageWrites: result.summary.avgPageWrites,
+              caseId: total,
+              checks: checks,
               count: result.params.count,
-              failedChecks: Object.keys(result.audit).filter(function (key) {
-                return key !== "passed" && !result.audit[key];
-              }),
+              failedChecks: failedAuditChecks(checks),
               height: result.summary.height,
               leafPages: result.summary.leafPages,
               maxKeys: result.params.maxKeys,
               pages: result.summary.pages,
               passed: result.audit.passed,
+              passedChecks: passedChecks,
               pattern: result.params.pattern,
               patternLabel: PATTERNS[result.params.pattern],
               seed: result.params.seed,
-              splits: result.summary.splits
+              splits: result.summary.splits,
+              totalChecks: checks.length
             });
           });
         });
       });
     });
-    return { cases: cases, passed: passed, total: total };
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        errors.push(
+          "case " + row.caseId + " " +
+          row.pattern + "/" + row.maxKeys + "/" + row.count + "/" + row.seed +
+          ": " + name
+        );
+      });
+    });
+    return {
+      cases: cases,
+      details: cases,
+      errors: errors,
+      ok: passed === total && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: total,
+      totalChecks: totalChecks
+    };
   }
 
   function formatPercent(value) {

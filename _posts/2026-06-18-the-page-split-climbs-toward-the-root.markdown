@@ -277,7 +277,7 @@ the page-split mechanism.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/btree-split-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/btree-split-lab.js?v=20260618c' | relative_url }}"></script>
 
 With the default settings, the lab inserts keys `1` through `42` into pages that
 hold at most five keys. The final tree has:
@@ -321,16 +321,24 @@ many key comparisons.
 The implementation is inspectable:
 [`assets/js/btree-split-lab.js`]({{ '/assets/js/btree-split-lab.js' | relative_url }}).
 
-You can reproduce the audit from Node:
+You can reproduce the audit from Node. It treats each run as ten named
+invariants: balanced leaves, page occupancy, separator shape, sorted page keys,
+leaf-chain order, route correctness, internal child counts, split accounting,
+state key counts, and finite summary metrics.
 
 ```js
 const lab = require("./assets/js/btree-split-lab.js");
 
 const audit = lab.auditBtreeSplitLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-if (audit.passed !== 96 || audit.total !== 96) {
-  throw new Error(`expected 96 passing cases, got ${audit.passed}/${audit.total}`);
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+if (audit.total !== 96 || audit.totalChecks !== 960) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
 
 console.table(audit.cases.slice(0, 8).map((row) => ({
@@ -342,8 +350,10 @@ console.table(audit.cases.slice(0, 8).map((row) => ({
   pages: row.pages,
   leafPages: row.leafPages,
   splits: row.splits,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   fill: row.avgLeafFill.toFixed(3)
 })));
+console.log(summary);
 ```
 
 That grid covers four insert orders, four page capacities, three key counts, and
