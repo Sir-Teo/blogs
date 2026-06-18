@@ -266,7 +266,7 @@ rare observations carry enormous leverage.
   <p class="mom-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/median-of-means-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/median-of-means-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Default Run Says
 
@@ -314,23 +314,24 @@ cell. It is trying to show when the firebreak matters and what it costs.
 The interactive lab is backed by a CommonJS module, so the same deterministic
 simulation can run under Node:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/median-of-means-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.audit.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  scenario: row.params.scenario,
-  n: row.params.n,
-  blocks: row.params.blocks,
-  mean95: row.summary.mean.q95.toFixed(3),
-  trim95: row.summary.trimmed.q95.toFixed(3),
-  mom95: row.summary.mom.q95.toFixed(3),
-  ratio: (row.summary.mom.q95 / row.summary.mean.q95).toFixed(2),
-  passed: row.audit.passed
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  n: row.n,
+  blocks: row.blocks,
+  mean95: row.meanP95.toFixed(3),
+  trim95: row.trimmedP95.toFixed(3),
+  mom95: row.momP95.toFixed(3),
+  ratio: row.momMeanRatio.toFixed(2),
+  passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 The audit checks that summaries are finite, the displayed median-of-means value

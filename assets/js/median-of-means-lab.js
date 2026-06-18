@@ -281,13 +281,36 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { scenario: "contaminated", n: 120, blocks: 9, trials: 900, seed: 31 },
       { scenario: "gaussian", n: 120, blocks: 9, trials: 800, seed: 7 },
       { scenario: "student", n: 180, blocks: 11, trials: 850, seed: 11 },
       { scenario: "lognormal", n: 150, blocks: 9, trials: 850, seed: 23 },
       { scenario: "pareto", n: 180, blocks: 15, trials: 800, seed: 41 }
-    ].map(evaluate);
+    ].map(function (row, index) {
+      var result = evaluate(row);
+      return {
+        caseId: index + 1,
+        scenario: result.params.scenario,
+        n: result.params.n,
+        blocks: result.params.blocks,
+        trials: result.params.trials,
+        seed: result.params.seed,
+        meanP95: result.summary.mean.q95,
+        trimmedP95: result.summary.trimmed.q95,
+        momP95: result.summary.mom.q95,
+        momMeanRatio: result.summary.mom.q95 / result.summary.mean.q95,
+        meanRmse: result.summary.mean.rmse,
+        momRmse: result.summary.mom.rmse,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {
