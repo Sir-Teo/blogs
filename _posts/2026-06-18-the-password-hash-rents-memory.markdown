@@ -299,10 +299,10 @@ evaluation.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/password-hash-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/password-hash-lab.js?v=20260618c' | relative_url }}"></script>
 
-The audit exported by the script runs 228 checks over a 72-row
-memory/pass/tradeoff/salt grid:
+The audit exported by the script runs 12 named critical checks plus 216
+generated checks over a 72-row memory/pass/tradeoff/salt grid:
 
 ```bash
 node - <<'NODE'
@@ -314,19 +314,30 @@ console.table(audit.byPasses);
 console.table(audit.byTradeoff);
 console.table(audit.bySalt);
 console.table(audit.criticalChecks);
-if (audit.total !== 228) {
-  throw new Error("unexpected check count: " + audit.total);
+const auditShape = {
+  criticalChecks: audit.criticalTotal,
+  rows: audit.cases.length,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (
+  auditShape.criticalChecks !== 12 ||
+  auditShape.rows !== 72 ||
+  auditShape.total !== 228 ||
+  auditShape.totalChecks !== 228
+) {
+  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passedChecks !== audit.total) {
+if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.errors, null, 2));
 }
-console.log(`${audit.passedChecks}/${audit.total} checks passed`);
+console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
 It verifies monotone behavior for memory and passes, the salt accounting, the
 time-memory tradeoff shape, the server memory budget calculation, and a 72-case
-grid over memory, passes, tradeoffs, and salt modes.
+grid over memory, passes, tradeoffs, and salt modes (228 checks total).
 
 ## Read The Knobs As Constraints
 

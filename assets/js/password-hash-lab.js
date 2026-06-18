@@ -413,9 +413,13 @@
       return row.ok;
     }
     function addCritical(ok, name, extra) {
+      var passed = check(ok, name, extra);
       criticalChecks.push({
         check: name,
-        passed: check(ok, name, extra)
+        failedChecks: passed ? [] : [name],
+        passed: passed,
+        passedChecks: passed ? 1 : 0,
+        totalChecks: 1
       });
     }
     var base = evaluate(DEFAULTS);
@@ -444,6 +448,7 @@
           ["unique", "shared"].forEach(function (salt) {
             var row = evaluate({ memory: memory, passes: passes, tradeoff: tradeoff, salt: salt, accounts: 1000, bits: 36, lanes: 4, attackerMemory: 24 });
             var failedChecks = [];
+            var totalChecks = 3;
             var label;
             grid += 1;
             label = "grid " + grid + " hash rate finite";
@@ -461,13 +466,15 @@
               latencyMs: row.latencyMs,
               memory: memory,
               passed: failedChecks.length === 0,
+              passedChecks: totalChecks - failedChecks.length,
               passes: passes,
               perGuessMemoryMiB: row.perGuessMemoryMiB,
               salt: salt,
               serverBudgetOk: row.serverBudgetOk ? 1 : 0,
               singleMedianSeconds: row.singleMedianSeconds,
               tradeoff: tradeoff,
-              tradeoffPenalty: row.tradeoffPenalty
+              tradeoffPenalty: row.tradeoffPenalty,
+              totalChecks: totalChecks
             });
           });
         });
@@ -490,6 +497,8 @@
             maxLatencyMs: 0,
             minHashRate: Infinity,
             passed: 0,
+            passedChecks: 0,
+            totalChecks: 0,
             serverBudgetOk: 0
           };
           groups[key][groupBy] = row[groupBy];
@@ -503,6 +512,8 @@
         groups[key].maxLatencyMs = Math.max(groups[key].maxLatencyMs, row.latencyMs);
         groups[key].minHashRate = Math.min(groups[key].minHashRate, row.hashRate);
         groups[key].serverBudgetOk += row.serverBudgetOk;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
         if (row.passed) groups[key].passed += 1;
       });
       return Object.keys(groups).sort(function (a, b) {
@@ -520,22 +531,27 @@
 
     var passedChecks = checks.filter(function (row) { return row.ok; }).length;
     var errors = checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
-    var ok = errors.length === 0;
+    var totalChecks = checks.length;
+    var ok = errors.length === 0 && passedChecks === totalChecks;
 
     return {
       byMemory: summarize("memory"),
       byPasses: summarize("passes"),
       bySalt: summarize("salt"),
       byTradeoff: summarize("tradeoff"),
+      caseTotal: cases.length,
       cases: cases,
       checks: checks,
       criticalChecks: criticalChecks,
+      criticalTotal: criticalChecks.length,
+      details: cases,
       defaultResult: base,
       errors: errors,
       ok: ok,
       passed: ok,
       passedChecks: passedChecks,
-      total: checks.length
+      total: totalChecks,
+      totalChecks: totalChecks
     };
   }
 
