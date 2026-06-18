@@ -242,29 +242,104 @@ The exported audit grid is reproducible from Node:
 
 ```js
 const lab = require("./assets/js/lis-patience-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 52;
+const EXPECTED_CASE_SHAPE = [
+  "1:classic:10:seed=23:5:16/45:1,3,4,6,9:12/12",
+  "2:random:48:seed=11:10:134/1128:10,14,19,25,31,34,35,36,41,45:10/10",
+  "3:nearly:64:seed=41:47:248/2016:1,2,4,6,7,8,9,10,11,12,15,16,17,19,20,21,22,23,24,26,28,29,31,32,33,34,35,36,39,41,42,43,44,46,47,48,49,50,51,52,55,56,57,60,62,63,64:10/10",
+  "4:layered:72:seed=19:9:170/2556:1,9,17,25,33,41,49,57,65:10/10",
+  "5:zigzag:60:seed=77:30:207/1770:1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30:10/10"
+];
+const EXPECTED_BY_SCENARIO_SHAPE = [
+  "classic:10:5:1/1:12/12",
+  "random:48:10:1/1:10/10",
+  "nearly:64:47:1/1:10/10",
+  "layered:72:9:1/1:10/10",
+  "zigzag:60:30:1/1:10/10"
+];
+const EXPECTED_COMMON_CHECK_NAMES = [
+  "sequence is permutation of 1..n",
+  "patience agrees with dynamic program",
+  "reconstructed patience subsequence has right length",
+  "reconstructed patience subsequence is increasing",
+  "dynamic program subsequence is increasing",
+  "pile tops stay increasing",
+  "one step per input",
+  "comparison counts finite",
+  "quadratic comparison count exact",
+  "monte carlo finite"
+];
+const EXPECTED_CLASSIC_CHECK_NAMES = EXPECTED_COMMON_CHECK_NAMES.concat([
+  "classic example has five piles",
+  "classic recovered LIS"
+]);
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS =
+  EXPECTED_CASES * EXPECTED_COMMON_CHECK_NAMES.length +
+  (EXPECTED_CLASSIC_CHECK_NAMES.length - EXPECTED_COMMON_CHECK_NAMES.length);
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row, index) {
+  return `${index + 1}:${row.scenario}:${row.length}:seed=${row.seed}:` +
+    `${row.lisLength}:${row.patienceComparisons}/${row.dpComparisons}:` +
+    `${row.lis.join(",")}:${row.passedChecks}/${row.totalChecks}`;
+}
+
+function byScenarioShape(row) {
+  return `${row.scenario}:${row.length}:${row.lisLength}:` +
+    `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 console.table(audit.byScenario);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = {
+  byScenario: audit.byScenario.map(byScenarioShape),
+  cases: audit.cases.map(caseShape)
+};
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
 }
+if (!sameList(shape.byScenario, EXPECTED_BY_SCENARIO_SHAPE)) {
+  shapeErrors.push({
+    name: "byScenario",
+    actual: shape.byScenario,
+    expected: EXPECTED_BY_SCENARIO_SHAPE
+  });
+}
+audit.cases.forEach((row, index) => {
+  const names = row.checks.map((check) => check.name);
+  const expected =
+    row.scenario === "classic" ? EXPECTED_CLASSIC_CHECK_NAMES : EXPECTED_COMMON_CHECK_NAMES;
+  if (!sameList(names, expected)) {
+    shapeErrors.push({
+      name: `case ${index + 1} check names`,
+      actual: names,
+      expected
+    });
+  }
+});
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
     failed,
+    shapeErrors,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
