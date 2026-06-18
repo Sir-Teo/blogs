@@ -437,6 +437,17 @@ const EXPECTED_DECILE_SHAPE = [
   "900:90:14:14:20:0.025:608",
   "900:90:6:4:15:0.010:430"
 ];
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditDoublyRobustLab();
 const failed = audit.cases.filter(
@@ -444,6 +455,13 @@ const failed = audit.cases.filter(
 );
 
 const auditShape = {
+  totals: {
+    rows: audit.cases.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   biasShape: audit.cases.map((row) => [
     row.rows,
     row.confounding,
@@ -473,18 +491,20 @@ const auditShape = {
     row.minDecileControl,
     row.overlapMinPropensity.toFixed(3),
     row.minEffectiveSampleSize.toFixed(0)
-  ].join(":")).sort(),
-  passed: audit.passed,
-  total: audit.total,
-  totalChecks: audit.totalChecks
+  ].join(":")).sort()
 };
-if (auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES) ||
-    JSON.stringify(auditShape.biasShape) !== JSON.stringify(EXPECTED_BIAS_SHAPE) ||
-    JSON.stringify(auditShape.decileShape) !== JSON.stringify(EXPECTED_DECILE_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
+  sameJson(auditShape.biasShape, EXPECTED_BIAS_SHAPE) ? null : "biasShape",
+  sameJson(auditShape.decileShape, EXPECTED_DECILE_SHAPE) ? null : "decileShape"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 
 const summary =
@@ -498,6 +518,7 @@ if (
 ) {
   throw new Error(JSON.stringify({
     failed,
+    shapeErrors,
     auditShape,
     passed: audit.passed,
     passedChecks: audit.passedChecks,
