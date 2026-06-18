@@ -339,7 +339,7 @@ Default measured values:
   </table>
 </div>
 
-<script defer src="{{ '/assets/js/tls-transcript-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/tls-transcript-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What Each Scenario Teaches
 
@@ -370,6 +370,38 @@ secret in this simplified model. They do change the transcript signed by
 
 The ECDHE mismatch row is the other boundary. Transcript binding cannot rescue
 two endpoints that did not compute the same shared secret.
+
+You can reproduce the scenario grid from Node:
+
+```js
+const lab = require("./assets/js/tls-transcript-lab.js");
+
+(async () => {
+  const audit = await lab.auditGrid();
+  const failed = audit.rows.filter((row) => !row.passed);
+  if (failed.length || audit.passed !== audit.total) {
+    throw new Error(JSON.stringify({
+      failed,
+      hkdfVectorOk: audit.hkdfVectorOk,
+      passed: audit.passed,
+      total: audit.total
+    }, null, 2));
+  }
+
+  console.table(audit.rows.map((row) => ({
+    scenario: row.params.scenario,
+    helloHash: row.helloHashMatch ? "match" : "split",
+    trafficSecret: row.trafficSecretMatch ? "match" : "split",
+    secretOnly: row.secretOnlyDemoMatch ? "match" : "split",
+    certificateVerify: row.certificateVerifyOk ? "ok" : "fail",
+    finished: row.finishedOk ? "ok" : "fail"
+  })));
+})();
+```
+
+The extra audit case is the RFC 5869 HKDF test vector used by the toy key
+schedule. That check is not about TLS transcript binding directly; it keeps the
+small cryptographic plumbing honest.
 
 ## Why Not Just Sign The Certificate?
 

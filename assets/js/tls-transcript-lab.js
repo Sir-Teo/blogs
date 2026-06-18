@@ -514,8 +514,13 @@
       });
     })).then(function (rows) {
       return hkdfVectorOk().then(function (ok) {
-        rows.hkdfVectorOk = ok;
-        return rows;
+        var passed = rows.filter(function (row) { return row.passed; }).length;
+        return {
+          hkdfVectorOk: ok,
+          passed: passed + (ok ? 1 : 0),
+          rows: rows,
+          total: rows.length + 1
+        };
       });
     });
   }
