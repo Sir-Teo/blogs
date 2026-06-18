@@ -333,14 +333,26 @@ The browser file is also a CommonJS module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/myers-diff-lab.js");
+const EXPECTED_GROUPS = 11;
+const EXPECTED_NAMED_CASES = 10;
+const EXPECTED_BINARY_CASES = 3969;
+const EXPECTED_CHECKS = 35811;
 
 const audit = lab.auditMyersDiff();
 console.table(audit.byTie);
-if (audit.exhaustiveBinaryCases !== 3969) {
-  throw new Error("unexpected exhaustive case count: " + audit.exhaustiveBinaryCases);
-}
-if (audit.totalChecks !== 35811) {
-  throw new Error("unexpected audit check count: " + audit.totalChecks);
+const auditShape = {
+  namedRows: audit.cases.length,
+  exhaustiveBinaryCases: audit.exhaustiveBinaryCases,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.namedRows !== EXPECTED_NAMED_CASES ||
+    auditShape.exhaustiveBinaryCases !== EXPECTED_BINARY_CASES ||
+    auditShape.total !== EXPECTED_GROUPS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
 console.table(audit.cases.map((row) => ({
@@ -355,8 +367,18 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} audit groups and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.issues, null, 2));
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const exhaustiveFailures = audit.exhaustive.failedChecks.slice(0, 10);
+if (!audit.ok || failedCases.length || !audit.exhaustive.passed ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    issues: audit.issues.slice(0, 10),
+    failedCases,
+    exhaustiveFailures,
+    auditShape
+  }, null, 2));
 }
 console.log(summary);
 NODE
