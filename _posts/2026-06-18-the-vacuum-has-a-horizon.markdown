@@ -269,7 +269,7 @@ policy. The point is the retention invariant.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/mvcc-vacuum-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/mvcc-vacuum-lab.js?v=20260618c' | relative_url }}"></script>
 
 At the default setting, there are `48` logical rows and `360` updates. The long
 reader starts at XID `74` and is still active at the end. Vacuum runs `15`
@@ -292,15 +292,19 @@ You can reproduce the audit from Node:
 const lab = require("./assets/js/mvcc-vacuum-lab.js");
 
 const audit = lab.auditMvccVacuumLab();
-const failedCases = audit.cases.filter((row) => !row.passed);
-const failedComparisons = audit.comparisons.filter((row) => !row.passed);
-if (failedCases.length || failedComparisons.length) {
-  throw new Error(JSON.stringify({ failedCases, failedComparisons }));
-}
-if (audit.passed !== audit.total) {
-  throw new Error(`only ${audit.passed}/${audit.total} checks passed`);
+if (!audit.ok || audit.passed !== 5 || audit.total !== 5 ||
+    audit.passedChecks !== 27 || audit.totalChecks !== 27) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 
+console.log(`${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 console.table(audit.cases.map((row) => ({
   scenario: row.label,
   reader: row.readerActiveAtEnd ? "held" : "free",
@@ -325,7 +329,11 @@ console.table([contrast.base, contrast.held].map((row) => ({
 
 The first table exercises four visibility-safety cases. The second table holds
 the update stream fixed and changes only the snapshot horizon, which is the
-claim the lab is meant to isolate.
+claim the lab is meant to isolate. Together the sweep passed 27/27 named
+checks: finite trace metrics, one live version per logical row, sane vacuum
+horizons, active-snapshot visibility preservation on every vacuum replay, and
+the pinned-reader contrast that retains more versions, increases bloat, and
+reclaims fewer obsolete versions.
 
 The source is intentionally small:
 [`assets/js/mvcc-vacuum-lab.js`]({{ '/assets/js/mvcc-vacuum-lab.js' | relative_url }}).

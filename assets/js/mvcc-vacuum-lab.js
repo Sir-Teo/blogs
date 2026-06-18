@@ -296,6 +296,15 @@
     };
   }
 
+  function auditChecks(audit) {
+    return [
+      { name: "finite trace metrics", passed: audit.finite },
+      { name: "one live version per logical row", passed: audit.liveRowsPreserved },
+      { name: "vacuum horizon stays sane", passed: audit.horizonSane },
+      { name: "vacuum preserves active snapshot visibility", passed: audit.visibilitySafe }
+    ];
+  }
+
   function evaluate(input) {
     var result = simulate(input);
     result.audit = Object.assign(result.audit, auditResult(result));
@@ -311,23 +320,41 @@
     ];
     var total = 0;
     var passed = 0;
+    var totalChecks = 0;
+    var passedChecks = 0;
+    var failures = [];
     var rows = [];
 
+    function recordChecks(label, checks) {
+      var failedChecks = checks.filter(function (check) { return !check.passed; });
+      totalChecks += checks.length;
+      passedChecks += checks.length - failedChecks.length;
+      if (failedChecks.length) {
+        failures.push({
+          label: label,
+          failedChecks: failedChecks.map(function (check) { return check.name; })
+        });
+      }
+      return failedChecks.map(function (check) { return check.name; });
+    }
+
     function rowFromResult(label, result) {
+      var checks = auditChecks(result.audit);
+      var failedChecks = recordChecks(label, checks);
       return {
         avgReadSteps: result.summary.avgReadSteps,
         bloat: result.summary.bloat,
-        failedChecks: Object.keys(result.audit).filter(function (key) {
-          return result.audit[key] === false;
-        }),
+        failedChecks: failedChecks,
         horizon: result.summary.horizon,
         invalidRemovals: result.audit.invalidRemovals,
         label: label,
         maxReadSteps: result.summary.maxReadSteps,
-        passed: result.audit.passed,
+        passed: failedChecks.length === 0,
+        passedChecks: checks.length - failedChecks.length,
         pinned: result.summary.pinned,
         readerActiveAtEnd: result.reader.activeAtEnd,
         reclaimed: result.summary.totalReclaimed,
+        totalChecks: checks.length,
         vacuumRuns: result.audit.vacuumRuns,
         versions: result.summary.versions
       };
@@ -336,21 +363,42 @@
     cases.forEach(function (entry) {
       total += 1;
       var result = evaluate(entry.params);
-      if (result.audit.passed) passed += 1;
-      rows.push(rowFromResult(entry.label, result));
+      var row = rowFromResult(entry.label, result);
+      if (row.passed) passed += 1;
+      rows.push(row);
     });
 
     var base = evaluate({ keys: 48, updates: 360, hotShare: 74, readerHold: 0, vacuumEvery: 24, pageSlots: 96, seed: 41 });
     var held = evaluate({ keys: 48, updates: 360, hotShare: 74, readerHold: 320, vacuumEvery: 24, pageSlots: 96, seed: 41 });
+    var baseRow = rowFromResult("default, no reader", base);
+    var heldRow = rowFromResult("default, pinned reader", held);
+    var contrastChecks = [
+      { name: "pinned reader retains more versions", passed: held.summary.pinned > base.summary.pinned + 100 },
+      { name: "pinned reader increases bloat", passed: held.summary.bloat > base.summary.bloat + 2 },
+      { name: "pinned reader reclaims fewer versions", passed: held.summary.totalReclaimed + 100 < base.summary.totalReclaimed }
+    ];
+    var contrastFailedChecks = recordChecks("default horizon contrast", contrastChecks);
     var pinnedContrast = {
-      base: rowFromResult("default, no reader", base),
-      held: rowFromResult("default, pinned reader", held),
-      passed: held.summary.pinned > base.summary.pinned + 100 && held.summary.bloat > base.summary.bloat + 2
+      base: baseRow,
+      failedChecks: contrastFailedChecks,
+      held: heldRow,
+      passed: baseRow.passed && heldRow.passed && contrastFailedChecks.length === 0,
+      passedChecks: baseRow.passedChecks + heldRow.passedChecks + contrastChecks.length - contrastFailedChecks.length,
+      totalChecks: baseRow.totalChecks + heldRow.totalChecks + contrastChecks.length
     };
     total += 1;
     if (pinnedContrast.passed) passed += 1;
 
-    return { cases: rows, comparisons: [pinnedContrast], total: total, passed: passed };
+    return {
+      cases: rows,
+      comparisons: [pinnedContrast],
+      failures: failures,
+      ok: passed === total && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: total,
+      totalChecks: totalChecks
+    };
   }
 
   function metric(label, value, tone) {
