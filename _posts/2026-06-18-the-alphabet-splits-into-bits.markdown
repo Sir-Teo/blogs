@@ -327,6 +327,8 @@ const lab = require("./assets/js/wavelet-tree-lab.js");
 
 const rows = lab.auditWaveletTreeLab();
 const ok = rows.every((row) => row.ok);
+if (!ok) throw new Error(JSON.stringify(rows.filter((row) => !row.ok)));
+console.log(rows.length + " checks passed");
 ```
 
 For every built-in sequence, the audit checks:

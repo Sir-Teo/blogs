@@ -321,8 +321,9 @@ The browser lab is also a CommonJS module:
 const lab = require("./assets/js/succinct-tree-lab.js");
 
 const rows = lab.auditGrid();
-console.log(rows.length);
-console.log(rows.every((row) => row.audit.passed));
+const failed = rows.filter((row) => !row.audit.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+console.log(rows.length + " cases passed");
 ```
 
 The current audit grid has 180 cases. It checks every focus node in all four
