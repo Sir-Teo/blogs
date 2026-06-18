@@ -232,7 +232,7 @@
   function audit(result) {
     var checks = [];
     function check(name, ok) {
-      checks.push({ name: name, ok: !!ok });
+      checks.push({ name: name, ok: !!ok, passed: !!ok });
     }
     var n = result.params.keys;
     check("weak rows match key count", result.weak.trace.length === n);
@@ -247,7 +247,7 @@
     }
     check("lookup p95 finite", Number.isFinite(result.weakSummary.lookupP95) && Number.isFinite(result.keyedSummary.lookupP95));
     return {
-      passed: checks.every(function (row) { return row.ok; }),
+      passed: checks.every(function (row) { return row.passed; }),
       checks: checks
     };
   }
@@ -262,6 +262,8 @@
     ];
     var rows = cases.map(function (params, index) {
       var result = evaluate(params);
+      var failedChecks = result.audit.checks.filter(function (row) { return !row.passed; }).map(function (row) { return row.name; });
+      var passedChecks = result.audit.checks.filter(function (row) { return row.passed; }).length;
       return {
         caseId: index + 1,
         scenario: result.params.scenario,
@@ -277,14 +279,31 @@
         weakLookupP95: result.weakSummary.lookupP95,
         keyedLookupP95: result.keyedSummary.lookupP95,
         amplification: result.weakSummary.comparisons / Math.max(1, result.keyedSummary.comparisons),
+        checks: result.audit.checks,
         passed: result.audit.passed,
-        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+        passedChecks: passedChecks,
+        failedChecks: failedChecks,
+        totalChecks: result.audit.checks.length
+      };
+    });
+    var passed = rows.filter(function (row) { return row.passed; }).length;
+    var passedChecks = rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var failures = rows.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        caseId: row.caseId,
+        failedChecks: row.failedChecks,
+        scenario: row.scenario
       };
     });
     return {
       cases: rows,
-      passed: rows.filter(function (row) { return row.passed; }).length,
-      total: rows.length
+      failures: failures,
+      ok: failures.length === 0 && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: rows.length,
+      totalChecks: totalChecks
     };
   }
 

@@ -299,7 +299,7 @@ With the default settings, the lab measures:
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hash-flood-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hash-flood-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Graph Should Make Uncomfortable
 
@@ -326,7 +326,7 @@ clever. The input no longer controls the bucket map.
 
 The lab exports a Node audit that checks bucket accounting, finite outputs, the
 triangular comparison count for the flood case, and the spread of the keyed
-toy. These are the measured rows:
+toy: five measured rows and 39 named checks.
 
 | Scenario | Keys | Buckets | Weak comparisons | Keyed comparisons | Weak max bucket | Keyed max bucket | Amplification |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -356,11 +356,21 @@ console.table(audit.cases.map((row) => ({
   weakMaxBucket: row.weakMaxBucket,
   keyedMaxBucket: row.keyedMaxBucket,
   amplification: row.amplification.toFixed(1) + "x",
-  passed: row.passed
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+if (
+  !audit.ok ||
+  audit.passed !== 5 ||
+  audit.total !== 5 ||
+  audit.passedChecks !== 39 ||
+  audit.totalChecks !== 39
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
 }
+console.log(
+  `${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
