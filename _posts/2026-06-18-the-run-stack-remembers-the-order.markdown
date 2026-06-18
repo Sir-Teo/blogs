@@ -332,7 +332,7 @@ but "which legal merge tree did the policy create?"
   <p class="timsort-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/timsort-run-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/timsort-run-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -351,7 +351,8 @@ The audit checks:
 - stack merge records conserve run length;
 - accounting values are finite.
 
-The deterministic audit grid is:
+The deterministic audit grid reports 60 named checks: ten invariants across
+each of the six input patterns below.
 
 | Pattern | Items | Minrun | Prepared runs | Fixed cmp | Queue cmp | Stack cmp | Stack writes | Stack depth |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -378,11 +379,15 @@ console.table(audit.cases.map((row) => ({
   stack: row.stackComparisons,
   stackMoves: row.stackMoves,
   stackDepth: row.stackDepth,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
