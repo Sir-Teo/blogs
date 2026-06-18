@@ -378,33 +378,129 @@ The lab exports the same audit:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/littles-law-lab.js");
-const EXPECTED_MODES = 2;
-const EXPECTED_LOADS = 3;
-const EXPECTED_CASES = 108;
+const EXPECTED_GRID_SHAPE = [
+  "modes=drain/slice",
+  "loads=45/72/93",
+  "arrivalCv=0/80/160",
+  "serviceCv=0/90/150",
+  "seeds=3/41"
+];
+const EXPECTED_MODE_SHAPE = [
+  "drain:cases=54:passed=54:checks=702/702:meanEdgeDebt=0.000000:open=0/0:maxResidual=0.000000000000",
+  "slice:cases=54:passed=54:checks=594/594:meanEdgeDebt=0.158744:open=191/249:maxResidual=0.000000000000"
+];
+const EXPECTED_LOAD_SHAPE = [
+  "45:cases=36:passed=36:checks=432/432:meanEdgeDebt=0.004781:open=13/13:maxResidual=0.000000000000",
+  "72:cases=36:passed=36:checks=432/432:meanEdgeDebt=0.020383:open=29/56:maxResidual=0.000000000000",
+  "93:cases=36:passed=36:checks=432/432:meanEdgeDebt=0.212952:open=149/180:maxResidual=0.000000000000"
+];
+const EXPECTED_WORST_RESIDUAL_SHAPE = [
+  "drain:93:160:0:3:residual=0.000000000000:edgeDebt=-0.000000:13/13:true",
+  "slice:93:80:150:3:residual=0.000000000000:edgeDebt=1.119933:11/11:true",
+  "slice:93:80:150:41:residual=0.000000000000:edgeDebt=0.489341:11/11:true",
+  "slice:93:80:90:3:residual=0.000000000000:edgeDebt=0.355634:11/11:true",
+  "drain:93:160:90:3:residual=0.000000000000:edgeDebt=0.000000:13/13:true",
+  "slice:93:0:90:41:residual=0.000000000000:edgeDebt=0.178910:11/11:true"
+];
+const EXPECTED_CHECK_NAMES = [
+  "area equals residence-time ledger",
+  "area is finite and nonnegative",
+  "closed lambda-W product matches closed rate times mean W",
+  "drain closes all rectangles",
+  "drain ends empty",
+  "drain starts empty",
+  "edge debt is nonnegative",
+  "ledger components sum to total",
+  "max queue length bounds endpoints",
+  "queue length stays nonnegative",
+  "slice edge debt equals boundary rectangles",
+  "time-average L equals area divided by window",
+  "time-average L splits into closed product plus edge debt",
+  "window is finite and positive"
+];
+const EXPECTED_MODES = EXPECTED_MODE_SHAPE.length;
+const EXPECTED_LOADS = EXPECTED_LOAD_SHAPE.length;
+const EXPECTED_CASES = 2 * 3 * 3 * 3 * 2;
 const EXPECTED_CHECKS = 1296;
+const EXPECTED_MAX_RESIDUAL = "0.000000000000";
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function fixed(value, digits) {
+  return Number(value).toFixed(digits);
+}
+
+function groupShape(row, key) {
+  return `${row[key]}:cases=${row.cases}:passed=${row.passed}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:` +
+    `meanEdgeDebt=${fixed(row.meanEdgeDebt, 6)}:` +
+    `open=${row.openAtStart}/${row.openAtEnd}:` +
+    `maxResidual=${fixed(row.maxResidual, 12)}`;
+}
+
+function residualShape(row) {
+  return `${row.mode}:${row.load}:${row.arrivalCv}:${row.serviceCv}:${row.seed}:` +
+    `residual=${fixed(row.residual, 12)}:edgeDebt=${fixed(row.edgeDebt, 6)}:` +
+    `${row.checks}:${row.passed}`;
+}
+
+function uniqueNumbers(audit, key) {
+  return Array.from(new Set(audit.cases.map((row) => row[key]))).join("/");
+}
 
 const audit = lab.audit();
 console.table(audit.byMode);
 console.table(audit.byLoad);
 console.table(audit.worstResiduals);
-const auditShape = {
-  modeRows: audit.byMode.length,
-  loadRows: audit.byLoad.length,
-  rows: audit.cases.length,
-  caseCount: audit.caseCount,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks,
-  maxResidual: audit.maxResidual
+const shape = {
+  byLoad: audit.byLoad.map((row) => groupShape(row, "load")),
+  byMode: audit.byMode.map((row) => groupShape(row, "mode")),
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  grid: [
+    `modes=${uniqueNumbers(audit, "mode")}`,
+    `loads=${uniqueNumbers(audit, "load")}`,
+    `arrivalCv=${uniqueNumbers(audit, "arrivalCv")}`,
+    `serviceCv=${uniqueNumbers(audit, "serviceCv")}`,
+    `seeds=${uniqueNumbers(audit, "seed")}`
+  ],
+  maxResidual: fixed(audit.maxResidual, 12),
+  worstResiduals: audit.worstResiduals.map(residualShape)
 };
-if (auditShape.modeRows !== EXPECTED_MODES ||
-    auditShape.loadRows !== EXPECTED_LOADS ||
-    auditShape.rows !== EXPECTED_CASES ||
-    auditShape.caseCount !== EXPECTED_CASES ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.grid, EXPECTED_GRID_SHAPE)) {
+  shapeErrors.push({ name: "grid", actual: shape.grid, expected: EXPECTED_GRID_SHAPE });
+}
+if (!sameList(shape.byMode, EXPECTED_MODE_SHAPE)) {
+  shapeErrors.push({ name: "byMode", actual: shape.byMode, expected: EXPECTED_MODE_SHAPE });
+}
+if (!sameList(shape.byLoad, EXPECTED_LOAD_SHAPE)) {
+  shapeErrors.push({ name: "byLoad", actual: shape.byLoad, expected: EXPECTED_LOAD_SHAPE });
+}
+if (!sameList(shape.worstResiduals, EXPECTED_WORST_RESIDUAL_SHAPE)) {
+  shapeErrors.push({
+    name: "worstResiduals",
+    actual: shape.worstResiduals,
+    expected: EXPECTED_WORST_RESIDUAL_SHAPE
+  });
+}
+if (!sameList(shape.checkNames, EXPECTED_CHECK_NAMES)) {
+  shapeErrors.push({
+    name: "checkNames",
+    actual: shape.checkNames,
+    expected: EXPECTED_CHECK_NAMES
+  });
+}
+if (shape.maxResidual !== EXPECTED_MAX_RESIDUAL) {
+  shapeErrors.push({
+    name: "maxResidual",
+    actual: shape.maxResidual,
+    expected: EXPECTED_MAX_RESIDUAL
+  });
 }
 
 const failedModeGroups = audit.byMode.filter(
@@ -416,15 +512,34 @@ const failedLoadGroups = audit.byLoad.filter(
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || !audit.pass || failedModeGroups.length ||
-    failedLoadGroups.length || failedCases.length ||
-    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+if (shapeErrors.length ||
+    !audit.ok ||
+    !audit.pass ||
+    audit.byMode.length !== EXPECTED_MODES ||
+    audit.byLoad.length !== EXPECTED_LOADS ||
+    audit.cases.length !== EXPECTED_CASES ||
+    audit.caseCount !== EXPECTED_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    failedModeGroups.length ||
+    failedLoadGroups.length ||
+    failedCases.length ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    shapeErrors,
     failures: audit.failures,
     failedModeGroups,
     failedLoadGroups,
     failedCases: failedCases.slice(0, 10),
-    auditShape
+    totals: {
+      caseCount: audit.caseCount,
+      rows: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 console.log(
