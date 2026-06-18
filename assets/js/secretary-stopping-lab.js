@@ -225,19 +225,39 @@
   }
 
   function auditSecretaryStoppingLab() {
+    function auditCheck(name, passed) {
+      return {
+        name: name,
+        passed: Boolean(passed)
+      };
+    }
+
+    function failedChecks(checks) {
+      return checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
+    }
+
+    function passedChecks(checks) {
+      return checks.filter(function (check) { return check.passed; }).length;
+    }
+
     var exactCases = [];
     [5, 6, 7].forEach(function (n) {
       for (var cutoff = 1; cutoff <= n; cutoff += 1) {
         var exact = exactSuccess(n, cutoff);
         var brute = bruteForceSuccess(n, cutoff);
         var exactPassed = Math.abs(exact - brute) < 1e-12;
+        var checks = [auditCheck("closed form equals brute force", exactPassed)];
         exactCases.push({
           brute: Number(brute.toFixed(12)),
+          checks: checks,
           cutoff: cutoff,
           difference: Math.abs(exact - brute),
           exact: Number(exact.toFixed(12)),
+          failedChecks: failedChecks(checks),
           n: n,
-          passed: exactPassed
+          passed: exactPassed,
+          passedChecks: passedChecks(checks),
+          totalChecks: checks.length
         });
         assert(exactPassed, "exact formula mismatch n=" + n + " cutoff=" + cutoff);
       }
@@ -249,13 +269,21 @@
       var cutoffPassed = dp.firstAccept === curve.best.cutoff;
       var valueDiff = Math.abs(dp.value[1] - curve.best.probability);
       var valuePassed = valueDiff < 1e-12;
+      var checks = [
+        auditCheck("DP cutoff equals finite optimum", cutoffPassed),
+        auditCheck("DP value equals finite optimum", valuePassed)
+      ];
       dpCases.push({
         bestCutoff: curve.best.cutoff,
         bestProbability: Number(curve.best.probability.toFixed(12)),
+        checks: checks,
         dpFirstAccept: dp.firstAccept,
         dpValue: Number(dp.value[1].toFixed(12)),
+        failedChecks: failedChecks(checks),
         n: n,
-        passed: cutoffPassed && valuePassed,
+        passed: checks.every(function (check) { return check.passed; }),
+        passedChecks: passedChecks(checks),
+        totalChecks: checks.length,
         valueDifference: valueDiff
       });
       assert(cutoffPassed, "DP threshold mismatch n=" + n);
@@ -267,7 +295,12 @@
       { name: "curve bounded", passed: base.audit.curveBounded },
       { name: "formula finite", passed: base.audit.formulaFinite },
       { name: "simulation close", passed: base.audit.simulationClose }
-    ];
+    ].map(function (check) {
+      check.failedChecks = check.passed ? [] : [check.name];
+      check.passedChecks = check.passed ? 1 : 0;
+      check.totalChecks = 1;
+      return check;
+    });
     defaultChecks.forEach(function (row) {
       assert(row.passed, row.name);
     });
@@ -275,15 +308,29 @@
       + dpCases.filter(function (row) { return row.passed; }).length
       + defaultChecks.filter(function (row) { return row.passed; }).length;
     var total = exactCases.length + dpCases.length + defaultChecks.length;
+    var rows = exactCases.concat(dpCases, defaultChecks);
+    var passedCheckTotal = rows.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var checkTotal = rows.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var failures = rows.filter(function (row) { return row.failedChecks && row.failedChecks.length; }).map(function (row) {
+      return {
+        cutoff: row.cutoff,
+        failedChecks: row.failedChecks,
+        n: row.n,
+        name: row.name
+      };
+    });
     return {
       defaultChecks: defaultChecks,
       dpCases: dpCases,
       exactAtCutoff: Number(base.selectedExact.toFixed(4)),
       exactCases: exactCases,
-      ok: passed === total,
+      failures: failures,
+      ok: passed === total && passedCheckTotal === checkTotal,
       optimalCutoff: base.curve.best.cutoff,
       optimalProbability: Number(base.curve.best.probability.toFixed(4)),
       passed: passed,
+      passedChecks: passedCheckTotal,
+      totalChecks: checkTotal,
       total: total
     };
   }

@@ -257,7 +257,7 @@ The lab computes:
   <p class="secretary-lab__note">The candidates are represented only by random ranks. The model does not include measurement noise, interviews with costs, multiple hires, actual score values, recall, fairness constraints, or strategic behavior.</p>
 </div>
 
-<script defer src="{{ '/assets/js/secretary-stopping-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/secretary-stopping-lab.js?v=20260618c' | relative_url }}"></script>
 
 For `n = 80`, the exact optimum is to reject 29 candidates and make candidate
 30 the first eligible record. The exact success probability is about `0.3719`.
@@ -286,34 +286,55 @@ case rows, the current top-level audit reports:
   "optimalCutoff": 30,
   "optimalProbability": 0.3719,
   "passed": 26,
+  "passedChecks": 30,
+  "totalChecks": 30,
   "total": 26
 }
 ```
 
 The compact reproduction check is:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/secretary-stopping-lab.js");
 
 const audit = lab.auditSecretaryStoppingLab();
-const failed = audit.exactCases.filter((row) => !row.passed)
-  .concat(audit.dpCases.filter((row) => !row.passed))
-  .concat(audit.defaultChecks.filter((row) => !row.passed));
-if (failed.length || !audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
-}
-
+const exactSummary = [5, 6, 7].map((n) => {
+  const rows = audit.exactCases.filter((row) => row.n === n);
+  return {
+    n,
+    cutoffs: rows.length,
+    checks: `${rows.reduce((sum, row) => sum + row.passedChecks, 0)}/${rows.reduce((sum, row) => sum + row.totalChecks, 0)}`,
+    maxDifference: Math.max(...rows.map((row) => row.difference)).toExponential(2)
+  };
+});
+console.table(exactSummary);
 console.table(audit.dpCases.map((row) => ({
   n: row.n,
   bestCutoff: row.bestCutoff,
   dpFirstAccept: row.dpFirstAccept,
   bestProbability: row.bestProbability.toFixed(4),
-  valueDifference: row.valueDifference
+  valueDifference: row.valueDifference,
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
+console.table(audit.defaultChecks.map((row) => ({
+  check: row.name,
+  checks: `${row.passedChecks}/${row.totalChecks}`
+})));
+if (
+  !audit.ok ||
+  audit.passed !== 26 ||
+  audit.total !== 26 ||
+  audit.passedChecks !== 30 ||
+  audit.totalChecks !== 30
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(
+  `${audit.passed}/${audit.total} audit rows and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
+NODE
 ```
 
 That simulation tolerance is not the theorem. It is only a smoke test that the
