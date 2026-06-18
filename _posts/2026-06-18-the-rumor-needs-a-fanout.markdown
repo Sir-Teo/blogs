@@ -263,7 +263,7 @@ model is intentionally simple enough to audit.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/gossip-fanout-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/gossip-fanout-lab.js?v=20260618b' | relative_url }}"></script>
 
 At the default setting, there are `512` nodes, one initial holder, fanout `1`,
 and a `4%` independent contact drop rate. The exact numbers move with the seed,
@@ -274,6 +274,42 @@ Raise **Drop rate**. Coverage remains graceful for a while because the protocol
 keeps taking new random shots. Raise **Fanout**. Time drops, but contacts per
 node rise. The knob is not "reliability"; it is how much random work you are
 willing to buy per round.
+
+You can reproduce the audit from Node:
+
+```js
+const lab = require("./assets/js/gossip-fanout-lab.js");
+
+const audit = lab.auditGossipFanoutLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.label,
+  nodes: row.nodes,
+  fanout: row.fanout,
+  lossPct: row.loss,
+  trials: row.trials,
+  push99: row.pushT99.toFixed(1),
+  pull99: row.pullT99.toFixed(1),
+  pushPull99: row.pushPullT99.toFixed(1),
+  pushPullP90: row.pushPullP90Round99,
+  pushPullReached: String(row.pushPullReached99) + "/" + row.trials,
+  contactsPerNode99: row.pushPullContactsPerNode99.toFixed(2),
+  redundantShare99: row.pushPullRedundantShare99.toFixed(2)
+})));
+```
+
+The grid checks lossless, moderate-loss, larger-population, and high-loss
+cases. It asserts monotone coverage, population bounds, a single initial
+holder, and enough push-pull 99% coverage when the configured loss rate is not
+intentionally extreme.
 
 The source is intentionally small:
 [`assets/js/gossip-fanout-lab.js`]({{ '/assets/js/gossip-fanout-lab.js' | relative_url }}).

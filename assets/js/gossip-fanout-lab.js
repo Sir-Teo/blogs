@@ -273,16 +273,41 @@
 
   function auditGossipFanoutLab() {
     var cases = [
-      { nodes: 256, fanout: 1, loss: 0, trials: 12, seed: 5 },
-      { nodes: 512, fanout: 2, loss: 5, trials: 12, seed: 11 },
-      { nodes: 1024, fanout: 1, loss: 18, trials: 12, seed: 23 },
-      { nodes: 128, fanout: 4, loss: 30, trials: 8, seed: 71 }
+      { label: "lossless fanout 1", params: { nodes: 256, fanout: 1, loss: 0, trials: 12, seed: 5 } },
+      { label: "moderate fanout", params: { nodes: 512, fanout: 2, loss: 5, trials: 12, seed: 11 } },
+      { label: "larger lossy fanout 1", params: { nodes: 1024, fanout: 1, loss: 18, trials: 12, seed: 23 } },
+      { label: "high-loss fanout 4", params: { nodes: 128, fanout: 4, loss: 30, trials: 8, seed: 71 } }
     ];
     var passed = 0;
-    cases.forEach(function (params) {
-      if (evaluate(params).audit.passed) passed += 1;
+    var rows = [];
+    cases.forEach(function (entry) {
+      var result = evaluate(entry.params);
+      var push = result.policies.filter(function (policy) { return policy.id === "push"; })[0];
+      var pull = result.policies.filter(function (policy) { return policy.id === "pull"; })[0];
+      var pushPull = result.policies.filter(function (policy) { return policy.id === "pushpull"; })[0];
+      if (result.audit.passed) passed += 1;
+      rows.push({
+        failedChecks: Object.keys(result.audit).filter(function (key) {
+          return key !== "passed" && result.audit[key] === false;
+        }),
+        fanout: result.params.fanout,
+        label: entry.label,
+        loss: result.params.loss,
+        nodes: result.params.nodes,
+        passed: result.audit.passed,
+        pullT99: pull.t99,
+        pushPullContactsPerNode99: pushPull.contactsPerNode99,
+        pushPullP90Round99: pushPull.p90Round99,
+        pushPullReached99: pushPull.reached99,
+        pushPullRedundantShare99: pushPull.redundantShare99,
+        pushPullT99: pushPull.t99,
+        pushReached99: push.reached99,
+        pushT99: push.t99,
+        seed: result.params.seed,
+        trials: result.params.trials
+      });
     });
-    return { passed: passed, total: cases.length };
+    return { cases: rows, passed: passed, total: cases.length };
   }
 
   function formatNumber(value, digits) {
