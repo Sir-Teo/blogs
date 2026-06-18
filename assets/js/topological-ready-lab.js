@@ -413,6 +413,23 @@
     function assert(condition, message) {
       if (!condition) throw new Error(message);
     }
+    function acyclicRow(label, result) {
+      return {
+        criticalPath: result.criticalPath.length,
+        emitted: result.topo.order.length,
+        failedChecks: Object.keys(result.audit).filter(function (key) {
+          return key !== "passed" && result.audit[key] === false;
+        }),
+        label: label,
+        makespan: result.schedule.makespan,
+        passed: result.audit.passed,
+        rule: result.params.rule,
+        scenario: result.params.scenario,
+        totalWork: result.totalWork,
+        workPerWorker: result.totalWork / result.params.workers,
+        workers: result.params.workers
+      };
+    }
     var base = evaluate({ scenario: "build", rule: "critical", workers: 3 });
     assert(base.audit.passed, "default audit should pass");
     assert(base.topo.acyclic, "build graph should be acyclic");
@@ -432,11 +449,34 @@
 
     var one = evaluate({ scenario: "build", workers: 1 });
     assert(one.schedule.makespan === one.totalWork, "one worker should take total work time");
+    var rows = [
+      acyclicRow("package build", base),
+      acyclicRow("trap critical tail", critical),
+      acyclicRow("trap shortest task", shortest),
+      {
+        emitted: cycle.topo.order.length,
+        failedChecks: Object.keys(cycle.audit).filter(function (key) {
+          return key !== "passed" && cycle.audit[key] === false;
+        }),
+        label: "cycle introduced",
+        passed: !cycle.topo.acyclic &&
+          cycle.audit.cycleDetected &&
+          cycle.audit.noZeroLeftInCycle,
+        remaining: cycle.topo.remaining.slice(),
+        scenario: cycle.params.scenario
+      },
+      acyclicRow("single worker build", one)
+    ];
+    var passed = rows.filter(function (row) { return row.passed; }).length;
     return {
+      cases: rows,
+      ok: passed === rows.length,
+      passed: passed,
       defaultMakespan: base.schedule.makespan,
       trapCritical: critical.schedule.makespan,
       trapShortest: shortest.schedule.makespan,
-      cycleRemaining: cycle.topo.remaining.slice()
+      cycleRemaining: cycle.topo.remaining.slice(),
+      total: rows.length
     };
   }
 

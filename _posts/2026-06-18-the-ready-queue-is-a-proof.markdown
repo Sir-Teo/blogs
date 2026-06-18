@@ -282,7 +282,7 @@ bound.
   <p class="topo-lab__note">The implementation is deterministic and static. It ignores cache effects, remote execution overhead, communication cost, retries, incremental rebuilds, and resource types beyond identical workers.</p>
 </div>
 
-<script defer src="{{ '/assets/js/topological-ready-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/topological-ready-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Audit Checks
 
@@ -320,6 +320,34 @@ tie-breaking trap, shortest task, 2 workers:
 cycle introduced:
   emitted 2 / 6 nodes
   remaining types, lower, link, test
+```
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/topological-ready-lab.js");
+
+const audit = lab.auditTopologicalReadyLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length || !audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.cases.map((row) => ({
+  case: row.label,
+  scenario: row.scenario,
+  rule: row.rule || "n/a",
+  workers: row.workers || "n/a",
+  emitted: row.emitted,
+  makespan: row.makespan || "n/a",
+  criticalPath: row.criticalPath || "n/a",
+  totalWork: row.totalWork || "n/a",
+  remaining: row.remaining ? row.remaining.join(" ") : ""
+})));
 ```
 
 The interesting line is the trap. Both schedules are legal. Both pass the edge
