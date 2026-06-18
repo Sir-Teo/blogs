@@ -304,6 +304,7 @@ const EXPECTED_EDGE_CASES = 3;
 const EXPECTED_ROWS = 11;
 const EXPECTED_CHECKS = 43;
 const EXPECTED_INTERVALS = 78;
+const EXPECTED_INTERVAL_COUNTS = [EXPECTED_INTERVALS];
 const EXPECTED_CASE_SHAPE = [
   "jagged/left:5:78",
   "jagged/right:5:78",
@@ -319,35 +320,53 @@ const EXPECTED_EDGE_SHAPE = [
   "plateau right tie:1:8",
   "single point:1:5"
 ];
+const EXPECTED_TOTALS = {
+  scenarios: EXPECTED_SCENARIOS,
+  ties: EXPECTED_TIES,
+  mainCases: EXPECTED_MAIN_CASES,
+  edgeCases: EXPECTED_EDGE_CASES,
+  passed: EXPECTED_ROWS,
+  total: EXPECTED_ROWS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 const audit = lab.auditCartesianRmqLab();
 const auditShape = {
+  totals: {
+    scenarios: audit.scenarios,
+    ties: new Set(audit.cases.map((row) => row.tie)).size,
+    mainCases: audit.cases.length,
+    edgeCases: audit.edgeCases.length,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
   caseChecks: audit.cases
     .map((row) => `${row.scenario}/${row.tie}:${row.totalChecks}:${row.intervalsChecked}`)
     .sort(),
   edgeChecks: audit.edgeCases
     .map((row) => `${row.name}:${row.totalChecks}:${row.rmqIndex}`)
     .sort(),
-  edgeCases: audit.edgeCases.length,
   intervalCounts: Array.from(new Set(audit.cases.map((row) => row.intervalsChecked)))
-    .sort((a, b) => a - b),
-  mainCases: audit.cases.length,
-  passed: audit.passed,
-  scenarios: audit.scenarios,
-  ties: new Set(audit.cases.map((row) => row.tie)).size,
-  total: audit.total,
-  totalChecks: audit.totalChecks
+    .sort((a, b) => a - b)
 };
-if (auditShape.scenarios !== EXPECTED_SCENARIOS ||
-    auditShape.ties !== EXPECTED_TIES ||
-    auditShape.mainCases !== EXPECTED_MAIN_CASES ||
-    auditShape.edgeCases !== EXPECTED_EDGE_CASES ||
-    auditShape.total !== EXPECTED_ROWS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS ||
-    JSON.stringify(auditShape.intervalCounts) !== JSON.stringify([EXPECTED_INTERVALS]) ||
-    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
-    JSON.stringify(auditShape.edgeChecks) !== JSON.stringify(EXPECTED_EDGE_SHAPE)) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.intervalCounts, EXPECTED_INTERVAL_COUNTS) ? null : "intervalCounts",
+  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.edgeChecks, EXPECTED_EDGE_SHAPE) ? null : "edgeChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} audit rows and ` +
@@ -362,6 +381,7 @@ if (failedCases.length || !audit.ok ||
     summary,
     errors: audit.errors,
     failedCases,
+    shapeErrors,
     auditShape
   }, null, 2));
 }
