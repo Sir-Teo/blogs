@@ -349,24 +349,29 @@
         residualEmpty: run.decoded.residual.nonempty === 0,
         subtractionShape: run.audit.subtractionShape
       };
+      var checkRows = auditChecks(checks);
+      var failedChecks = failedAuditChecks(checkRows);
       return {
         aOnly: run.sets.aOnly.length,
         bytesIblt: run.bytes.iblt,
         bytesLists: run.bytes.lists,
         cells: run.cells,
+        checks: checkRows,
         compressionRatio: run.bytes.iblt ? run.bytes.lists / run.bytes.iblt : 0,
         diffSize: run.diffSize,
         decodedA: run.decoded.positives.length,
         decodedB: run.decoded.negatives.length,
-        failedChecks: Object.keys(checks).filter(function (key) { return !checks[key]; }),
+        failedChecks: failedChecks,
         factor: run.params.factor,
         hashes: run.params.hashes,
         initialPure: run.decoded.initialPure,
-        passed: Object.keys(checks).every(function (key) { return checks[key]; }),
+        passed: !failedChecks.length,
+        passedChecks: checkRows.length - failedChecks.length,
         peeled: run.decoded.trace.length,
         residual: run.decoded.residual.nonempty,
         scenario: index === 0 ? "default-" + run.params.scenario : run.params.scenario,
-        seed: run.params.seed
+        seed: run.params.seed,
+        totalChecks: checkRows.length
       };
     });
     var byScenario = auditCases.reduce(function (acc, row) {
@@ -381,14 +386,39 @@
       return acc;
     }, {});
     var passed = auditCases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = auditCases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = auditCases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    auditCases.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        errors.push("case " + row.scenario + ": " + name);
+      });
+    });
     return {
       byScenario: byScenario,
       cases: auditCases,
       details: auditCases,
-      ok: passed === auditCases.length,
+      errors: errors,
+      ok: passed === auditCases.length && passedChecks === totalChecks,
       passed: passed,
-      total: auditCases.length
+      passedChecks: passedChecks,
+      total: auditCases.length,
+      totalChecks: totalChecks
     };
+  }
+
+  function auditChecks(checks) {
+    return [
+      { name: "shared-set-cancels-empty", ok: checks.emptyTableOk },
+      { name: "decoded-difference-exact", ok: checks.decodedOk },
+      { name: "peeled-cell-sign-valid", ok: checks.pureCellsValid },
+      { name: "successful-decode-empty-residual", ok: checks.residualEmpty },
+      { name: "subtracted-cells-bounded", ok: checks.subtractionShape }
+    ];
+  }
+
+  function failedAuditChecks(checks) {
+    return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
   }
 
   function formatInt(value) {

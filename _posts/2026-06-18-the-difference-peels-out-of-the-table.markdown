@@ -357,13 +357,14 @@ checksums, salts, encodings, and failure budgets.
   <p class="iblt-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/iblt-reconciliation-lab.js?v=20260618c' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/iblt-reconciliation-lab.js?v=20260618d' | relative_url }}"></script>
 
 The default run has `2,500` shared keys and `84` differing keys. The two full
 lists would cost about `20.3 KB` under the lab's 32-bit key model; the IBLT
 message costs about `2.2 KB` and decodes the exact difference.
 
-The exported audit checks five deterministic scenarios. It verifies that:
+The exported audit checks five deterministic scenarios and reports 25 named
+checks. It verifies that:
 
 - a shared set cancels to an empty subtracted table;
 - decoded Alice-only and Bob-only keys match the exact generated difference;
@@ -378,13 +379,15 @@ The compact reproduction check is:
 node - <<'NODE'
 const lab = require("./assets/js/iblt-reconciliation-lab.js");
 const audit = lab.auditIBLTLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length || !audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify({
-    failed,
-    passed: audit.passed,
-    total: audit.total
-  }, null, 2));
+const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
+if (audit.total !== 5 || audit.totalChecks !== 25) {
+  throw new Error(`unexpected audit size: ${audit.total} scenarios, ${audit.totalChecks} checks`);
+}
+const summary =
+  `${audit.passed}/${audit.total} scenarios and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
 
 console.table(audit.cases.map((row) => ({
@@ -398,9 +401,10 @@ console.table(audit.cases.map((row) => ({
   residual: row.residual,
   messageKB: (row.bytesIblt / 1024).toFixed(1),
   listKB: (row.bytesLists / 1024).toFixed(1),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-console.log(`${audit.passed}/${audit.total} scenarios passed`);
+console.log(summary);
 NODE
 ```
 
