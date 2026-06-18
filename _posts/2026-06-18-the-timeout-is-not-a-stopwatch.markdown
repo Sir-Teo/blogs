@@ -373,18 +373,110 @@ The compact reproduction check is:
 
 ```js
 const lab = require("./assets/js/rto-estimator-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 92;
+const EXPECTED_TOTALS = {
+  rows: 5,
+  scenarios: 3,
+  passed: 5,
+  total: 5,
+  passedChecks: 92,
+  totalChecks: 92
+};
+const EXPECTED_BY_SCENARIO = [
+  "bursty:1:1:3:15:10:18/18",
+  "radio:2:2:1:2:0:36/36",
+  "route:2:2:3:42:10:38/38"
+];
+const EXPECTED_CASE_ROWS = [
+  "route:1000:65:0:1:21:5:1:21:5:19/19:true",
+  "route:500:70:0:2:21:5:2:21:5:19/19:true",
+  "bursty:600:85:0:3:15:10:3:15:10:18/18:true",
+  "radio:1000:90:0:0:0:0:5:5:5:18/18:true",
+  "radio:700:110:6:1:2:0:9:10:8:18/18:true"
+];
+const EXPECTED_BASE_CHECK_NAMES = [
+  "rfc row count",
+  "rfc finite elapsed",
+  "rfc finite RTO",
+  "rfc event accounting",
+  "rfc retransmission accounting",
+  "recent row count",
+  "recent finite elapsed",
+  "recent finite RTO",
+  "recent event accounting",
+  "recent retransmission accounting",
+  "mean row count",
+  "mean finite elapsed",
+  "mean finite RTO",
+  "mean event accounting",
+  "mean retransmission accounting",
+  "RFC ignores ambiguous samples",
+  "recent sampler accepts ambiguous samples",
+  "mean-only accepts ambiguous samples"
+];
+const EXPECTED_ROUTE_CHECK_NAME = "route step punishes recent sampler";
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const totals = {
+  rows: audit.cases.length,
+  scenarios: audit.byScenario.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const byScenarioRows = audit.byScenario.map((row) => [
+  row.scenario,
+  row.cases,
+  row.passed,
+  row.rfcSpurious,
+  row.recentSpurious,
+  row.meanSpurious,
+  `${row.passedChecks}/${row.totalChecks}`
+].join(":"));
+const caseRows = audit.cases.map((row) => [
+  row.params.scenario,
+  row.params.minRto,
+  row.params.jitter,
+  row.params.extraLoss,
+  row.rfcSpurious,
+  row.recentSpurious,
+  row.meanSpurious,
+  row.rfcIgnored,
+  row.recentAmbiguousAccepted,
+  row.meanAmbiguousAccepted,
+  `${row.passedChecks}/${row.totalChecks}`,
+  row.passed
+].join(":"));
+const checkRows = audit.cases.map((row) => ({
+  case: `${row.params.scenario}/${row.params.minRto}/${row.params.jitter}/${row.params.extraLoss}`,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = audit.cases.map((row) => ({
+  case: `${row.params.scenario}/${row.params.minRto}/${row.params.jitter}/${row.params.extraLoss}`,
+  checks: row.params.scenario === "route"
+    ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_ROUTE_CHECK_NAME])
+    : EXPECTED_BASE_CHECK_NAMES
+}));
 console.table(audit.byScenario);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(byScenarioRows, EXPECTED_BY_SCENARIO) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
+  !sameJson(checkRows, expectedCheckRows)
+) {
+  throw new Error("unexpected RTO audit shape: " + JSON.stringify({
+    totals,
+    byScenarioRows,
+    caseRows,
+    checkRows
+  }, null, 2));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
