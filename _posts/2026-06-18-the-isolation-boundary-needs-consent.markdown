@@ -299,7 +299,7 @@ with CORS or CORP.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cross-origin-isolation-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cross-origin-isolation-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Reproducing The Model
 
@@ -318,13 +318,24 @@ const audit = lab.auditCrossOriginIsolationLab();
 console.table(audit.byDeployment);
 console.table(audit.byResourceSet);
 console.table(audit.criticalChecks);
-if (audit.checked !== 137) {
-  throw new Error("unexpected check count: " + audit.checked);
+const auditShape = {
+  criticalChecks: audit.criticalTotal,
+  rows: audit.cases.length,
+  checked: audit.checked,
+  totalChecks: audit.totalChecks
+};
+if (
+  auditShape.criticalChecks !== 17 ||
+  auditShape.rows !== 40 ||
+  auditShape.checked !== 137 ||
+  auditShape.totalChecks !== 137
+) {
+  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passed !== audit.total) {
+if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.errors, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} checks passed`);
+console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
@@ -360,7 +371,8 @@ Credentialless CDN summary:
 }
 ```
 
-The audit currently runs 137 checks over a 40-row deployment/resource grid.
+The audit currently runs 17 named critical checks plus 120 generated invariant
+checks over a 40-row deployment/resource grid (137 checks total).
 Among the invariants:
 
 - COOP alone and COEP alone do not set `crossOriginIsolated`;

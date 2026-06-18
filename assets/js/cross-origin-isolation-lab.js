@@ -540,9 +540,13 @@
     }
 
     function addCritical(label, condition) {
+      var passed = record(condition, label);
       criticalChecks.push({
         check: label,
-        passed: record(condition, label)
+        failedChecks: passed ? [] : [label],
+        passed: passed,
+        passedChecks: passed ? 1 : 0,
+        totalChecks: 1
       });
     }
 
@@ -568,6 +572,7 @@
       Object.keys(RESOURCE_SETS).forEach(function (setKey) {
         var result = evaluate({ deployment: deploymentKey, resources: setKey });
         var failedChecks = [];
+        var totalChecks = 3;
         var label = deploymentKey + "/" + setKey + " accounts for all resources";
         if (!record(result.summary.loaded + result.summary.blocked === result.summary.total, label)) failedChecks.push(label);
         label = deploymentKey + "/" + setKey + " shared memory requires crossOriginIsolated";
@@ -583,10 +588,12 @@
           loaded: result.summary.loaded,
           openerSevered: result.summary.openerSevered,
           passed: failedChecks.length === 0,
+          passedChecks: totalChecks - failedChecks.length,
           reported: result.summary.reported,
           resources: setKey,
           sharedMemory: result.summary.sharedMemory,
           stripped: result.summary.stripped,
+          totalChecks: totalChecks,
           totalResources: result.summary.total
         });
       });
@@ -605,9 +612,11 @@
             loaded: 0,
             openerSevered: 0,
             passed: 0,
+            passedChecks: 0,
             reported: 0,
             sharedMemory: 0,
             stripped: 0,
+            totalChecks: 0,
             totalResources: 0
           };
           groups[key][groupBy] = key;
@@ -621,6 +630,8 @@
         groups[key].reported += row.reported;
         groups[key].sharedMemory += row.sharedMemory;
         groups[key].stripped += row.stripped;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
         groups[key].totalResources += row.totalResources;
         if (row.passed) groups[key].passed += 1;
       });
@@ -630,17 +641,32 @@
     }
 
     var passed = checked - errors.length;
+    var passedChecks = criticalChecks.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0) + cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = criticalChecks.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0) + cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
 
     return {
       byDeployment: summarize("deployment"),
       byResourceSet: summarize("resources"),
       cases: cases,
-      ok: errors.length === 0,
+      caseTotal: cases.length,
       checked: checked,
       criticalChecks: criticalChecks,
+      criticalTotal: criticalChecks.length,
+      details: cases,
       errors: errors,
+      ok: errors.length === 0 && passedChecks === totalChecks,
       passed: passed,
-      total: checked
+      passedChecks: passedChecks,
+      total: checked,
+      totalChecks: totalChecks
     };
   }
 
