@@ -299,7 +299,7 @@ With the default settings, the lab measures:
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/hash-flood-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/hash-flood-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Graph Should Make Uncomfortable
 
@@ -340,6 +340,29 @@ The ordinary-key row is important. It is the trap. The weak checksum can look
 fine under a benign corpus. The security question is not whether the table
 performs on your sample. It is whether the caller can cheaply move your sample
 into the worst case.
+
+To reproduce the deterministic audit grid from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/hash-flood-lab.js");
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  keys: row.keys,
+  buckets: row.buckets,
+  weakComparisons: row.weakComparisons,
+  keyedComparisons: row.keyedComparisons,
+  weakMaxBucket: row.weakMaxBucket,
+  keyedMaxBucket: row.keyedMaxBucket,
+  amplification: row.amplification.toFixed(1) + "x",
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## Defenses Are Layered
 

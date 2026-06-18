@@ -260,18 +260,32 @@
       { scenario: "random", keys: 768, buckets: 128, seed: 23, lookupMix: 20 },
       { scenario: "flood", keys: 256, buckets: 64, seed: 404, lookupMix: 80 }
     ];
-    return cases.map(function (params) {
+    var rows = cases.map(function (params, index) {
       var result = evaluate(params);
       return {
-        params: result.params,
+        caseId: index + 1,
+        scenario: result.params.scenario,
+        scenarioLabel: SCENARIOS[result.params.scenario],
+        keys: result.params.keys,
+        buckets: result.params.buckets,
+        seed: result.params.seed,
+        lookupMix: result.params.lookupMix,
         weakComparisons: result.weakSummary.comparisons,
         keyedComparisons: result.keyedSummary.comparisons,
         weakMaxBucket: result.weakSummary.maxBucket,
         keyedMaxBucket: result.keyedSummary.maxBucket,
+        weakLookupP95: result.weakSummary.lookupP95,
+        keyedLookupP95: result.keyedSummary.lookupP95,
         amplification: result.weakSummary.comparisons / Math.max(1, result.keyedSummary.comparisons),
-        passed: result.audit.passed
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
       };
     });
+    return {
+      cases: rows,
+      passed: rows.filter(function (row) { return row.passed; }).length,
+      total: rows.length
+    };
   }
 
   function fmt(value, digits) {
