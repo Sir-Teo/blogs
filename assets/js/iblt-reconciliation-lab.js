@@ -342,21 +342,33 @@
       var pureCellsValid = run.decoded.trace.every(function (row) {
         return row.sign === 1 || row.sign === -1;
       });
-      return {
-        cells: run.cells,
+      var checks = {
         decodedOk: run.audit.decodedOk,
-        diffSize: run.diffSize,
         emptyTableOk: allEmpty,
         pureCellsValid: pureCellsValid,
+        residualEmpty: run.decoded.residual.nonempty === 0,
+        subtractionShape: run.audit.subtractionShape
+      };
+      return {
+        bytesIblt: run.bytes.iblt,
+        bytesLists: run.bytes.lists,
+        cells: run.cells,
+        diffSize: run.diffSize,
+        failedChecks: Object.keys(checks).filter(function (key) { return !checks[key]; }),
+        factor: run.params.factor,
+        hashes: run.params.hashes,
+        passed: Object.keys(checks).every(function (key) { return checks[key]; }),
         residual: run.decoded.residual.nonempty,
-        scenario: run.params.scenario
+        scenario: run.params.scenario,
+        seed: run.params.seed
       };
     });
+    var passed = details.filter(function (row) { return row.passed; }).length;
     return {
       details: details,
-      passed: details.every(function (row) {
-        return row.decodedOk && row.emptyTableOk && row.pureCellsValid && row.residual === 0;
-      })
+      ok: passed === details.length,
+      passed: passed,
+      total: details.length
     };
   }
 

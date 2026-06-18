@@ -357,7 +357,7 @@ checksums, salts, encodings, and failure budgets.
   <p class="iblt-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/iblt-reconciliation-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/iblt-reconciliation-lab.js?v=20260618b' | relative_url }}"></script>
 
 The default run has `2,500` shared keys and `84` differing keys. The two full
 lists would cost about `20.3 KB` under the lab's 32-bit key model; the IBLT
@@ -371,6 +371,33 @@ The exported audit checks five deterministic scenarios. It verifies that:
 - successful decodes leave no residual cells; and
 - the subtracted table's nonempty cells are bounded by the number of difference
   keys times the hash count.
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/iblt-reconciliation-lab.js");
+
+const audit = lab.auditIBLTLab();
+const failed = audit.details.filter((row) => !row.passed);
+if (failed.length || !audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.details.map((row) => ({
+  scenario: row.scenario,
+  diff: row.diffSize,
+  cells: row.cells,
+  hashes: row.hashes,
+  factor: row.factor,
+  residual: row.residual,
+  messageKB: (row.bytesIblt / 1024).toFixed(1),
+  listKB: (row.bytesLists / 1024).toFixed(1)
+})));
+```
 
 ## Sizing Is the Algorithm
 
