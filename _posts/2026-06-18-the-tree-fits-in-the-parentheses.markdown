@@ -273,7 +273,7 @@ not to win a compression contest.
   <p class="succinct-tree-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/succinct-tree-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/succinct-tree-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Default Run Checks
 
@@ -322,15 +322,22 @@ node - <<'NODE'
 const lab = require("./assets/js/succinct-tree-lab.js");
 const audit = lab.auditGrid();
 console.table(audit.byShape);
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+if (audit.total !== 180 || audit.totalChecks !== 1620) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
 }
-console.log(`${audit.passed}/${audit.total} cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+}
+console.log(summary);
 NODE
 ```
 
-The current audit grid has 180 cases. It checks every focus node in all four
-tree shapes and several rank positions. The checks include:
+The current audit grid has 180 cases and 1620 named checks. It checks every
+focus node in all four tree shapes and several rank positions. The checks
+include:
 
 - final excess is zero and never goes negative;
 - exactly two topology bits are emitted per node;

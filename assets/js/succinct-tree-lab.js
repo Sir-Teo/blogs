@@ -402,16 +402,21 @@
       for (var focus = 0; focus < tree.nodes.length; focus += 1) {
         [0, 3, tree.nodes.length, tree.nodes.length * 2 - 1].forEach(function (rankPos) {
           var result = evaluate({ shape: shape, focus: focus, rankPos: rankPos });
+          var failedChecks = result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
           cases.push({
-            shape: result.params.shape,
+            caseId: cases.length + 1,
+            checks: result.audit.checks,
+            failedChecks: failedChecks,
             focus: result.params.focus,
-            rankPos: result.params.rankPos,
-            nodes: result.stats.nodes,
-            topologyBits: result.stats.topologyBits,
             directoryBits: result.stats.directoryBits,
-            subtreeNodes: result.nav.subtreeNodes,
+            nodes: result.stats.nodes,
             passed: result.audit.passed,
-            failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+            passedChecks: result.audit.checks.length - failedChecks.length,
+            rankPos: result.params.rankPos,
+            shape: result.params.shape,
+            subtreeNodes: result.nav.subtreeNodes,
+            topologyBits: result.stats.topologyBits,
+            totalChecks: result.audit.checks.length
           });
         });
       }
@@ -423,19 +428,41 @@
           shape: row.shape,
           cases: 0,
           passed: 0,
+          passedChecks: 0,
           nodes: row.nodes,
           topologyBits: row.topologyBits,
-          directoryBits: row.directoryBits
+          directoryBits: row.directoryBits,
+          totalChecks: 0
         };
       }
       byShape[row.shape].cases += 1;
       if (row.passed) byShape[row.shape].passed += 1;
+      byShape[row.shape].passedChecks += row.passedChecks;
+      byShape[row.shape].totalChecks += row.totalChecks;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (name) {
+        errors.push(
+          "case " + row.caseId + " " +
+          row.shape + "/focus-" + row.focus + "/rank-" + row.rankPos +
+          ": " + name
+        );
+      });
     });
     return {
       byShape: Object.keys(SHAPES).map(function (shape) { return byShape[shape]; }),
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      details: cases,
+      errors: errors,
+      ok: passed === cases.length && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
