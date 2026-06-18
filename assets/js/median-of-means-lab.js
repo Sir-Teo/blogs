@@ -303,12 +303,37 @@
         meanRmse: result.summary.mean.rmse,
         momRmse: result.summary.mom.rmse,
         passed: result.audit.passed,
+        checks: result.audit.checks.map(function (check) {
+          return {
+            name: check.name,
+            ok: check.ok
+          };
+        }),
+        passedChecks: result.audit.checks.filter(function (check) { return check.ok; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
       };
     });
+    var passedCases = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (check) {
+        errors.push("case " + row.caseId + ": " + check);
+      });
+    });
     return {
+      ok: passedCases === cases.length && passedChecks === totalChecks,
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
+      errors: errors,
+      passed: passedCases,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }

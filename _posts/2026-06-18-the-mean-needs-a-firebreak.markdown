@@ -266,7 +266,7 @@ rare observations carry enormous leverage.
   <p class="mom-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/median-of-means-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/median-of-means-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Default Run Says
 
@@ -312,7 +312,9 @@ cell. It is trying to show when the firebreak matters and what it costs.
 ## Reproducibility Check
 
 The interactive lab is backed by a CommonJS module, so the same deterministic
-simulation can run under Node:
+simulation can run under Node. The sweep reports 35 named checks: seven
+finite-summary, block, histogram, contamination, Gaussian-baseline, and
+estimator-consistency invariants across five scenarios.
 
 ```bash
 node - <<'NODE'
@@ -326,11 +328,15 @@ console.table(audit.cases.map((row) => ({
   trim95: row.trimmedP95.toFixed(3),
   mom95: row.momP95.toFixed(3),
   ratio: row.momMeanRatio.toFixed(2),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
