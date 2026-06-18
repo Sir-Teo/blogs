@@ -313,13 +313,141 @@ Run it directly:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/http-cache-validator-lab.js");
-const EXPECTED_CASES = 108;
-const EXPECTED_CHECKS = 648;
+const EXPECTED_SCENARIOS = ["release", "newsroom", "outage", "quiet"];
+const EXPECTED_MAX_AGES = [2, 6, 12];
+const EXPECTED_SWRS = [0, 6, 14];
+const EXPECTED_LATENCIES = [120, 420, 900];
+const EXPECTED_CHECK_NAMES = [
+  "each policy returns one response per request",
+  "response rows have valid waits and versions",
+  "304 responses carry matching current validators",
+  "validator byte count never exceeds expiry-only cache",
+  "SWR stale responses stay inside the SWR window",
+  "SWR never increases max blocking wait"
+];
+const EXPECTED_BY_SCENARIO = [
+  "release:27 cases/162 checks:81/468/7.200/0:162",
+  "newsroom:27 cases/162 checks:42/696/5.400/0:129",
+  "outage:27 cases/162 checks:66/375/6.300/11:369",
+  "quiet:27 cases/162 checks:126/195/6.300/0:207"
+];
+const EXPECTED_BY_MAX_AGE = [
+  "2:36 cases/216 checks:252/555/7.200/10:4997100/15077100",
+  "6:36 cases/216 checks:54/488/4.500/10:4719600/6879600",
+  "12:36 cases/216 checks:9/691/2.700/11:3730200/4090200"
+];
+const EXPECTED_BY_SWR = [
+  "0:36 cases/216 checks:105/392/0.000/11:4482300/8682300",
+  "6:36 cases/216 checks:105/671/7.200/0:4482300/8682300",
+  "14:36 cases/216 checks:105/671/7.200/0:4482300/8682300"
+];
+const EXPECTED_BY_LATENCY = [
+  "120:36 cases/216 checks:135/617/1.800/11:4433100/9833100",
+  "420:36 cases/216 checks:105/579/5.880/9:4525800/8725800",
+  "900:36 cases/216 checks:75/538/7.200/9:4488000/7488000"
+];
+const EXPECTED_CASE_KEYS = EXPECTED_SCENARIOS.flatMap((scenario) =>
+  EXPECTED_MAX_AGES.flatMap((maxAge) =>
+    EXPECTED_SWRS.flatMap((swr) =>
+      EXPECTED_LATENCIES.map((latency) => `${scenario}/${maxAge}/${swr}/${latency}`)
+    )
+  )
+);
+const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function groupByAxis(cases, field) {
+  const groups = new Map();
+  for (const row of cases) {
+    const key = row[field];
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        cases: 0,
+        maxBlockingSaved: 0,
+        maxSwrErrors: 0,
+        passed: 0,
+        passedChecks: 0,
+        swrStale: 0,
+        totalChecks: 0,
+        ttlBytes: 0,
+        validator304: 0,
+        validatorBytes: 0,
+        validatorOriginCalls: 0
+      });
+    }
+    const group = groups.get(key);
+    group.cases += 1;
+    group.maxBlockingSaved = Math.max(group.maxBlockingSaved, row.blockingSaved);
+    group.maxSwrErrors = Math.max(group.maxSwrErrors, row.swrErrors);
+    if (row.passed) group.passed += 1;
+    group.passedChecks += row.passedChecks;
+    group.swrStale += row.swrStale;
+    group.totalChecks += row.totalChecks;
+    group.ttlBytes += row.ttlBytes;
+    group.validator304 += row.validator304;
+    group.validatorBytes += row.validatorBytes;
+    group.validatorOriginCalls += row.validatorOriginCalls;
+  }
+  return Array.from(groups.values()).sort((left, right) =>
+    String(left.key).localeCompare(String(right.key), undefined, { numeric: true })
+  );
+}
+
+function aggregateShape(row) {
+  return `${row.key}:${row.cases} cases/${row.totalChecks} checks:` +
+    `${row.validator304}/${row.swrStale}/` +
+    `${row.maxBlockingSaved.toFixed(3)}/${row.maxSwrErrors}:` +
+    `${row.validatorBytes}/${row.ttlBytes}`;
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.scenario}/${row.maxAge}/${row.swr}/${row.latency}`
+    ),
+    checksByCase: audit.cases.map((row) =>
+      lab.evaluate({
+        scenario: row.scenario,
+        maxAge: row.maxAge,
+        swr: row.swr,
+        latency: row.latency
+      }).audit.checks.map((check) => check.name)
+    ),
+    byScenario: audit.byScenario.map(
+      (row) => `${row.scenario}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.validator304}/${row.swrStale}/` +
+        `${row.maxBlockingSaved.toFixed(3)}/${row.maxSwrErrors}:` +
+        `${row.validatorOriginCalls}`
+    ),
+    byMaxAge: groupByAxis(audit.cases, "maxAge").map(aggregateShape),
+    bySwr: groupByAxis(audit.cases, "swr").map(aggregateShape),
+    byLatency: groupByAxis(audit.cases, "latency").map(aggregateShape)
+  };
+}
 
 const audit = lab.auditHttpCacheLab();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const checkNameShape = lab.evaluate({}).audit.checks.map((row) => row.name);
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  sameList(checkNameShape, EXPECTED_CHECK_NAMES) ? null : "checkNames",
+  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+    ? null
+    : "checksByCase",
+  sameList(shape.byScenario, EXPECTED_BY_SCENARIO) ? null : "byScenario",
+  sameList(shape.byMaxAge, EXPECTED_BY_MAX_AGE) ? null : "byMaxAge",
+  sameList(shape.bySwr, EXPECTED_BY_SWR) ? null : "bySwr",
+  sameList(shape.byLatency, EXPECTED_BY_LATENCY) ? null : "byLatency"
+].filter(Boolean);
 console.table(audit.byScenario.map((row) => ({
   scenario: row.scenario,
   cases: row.cases,
@@ -331,7 +459,11 @@ console.table(audit.byScenario.map((row) => ({
   maxBlockingSaved: row.maxBlockingSaved.toFixed(2),
   maxSwrErrors: row.maxSwrErrors
 })));
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+if (
+  audit.checked !== EXPECTED_CASES ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
@@ -339,13 +471,18 @@ if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
 const summary =
   `${audit.passed}/${audit.total} parameter cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
     failed,
+    failures: audit.failures,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
