@@ -322,6 +322,68 @@ const EXPECTED_SCENARIO_CHECK_NAMES = [
   "saturation is either absent or explicitly near capacity",
   "seeded replay is deterministic"
 ];
+const EXPECTED_EXACT_SHAPE = [
+  "0:meanOk=true:varianceOk=true:checks=2/2",
+  "1:meanOk=true:varianceOk=true:checks=2/2",
+  "2:meanOk=true:varianceOk=true:checks=2/2",
+  "8:meanOk=true:varianceOk=true:checks=2/2",
+  "35:meanOk=true:varianceOk=true:checks=2/2",
+  "60:meanOk=true:varianceOk=true:checks=2/2"
+];
+const EXPECTED_SCENARIO_SHAPE = [
+  "80000:theoretical=80000:observed=80174.089:saturated=0:deterministic=true:meanOk=true:noBadSaturation=true:checks=3/3",
+  "1000:theoretical=1000:observed=996.258:saturated=0:deterministic=true:meanOk=true:noBadSaturation=true:checks=3/3",
+  "40000:theoretical=40000:observed=40013.436:saturated=0:deterministic=true:meanOk=true:noBadSaturation=true:checks=3/3",
+  "160000:theoretical=160000:observed=159830.740:saturated=0:deterministic=true:meanOk=true:noBadSaturation=true:checks=3/3"
+];
+const EXPECTED_CHECK_SHAPE = [
+  "exact:0:exact expectation equals count:true",
+  "exact:0:exact variance matches formula:true",
+  "exact:1:exact expectation equals count:true",
+  "exact:1:exact variance matches formula:true",
+  "exact:2:exact expectation equals count:true",
+  "exact:2:exact variance matches formula:true",
+  "exact:8:exact expectation equals count:true",
+  "exact:8:exact variance matches formula:true",
+  "exact:35:exact expectation equals count:true",
+  "exact:35:exact variance matches formula:true",
+  "exact:60:exact expectation equals count:true",
+  "exact:60:exact variance matches formula:true",
+  "scenario:80000:seeded replay is deterministic:true",
+  "scenario:80000:empirical mean is inside standard-error envelope:true",
+  "scenario:80000:saturation is either absent or explicitly near capacity:true",
+  "scenario:1000:seeded replay is deterministic:true",
+  "scenario:1000:empirical mean is inside standard-error envelope:true",
+  "scenario:1000:saturation is either absent or explicitly near capacity:true",
+  "scenario:40000:seeded replay is deterministic:true",
+  "scenario:40000:empirical mean is inside standard-error envelope:true",
+  "scenario:40000:saturation is either absent or explicitly near capacity:true",
+  "scenario:160000:seeded replay is deterministic:true",
+  "scenario:160000:empirical mean is inside standard-error envelope:true",
+  "scenario:160000:saturation is either absent or explicitly near capacity:true"
+];
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function exactShape(row) {
+  return `${row.events}:meanOk=${row.meanOk}:varianceOk=${row.varianceOk}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function scenarioShape(row) {
+  return `${row.events}:theoretical=${row.theoreticalMean}:` +
+    `observed=${row.observedMean.toFixed(3)}:saturated=${row.saturatedTrials}:` +
+    `deterministic=${row.deterministic}:meanOk=${row.meanOk}:` +
+    `noBadSaturation=${row.noBadSaturation}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checkShape(row, kind) {
+  return row.checks.map((check) => `${kind}:${row.events}:${check.name}:${check.passed}`);
+}
 
 const audit = lab.auditMorrisCounterLab();
 console.table(audit.exact.map((row) => ({
@@ -344,20 +406,16 @@ const auditShape = {
   ))).sort(),
   exactEvents: audit.exact.map((row) => row.events).sort((a, b) => a - b),
   exactRows: audit.exact.length,
-  exactShape: audit.exact.map((row) => `${row.events}:${row.totalChecks}`).sort(),
+  exactShape: audit.exact.map(exactShape),
   passed: audit.passed,
   scenarioCheckNames: Array.from(new Set(audit.scenarios.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
   scenarioEvents: audit.scenarios.map((row) => row.events).sort((a, b) => a - b),
   scenarioRows: audit.scenarios.length,
-  scenarioShape: audit.scenarios.map((row) => [
-    row.events,
-    row.totalChecks,
-    row.theoreticalMean,
-    row.deterministic ? 1 : 0,
-    row.saturatedTrials
-  ].join(":")).sort(),
+  scenarioShape: audit.scenarios.map(scenarioShape),
+  checkShape: audit.exact.flatMap((row) => checkShape(row, "exact"))
+    .concat(audit.scenarios.flatMap((row) => checkShape(row, "scenario"))),
   total: audit.total,
   totalChecks: audit.totalChecks
 };
@@ -368,7 +426,10 @@ if (auditShape.exactRows !== EXPECTED_EXACT_ROWS ||
     JSON.stringify(auditShape.exactEvents) !== JSON.stringify(EXPECTED_EXACT_EVENTS) ||
     JSON.stringify(auditShape.scenarioEvents) !== JSON.stringify(EXPECTED_SCENARIO_EVENTS) ||
     JSON.stringify(auditShape.exactCheckNames) !== JSON.stringify(EXPECTED_EXACT_CHECK_NAMES) ||
-    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES)) {
+    JSON.stringify(auditShape.scenarioCheckNames) !== JSON.stringify(EXPECTED_SCENARIO_CHECK_NAMES) ||
+    !sameList(auditShape.exactShape, EXPECTED_EXACT_SHAPE) ||
+    !sameList(auditShape.scenarioShape, EXPECTED_SCENARIO_SHAPE) ||
+    !sameList(auditShape.checkShape, EXPECTED_CHECK_SHAPE)) {
   throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 
