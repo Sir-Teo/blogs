@@ -279,6 +279,18 @@
     };
   }
 
+  function auditChecks(audit) {
+    return [
+      { name: "arrivals are strictly increasing", passed: audit.arrivalsIncreasing },
+      { name: "arrivals stop before crash", passed: audit.arrivalsBeforeCrash },
+      { name: "phi scores are finite and nonnegative", passed: audit.finitePhi },
+      { name: "sample window is bounded", passed: audit.windowBounded },
+      { name: "phi eventually detects the crash", passed: audit.phiEventuallyDetects },
+      { name: "fixed timeout eventually detects the crash", passed: audit.fixedEventuallyDetects },
+      { name: "higher phi threshold does not detect earlier", passed: audit.thresholdMonotone }
+    ];
+  }
+
   function evaluate(raw) {
     var params = normalize(raw);
     return simulateTrace(params, makeTrace(params));
@@ -292,28 +304,51 @@
       { label: "very noisy path", params: { heartbeat: 1500, jitter: 450, pauseChance: 18, pauseSize: 3200, pauseMargin: 900, phiThreshold: 8, fixedTimeout: 5200, seed: 123 } }
     ];
     var passed = 0;
+    var passedChecks = 0;
+    var totalChecks = 0;
+    var failures = [];
     var rows = cases.map(function (entry) {
       var result = evaluate(entry.params);
-      if (result.audit.passed) passed += 1;
+      var checks = auditChecks(result.audit);
+      var failedChecks = checks.filter(function (check) { return !check.passed; });
+      var casePassed = failedChecks.length === 0;
+      passedChecks += checks.length - failedChecks.length;
+      totalChecks += checks.length;
+      if (casePassed) passed += 1;
+      if (failedChecks.length) {
+        failures.push({
+          label: entry.label,
+          seed: result.params.seed,
+          failedChecks: failedChecks.map(function (check) { return check.name; })
+        });
+      }
       return {
-        failedChecks: Object.keys(result.audit).filter(function (key) {
-          return key !== "passed" && !result.audit[key];
-        }),
+        failedChecks: failedChecks.map(function (check) { return check.name; }),
         fixedDetectionMs: result.fixedDetection == null ? null : result.fixedDetection - result.crashAt,
         fixedFalse: result.fixedFalse,
         heartbeat: result.params.heartbeat,
         label: entry.label,
         mean: result.stats.mean,
-        passed: result.audit.passed,
+        passed: casePassed,
+        passedChecks: checks.length - failedChecks.length,
         pauseMargin: result.params.pauseMargin,
         phiDetectionMs: result.phiDetection == null ? null : result.phiDetection - result.crashAt,
         phiFalse: result.phiFalse,
         phiThreshold: result.params.phiThreshold,
         seed: result.params.seed,
-        std: result.stats.std
+        std: result.stats.std,
+        totalChecks: checks.length
       };
     });
-    return { cases: rows, passed: passed, total: cases.length };
+    return {
+      cases: rows,
+      failures: failures,
+      ok: passed === cases.length && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
+    };
   }
 
   function fmtMs(value) {

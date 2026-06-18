@@ -300,7 +300,7 @@ with remote death.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/phi-accrual-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/phi-accrual-lab.js?v=20260618c' | relative_url }}"></script>
 
 The default run generates `26` heartbeat arrivals before the crash. The final
 window estimates a mean inter-arrival time of about `962 ms` with a standard
@@ -330,12 +330,19 @@ You can reproduce the audit from Node:
 const lab = require("./assets/js/phi-accrual-lab.js");
 
 const audit = lab.auditPhiAccrualLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-if (audit.passed !== audit.total) {
-  throw new Error(`only ${audit.passed}/${audit.total} cases passed`);
+if (!audit.ok || audit.passed !== 4 || audit.total !== 4 ||
+    audit.passedChecks !== 28 || audit.totalChecks !== 28) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 
+console.log(`${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 console.table(audit.cases.map((row) => ({
   scenario: row.label,
   heartbeat: row.heartbeat,
@@ -350,8 +357,9 @@ console.table(audit.cases.map((row) => ({
 ```
 
 The grid keeps the audit small but varied: a default noisy path, a quiet path, a
-bursty path, and a very noisy path. Each case asserts monotone heartbeat
-arrival times, bounded sample windows, finite phi scores, eventual detection,
+bursty path, and a very noisy path. Together they passed 28/28 named checks:
+monotone heartbeat arrival times, no arrivals after the crash, bounded sample
+windows, finite nonnegative phi scores, eventual detection by both detectors,
 and monotone detection delay as the phi threshold rises.
 
 ## What The Number Does Not Know
