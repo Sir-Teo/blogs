@@ -325,7 +325,7 @@ removed.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/chandy-lamport-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/chandy-lamport-lab.js?v=20260618c' | relative_url }}"></script>
 
 At the default setting, the snapshot starts at `P0` around time `8`. The lab's
 processes begin with token balances `[18, 14, 12]`, so the conserved total is
@@ -352,9 +352,19 @@ You can reproduce the audit from Node:
 const lab = require("./assets/js/chandy-lamport-lab.js");
 
 const audit = lab.auditChandyLamportLab();
-const failed = audit.cases.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
+if (!audit.ok || audit.passed !== 4 || audit.total !== 4 ||
+    audit.passedChecks !== 27 || audit.totalChecks !== 27) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
+}
 
+console.log(`${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 console.table(audit.cases.map((row) => ({
   scenario: row.label,
   expected: row.expectedPass ? "pass" : "fail",
@@ -367,9 +377,11 @@ console.table(audit.cases.map((row) => ({
 ```
 
 The current deterministic grid has three FIFO cases that preserve the token
-ledger and one non-FIFO case that is supposed to fail. On the default failing
-case, the marker overtakes ten older application messages and the snapshot total
-drops from `44` to `25`.
+ledger and one non-FIFO case that is supposed to fail the protocol invariant.
+The audit itself passed 27/27 named checks, including the expectation that the
+non-FIFO run exposes missing channel messages. On that failing case, the marker
+overtakes ten older application messages and the snapshot total drops from `44`
+to `25`.
 
 The source is intentionally small:
 [`assets/js/chandy-lamport-lab.js`]({{ '/assets/js/chandy-lamport-lab.js' | relative_url }}).

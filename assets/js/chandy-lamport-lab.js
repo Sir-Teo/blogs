@@ -711,6 +711,10 @@
       { expectOvertake: false, expectPass: true, label: "early starter FIFO", params: { starter: 2, snapshotAt: 6, appDelay: 4, markerDelay: 3, traffic: 6, fifo: true, seed: 91 } },
       { expectOvertake: true, expectPass: false, label: "non-FIFO marker overtake", params: { starter: 0, snapshotAt: 8, appDelay: 8, markerDelay: 1, traffic: 8, fifo: false, seed: 37 } }
     ];
+    var failures = [];
+    var passedCases = 0;
+    var passedChecks = 0;
+    var totalChecks = 0;
     var rows = cases.map(function (entry) {
       var result = simulate(entry.params);
       var checks = [
@@ -726,23 +730,41 @@
       } else {
         checks.push({ name: "missing channel messages expose FIFO violation", passed: result.analysis.missingChannel > 0 });
       }
+      var failedChecks = checks.filter(function (check) { return !check.passed; });
+      var casePassed = failedChecks.length === 0;
+      passedChecks += checks.length - failedChecks.length;
+      totalChecks += checks.length;
+      if (casePassed) passedCases += 1;
+      if (failedChecks.length) {
+        failures.push({
+          label: entry.label,
+          failedChecks: failedChecks.map(function (check) { return check.name; })
+        });
+      }
       return {
         appMessages: result.analysis.appMessages,
         channelAmount: result.analysis.channelAmount,
         channelMessages: result.analysis.channelMessageCount,
         checks: checks,
         expectedPass: entry.expectPass,
+        failedChecks: failedChecks.map(function (check) { return check.name; }),
         label: entry.label,
         markerOvertakes: result.analysis.markerOvertakes,
         missingChannel: result.analysis.missingChannel,
-        passed: checks.every(function (check) { return check.passed; }),
+        passed: casePassed,
+        passedChecks: checks.length - failedChecks.length,
+        totalChecks: checks.length,
         snapshotTotal: result.analysis.snapshotTotal
       };
     });
     return {
       cases: rows,
-      passed: rows.every(function (row) { return row.passed; }),
-      total: rows.length
+      failures: failures,
+      ok: passedCases === rows.length && passedChecks === totalChecks,
+      passed: passedCases,
+      passedChecks: passedChecks,
+      total: rows.length,
+      totalChecks: totalChecks
     };
   }
 
