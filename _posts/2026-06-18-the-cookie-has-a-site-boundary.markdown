@@ -276,20 +276,34 @@ substitute for origin-level authorization.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/samesite-cookie-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/samesite-cookie-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Reproducing The Artifact
 
 The simulator exports a Node-testable API:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/samesite-cookie-lab.js");
 
 console.log(lab.siteFor("https://app.bank.example/dashboard"));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditSameSiteCookieLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
-console.log(audit.checked + " checks passed");
+console.table(audit.byCookie.map((row) => ({
+  cookie: row.cookie,
+  cases: row.cases,
+  passed: row.passed,
+  stored: row.stored,
+  sent: row.cookieSent,
+  blocked: row.blocked,
+  changed: row.stateChanged,
+  csrfRisk: row.csrfRisk
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} checks passed`);
+NODE
 ```
 
 Default output:
@@ -307,7 +321,7 @@ Default output:
 }
 ```
 
-The audit currently runs 160 checks. Among the invariants:
+The audit currently runs 161 checks. Among the invariants:
 
 - `https://app.bank.example` and `https://bank.example` are same-site but not
   same-origin;

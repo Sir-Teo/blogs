@@ -317,42 +317,88 @@
 
     function check(condition, label) {
       checked += 1;
-      if (!condition) errors.push(label);
+      var ok = !!condition;
+      if (!ok) errors.push(label);
+      return ok;
     }
 
-    check(siteFor("https://app.bank.example/x") === "https://bank.example", "subdomain collapses to schemeful registrable site");
-    check(sameSite("https://app.bank.example", "https://bank.example"), "bank subdomain and apex are same-site");
-    check(!sameOrigin("https://app.bank.example", "https://bank.example"), "bank subdomain and apex are not same-origin");
-    check(!sameSite("http://bank.example", "https://bank.example"), "scheme difference is cross-site");
-    check(!sameSite("https://bank.example", "https://bank.example."), "trailing dot keeps hosts distinct");
-    check(siteFor("https://me.github.io") !== siteFor("https://you.github.io"), "github.io labels stay separate registrable domains");
+    var namedChecks = [];
+    function named(name, condition, label) {
+      var ok = check(condition, label);
+      namedChecks.push({ failedChecks: ok ? [] : [label], name: name, passed: ok });
+    }
 
-    check(evaluate({ cookie: "strict", request: "crossLink" }).summary.cookieSent === 0, "Strict withheld on cross-site link");
-    check(evaluate({ cookie: "lax", request: "crossLink" }).summary.cookieSent === 1, "Lax sent on cross-site top-level safe navigation");
-    check(evaluate({ cookie: "lax", request: "crossPost" }).summary.cookieSent === 0, "Lax withheld on cross-site POST");
-    check(evaluate({ cookie: "lax", request: "crossImage" }).summary.cookieSent === 0, "Lax withheld on cross-site subresource");
-    check(evaluate({ cookie: "lax", request: "sameSitePost" }).summary.cookieSent === 1, "Lax sent on same-site unsafe request");
-    check(evaluate({ cookie: "defaultFresh", request: "crossPost" }).summary.cookieSent === 1, "fresh Default cookie sent on unsafe top-level request");
-    check(evaluate({ cookie: "defaultOld", request: "crossPost" }).summary.cookieSent === 0, "old Default cookie withheld on unsafe top-level request");
-    check(evaluate({ cookie: "noneInsecure", request: "crossPost" }).summary.stored === 0, "SameSite=None without Secure rejected");
-    check(evaluate({ cookie: "noneSecure", request: "crossPost", server: "cookieOnly" }).summary.csrfRisk === 1, "None+Secure plus cookie-only server leaves CSRF risk");
-    check(evaluate({ cookie: "noneSecure", request: "crossPost", server: "csrfToken" }).summary.blocked === 1, "CSRF token blocks cross-site unsafe action");
-    check(evaluate({ cookie: "defaultFresh", request: "idpPost", server: "csrfToken" }).summary.stateChanged === 1, "fresh Default supports token-bearing login callback POST");
+    named("site-subdomain", siteFor("https://app.bank.example/x") === "https://bank.example", "subdomain collapses to schemeful registrable site");
+    named("site-apex", sameSite("https://app.bank.example", "https://bank.example"), "bank subdomain and apex are same-site");
+    named("origin-apex", !sameOrigin("https://app.bank.example", "https://bank.example"), "bank subdomain and apex are not same-origin");
+    named("schemeful-site", !sameSite("http://bank.example", "https://bank.example"), "scheme difference is cross-site");
+    named("trailing-dot", !sameSite("https://bank.example", "https://bank.example."), "trailing dot keeps hosts distinct");
+    named("public-suffix", siteFor("https://me.github.io") !== siteFor("https://you.github.io"), "github.io labels stay separate registrable domains");
 
+    named("strict-cross-link", evaluate({ cookie: "strict", request: "crossLink" }).summary.cookieSent === 0, "Strict withheld on cross-site link");
+    named("lax-cross-link", evaluate({ cookie: "lax", request: "crossLink" }).summary.cookieSent === 1, "Lax sent on cross-site top-level safe navigation");
+    named("lax-cross-post", evaluate({ cookie: "lax", request: "crossPost" }).summary.cookieSent === 0, "Lax withheld on cross-site POST");
+    named("lax-subresource", evaluate({ cookie: "lax", request: "crossImage" }).summary.cookieSent === 0, "Lax withheld on cross-site subresource");
+    named("lax-same-site-post", evaluate({ cookie: "lax", request: "sameSitePost" }).summary.cookieSent === 1, "Lax sent on same-site unsafe request");
+    named("fresh-default-post", evaluate({ cookie: "defaultFresh", request: "crossPost" }).summary.cookieSent === 1, "fresh Default cookie sent on unsafe top-level request");
+    named("old-default-post", evaluate({ cookie: "defaultOld", request: "crossPost" }).summary.cookieSent === 0, "old Default cookie withheld on unsafe top-level request");
+    named("none-requires-secure", evaluate({ cookie: "noneInsecure", request: "crossPost" }).summary.stored === 0, "SameSite=None without Secure rejected");
+    named("none-cookie-only-risk", evaluate({ cookie: "noneSecure", request: "crossPost", server: "cookieOnly" }).summary.csrfRisk === 1, "None+Secure plus cookie-only server leaves CSRF risk");
+    named("csrf-token-blocks-risk", evaluate({ cookie: "noneSecure", request: "crossPost", server: "csrfToken" }).summary.blocked === 1, "CSRF token blocks cross-site unsafe action");
+    named("fresh-default-idp-post", evaluate({ cookie: "defaultFresh", request: "idpPost", server: "csrfToken" }).summary.stateChanged === 1, "fresh Default supports token-bearing login callback POST");
+
+    var cases = [];
     Object.keys(COOKIES).forEach(function (cookieKey) {
       Object.keys(REQUESTS).forEach(function (requestKey) {
         Object.keys(SERVERS).forEach(function (serverKey) {
           var result = evaluate({ cookie: cookieKey, request: requestKey, server: serverKey });
-          check(result.summary.cookieSent <= result.summary.stored, cookieKey + "/" + requestKey + "/" + serverKey + " cannot send unstored cookie");
-          check(!(result.summary.stateChanged && result.summary.blocked), cookieKey + "/" + requestKey + "/" + serverKey + " cannot both mutate and block");
+          var failedChecks = [];
+          if (!check(result.summary.cookieSent <= result.summary.stored, cookieKey + "/" + requestKey + "/" + serverKey + " cannot send unstored cookie")) {
+            failedChecks.push("send-unstored-cookie");
+          }
+          if (!check(!(result.summary.stateChanged && result.summary.blocked), cookieKey + "/" + requestKey + "/" + serverKey + " cannot both mutate and block")) {
+            failedChecks.push("mutate-and-block");
+          }
+          cases.push({
+            blocked: result.summary.blocked,
+            cookie: cookieKey,
+            cookieSent: result.summary.cookieSent,
+            csrfRisk: result.summary.csrfRisk,
+            failedChecks: failedChecks,
+            passed: failedChecks.length === 0,
+            request: requestKey,
+            sameSite: result.summary.sameSite,
+            server: serverKey,
+            stateChanged: result.summary.stateChanged,
+            stored: result.summary.stored
+          });
         });
       });
     });
 
+    var byCookie = Object.keys(COOKIES).map(function (cookieKey) {
+      var rows = cases.filter(function (row) { return row.cookie === cookieKey; });
+      return {
+        blocked: rows.reduce(function (sum, row) { return sum + row.blocked; }, 0),
+        cases: rows.length,
+        cookie: cookieKey,
+        cookieSent: rows.reduce(function (sum, row) { return sum + row.cookieSent; }, 0),
+        csrfRisk: rows.reduce(function (sum, row) { return sum + row.csrfRisk; }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        stateChanged: rows.reduce(function (sum, row) { return sum + row.stateChanged; }, 0),
+        stored: rows.reduce(function (sum, row) { return sum + row.stored; }, 0)
+      };
+    });
+
     return {
+      byCookie: byCookie,
+      cases: cases,
       ok: errors.length === 0,
       checked: checked,
-      errors: errors
+      errors: errors,
+      namedChecks: namedChecks,
+      passed: checked - errors.length,
+      total: checked
     };
   }
 
