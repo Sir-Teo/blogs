@@ -374,10 +374,24 @@ const EXPECTED_CRITICAL_SHAPE = [
 ];
 const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CRITICAL_SHAPE.length;
+const EXPECTED_TOTALS = {
+  rows: EXPECTED_CASES,
+  samples: EXPECTED_SAMPLE_SHAPE.length,
+  criticalChecks: EXPECTED_CRITICAL_SHAPE.length,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  checked: EXPECTED_CHECKS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function symbolKey(symbol) {
@@ -386,6 +400,16 @@ function symbolKey(symbol) {
 
 function auditShape(audit) {
   return {
+    totals: {
+      rows: audit.cases.length,
+      samples: audit.bySample.length,
+      criticalChecks: audit.criticalChecks.length,
+      passed: audit.passed,
+      total: audit.total,
+      checked: audit.checked,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    },
     cases: audit.cases.map(
       (row) => `${row.caseId}:${row.sample}:${symbolKey(row.symbol)}:` +
         `${row.length}/${row.alphabet}:${row.waveletBits}:` +
@@ -413,21 +437,13 @@ const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.ok || row.passed !== row.total
 );
 const shapeErrors = [
+  sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
   sameList(shape.bySample, EXPECTED_SAMPLE_SHAPE) ? null : "bySample",
   sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks"
 ].filter(Boolean);
 console.table(audit.bySample);
 console.table(audit.criticalChecks);
-if (
-  audit.checked !== EXPECTED_CHECKS ||
-  audit.total !== EXPECTED_CASES ||
-  audit.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
-}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
