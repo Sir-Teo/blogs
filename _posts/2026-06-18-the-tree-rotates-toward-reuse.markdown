@@ -410,7 +410,17 @@ To reproduce the deterministic audit cases from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/splay-tree-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 51;
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   keys: row.keys,
@@ -423,8 +433,13 @@ console.table(audit.cases.map((row) => ({
 })));
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
 }
 console.log(summary);
 NODE
