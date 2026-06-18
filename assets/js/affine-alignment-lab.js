@@ -528,6 +528,7 @@
   }
 
   function auditGrid() {
+    var criticalByName = {};
     var cases = [
       {},
       { pattern: "longGap", length: 54, substitutions: 8, gapEvents: 2, gapMean: 8, seed: 12 },
@@ -537,8 +538,22 @@
       { pattern: "clustered", length: 80, substitutions: 6, gapEvents: 4, gapMean: 5, seed: 211 }
     ].map(function (row, index) {
       var result = evaluate(row);
+      var caseId = index + 1;
+      result.audit.checks.forEach(function (check) {
+        if (!criticalByName[check.name]) {
+          criticalByName[check.name] = {
+            check: check.name,
+            failedCases: [],
+            passed: 0,
+            total: 0
+          };
+        }
+        criticalByName[check.name].total += 1;
+        if (check.passed) criticalByName[check.name].passed += 1;
+        else criticalByName[check.name].failedCases.push(caseId);
+      });
       return {
-        caseId: index + 1,
+        caseId: caseId,
         params: result.params,
         pattern: result.params.pattern,
         substitutions: result.params.substitutions,
@@ -554,13 +569,68 @@
         affineGapChars: result.affine.stats.gapChars,
         affineIdentity: result.affine.stats.identity,
         passed: result.audit.passed,
+        passedChecks: result.audit.checks.filter(function (check) { return check.passed; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       };
     });
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            affineGapChars: 0,
+            affineGapRuns: 0,
+            affineScore: 0,
+            cases: 0,
+            linearGapRuns: 0,
+            linearScore: 0,
+            passed: 0,
+            passedChecks: 0,
+            totalChecks: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].affineGapChars += row.affineGapChars;
+        groups[key].affineGapRuns += row.affineGapRuns;
+        groups[key].affineScore += row.affineScore;
+        groups[key].cases += 1;
+        groups[key].linearGapRuns += row.linearGapRuns;
+        groups[key].linearScore += row.linearScore;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = cases.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
     return {
+      byPattern: summarize("pattern"),
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
