@@ -300,7 +300,7 @@ with remote death.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/phi-accrual-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/phi-accrual-lab.js?v=20260618b' | relative_url }}"></script>
 
 The default run generates `26` heartbeat arrivals before the crash. The final
 window estimates a mean inter-arrival time of about `962 ms` with a standard
@@ -323,6 +323,36 @@ It is making the tradeoff explicit:
 lower threshold -> faster detection, more false suspicion
 higher threshold -> slower detection, fewer false suspicion events
 ```
+
+You can reproduce the audit from Node:
+
+```js
+const lab = require("./assets/js/phi-accrual-lab.js");
+
+const audit = lab.auditPhiAccrualLab();
+const failed = audit.cases.filter((row) => !row.passed);
+if (failed.length) throw new Error(JSON.stringify(failed));
+if (audit.passed !== audit.total) {
+  throw new Error(`only ${audit.passed}/${audit.total} cases passed`);
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.label,
+  heartbeat: row.heartbeat,
+  phiThreshold: row.phiThreshold,
+  phiDetectMs: row.phiDetectionMs,
+  fixedDetectMs: row.fixedDetectionMs,
+  phiFalse: row.phiFalse,
+  fixedFalse: row.fixedFalse,
+  mean: row.mean.toFixed(1),
+  std: row.std.toFixed(1)
+})));
+```
+
+The grid keeps the audit small but varied: a default noisy path, a quiet path, a
+bursty path, and a very noisy path. Each case asserts monotone heartbeat
+arrival times, bounded sample windows, finite phi scores, eventual detection,
+and monotone detection delay as the phi threshold rises.
 
 ## What The Number Does Not Know
 

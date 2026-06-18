@@ -286,16 +286,34 @@
 
   function auditPhiAccrualLab() {
     var cases = [
-      { heartbeat: 1000, jitter: 140, pauseChance: 10, pauseSize: 1800, pauseMargin: 250, phiThreshold: 4, fixedTimeout: 1200, seed: 92 },
-      { heartbeat: 800, jitter: 60, pauseChance: 3, pauseSize: 900, pauseMargin: 150, phiThreshold: 3, fixedTimeout: 1600, seed: 7 },
-      { heartbeat: 1200, jitter: 260, pauseChance: 12, pauseSize: 2400, pauseMargin: 600, phiThreshold: 6, fixedTimeout: 3600, seed: 87 },
-      { heartbeat: 1500, jitter: 450, pauseChance: 18, pauseSize: 3200, pauseMargin: 900, phiThreshold: 8, fixedTimeout: 5200, seed: 123 }
+      { label: "default noisy path", params: { heartbeat: 1000, jitter: 140, pauseChance: 10, pauseSize: 1800, pauseMargin: 250, phiThreshold: 4, fixedTimeout: 1200, seed: 92 } },
+      { label: "quiet path", params: { heartbeat: 800, jitter: 60, pauseChance: 3, pauseSize: 900, pauseMargin: 150, phiThreshold: 3, fixedTimeout: 1600, seed: 7 } },
+      { label: "bursty path", params: { heartbeat: 1200, jitter: 260, pauseChance: 12, pauseSize: 2400, pauseMargin: 600, phiThreshold: 6, fixedTimeout: 3600, seed: 87 } },
+      { label: "very noisy path", params: { heartbeat: 1500, jitter: 450, pauseChance: 18, pauseSize: 3200, pauseMargin: 900, phiThreshold: 8, fixedTimeout: 5200, seed: 123 } }
     ];
     var passed = 0;
-    cases.forEach(function (params) {
-      if (evaluate(params).audit.passed) passed += 1;
+    var rows = cases.map(function (entry) {
+      var result = evaluate(entry.params);
+      if (result.audit.passed) passed += 1;
+      return {
+        failedChecks: Object.keys(result.audit).filter(function (key) {
+          return key !== "passed" && !result.audit[key];
+        }),
+        fixedDetectionMs: result.fixedDetection == null ? null : result.fixedDetection - result.crashAt,
+        fixedFalse: result.fixedFalse,
+        heartbeat: result.params.heartbeat,
+        label: entry.label,
+        mean: result.stats.mean,
+        passed: result.audit.passed,
+        pauseMargin: result.params.pauseMargin,
+        phiDetectionMs: result.phiDetection == null ? null : result.phiDetection - result.crashAt,
+        phiFalse: result.phiFalse,
+        phiThreshold: result.params.phiThreshold,
+        seed: result.params.seed,
+        std: result.stats.std
+      };
     });
-    return { passed: passed, total: cases.length };
+    return { cases: rows, passed: passed, total: cases.length };
   }
 
   function fmtMs(value) {
