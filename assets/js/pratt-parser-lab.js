@@ -606,18 +606,43 @@
 
   function auditGrid() {
     var cases = [];
+    var criticalByName = {};
+
+    function recordCase(row, checks) {
+      checks.forEach(function (check) {
+        if (!criticalByName[check.name]) {
+          criticalByName[check.name] = {
+            check: check.name,
+            failedCases: [],
+            passed: 0,
+            total: 0
+          };
+        }
+        criticalByName[check.name].total += 1;
+        if (check.passed) criticalByName[check.name].passed += 1;
+        else criticalByName[check.name].failedCases.push(row.caseId);
+      });
+      row.passedChecks = checks.filter(function (check) { return check.passed; }).length;
+      row.totalChecks = checks.length;
+      row.failedChecks = checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
+      cases.push(row);
+    }
+
     function add(name, raw, expected) {
       var result = evaluate(raw);
       var audit = auditResult(result, expected);
-      cases.push({
+      recordCase({
+        caseId: cases.length + 1,
         name: name,
         source: result.source,
+        example: result.params.example,
         mode: result.params.mode,
         ast: result.astString,
+        nodes: result.stats.nodes,
+        traceSteps: result.stats.traceSteps,
         value: result.value,
-        passed: audit.passed,
-        failedChecks: audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
-      });
+        passed: audit.passed
+      }, audit.checks);
     }
 
     Object.keys(MODES).forEach(function (mode) {
@@ -654,17 +679,70 @@
       value: -64
     });
 
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            cases: 0,
+            maxTraceSteps: 0,
+            nodes: 0,
+            passed: 0,
+            passedChecks: 0,
+            totalChecks: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].cases += 1;
+        groups[key].maxTraceSteps = Math.max(groups[key].maxTraceSteps, row.traceSteps);
+        groups[key].nodes += row.nodes;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var errors = cases.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
+
     var byMode = {};
     cases.forEach(function (row) {
-      if (!byMode[row.mode]) byMode[row.mode] = { mode: row.mode, cases: 0, passed: 0 };
+      if (!byMode[row.mode]) byMode[row.mode] = { mode: row.mode, cases: 0, maxTraceSteps: 0, nodes: 0, passed: 0, passedChecks: 0, totalChecks: 0 };
       byMode[row.mode].cases += 1;
+      byMode[row.mode].maxTraceSteps = Math.max(byMode[row.mode].maxTraceSteps, row.traceSteps);
+      byMode[row.mode].nodes += row.nodes;
+      byMode[row.mode].passedChecks += row.passedChecks;
+      byMode[row.mode].totalChecks += row.totalChecks;
       if (row.passed) byMode[row.mode].passed += 1;
     });
     return {
       byMode: Object.keys(MODES).map(function (mode) { return byMode[mode]; }),
+      byExample: summarize("example"),
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 

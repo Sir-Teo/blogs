@@ -336,7 +336,7 @@ to change only exponentiation's recursive right binding power.
   <p class="pratt-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/pratt-parser-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/pratt-parser-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What The Default Run Checks
 
@@ -384,14 +384,19 @@ node - <<'NODE'
 const lab = require("./assets/js/pratt-parser-lab.js");
 const audit = lab.auditGrid();
 console.table(audit.byMode);
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+console.table(audit.byExample);
+console.table(audit.criticalChecks);
+if (audit.total !== 25 || audit.totalChecks !== 188) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
 }
-console.log(`${audit.passed}/${audit.total} cases passed`);
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
-The current audit grid has 25 cases. It checks:
+The current audit grid has 25 cases and 188 individual checks. It verifies:
 
 - every example under all three binding tables;
 - standard multiplication binding tighter than addition;
