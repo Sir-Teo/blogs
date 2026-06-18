@@ -287,7 +287,7 @@ being tried.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/exact-cover-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/exact-cover-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Where Dancing Links Enters
 
@@ -338,19 +338,30 @@ console.table(audit.cases.map((row) => ({
   outcome: row.outcome,
   passed: row.passed
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(JSON.stringify(audit.issues, null, 2));
+if (!audit.ok || audit.passed !== 6 || audit.total !== 6 ||
+    audit.passedChecks !== 965 || audit.totalChecks !== 965) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    issues: audit.issues,
+    passed: audit.passed,
+    passedChecks: audit.passedChecks,
+    total: audit.total,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} audit groups passed`);
+console.log(`${audit.passed}/${audit.total} audit groups and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
-The audit checks:
+The current sweep passed 6/6 audit groups and 965/965 named checks:
 
 - the exact-cover matrix has 64 assignment rows and 64 constraint columns;
 - every assignment row covers four unique constraints;
 - Algorithm X and an independent Sudoku backtracker return the same solution
   count on every included instance;
+- the tightest-column heuristic explores no more nodes than the first-column
+  rule on these deterministic cases;
 - each exact-cover solution covers every matrix column once;
 - each decoded grid is a valid 4x4 Sudoku grid; and
 - each decoded grid respects the original clues.

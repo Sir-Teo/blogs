@@ -608,19 +608,52 @@
     var matrix = buildExactCover();
     var issues = [];
     var cases = [];
+    var failures = [];
     var matrixChecks = [];
+    var passedChecks = 0;
+    var totalChecks = 0;
 
-    if (matrix.rows.length !== 64) matrixChecks.push("expected 64 assignment rows");
-    if (matrix.columns.length !== 64) matrixChecks.push("expected 64 constraint columns");
+    function check(name, passed, failure) {
+      return { name: name, passed: passed, failure: failure || name };
+    }
+
+    function recordChecks(label, checks) {
+      var failed = checks.filter(function (entry) { return !entry.passed; });
+      totalChecks += checks.length;
+      passedChecks += checks.length - failed.length;
+      if (failed.length) {
+        failures.push({
+          label: label,
+          failedChecks: failed.map(function (entry) { return entry.failure; })
+        });
+      }
+      failed.forEach(function (entry) {
+        issues.push(label + ": " + entry.failure);
+      });
+      return failed.map(function (entry) { return entry.failure; });
+    }
+
+    matrixChecks.push(check(
+      "matrix has 64 assignment rows",
+      matrix.rows.length === 64,
+      "expected 64 assignment rows"
+    ));
+    matrixChecks.push(check(
+      "matrix has 64 constraint columns",
+      matrix.columns.length === 64,
+      "expected 64 constraint columns"
+    ));
 
     matrix.rows.forEach(function (row) {
       var seen = {};
       row.cols.forEach(function (col) { seen[col] = true; });
-      if (Object.keys(seen).length !== 4) matrixChecks.push(row.name + " does not cover four unique constraints");
+      matrixChecks.push(check(
+        row.name + " covers four unique constraints",
+        Object.keys(seen).length === 4,
+        row.name + " does not cover four unique constraints"
+      ));
     });
-    matrixChecks.forEach(function (issue) {
-      issues.push("matrix: " + issue);
-    });
+    var matrixFailedChecks = recordChecks("matrix", matrixChecks);
 
     Object.keys(PUZZLES).forEach(function (key) {
       var puzzle = PUZZLES[key];
@@ -629,21 +662,48 @@
       var brute = bruteSudoku(puzzle.grid, 1000);
       var bruteCount = brute.solutions.length;
       var exactCount = exact.solutions.length;
-      var failedChecks = [];
-
-      if (exactCount !== bruteCount) {
-        failedChecks.push("exact-cover count " + exactCount + " != brute count " + bruteCount);
-      }
+      var checks = [
+        check(
+          "exact-cover count matches brute force",
+          exactCount === bruteCount,
+          "exact-cover count " + exactCount + " != brute count " + bruteCount
+        ),
+        check(
+          "min-column node count is finite",
+          isFinite(exact.stats.nodes),
+          "min-column node count is not finite"
+        ),
+        check(
+          "first-column node count is finite",
+          isFinite(exactFirst.stats.nodes),
+          "first-column node count is not finite"
+        ),
+        check(
+          "min-column heuristic does not explore more nodes",
+          exact.stats.nodes <= exactFirst.stats.nodes,
+          "min-column nodes " + exact.stats.nodes + " > first-column nodes " + exactFirst.stats.nodes
+        )
+      ];
 
       exact.solutions.forEach(function (solution, index) {
         var grid = exact.grids[index];
-        if (!coversEveryColumnOnce(matrix, solution)) failedChecks.push("solution " + index + " misses exact cover");
-        if (!isValidSudokuGrid(grid)) failedChecks.push("solution " + index + " is not a valid grid");
-        if (!respectsGivens(grid, exact.parsed)) failedChecks.push("solution " + index + " violates givens");
+        checks.push(check(
+          "solution " + index + " covers every column once",
+          coversEveryColumnOnce(matrix, solution),
+          "solution " + index + " misses exact cover"
+        ));
+        checks.push(check(
+          "solution " + index + " is a valid Sudoku grid",
+          isValidSudokuGrid(grid),
+          "solution " + index + " is not a valid grid"
+        ));
+        checks.push(check(
+          "solution " + index + " respects givens",
+          respectsGivens(grid, exact.parsed),
+          "solution " + index + " violates givens"
+        ));
       });
-      failedChecks.forEach(function (issue) {
-        issues.push(key + ": " + issue);
-      });
+      var failedChecks = recordChecks(key, checks);
 
       cases.push({
         puzzle: key,
@@ -656,7 +716,9 @@
         contradiction: exact.contradiction || null,
         outcome: exact.contradiction ? "contradiction" : exactCount === 1 ? "unique" : exactCount > 1 ? "multiple" : "no solution",
         passed: failedChecks.length === 0,
-        failedChecks: failedChecks
+        failedChecks: failedChecks,
+        passedChecks: checks.length - failedChecks.length,
+        totalChecks: checks.length
       });
     });
 
@@ -687,10 +749,12 @@
     });
     var matrixReport = {
       columns: matrix.columns.length,
-      failedChecks: matrixChecks,
-      passed: matrixChecks.length === 0,
+      failedChecks: matrixFailedChecks,
+      passed: matrixFailedChecks.length === 0,
+      passedChecks: matrixChecks.length - matrixFailedChecks.length,
       rows: matrix.rows.length,
-      rowWidth: 4
+      rowWidth: 4,
+      totalChecks: matrixChecks.length
     };
     var passed = cases.filter(function (row) { return row.passed; }).length + (matrixReport.passed ? 1 : 0);
     var total = cases.length + 1;
@@ -698,12 +762,15 @@
     return {
       byOutcome: byOutcome,
       cases: cases,
+      failures: failures,
       matrix: matrixReport,
       ok: issues.length === 0,
       issues: issues,
       passed: passed,
+      passedChecks: passedChecks,
       reports: cases,
-      total: total
+      total: total,
+      totalChecks: totalChecks
     };
   }
 
