@@ -332,7 +332,7 @@ but "which legal merge tree did the policy create?"
   <p class="timsort-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/timsort-run-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/timsort-run-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -364,17 +364,14 @@ The deterministic audit grid is:
 
 You can reproduce the grid from the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/timsort-run-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-
-console.table(rows.map((row) => ({
-  pattern: row.params.pattern,
-  items: row.params.items,
-  minRun: row.params.minRun,
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  pattern: row.pattern,
+  items: row.items,
+  minRun: row.minRun,
   runs: row.runs,
   fixed: row.fixedComparisons,
   queue: row.queueComparisons,
@@ -383,6 +380,10 @@ console.table(rows.map((row) => ({
   stackDepth: row.stackDepth,
   passed: row.passed
 })));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
 ```
 
 Notice the nearly sorted row. Run awareness is not automatically fewer
