@@ -350,33 +350,95 @@ You can reproduce the audit from Node:
 
 ```js
 const lab = require("./assets/js/chandy-lamport-lab.js");
-const EXPECTED_CASES = 4;
-const EXPECTED_CHECKS = 27;
+const EXPECTED_CASE_SHAPE = [
+  "default FIFO:expected=true:snapshot=44:channelAmount=14:channelMessages=7:appMessages=26:missing=0:overtakes=0:checks=7/7",
+  "late starter FIFO:expected=true:snapshot=44:channelAmount=24:channelMessages=11:appMessages=31:missing=0:overtakes=0:checks=7/7",
+  "early starter FIFO:expected=true:snapshot=44:channelAmount=9:channelMessages=5:appMessages=19:missing=0:overtakes=0:checks=7/7",
+  "non-FIFO marker overtake:expected=false:snapshot=25:channelAmount=2:channelMessages=1:appMessages=26:missing=10:overtakes=10:checks=6/6"
+];
+const EXPECTED_CHECK_NAMES = {
+  fail: [
+    "snapshot completes",
+    "pass state matches expectation",
+    "token ledger matches pass state",
+    "no receive without send",
+    "marker overtake matches expectation",
+    "missing channel messages expose FIFO violation"
+  ],
+  pass: [
+    "snapshot completes",
+    "pass state matches expectation",
+    "token ledger matches pass state",
+    "no receive without send",
+    "marker overtake matches expectation",
+    "no missing channel messages",
+    "no extra channel messages"
+  ]
+};
+const EXPECTED_CHECK_SHAPE = EXPECTED_CASE_SHAPE.flatMap((shape) => {
+  const label = shape.split(":expected=")[0];
+  const names = shape.includes(":expected=true:")
+    ? EXPECTED_CHECK_NAMES.pass
+    : EXPECTED_CHECK_NAMES.fail;
+  return names.map((name) => `${label}:${name}:true`);
+});
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CHECK_SHAPE.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.label}:expected=${row.expectedPass}:snapshot=${row.snapshotTotal}:` +
+    `channelAmount=${row.channelAmount}:channelMessages=${row.channelMessages}:` +
+    `appMessages=${row.appMessages}:missing=${row.missingChannel}:` +
+    `overtakes=${row.markerOvertakes}:checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checkShape(row) {
+  return row.checks.map((check) => `${row.label}:${check.name}:${check.passed}`);
+}
 
 const audit = lab.auditChandyLamportLab();
-const auditShape = {
-  rows: audit.cases.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checks: audit.cases.flatMap(checkShape)
 };
-if (
-  auditShape.rows !== EXPECTED_CASES ||
-  auditShape.total !== EXPECTED_CASES ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.checks, EXPECTED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "checks",
+    actual: shape.checks,
+    expected: EXPECTED_CHECK_SHAPE
+  });
 }
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+if (shapeErrors.length ||
+    !audit.ok ||
+    audit.cases.length !== EXPECTED_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    failedCases.length ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    shapeErrors,
     failures: audit.failures,
     failedCases,
-    auditShape
+    totals: {
+      rows: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
