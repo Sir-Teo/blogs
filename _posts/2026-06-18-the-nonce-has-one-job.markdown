@@ -319,7 +319,7 @@ authentication structure that was meant to be one-time.
   <p class="gcm-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/gcm-nonce-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/gcm-nonce-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What the Audit Checks
 
@@ -357,12 +357,21 @@ console.table(audit.cases.map((row) => ({
   bytes: row.length,
   hashKey: row.hashKey,
   recoveredHashKey: row.recoveredHashKey,
+  mask: row.mask,
+  recoveredMask: row.recoveredMask,
   forgedByte: row.forgedByte,
+  forgedTag: row.forgedTag,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+console.table(audit.byScenario);
+console.table(audit.criticalChecks);
+if (audit.total !== 5 || audit.totalChecks !== 45) {
+  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
 }
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 

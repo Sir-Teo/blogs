@@ -257,6 +257,7 @@
   }
 
   function auditGrid() {
+    var criticalByName = {};
     var cases = [
       {},
       { scenario: "role", seed: 12, nonce: 3, forgeByte: 65 },
@@ -265,8 +266,22 @@
       { scenario: "role", seed: 777, nonce: 255, forgeByte: 126 }
     ].map(function (row, index) {
       var result = evaluate(row);
+      var caseId = index + 1;
+      result.audit.checks.forEach(function (check) {
+        if (!criticalByName[check.name]) {
+          criticalByName[check.name] = {
+            check: check.name,
+            failedCases: [],
+            passed: 0,
+            total: 0
+          };
+        }
+        criticalByName[check.name].total += 1;
+        if (check.passed) criticalByName[check.name].passed += 1;
+        else criticalByName[check.name].failedCases.push(caseId);
+      });
       return {
-        caseId: index + 1,
+        caseId: caseId,
         params: result.params,
         scenario: result.params.scenario,
         seed: result.params.seed,
@@ -276,15 +291,65 @@
         recoveredText: textFromBytes(result.recoveredB),
         hashKey: result.secret.h,
         recoveredHashKey: result.recovered.h,
+        mask: result.secret.s,
+        recoveredMask: result.recovered.s,
         forgedByte: result.forged.opened.plain[0],
+        forgedTag: result.forged.tag,
         passed: result.audit.passed,
+        passedChecks: result.audit.checks.filter(function (check) { return check.passed; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       };
     });
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            cases: 0,
+            maxBytes: 0,
+            passed: 0,
+            passedChecks: 0,
+            totalChecks: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].cases += 1;
+        groups[key].maxBytes = Math.max(groups[key].maxBytes, row.length);
+        if (row.passed) groups[key].passed += 1;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+    var criticalChecks = Object.keys(criticalByName).sort().map(function (key) {
+      var row = criticalByName[key];
+      row.ok = row.passed === row.total;
+      return row;
+    });
+    var passedChecks = cases.reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = cases.reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    var errors = cases.reduce(function (out, row) {
+      row.failedChecks.forEach(function (check) {
+        out.push("case " + row.caseId + ": " + check);
+      });
+      return out;
+    }, []);
     return {
+      byScenario: summarize("scenario"),
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
-      total: cases.length
+      checked: totalChecks,
+      criticalChecks: criticalChecks,
+      errors: errors,
+      ok: errors.length === 0,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
     };
   }
 
