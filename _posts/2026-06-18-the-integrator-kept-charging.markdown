@@ -324,12 +324,14 @@ To reproduce that parameter sweep from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/pid-windup-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 90;
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const seconds = (value) => value == null ? ">32" : value.toFixed(1);
-if (audit.total !== 5 || audit.totalChecks !== 90) {
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
