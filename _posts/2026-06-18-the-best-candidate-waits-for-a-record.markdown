@@ -297,6 +297,12 @@ The compact reproduction check is:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/secretary-stopping-lab.js");
+const EXPECTED_EXACT_N = 3;
+const EXPECTED_EXACT_ROWS = 18;
+const EXPECTED_DP_ROWS = 4;
+const EXPECTED_DEFAULT_CHECKS = 4;
+const EXPECTED_ROWS = 26;
+const EXPECTED_CHECKS = 30;
 
 const audit = lab.auditSecretaryStoppingLab();
 const exactSummary = [5, 6, 7].map((n) => {
@@ -321,14 +327,44 @@ console.table(audit.defaultChecks.map((row) => ({
   check: row.name,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  !audit.ok ||
-  audit.passed !== 26 ||
-  audit.total !== 26 ||
-  audit.passedChecks !== 30 ||
-  audit.totalChecks !== 30
-) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const auditShape = {
+  exactN: new Set(audit.exactCases.map((row) => row.n)).size,
+  exactRows: audit.exactCases.length,
+  dpRows: audit.dpCases.length,
+  defaultChecks: audit.defaultChecks.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.exactN !== EXPECTED_EXACT_N ||
+    auditShape.exactRows !== EXPECTED_EXACT_ROWS ||
+    auditShape.dpRows !== EXPECTED_DP_ROWS ||
+    auditShape.defaultChecks !== EXPECTED_DEFAULT_CHECKS ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedExactCases = audit.exactCases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedDpCases = audit.dpCases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedDefaultChecks = audit.defaultChecks.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedExactCases.length || failedDpCases.length ||
+    failedDefaultChecks.length || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    failures: audit.failures,
+    failedExactCases,
+    failedDpCases,
+    failedDefaultChecks,
+    auditShape
+  }, null, 2));
 }
 console.log(
   `${audit.passed}/${audit.total} audit rows and ` +
