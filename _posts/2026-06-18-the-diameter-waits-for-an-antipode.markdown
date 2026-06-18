@@ -265,13 +265,69 @@ The browser lab is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/rotating-calipers-lab.js");
-const EXPECTED_CASES = 100;
-const EXPECTED_CHECKS = 800;
+const EXPECTED_SHAPES = ["cloud", "crescent", "rectangle", "clusters", "thin"];
+const EXPECTED_COUNTS = [8, 17, 31, 64, 96];
+const EXPECTED_SEEDS = [1, 7, 23, 91];
+const EXPECTED_CASE_KEYS = EXPECTED_SHAPES.flatMap((shape) =>
+  EXPECTED_COUNTS.flatMap((count) =>
+    EXPECTED_SEEDS.map((seed) => `${shape}/${count}/${seed}`)
+  )
+);
+const EXPECTED_TOTALS = {
+  caseRows: 100,
+  checked: 800,
+  criticalRows: 8,
+  passed: 100,
+  total: 100,
+  passedChecks: 800,
+  totalChecks: 800
+};
+const EXPECTED_BY_SHAPE = [
+  "cloud:20:20:160/160:hull=12.900:cand=12.900:brute=1441.000",
+  "crescent:20:20:160/160:hull=11.700:cand=11.900:brute=1441.000",
+  "rectangle:20:20:160/160:hull=10.950:cand=10.950:brute=1441.000",
+  "clusters:20:20:160/160:hull=7.400:cand=7.400:brute=1528.400",
+  "thin:20:20:160/160:hull=9.000:cand=9.000:brute=1528.400"
+];
+const EXPECTED_CRITICAL_CHECKS = [
+  "all generated points are inside the hull:100/100:true:none",
+  "brute-force diameter endpoints are hull vertices:100/100:true:none",
+  "calipers diameter matches all-pairs brute force:100/100:true:none",
+  "calipers inspected only a linear number of candidates:100/100:true:none",
+  "candidate ledger contains the chosen best pair:100/100:true:none",
+  "hull has at least two endpoints when the input does:100/100:true:none",
+  "hull orientation is convex:100/100:true:none",
+  "selected event is valid:100/100:true:none"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-console.table(audit.byShape.map((row) => ({
+const totals = {
+  caseRows: audit.cases.length,
+  checked: audit.checked,
+  criticalRows: audit.criticalChecks.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const caseKeys = audit.cases.map((row) => `${row.shape}/${row.count}/${row.seed}`);
+const byShapeRows = audit.byShape.map((row) =>
+  `${row.shape}:${row.cases}:${row.passed}:${row.passedChecks}/${row.totalChecks}:` +
+  `hull=${row.avgHull.toFixed(3)}:cand=${row.avgCandidates.toFixed(3)}:` +
+  `brute=${row.avgBrutePairs.toFixed(3)}`
+);
+const criticalRows = audit.criticalChecks.map((row) =>
+  `${row.check}:${row.passed}/${row.total}:${row.ok}:` +
+  `${row.failedCases.join(",") || "none"}`
+);
+const displayRows = audit.byShape.map((row) => ({
   shape: row.shape,
   cases: row.cases,
   avgHull: row.avgHull.toFixed(1),
@@ -279,12 +335,22 @@ console.table(audit.byShape.map((row) => ({
   avgBrutePairs: row.avgBrutePairs.toFixed(1),
   passed: row.passed,
   checks: `${row.passedChecks}/${row.totalChecks}`
-})));
+}));
+console.table(displayRows);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(caseKeys, EXPECTED_CASE_KEYS) ||
+  !sameJson(byShapeRows, EXPECTED_BY_SHAPE) ||
+  !sameJson(criticalRows, EXPECTED_CRITICAL_CHECKS)
+) {
+  throw new Error("unexpected rotating-calipers audit shape: " + JSON.stringify({
+    totals,
+    byShapeRows,
+    criticalRows,
+    caseKeyHead: caseKeys.slice(0, 10),
+    caseKeyTail: caseKeys.slice(-10)
+  }, null, 2));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
