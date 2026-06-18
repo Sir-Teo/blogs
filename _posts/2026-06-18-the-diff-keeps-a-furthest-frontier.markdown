@@ -333,13 +333,54 @@ The browser file is also a CommonJS module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/myers-diff-lab.js");
-const EXPECTED_GROUPS = 11;
-const EXPECTED_NAMED_CASES = 10;
-const EXPECTED_BINARY_CASES = 3969;
-const EXPECTED_CHECKS = 35811;
+const EXPECTED_CHECK_NAMES = [
+  "distance-matches-dp",
+  "lcs-matches-dp",
+  "script-replays-new-sequence",
+  "edit-count-equals-distance",
+  "equal-count-equals-lcs",
+  "path-starts-at-origin",
+  "path-ends-at-target",
+  "path-steps-monotone",
+  "equal-ops-match-tokens"
+];
+const EXPECTED_TOTALS = {
+  namedRows: 10,
+  exhaustiveBinaryCases: 3969,
+  passed: 11,
+  total: 11,
+  passedChecks: 35811,
+  totalChecks: 35811
+};
+const EXPECTED_BY_TIE = [
+  "delete:5 cases:maxD=8:5/5 passed:45/45 checks",
+  "insert:5 cases:maxD=8:5/5 passed:45/45 checks"
+];
+const EXPECTED_EXHAUSTIVE = {
+  checked: 3969,
+  failedChecks: 0,
+  passed: true,
+  passedChecks: 35721,
+  totalChecks: 35721
+};
+const EXPECTED_CASE_ROWS = [
+  "refactor/delete:small refactor:7->8:d=1:lcs=7:layers=2:ops=8:9/9:true",
+  "refactor/insert:small refactor:7->8:d=1:lcs=7:layers=2:ops=8:9/9:true",
+  "moved/delete:moved block:7->7:d=4:lcs=5:layers=5:ops=9:9/9:true",
+  "moved/insert:moved block:7->7:d=4:lcs=5:layers=5:ops=9:9/9:true",
+  "repeated/delete:repeated tokens:8->7:d=3:lcs=6:layers=4:ops=9:9/9:true",
+  "repeated/insert:repeated tokens:8->7:d=3:lcs=6:layers=4:ops=9:9/9:true",
+  "sentence/delete:sentence edit:8->8:d=4:lcs=6:layers=5:ops=10:9/9:true",
+  "sentence/insert:sentence edit:8->8:d=4:lcs=6:layers=5:ops=10:9/9:true",
+  "config/delete:config file:6->6:d=8:lcs=2:layers=9:ops=10:9/9:true",
+  "config/insert:config file:6->6:d=8:lcs=2:layers=9:ops=10:9/9:true"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditMyersDiff();
-console.table(audit.byTie);
 const auditShape = {
   namedRows: audit.cases.length,
   exhaustiveBinaryCases: audit.exhaustiveBinaryCases,
@@ -348,13 +389,47 @@ const auditShape = {
   passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
-if (auditShape.namedRows !== EXPECTED_NAMED_CASES ||
-    auditShape.exhaustiveBinaryCases !== EXPECTED_BINARY_CASES ||
-    auditShape.total !== EXPECTED_GROUPS ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const byTieRows = audit.byTie.map((row) =>
+  `${row.tie}:${row.cases} cases:maxD=${row.maxDistance}:` +
+  `${row.passed}/${row.cases} passed:${row.passedChecks}/${row.totalChecks} checks`
+);
+const exhaustiveShape = {
+  checked: audit.exhaustive.checked,
+  failedChecks: audit.exhaustive.failedChecks.length,
+  passed: audit.exhaustive.passed,
+  passedChecks: audit.exhaustive.passedChecks,
+  totalChecks: audit.exhaustive.totalChecks
+};
+const caseRows = audit.cases.map((row) =>
+  `${row.example}/${row.tie}:${row.label}:${row.oldLength}->${row.newLength}:` +
+  `d=${row.distance}:lcs=${row.lcsLength}:layers=${row.layers}:` +
+  `ops=${row.operations}:${row.passedChecks}/${row.totalChecks}:${row.passed}`
+);
+const checkRows = audit.cases.map((row) => ({
+  example: `${row.example}/${row.tie}`,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = audit.cases.map((row) => ({
+  example: `${row.example}/${row.tie}`,
+  checks: EXPECTED_CHECK_NAMES
+}));
+if (
+  !sameJson(auditShape, EXPECTED_TOTALS) ||
+  !sameJson(byTieRows, EXPECTED_BY_TIE) ||
+  !sameJson(exhaustiveShape, EXPECTED_EXHAUSTIVE) ||
+  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
+  !sameJson(checkRows, expectedCheckRows)
+) {
+  throw new Error("unexpected Myers diff audit shape: " + JSON.stringify({
+    auditShape,
+    byTieRows,
+    exhaustiveShape,
+    caseRows,
+    checkRows
+  }, null, 2));
 }
 console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
+console.table(audit.byTie);
 console.table(audit.cases.map((row) => ({
   example: row.label,
   tie: row.tie,
