@@ -416,26 +416,81 @@ deterministic Monte Carlo cases. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/fisher-information-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 35;
+const EXPECTED_CASE_SHAPE = [
+  "1:normal:n=80:experiments=1600:seed=17:47.3373:0.021125:0.021673:1.026:1.026:-2.031e-3:7/7",
+  "2:normal:n=25:experiments=1800:seed=8:5.1653:0.193600:0.198498:1.025:1.025:3.398e-3:7/7",
+  "3:normal:n=220:experiments=1200:seed=99:448.9796:0.002227:0.002288:1.027:1.027:7.258e-4:7/7",
+  "4:bernoulli:n=60:experiments=2200:seed=23:263.7363:0.003792:0.003795:1.001:1.001:1.364e-4:7/7",
+  "5:bernoulli:n=180:experiments=1800:seed=77:892.8571:0.001120:0.001037:0.926:0.926:-3.241e-4:7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "Fisher information is positive",
+  "CRLB is reciprocal information",
+  "Monte Carlo variance is near CRLB",
+  "score variance is near information",
+  "score mean is small",
+  "bias is small relative to standard error",
+  "likelihood peaks at true parameter"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.model}:n=${row.sampleSize}:` +
+    `experiments=${row.experiments}:seed=${row.seed}:` +
+    `${row.fisher.toFixed(4)}:${row.crlb.toFixed(6)}:` +
+    `${row.estimateVariance.toFixed(6)}:${row.varianceRatio.toFixed(3)}:` +
+    `${row.scoreRatio.toFixed(3)}:${row.bias.toExponential(3)}:` +
+    `${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = row.checks.map((check) => check.name);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.table(audit.cases.map((row) => ({
   model: row.model,
