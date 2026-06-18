@@ -319,13 +319,34 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { scenario: "wide", rows: 28, cols: 84, tilt: 18, seed: 37 },
       { scenario: "staircase", rows: 40, cols: 92, tilt: -12, seed: 19 },
       { scenario: "tall", rows: 76, cols: 38, tilt: 25, seed: 41 },
       { scenario: "jitter", rows: 44, cols: 88, tilt: 0, seed: 93 },
       { scenario: "tilted", rows: 34, cols: 72, tilt: 48, seed: 11 }
-    ].map(evaluate);
+    ].map(function (row, index) {
+      var result = evaluate(row);
+      return {
+        caseId: index + 1,
+        scenario: result.params.scenario,
+        rows: result.params.rows,
+        cols: result.params.cols,
+        tilt: result.params.tilt,
+        seed: result.params.seed,
+        bruteCells: result.brute.stats.uniqueAccesses,
+        smawkCells: result.smawk.stats.uniqueAccesses,
+        savedPct: result.savings * 100,
+        mongeViolations: result.audit.monge.violations,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {
