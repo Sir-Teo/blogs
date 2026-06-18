@@ -316,8 +316,14 @@ The artifact is a plain JavaScript module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/cors-preflight-lab.js");
+const EXPECTED_CASES = 80;
+const EXPECTED_CHECKS = 560;
+
 const result = lab.simulate({});
 const audit = lab.auditCorsPreflightLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 
 console.log(result.summary);
 console.table(audit.byRequest.map((row) => ({
@@ -331,14 +337,27 @@ console.table(audit.byRequest.map((row) => ({
   blockedAfter: row.blockedAfter,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (audit.total !== 80 || audit.totalChecks !== 560) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} policy/cache cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
