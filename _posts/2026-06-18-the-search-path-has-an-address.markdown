@@ -212,7 +212,7 @@ if B adjacent node records arrive together, how many blocks does this path need?
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/cache-layout-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/cache-layout-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -241,6 +241,29 @@ The DFS row is a good warning. It can look excellent for some keys because a
 preorder layout hugs one subtree tightly. Its worst case is still poor in this
 complete-tree experiment. Locality should be evaluated over the query
 distribution, not over the prettiest path.
+
+To reproduce the deterministic layout sweep from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/cache-layout-lab.js");
+const audit = lab.auditGrid();
+console.table(audit.cases.map((row) => ({
+  case: row.caseId,
+  height: row.height,
+  block: row.blockSize,
+  inorderAvg: row.inorderAverageBlocks.toFixed(2),
+  bfsAvg: row.bfsAverageBlocks.toFixed(2),
+  dfsAvg: row.dfsAverageBlocks.toFixed(2),
+  vebAvg: row.vebAverageBlocks.toFixed(2),
+  vebWorst: row.vebWorstBlocks,
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 ## Why This Is Cache-Oblivious
 

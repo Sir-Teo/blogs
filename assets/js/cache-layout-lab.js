@@ -262,13 +262,41 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { height: 8, blockSize: 4, key: 129 },
       { height: 10, blockSize: 8, key: 513 },
       { height: 11, blockSize: 16, key: 1025 },
       { height: 12, blockSize: 32, key: 3021 },
       { height: 13, blockSize: 8, key: 7777 }
-    ].map(evaluate);
+    ].map(function (raw, index) {
+      var result = evaluate(raw);
+      var byLayout = {};
+      result.rows.forEach(function (row) {
+        byLayout[row.id] = row;
+      });
+      return {
+        caseId: index + 1,
+        height: result.params.height,
+        n: result.n,
+        blockSize: result.params.blockSize,
+        key: result.params.key,
+        comparisons: result.reference.comparisons,
+        logBaseB: result.reference.logBaseB,
+        inorderAverageBlocks: byLayout.inorder.averageBlocks,
+        bfsAverageBlocks: byLayout.bfs.averageBlocks,
+        dfsAverageBlocks: byLayout.dfs.averageBlocks,
+        vebAverageBlocks: byLayout.veb.averageBlocks,
+        vebWorstBlocks: byLayout.veb.worstBlocks,
+        vebSelectedBlocks: byLayout.veb.selectedBlocks,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {
