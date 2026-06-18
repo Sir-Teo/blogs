@@ -325,9 +325,13 @@
     }
 
     function addCritical(label, condition) {
+      var passed = record(condition, label);
       criticalChecks.push({
         check: label,
-        passed: record(condition, label)
+        failedChecks: passed ? [] : [label],
+        passed: passed,
+        passedChecks: passed ? 1 : 0,
+        totalChecks: 1
       });
     }
 
@@ -349,6 +353,7 @@
       Object.keys(DEFENSES).forEach(function (defenseKey) {
         var result = evaluate({ request: requestKey, defense: defenseKey });
         var failedChecks = [];
+        var totalChecks = 2;
         var blockOrMutate = !(result.summary.blocked && result.summary.stateChanged);
         var reachedOrBlocked = result.summary.appReached || result.summary.blocked;
         var label = requestKey + "/" + defenseKey + " cannot both block and mutate";
@@ -363,10 +368,12 @@
           metadataPresent: result.summary.metadataPresent,
           metadataWouldBlock: result.summary.wouldBlock,
           passed: failedChecks.length === 0,
+          passedChecks: totalChecks - failedChecks.length,
           request: requestKey,
           risk: result.summary.risk,
           stateChanged: result.summary.stateChanged,
-          tokenChecked: result.summary.tokenChecked
+          tokenChecked: result.summary.tokenChecked,
+          totalChecks: totalChecks
         });
       });
     });
@@ -382,9 +389,11 @@
             cases: 0,
             metadataWouldBlock: 0,
             passed: 0,
+            passedChecks: 0,
             risk: 0,
             stateChanged: 0,
-            tokenChecked: 0
+            tokenChecked: 0,
+            totalChecks: 0
           };
           groups[key][groupBy] = key;
         }
@@ -395,6 +404,8 @@
         groups[key].risk += row.risk;
         groups[key].stateChanged += row.stateChanged;
         groups[key].tokenChecked += row.tokenChecked;
+        groups[key].passedChecks += row.passedChecks;
+        groups[key].totalChecks += row.totalChecks;
         if (row.passed) groups[key].passed += 1;
       });
       return Object.keys(groups).sort().map(function (key) {
@@ -403,17 +414,32 @@
     }
 
     var passed = checked - errors.length;
+    var passedChecks = criticalChecks.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0) + cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = criticalChecks.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0) + cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
 
     return {
       byDefense: summarize("defense"),
       byRequest: summarize("request"),
       cases: cases,
-      ok: errors.length === 0,
+      caseTotal: cases.length,
       checked: checked,
       criticalChecks: criticalChecks,
+      criticalTotal: criticalChecks.length,
+      details: cases,
       errors: errors,
+      ok: errors.length === 0 && passedChecks === totalChecks,
       passed: passed,
-      total: checked
+      passedChecks: passedChecks,
+      total: checked,
+      totalChecks: totalChecks
     };
   }
 

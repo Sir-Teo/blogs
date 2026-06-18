@@ -318,7 +318,7 @@ application-level proof.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/fetch-metadata-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fetch-metadata-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## Reproducing The Classifier
 
@@ -334,13 +334,24 @@ const audit = lab.auditFetchMetadataLab();
 console.table(audit.byDefense);
 console.table(audit.byRequest);
 console.table(audit.criticalChecks);
-if (audit.checked !== 67) {
-  throw new Error("unexpected check count: " + audit.checked);
+const auditShape = {
+  criticalChecks: audit.criticalTotal,
+  rows: audit.cases.length,
+  checked: audit.checked,
+  totalChecks: audit.totalChecks
+};
+if (
+  auditShape.criticalChecks !== 13 ||
+  auditShape.rows !== 27 ||
+  auditShape.checked !== 67 ||
+  auditShape.totalChecks !== 67
+) {
+  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passed !== audit.total) {
+if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify(audit.errors, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} checks passed`);
+console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
 ```
 
@@ -370,7 +381,9 @@ Default summary:
 }
 ```
 
-The audit currently runs 67 checks. Among the invariants:
+The audit currently runs 13 named critical checks plus 54 generated invariant
+checks over a 27-row request/defense grid (67 checks total). Among the
+invariants:
 
 - user-activated navigations emit `Sec-Fetch-User: ?1`;
 - subresource requests do not emit `Sec-Fetch-User`;
