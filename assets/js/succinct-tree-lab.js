@@ -396,16 +396,47 @@
   }
 
   function auditGrid() {
-    var rows = [];
+    var cases = [];
     Object.keys(SHAPES).forEach(function (shape) {
       var tree = makeTree(shape);
       for (var focus = 0; focus < tree.nodes.length; focus += 1) {
         [0, 3, tree.nodes.length, tree.nodes.length * 2 - 1].forEach(function (rankPos) {
-          rows.push(evaluate({ shape: shape, focus: focus, rankPos: rankPos }));
+          var result = evaluate({ shape: shape, focus: focus, rankPos: rankPos });
+          cases.push({
+            shape: result.params.shape,
+            focus: result.params.focus,
+            rankPos: result.params.rankPos,
+            nodes: result.stats.nodes,
+            topologyBits: result.stats.topologyBits,
+            directoryBits: result.stats.directoryBits,
+            subtreeNodes: result.nav.subtreeNodes,
+            passed: result.audit.passed,
+            failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+          });
         });
       }
     });
-    return rows;
+    var byShape = {};
+    cases.forEach(function (row) {
+      if (!byShape[row.shape]) {
+        byShape[row.shape] = {
+          shape: row.shape,
+          cases: 0,
+          passed: 0,
+          nodes: row.nodes,
+          topologyBits: row.topologyBits,
+          directoryBits: row.directoryBits
+        };
+      }
+      byShape[row.shape].cases += 1;
+      if (row.passed) byShape[row.shape].passed += 1;
+    });
+    return {
+      byShape: Object.keys(SHAPES).map(function (shape) { return byShape[shape]; }),
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function fmt(value, digits) {

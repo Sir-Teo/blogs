@@ -273,7 +273,7 @@ not to win a compression contest.
   <p class="succinct-tree-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/succinct-tree-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/succinct-tree-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Default Run Checks
 
@@ -315,15 +315,18 @@ are exactly the nodes in the subtree.
 
 ## Reproducibility Check
 
-The browser lab is also a CommonJS module:
+The browser lab is also a CommonJS module. From the repository root:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/succinct-tree-lab.js");
-
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.audit.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
-console.log(rows.length + " cases passed");
+const audit = lab.auditGrid();
+console.table(audit.byShape);
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+console.log(`${audit.passed}/${audit.total} cases passed`);
+NODE
 ```
 
 The current audit grid has 180 cases. It checks every focus node in all four
