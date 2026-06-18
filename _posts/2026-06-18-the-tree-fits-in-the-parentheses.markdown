@@ -320,16 +320,29 @@ The browser lab is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/succinct-tree-lab.js");
+const EXPECTED_CASES = 180;
+const EXPECTED_CHECKS = 1620;
+
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byShape);
-if (audit.total !== 180 || audit.totalChecks !== 1620) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
 }
 console.log(summary);
 NODE
