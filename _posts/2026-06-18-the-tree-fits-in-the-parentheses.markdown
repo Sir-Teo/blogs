@@ -320,18 +320,106 @@ The browser lab is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/succinct-tree-lab.js");
-const EXPECTED_CASES = 180;
-const EXPECTED_CHECKS = 1620;
+const EXPECTED_TOTALS = {
+  rows: 180,
+  shapes: 4,
+  passed: 180,
+  total: 180,
+  passedChecks: 1620,
+  totalChecks: 1620
+};
+const EXPECTED_BY_SHAPE = [
+  "catalog:44:11:22:40:44:396/396",
+  "chain:44:11:22:40:44:396/396",
+  "bushy:48:12:24:40:48:432/432",
+  "trie:44:11:22:40:44:396/396"
+];
+const EXPECTED_FOCUS_SHAPE = [
+  "catalog:44:112:11:0,3,11,21:0:11|1:4|2:1|3:1|4:1|5:3|6:1|7:1|8:3|9:1|10:1",
+  "chain:44:152:11:0,3,11,21:0:11|1:7|2:1|3:5|4:4|5:3|6:1|7:1|8:3|9:1|10:1",
+  "bushy:48:116:12:0,3,12,23:0:12|1:3|2:1|3:4|4:1|5:2|6:1|7:1|8:1|9:1|10:1|11:1",
+  "trie:44:124:11:0,3,11,21:0:11|1:4|2:3|3:1|4:1|5:3|6:2|7:1|8:3|9:1|10:1"
+];
+const EXPECTED_CHECK_NAMES = [
+  "balanced parentheses finish at zero",
+  "two bits per node",
+  "rank directory matches direct rank",
+  "select(rank(open)) returns each open",
+  "matching closes recover DFS intervals",
+  "scanned parents match source tree",
+  "first child navigation matches source tree",
+  "next sibling navigation matches source tree",
+  "focus interval contains full subtree"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const totals = {
+  rows: audit.cases.length,
+  shapes: audit.byShape.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const byShapeRows = audit.byShape.map((row) => [
+  row.shape,
+  row.cases,
+  row.nodes,
+  row.topologyBits,
+  row.directoryBits,
+  row.passed,
+  `${row.passedChecks}/${row.totalChecks}`
+].join(":"));
+const focusGroups = new Map();
+for (const row of audit.cases) {
+  if (!focusGroups.has(row.shape)) {
+    focusGroups.set(row.shape, {
+      maxSubtree: 0,
+      rankKeys: new Set(),
+      rows: 0,
+      subtreeSum: 0,
+      focusKeys: new Set()
+    });
+  }
+  const group = focusGroups.get(row.shape);
+  group.rows += 1;
+  group.subtreeSum += row.subtreeNodes;
+  group.maxSubtree = Math.max(group.maxSubtree, row.subtreeNodes);
+  group.rankKeys.add(String(row.rankPos));
+  group.focusKeys.add(`${row.focus}:${row.subtreeNodes}`);
+}
+const focusShapeRows = audit.byShape.map((row) => {
+  const group = focusGroups.get(row.shape);
+  return [
+    row.shape,
+    group.rows,
+    group.subtreeSum,
+    group.maxSubtree,
+    Array.from(group.rankKeys).join(","),
+    Array.from(group.focusKeys).join("|")
+  ].join(":");
+});
+const checkRows = audit.cases.map((row) => row.checks.map((check) => check.name));
 console.table(audit.byShape);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+if (
+  !sameJson(totals, EXPECTED_TOTALS) ||
+  !sameJson(byShapeRows, EXPECTED_BY_SHAPE) ||
+  !sameJson(focusShapeRows, EXPECTED_FOCUS_SHAPE) ||
+  !checkRows.every((checks) => sameJson(checks, EXPECTED_CHECK_NAMES))
+) {
+  throw new Error("unexpected succinct-tree audit shape: " + JSON.stringify({
+    totals,
+    byShapeRows,
+    focusShapeRows,
+    firstCheckRows: checkRows.slice(0, 3)
+  }, null, 2));
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
