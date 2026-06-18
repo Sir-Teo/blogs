@@ -203,13 +203,44 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       { high: 150, limit: 100, kp: 140, ki: 45, kb: 70 },
       { high: 170, limit: 100, kp: 140, ki: 45, kb: 70 },
       { high: 150, limit: 80, kp: 120, ki: 35, kb: 60 },
       { high: 120, limit: 90, kp: 180, ki: 55, kb: 90 },
       { high: 160, limit: 110, kp: 100, ki: 60, kb: 120 }
-    ].map(evaluate);
+    ].map(function (raw, index) {
+      var result = evaluate(raw);
+      var none = findMode(result, "none");
+      var clampMode = findMode(result, "clamp");
+      var backcalc = findMode(result, "backcalc");
+      return {
+        caseId: index + 1,
+        high: result.params.high,
+        limit: result.params.limit,
+        kp: result.params.kp,
+        ki: result.params.ki,
+        kb: result.params.kb,
+        noneReentryTime: none.metrics.reentryTime,
+        clampReentryTime: clampMode.metrics.reentryTime,
+        backcalcReentryTime: backcalc.metrics.reentryTime,
+        noneIaeAfterDrop: none.metrics.iaeAfterDrop,
+        clampIaeAfterDrop: clampMode.metrics.iaeAfterDrop,
+        backcalcIaeAfterDrop: backcalc.metrics.iaeAfterDrop,
+        noneMaxAbsIntegral: none.metrics.maxAbsIntegral,
+        clampMaxAbsIntegral: clampMode.metrics.maxAbsIntegral,
+        backcalcMaxAbsIntegral: backcalc.metrics.maxAbsIntegral,
+        clampSettlingTime: clampMode.metrics.settlingTime,
+        backcalcSettlingTime: backcalc.metrics.settlingTime,
+        passed: result.audit.passed,
+        failedChecks: result.audit.checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; })
+      };
+    });
+    return {
+      cases: cases,
+      passed: cases.filter(function (row) { return row.passed; }).length,
+      total: cases.length
+    };
   }
 
   function findMode(result, id) {

@@ -254,7 +254,7 @@ The interesting question is what happens immediately after the drop.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/pid-windup-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/pid-windup-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## What The Default Run Measures
 
@@ -317,6 +317,30 @@ Euler integration, a small input delay implemented as a queue, and symmetric
 input saturation. The exported audit checks finite samples, actuator bounds,
 post-drop error area, integral growth, and settlement for the two anti-windup
 modes across several parameter sets.
+
+To reproduce that parameter sweep from the repository root:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/pid-windup-lab.js");
+const audit = lab.auditGrid();
+const seconds = (value) => value == null ? ">32" : value.toFixed(1);
+console.table(audit.cases.map((row) => ({
+  case: row.caseId,
+  high: row.high.toFixed(2),
+  limit: row.limit.toFixed(2),
+  noneIAE: row.noneIaeAfterDrop.toFixed(2),
+  clampIAE: row.clampIaeAfterDrop.toFixed(2),
+  backcalcIAE: row.backcalcIaeAfterDrop.toFixed(2),
+  noneReentry: seconds(row.noneReentryTime),
+  backcalcReentry: seconds(row.backcalcReentryTime),
+  passed: row.passed
+})));
+if (audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+}
+NODE
+```
 
 It does not prove stability for arbitrary nonlinear plants. It does not tune a
 PID controller. It does not model derivative filtering, sensor noise, quantized
