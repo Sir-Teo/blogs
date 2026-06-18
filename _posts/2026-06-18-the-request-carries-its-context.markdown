@@ -330,26 +330,117 @@ const lab = require("./assets/js/fetch-metadata-lab.js");
 const EXPECTED_CRITICAL_CHECKS = 13;
 const EXPECTED_CASES = 27;
 const EXPECTED_CHECKS = 67;
+const EXPECTED_DEFAULT_HEADERS = [
+  "Sec-Fetch-Site:cross-site",
+  "Sec-Fetch-Mode:navigate",
+  "Sec-Fetch-Dest:document",
+  "Sec-Fetch-User:?1"
+];
+const EXPECTED_DEFAULT_SUMMARY_SHAPE = [
+  "metadataPresent:1",
+  "metadataPass:0",
+  "wouldBlock:1",
+  "blocked:1",
+  "appReached:0",
+  "tokenChecked:0",
+  "stateChanged:0",
+  "risk:0"
+];
+const EXPECTED_TOTALS = {
+  criticalChecks: EXPECTED_CRITICAL_CHECKS,
+  rows: EXPECTED_CASES,
+  checked: EXPECTED_CHECKS,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+const EXPECTED_BY_DEFENSE_SHAPE = [
+  "metadataAndToken:9/18:4/3/6/2/2/0",
+  "metadataOnly:9/18:3/3/6/0/3/1",
+  "reportOnly:9/18:0/3/9/0/5/3"
+];
+const EXPECTED_BY_REQUEST_SHAPE = [
+  "crossSiteApiRead:3/6:2/3/1/0/0/0",
+  "crossSiteFormPost:3/6:2/3/1/0/1/1",
+  "crossSiteLink:3/6:0/0/3/0/0/0",
+  "directNavigation:3/6:0/0/3/0/0/0",
+  "legacyPost:3/6:2/3/1/0/1/1",
+  "publicImage:3/6:0/0/3/0/0/0",
+  "sameOriginPost:3/6:0/0/3/1/3/0",
+  "sameSitePostNoToken:3/6:1/0/3/1/2/2",
+  "signedWebhook:3/6:0/0/3/0/3/0"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "metadata alone allows same-site write without token:1/1",
+  "metadata gate allows direct navigation:1/1",
+  "metadata gate allows public image:1/1",
+  "metadata gate allows user top-level link:1/1",
+  "metadata gate blocks cross-site API read:1/1",
+  "metadata gate blocks cross-site form POST:1/1",
+  "metadata gate blocks missing headers on browser endpoint:1/1",
+  "report-only cross-site form reaches cookie-only write:1/1",
+  "same-origin token-bearing write succeeds:1/1",
+  "signed webhook bypasses browser metadata requirement:1/1",
+  "subresource omits Sec-Fetch-User:1/1",
+  "token layer blocks same-site write without token:1/1",
+  "user activation emits Sec-Fetch-User ?1:1/1"
+];
 
-console.log(lab.headersFor(lab.requests.crossSiteFormPost));
-console.log(lab.evaluate({}).summary);
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function summaryShape(summary) {
+  return EXPECTED_DEFAULT_SUMMARY_SHAPE.map((entry) => {
+    const key = entry.split(":")[0];
+    return `${key}:${summary[key]}`;
+  });
+}
+
+const defaultHeaders = lab.headersFor(lab.requests.crossSiteFormPost);
+const defaultSummary = lab.evaluate({}).summary;
+console.log(defaultHeaders);
+console.log(defaultSummary);
 const audit = lab.auditFetchMetadataLab();
 console.table(audit.byDefense);
 console.table(audit.byRequest);
 console.table(audit.criticalChecks);
 const auditShape = {
-  criticalChecks: audit.criticalTotal,
-  rows: audit.cases.length,
-  checked: audit.checked,
-  totalChecks: audit.totalChecks
+  defaultHeaders: defaultHeaders.map(([name, value]) => `${name}:${value}`),
+  defaultSummary: summaryShape(defaultSummary),
+  totals: {
+    criticalChecks: audit.criticalTotal,
+    rows: audit.cases.length,
+    checked: audit.checked,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  },
+  byDefense: audit.byDefense.map((row) => (
+    `${row.defense}:${row.cases}/${row.totalChecks}:` +
+    `${row.blocked}/${row.metadataWouldBlock}/${row.appReached}/` +
+    `${row.tokenChecked}/${row.stateChanged}/${row.risk}`
+  )),
+  byRequest: audit.byRequest.map((row) => (
+    `${row.request}:${row.cases}/${row.totalChecks}:` +
+    `${row.blocked}/${row.metadataWouldBlock}/${row.appReached}/` +
+    `${row.tokenChecked}/${row.stateChanged}/${row.risk}`
+  )),
+  criticalChecks: audit.criticalChecks.map(
+    (row) => `${row.check}:${row.passedChecks}/${row.totalChecks}`
+  ).sort()
 };
-if (
-  auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
-  auditShape.rows !== EXPECTED_CASES ||
-  auditShape.checked !== EXPECTED_CHECKS ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
-) {
-  throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
+const shapeErrors = [
+  sameJson(auditShape.defaultHeaders, EXPECTED_DEFAULT_HEADERS) ? null : "defaultHeaders",
+  sameJson(auditShape.defaultSummary, EXPECTED_DEFAULT_SUMMARY_SHAPE) ? null : "defaultSummary",
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(auditShape.byDefense, EXPECTED_BY_DEFENSE_SHAPE) ? null : "byDefense",
+  sameJson(auditShape.byRequest, EXPECTED_BY_REQUEST_SHAPE) ? null : "byRequest",
+  sameJson(auditShape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `audit grid drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -361,7 +452,9 @@ if (!audit.ok || failedCriticalChecks.length || failedCases.length || audit.pass
   throw new Error(JSON.stringify({
     errors: audit.errors,
     failedCriticalChecks,
-    failedCases
+    failedCases,
+    shapeErrors,
+    auditShape
   }, null, 2));
 }
 console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
