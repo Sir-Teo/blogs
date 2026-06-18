@@ -290,16 +290,41 @@ You can reproduce the audit from Node:
 
 ```js
 const lab = require("./assets/js/mvcc-vacuum-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_SCENARIO_ROWS = 4;
+const EXPECTED_COMPARISONS = 1;
+const EXPECTED_CHECKS = 27;
 
 const audit = lab.auditMvccVacuumLab();
-if (!audit.ok || audit.passed !== 5 || audit.total !== 5 ||
-    audit.passedChecks !== 27 || audit.totalChecks !== 27) {
+const auditShape = {
+  scenarioRows: audit.cases.length,
+  comparisons: audit.comparisons.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+if (
+  auditShape.scenarioRows !== EXPECTED_SCENARIO_ROWS ||
+  auditShape.comparisons !== EXPECTED_COMPARISONS ||
+  auditShape.total !== EXPECTED_CASES ||
+  auditShape.totalChecks !== EXPECTED_CHECKS
+) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedComparisons = audit.comparisons.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCases.length || failedComparisons.length ||
+    audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
-    passed: audit.passed,
-    passedChecks: audit.passedChecks,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    failedCases,
+    failedComparisons,
+    auditShape
   }, null, 2));
 }
 
