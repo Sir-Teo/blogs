@@ -282,6 +282,8 @@ The simulator exports a small Node-testable API:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/oauth-pkce-lab.js");
+const EXPECTED_CASES = 27;
+const EXPECTED_CHECKS = 216;
 
 console.log(lab.challengeFor(
   "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
@@ -289,6 +291,9 @@ console.log(lab.challengeFor(
 ));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditOauthPkceLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byProof);
 console.table(audit.cases.map((row) => ({
   proof: row.proof,
@@ -302,14 +307,27 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.total !== 27 || audit.totalChecks !== 216) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} policy cases and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
 console.log(summary);
 NODE
