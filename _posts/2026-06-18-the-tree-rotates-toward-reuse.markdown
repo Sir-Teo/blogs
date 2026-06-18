@@ -332,7 +332,7 @@ plus rotations is not a full CPU model, but it keeps the rotation bill visible.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/splay-tree-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/splay-tree-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## The Default Run
 
@@ -393,13 +393,17 @@ The audit checks that:
 
 - inorder traversal remains exactly `1..n`;
 - the root has no parent pointer;
+- parent pointers agree with child links;
 - every accessed key is found;
 - every accessed key becomes the root after access;
+- rolling averages remain finite;
 - rotations are nonnegative;
+- the fixed balanced baseline stays within its comparison bound;
 - a repeated access costs one comparison and zero rotations.
 
 Those checks do not prove the theorem. They make the visualization less likely
-to be a decorative lie.
+to be a decorative lie. The exported sweep reports 51 named checks: ten
+invariants across each trace, plus one scan-specific generation check.
 
 To reproduce the deterministic audit cases from the repository root:
 
@@ -414,11 +418,15 @@ console.table(audit.cases.map((row) => ({
   splayAvg: row.splayAveragePrimitive.toFixed(2),
   balancedAvg: row.balancedAverageSearch.toFixed(2),
   rotations: row.splayAverageRotations.toFixed(2),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 
