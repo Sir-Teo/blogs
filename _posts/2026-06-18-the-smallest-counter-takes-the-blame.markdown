@@ -324,14 +324,31 @@ That makes the no-miss certificate visible on first load.
 
 The audit is part of the artifact, not just a visual sanity check:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/space-saving-lab.js");
 const audit = lab.auditSpaceSavingLab();
-if (!audit.passed) throw new Error(JSON.stringify(audit.details));
-console.log(audit.details.length + " scenarios passed");
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  events: row.events,
+  vocabulary: row.vocabulary,
+  counters: row.counters,
+  minCount: row.minCount,
+  threshold: row.thresholdCount,
+  trueHeavy: row.trueHeavy,
+  reported: row.reported,
+  noMiss: row.noMissCondition,
+  passed: row.passed
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit scenarios passed`);
+}
+console.log(`${audit.passed}/${audit.total} scenarios passed`);
+NODE
 ```
 
-The checks cover several parameter settings. They assert that:
+The checks cover five parameter settings plus a fixed-seed replay. They assert
+that:
 
 - the sum of stored counters equals the stream length;
 - every monitored item's exact count lies in its stored interval;

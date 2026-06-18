@@ -308,6 +308,18 @@
     };
   }
 
+  function failedAuditChecks(audit) {
+    return [
+      { name: "counter-total", ok: audit.counterTotalOk },
+      { name: "monitored-intervals", ok: audit.monitoredOk },
+      { name: "unmonitored-min-bound", ok: audit.unmonitoredOk },
+      { name: "threshold-no-miss", ok: audit.noMissOk },
+      { name: "guaranteed-threshold", ok: audit.guaranteedOk },
+      { name: "minimum-n-over-k", ok: audit.minBoundOk },
+      { name: "top-k-range", ok: audit.topKBounded }
+    ].filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
   function evaluate(raw) {
     var data = generate(raw);
     var exactRows = rankItems(data.exact);
@@ -367,14 +379,21 @@
       { events: 25000, vocabulary: 500, skew: 85, counters: 24, threshold: 12, drift: 100, seed: 7 },
       { events: 70000, vocabulary: 2500, skew: 125, counters: 48, threshold: 8, drift: 35, seed: 211 }
     ];
-    var details = scenarios.map(function (params) {
+    var cases = scenarios.map(function (params, index) {
       var result = evaluate(params);
+      var failedChecks = failedAuditChecks(result.audit);
       return {
-        audit: result.audit,
         counters: result.params.counters,
         events: result.params.events,
+        failedChecks: failedChecks,
         minCount: result.minCount,
-        threshold: result.threshold
+        noMissCondition: result.threshold.noMissCondition,
+        passed: result.audit.passed,
+        reported: result.threshold.reported,
+        scenario: index === 0 ? "default" : "stress-" + index,
+        thresholdCount: result.thresholdCount,
+        trueHeavy: result.threshold.trueHeavy,
+        vocabulary: result.params.vocabulary
       };
     });
     var deterministicA = evaluate(DEFAULTS);
@@ -384,10 +403,27 @@
       deterministicA.query.lower === deterministicB.query.lower &&
       deterministicA.query.upper === deterministicB.query.upper &&
       deterministicA.threshold.reported === deterministicB.threshold.reported;
+    cases.push({
+      counters: deterministicA.params.counters,
+      events: deterministicA.params.events,
+      failedChecks: deterministic ? [] : ["fixed-seed-replay"],
+      minCount: deterministicA.minCount,
+      noMissCondition: deterministicA.threshold.noMissCondition,
+      passed: deterministic,
+      reported: deterministicA.threshold.reported,
+      scenario: "fixed-seed-replay",
+      thresholdCount: deterministicA.thresholdCount,
+      trueHeavy: deterministicA.threshold.trueHeavy,
+      vocabulary: deterministicA.params.vocabulary
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
     return {
-      details: details,
+      cases: cases,
+      details: cases,
       deterministic: deterministic,
-      passed: deterministic && details.every(function (row) { return row.audit.passed; })
+      ok: passed === cases.length,
+      passed: passed,
+      total: cases.length
     };
   }
 
