@@ -417,6 +417,24 @@ deterministic Monte Carlo cases. From the repository root:
 node - <<'NODE'
 const lab = require("./assets/js/fisher-information-lab.js");
 const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (audit.total !== 5 || audit.totalChecks !== 35) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
 console.table(audit.cases.map((row) => ({
   model: row.model,
   n: row.sampleSize,
@@ -428,11 +446,6 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-const summary =
-  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
-}
 console.log(summary);
 NODE
 ```
