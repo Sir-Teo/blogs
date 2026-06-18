@@ -428,53 +428,119 @@
 
   function auditCspScriptLab() {
     var errors = [];
+    var criticalChecks = [];
+    var cases = [];
     var checked = 0;
 
-    function check(condition, label) {
+    function record(condition, label) {
       checked += 1;
       if (!condition) errors.push(label);
+      return !!condition;
     }
 
-    check(hashSourceFor("abc") === "'sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0='", "SHA-256 base64 test vector");
+    function addCritical(label, condition) {
+      criticalChecks.push({
+        check: label,
+        passed: record(condition, label)
+      });
+    }
+
+    addCritical("SHA-256 base64 test vector", hashSourceFor("abc") === "'sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0='");
 
     var strictCdn = evaluate({ policy: "nonceStrictDynamic", scenario: "cdnCompromise" });
-    check(strictCdn.summary.attackerExecuted === 0, "strict-dynamic blocks parser-inserted CDN attacker");
-    check(strictCdn.summary.parserInsertedBlockedByStrict === 1, "strict-dynamic records parser-inserted block");
+    addCritical("strict-dynamic blocks parser-inserted CDN attacker", strictCdn.summary.attackerExecuted === 0);
+    addCritical("strict-dynamic records parser-inserted block", strictCdn.summary.parserInsertedBlockedByStrict === 1);
 
     var hostCdn = evaluate({ policy: "hostAllowlist", scenario: "cdnCompromise" });
-    check(hostCdn.summary.attackerExecuted === 1, "host allowlist admits compromised CDN script");
+    addCritical("host allowlist admits compromised CDN script", hostCdn.summary.attackerExecuted === 1);
 
     var strictDynamic = evaluate({ policy: "nonceStrictDynamic", scenario: "dynamicDependency" });
-    check(strictDynamic.summary.dynamicLoaded === 1, "strict-dynamic allows trusted runtime dependency");
-    check(strictDynamic.summary.attackerExecuted === 0, "strict-dynamic dependency scenario stays non-attacker");
+    addCritical("strict-dynamic allows trusted runtime dependency", strictDynamic.summary.dynamicLoaded === 1);
+    addCritical("strict-dynamic dependency scenario stays non-attacker", strictDynamic.summary.attackerExecuted === 0);
 
     var nonceOnly = evaluate({ policy: "nonceOnly", scenario: "dynamicDependency" });
-    check(nonceOnly.summary.dynamicLoaded === 0, "nonce-only blocks un-nonced runtime dependency");
+    addCritical("nonce-only blocks un-nonced runtime dependency", nonceOnly.summary.dynamicLoaded === 0);
 
     var unsafe = evaluate({ policy: "unsafeInline", scenario: "inlineInjection" });
-    check(unsafe.summary.attackerExecuted === 2, "unsafe-inline admits inline block and event handler");
+    addCritical("unsafe-inline admits inline block and event handler", unsafe.summary.attackerExecuted === 2);
 
     var hashPolicy = evaluate({ policy: "hashAndSelf", scenario: "inlineInjection" });
-    check(hashPolicy.timeline.some(function (event) {
+    addCritical("hash policy admits exact inline config", hashPolicy.timeline.some(function (event) {
       return event.script.id === "config" && event.allowed && event.reason === "inline hash matched";
-    }), "hash policy admits exact inline config");
-    check(hashPolicy.summary.attackerExecuted === 0, "hash policy blocks injected inline attacker");
+    }));
+    addCritical("hash policy blocks injected inline attacker", hashPolicy.summary.attackerExecuted === 0);
 
     var tainted = evaluate({ policy: "nonceStrictDynamic", scenario: "untrustedLoader" });
-    check(tainted.summary.attackerExecuted === 1, "strict-dynamic propagates to tainted runtime URL");
-    check(tainted.summary.loaderHazards === 1, "tainted runtime URL is surfaced as a hazard");
+    addCritical("strict-dynamic propagates to tainted runtime URL", tainted.summary.attackerExecuted === 1);
+    addCritical("tainted runtime URL is surfaced as a hazard", tainted.summary.loaderHazards === 1);
 
     Object.keys(POLICY_DEFS).forEach(function (policy) {
       Object.keys(SCENARIO_DEFS).forEach(function (scenario) {
         var result = evaluate({ policy: policy, scenario: scenario });
-        check(result.summary.executed + result.summary.blocked === result.summary.scripts, policy + "/" + scenario + " partitions outcomes");
+        var label = policy + "/" + scenario + " partitions outcomes";
+        var failedChecks = [];
+        var partitions = result.summary.executed + result.summary.blocked === result.summary.scripts;
+        if (!record(partitions, label)) failedChecks.push(label);
+        cases.push({
+          attackerExecuted: result.summary.attackerExecuted,
+          blocked: result.summary.blocked,
+          dynamicLoaded: result.summary.dynamicLoaded,
+          eventHandlersBlocked: result.summary.eventHandlersBlocked,
+          executed: result.summary.executed,
+          failedChecks: failedChecks,
+          loaderHazards: result.summary.loaderHazards,
+          parserInsertedBlockedByStrict: result.summary.parserInsertedBlockedByStrict,
+          passed: failedChecks.length === 0,
+          policy: policy,
+          scenario: scenario,
+          scripts: result.summary.scripts
+        });
       });
     });
 
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = row[groupBy];
+        if (!groups[key]) {
+          groups[key] = {
+            attackerExecuted: 0,
+            blocked: 0,
+            cases: 0,
+            dynamicLoaded: 0,
+            loaderHazards: 0,
+            parserInsertedBlockedByStrict: 0,
+            passed: 0,
+            scripts: 0
+          };
+          groups[key][groupBy] = key;
+        }
+        groups[key].attackerExecuted += row.attackerExecuted;
+        groups[key].blocked += row.blocked;
+        groups[key].cases += 1;
+        groups[key].dynamicLoaded += row.dynamicLoaded;
+        groups[key].loaderHazards += row.loaderHazards;
+        groups[key].parserInsertedBlockedByStrict += row.parserInsertedBlockedByStrict;
+        groups[key].scripts += row.scripts;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort().map(function (key) {
+        return groups[key];
+      });
+    }
+
+    var passed = checked - errors.length;
+
     return {
+      byPolicy: summarize("policy"),
+      byScenario: summarize("scenario"),
+      cases: cases,
       ok: errors.length === 0,
       checked: checked,
-      errors: errors
+      criticalChecks: criticalChecks,
+      errors: errors,
+      passed: passed,
+      total: checked
     };
   }
 

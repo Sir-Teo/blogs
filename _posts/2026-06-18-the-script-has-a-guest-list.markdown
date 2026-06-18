@@ -281,20 +281,30 @@ model doing exactly what the policy asked.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/csp-script-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/csp-script-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Reproducing The Model
 
 The artifact is a plain JavaScript module:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/csp-script-lab.js");
 
 console.log(lab.hashSourceFor("abc"));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditCspScriptLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.errors));
-console.log(audit.checked + " checks passed");
+console.table(audit.byPolicy);
+console.table(audit.byScenario);
+console.table(audit.criticalChecks);
+if (audit.checked !== 32) {
+  throw new Error("unexpected check count: " + audit.checked);
+}
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} checks passed`);
+NODE
 ```
 
 The hash line prints the CSP-style SHA-256 source expression for `abc`:
