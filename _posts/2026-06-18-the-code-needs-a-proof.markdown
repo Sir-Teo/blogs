@@ -273,13 +273,14 @@ seeing the challenge still does not reveal the verifier.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/oauth-pkce-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/oauth-pkce-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## Reproducing The Artifact
 
 The simulator exports a small Node-testable API:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/oauth-pkce-lab.js");
 
 console.log(lab.challengeFor(
@@ -288,8 +289,23 @@ console.log(lab.challengeFor(
 ));
 console.log(lab.evaluate({}).summary);
 const audit = lab.auditOauthPkceLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
-console.log(audit.checked + " checks passed");
+console.table(audit.byProof);
+console.table(audit.cases.map((row) => ({
+  proof: row.proof,
+  attacker: row.attacker,
+  server: row.server,
+  bound: row.codeBound,
+  attackerToken: row.attackerToken,
+  clientToken: row.clientToken,
+  injectedToken: row.injectedToken,
+  blocked: row.blocked,
+  passed: row.passed
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} policy cases passed`);
+NODE
 ```
 
 The S256 line prints the RFC 7636 Appendix B value:

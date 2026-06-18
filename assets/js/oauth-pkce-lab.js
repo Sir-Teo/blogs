@@ -380,18 +380,56 @@
   }
 
   function auditOauthPkceLab() {
-    var failures = [];
-    var checked = 0;
+    var cases = [];
     Object.keys(PROOFS).forEach(function (proof) {
       Object.keys(ATTACKERS).forEach(function (attacker) {
         Object.keys(SERVERS).forEach(function (server) {
           var result = evaluate({ proof: proof, attacker: attacker, server: server });
-          checked += 1;
-          if (!result.audit.ok) failures.push({ proof: proof, attacker: attacker, server: server, issues: result.audit.issues });
+          cases.push({
+            attacker: attacker,
+            attackerToken: result.summary.attackerToken,
+            authCodeIssued: result.summary.authCodeIssued,
+            blocked: result.summary.blocked,
+            clientToken: result.summary.clientToken,
+            codeBound: result.summary.codeBound,
+            failedChecks: result.audit.issues,
+            injectedToken: result.summary.injectedToken,
+            passed: result.audit.ok,
+            proof: proof,
+            server: server
+          });
         });
       });
     });
-    return { ok: failures.length === 0, checked: checked, failures: failures };
+    var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        attacker: row.attacker,
+        issues: row.failedChecks,
+        proof: row.proof,
+        server: row.server
+      };
+    });
+    var byProof = Object.keys(PROOFS).map(function (proof) {
+      var rows = cases.filter(function (row) { return row.proof === proof; });
+      return {
+        attackerTokens: rows.reduce(function (sum, row) { return sum + row.attackerToken; }, 0),
+        cases: rows.length,
+        clientTokens: rows.reduce(function (sum, row) { return sum + row.clientToken; }, 0),
+        injectedTokens: rows.reduce(function (sum, row) { return sum + row.injectedToken; }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        proof: proof
+      };
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    return {
+      byProof: byProof,
+      cases: cases,
+      checked: cases.length,
+      failures: failures,
+      ok: failures.length === 0,
+      passed: passed,
+      total: cases.length
+    };
   }
 
   function setText(root, name, value) {
