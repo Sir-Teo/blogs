@@ -378,7 +378,7 @@ language.
   <p class="fisher-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/fisher-information-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/fisher-information-lab.js?v=20260618c' | relative_url }}"></script>
 
 ## What the Lab Measures
 
@@ -409,7 +409,9 @@ because for the normal mean the score is a scaled version of the sample mean.
 
 ## Reproducibility Check
 
-The browser lab is backed by a CommonJS module. From the repository root:
+The browser lab is backed by a CommonJS module. The sweep reports 35 named
+checks: seven information, score, bias, and likelihood invariants across five
+deterministic Monte Carlo cases. From the repository root:
 
 ```bash
 node - <<'NODE'
@@ -423,11 +425,15 @@ console.table(audit.cases.map((row) => ({
   empiricalVariance: row.estimateVariance.toFixed(6),
   varianceRatio: row.varianceRatio.toFixed(3),
   scoreRatio: row.scoreRatio.toFixed(3),
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+const summary =
+  `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
 }
+console.log(summary);
 NODE
 ```
 

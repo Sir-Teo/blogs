@@ -219,12 +219,37 @@
         scoreRatio: result.scoreRatio,
         bias: result.estimateBias,
         passed: result.audit.passed,
+        checks: result.audit.checks.map(function (check) {
+          return {
+            name: check.name,
+            ok: check.passed
+          };
+        }),
+        passedChecks: result.audit.checks.filter(function (check) { return check.passed; }).length,
+        totalChecks: result.audit.checks.length,
         failedChecks: result.audit.checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; })
       };
     });
+    var passedCases = cases.filter(function (row) { return row.passed; }).length;
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var errors = [];
+    cases.forEach(function (row) {
+      row.failedChecks.forEach(function (check) {
+        errors.push("case " + row.caseId + ": " + check);
+      });
+    });
     return {
+      ok: passedCases === cases.length && passedChecks === totalChecks,
       cases: cases,
-      passed: cases.filter(function (row) { return row.passed; }).length,
+      errors: errors,
+      passed: passedCases,
+      passedChecks: passedChecks,
+      totalChecks: totalChecks,
       total: cases.length
     };
   }
