@@ -225,29 +225,66 @@
   }
 
   function auditSecretaryStoppingLab() {
+    var exactCases = [];
     [5, 6, 7].forEach(function (n) {
       for (var cutoff = 1; cutoff <= n; cutoff += 1) {
         var exact = exactSuccess(n, cutoff);
         var brute = bruteForceSuccess(n, cutoff);
-        assert(Math.abs(exact - brute) < 1e-12, "exact formula mismatch n=" + n + " cutoff=" + cutoff);
+        var exactPassed = Math.abs(exact - brute) < 1e-12;
+        exactCases.push({
+          brute: Number(brute.toFixed(12)),
+          cutoff: cutoff,
+          difference: Math.abs(exact - brute),
+          exact: Number(exact.toFixed(12)),
+          n: n,
+          passed: exactPassed
+        });
+        assert(exactPassed, "exact formula mismatch n=" + n + " cutoff=" + cutoff);
       }
     });
+    var dpCases = [];
     [12, 25, 80, 150].forEach(function (n) {
       var curve = cutoffCurve(n);
       var dp = dynamicProgram(n);
-      assert(dp.firstAccept === curve.best.cutoff, "DP threshold mismatch n=" + n);
-      assert(Math.abs(dp.value[1] - curve.best.probability) < 1e-12, "DP value mismatch n=" + n);
+      var cutoffPassed = dp.firstAccept === curve.best.cutoff;
+      var valueDiff = Math.abs(dp.value[1] - curve.best.probability);
+      var valuePassed = valueDiff < 1e-12;
+      dpCases.push({
+        bestCutoff: curve.best.cutoff,
+        bestProbability: Number(curve.best.probability.toFixed(12)),
+        dpFirstAccept: dp.firstAccept,
+        dpValue: Number(dp.value[1].toFixed(12)),
+        n: n,
+        passed: cutoffPassed && valuePassed,
+        valueDifference: valueDiff
+      });
+      assert(cutoffPassed, "DP threshold mismatch n=" + n);
+      assert(valuePassed, "DP value mismatch n=" + n);
     });
     var base = evaluate(DEFAULTS);
-    assert(base.audit.cutoffInRange, "cutoff range");
-    assert(base.audit.curveBounded, "curve bounded");
-    assert(base.audit.formulaFinite, "formula finite");
-    assert(base.audit.simulationClose, "simulation close");
+    var defaultChecks = [
+      { name: "cutoff range", passed: base.audit.cutoffInRange },
+      { name: "curve bounded", passed: base.audit.curveBounded },
+      { name: "formula finite", passed: base.audit.formulaFinite },
+      { name: "simulation close", passed: base.audit.simulationClose }
+    ];
+    defaultChecks.forEach(function (row) {
+      assert(row.passed, row.name);
+    });
+    var passed = exactCases.filter(function (row) { return row.passed; }).length
+      + dpCases.filter(function (row) { return row.passed; }).length
+      + defaultChecks.filter(function (row) { return row.passed; }).length;
+    var total = exactCases.length + dpCases.length + defaultChecks.length;
     return {
+      defaultChecks: defaultChecks,
+      dpCases: dpCases,
       exactAtCutoff: Number(base.selectedExact.toFixed(4)),
-      ok: true,
+      exactCases: exactCases,
+      ok: passed === total,
       optimalCutoff: base.curve.best.cutoff,
-      optimalProbability: Number(base.curve.best.probability.toFixed(4))
+      optimalProbability: Number(base.curve.best.probability.toFixed(4)),
+      passed: passed,
+      total: total
     };
   }
 

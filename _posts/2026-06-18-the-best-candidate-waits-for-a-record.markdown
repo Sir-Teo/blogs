@@ -257,7 +257,7 @@ The lab computes:
   <p class="secretary-lab__note">The candidates are represented only by random ranks. The model does not include measurement noise, interviews with costs, multiple hires, actual score values, recall, fairness constraints, or strategic behavior.</p>
 </div>
 
-<script defer src="{{ '/assets/js/secretary-stopping-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/secretary-stopping-lab.js?v=20260618b' | relative_url }}"></script>
 
 For `n = 80`, the exact optimum is to reject 29 candidates and make candidate
 30 the first eligible record. The exact success probability is about `0.3719`.
@@ -276,16 +276,44 @@ checks that the DP cutoff and value equal the exact finite optimum
 ```
 
 It also runs the default seeded simulation and checks that the simulated success
-rate is within a small tolerance of the exact probability. The current default
-audit reports:
+rate is within a small tolerance of the exact probability. Ignoring the returned
+case rows, the current top-level audit reports:
 
 ```json
 {
   "exactAtCutoff": 0.3719,
   "ok": true,
   "optimalCutoff": 30,
-  "optimalProbability": 0.3719
+  "optimalProbability": 0.3719,
+  "passed": 26,
+  "total": 26
 }
+```
+
+The compact reproduction check is:
+
+```js
+const lab = require("./assets/js/secretary-stopping-lab.js");
+
+const audit = lab.auditSecretaryStoppingLab();
+const failed = audit.exactCases.filter((row) => !row.passed)
+  .concat(audit.dpCases.filter((row) => !row.passed))
+  .concat(audit.defaultChecks.filter((row) => !row.passed));
+if (failed.length || !audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total
+  }, null, 2));
+}
+
+console.table(audit.dpCases.map((row) => ({
+  n: row.n,
+  bestCutoff: row.bestCutoff,
+  dpFirstAccept: row.dpFirstAccept,
+  bestProbability: row.bestProbability.toFixed(4),
+  valueDifference: row.valueDifference
+})));
 ```
 
 That simulation tolerance is not the theorem. It is only a smoke test that the
