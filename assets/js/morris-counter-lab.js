@@ -266,15 +266,40 @@
   }
 
   function runAudit() {
+    function auditCheck(name, passed) {
+      return {
+        name: name,
+        passed: Boolean(passed)
+      };
+    }
+
+    function failedNames(checks) {
+      return checks.filter(function (check) { return !check.passed; }).map(function (check) { return check.name; });
+    }
+
+    function passedCount(checks) {
+      return checks.filter(function (check) { return check.passed; }).length;
+    }
+
     var exact = [0, 1, 2, 8, 35, 60].map(function (events) {
       var precision = 30;
       var actual = exactSmallDistribution(events, precision);
       var expected = theoretical(events, precision, 1);
+      var meanOk = Math.abs(actual.mean - events) < 1e-9;
+      var varianceOk = Math.abs(actual.variance - expected.variance) < 1e-7;
+      var checks = [
+        auditCheck("exact expectation equals count", meanOk),
+        auditCheck("exact variance matches formula", varianceOk)
+      ];
       return {
+        checks: checks,
         events: events,
-        meanOk: Math.abs(actual.mean - events) < 1e-9,
-        varianceOk: Math.abs(actual.variance - expected.variance) < 1e-7,
-        passed: Math.abs(actual.mean - events) < 1e-9 && Math.abs(actual.variance - expected.variance) < 1e-7
+        failedChecks: failedNames(checks),
+        meanOk: meanOk,
+        passed: checks.every(function (check) { return check.passed; }),
+        passedChecks: passedCount(checks),
+        totalChecks: checks.length,
+        varianceOk: varianceOk
       };
     });
     var scenarios = [
@@ -292,25 +317,45 @@
       })) === JSON.stringify(result.dist.rows.slice(0, 3).map(function (row) {
         return Math.round(row.estimate);
       }));
+      var checks = [
+        auditCheck("seeded replay is deterministic", deterministic),
+        auditCheck("empirical mean is inside standard-error envelope", meanOk),
+        auditCheck("saturation is either absent or explicitly near capacity", noBadSaturation)
+      ];
       return {
+        checks: checks,
         deterministic: deterministic,
         events: result.params.events,
+        failedChecks: failedNames(checks),
         meanOk: meanOk,
         noBadSaturation: noBadSaturation,
         observedMean: result.dist.summary.mean,
-        passed: meanOk && noBadSaturation && deterministic,
+        passed: checks.every(function (check) { return check.passed; }),
+        passedChecks: passedCount(checks),
         saturatedTrials: result.dist.saturatedTrials,
+        totalChecks: checks.length,
         theoreticalMean: result.theory.mean
       };
     });
     var passed = exact.filter(function (row) { return row.passed; }).length +
       scenarios.filter(function (row) { return row.passed; }).length;
     var total = exact.length + scenarios.length;
+    var passedChecks = exact.concat(scenarios).reduce(function (sum, row) { return sum + row.passedChecks; }, 0);
+    var totalChecks = exact.concat(scenarios).reduce(function (sum, row) { return sum + row.totalChecks; }, 0);
+    var failures = exact.concat(scenarios).filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        events: row.events,
+        failedChecks: row.failedChecks
+      };
+    });
     return {
       exact: exact,
-      ok: passed === total,
+      failures: failures,
+      ok: passed === total && passedChecks === totalChecks,
       passed: passed,
+      passedChecks: passedChecks,
       total: total,
+      totalChecks: totalChecks,
       scenarios: scenarios
     };
   }

@@ -299,31 +299,46 @@ The controls expose the main engineering tradeoffs:
   <p class="morris-counter-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/morris-counter-lab.js?v=20260618b' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/morris-counter-lab.js?v=20260618c' | relative_url }}"></script>
 
 The artifact includes exact checks for small counts and seeded Monte Carlo
-checks for larger counts:
+checks for larger counts: 10 audit cases and 24 named checks.
 
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/morris-counter-lab.js");
 const audit = lab.auditMorrisCounterLab();
+console.table(audit.exact.map((row) => ({
+  events: row.events,
+  meanOk: row.meanOk,
+  varianceOk: row.varianceOk,
+  checks: `${row.passedChecks}/${row.totalChecks}`
+})));
 console.table(audit.scenarios.map((row) => ({
   events: row.events,
   theoretical: row.theoreticalMean,
   observed: row.observedMean.toFixed(1),
   saturatedTrials: row.saturatedTrials,
   deterministic: row.deterministic,
-  passed: row.passed
+  checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (!audit.ok || audit.passed !== audit.total) {
-  throw new Error(`${audit.passed}/${audit.total} audit cases passed`);
+if (
+  !audit.ok ||
+  audit.passed !== 10 ||
+  audit.total !== 10 ||
+  audit.passedChecks !== 24 ||
+  audit.totalChecks !== 24
+) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} checks passed`);
+console.log(
+  `${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`
+);
 NODE
 ```
 
-Those checks verify:
+Those named checks verify:
 
 - the dynamic-programmed expectation matches the true count for small $$N$$;
 - the dynamic-programmed variance matches $$N(N-1)/(2a)$$;
