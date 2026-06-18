@@ -379,6 +379,37 @@ const EXPECTED_CRITICAL_CHECKS = 1;
 const EXPECTED_ROWS = 6;
 const EXPECTED_CASES = 7;
 const EXPECTED_CHECKS = 30;
+const EXPECTED_TOTALS = {
+  criticalChecks: EXPECTED_CRITICAL_CHECKS,
+  rows: EXPECTED_ROWS,
+  passed: EXPECTED_CASES,
+  total: EXPECTED_CASES,
+  passedChecks: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS,
+  hkdfVectorOk: true
+};
+const EXPECTED_SCENARIO_SHAPE = [
+  "certificate:5/5:1",
+  "clean:8/8:2",
+  "extension:5/5:1",
+  "hello:6/6:1",
+  "secret:5/5:1"
+];
+const EXPECTED_ROW_SHAPE = [
+  "clean:4/4:match:match:match:ok:ok",
+  "hello:6/6:split:split:match:fail:fail",
+  "extension:5/5:match:match:match:fail:fail",
+  "certificate:5/5:match:match:match:fail:fail",
+  "secret:5/5:match:split:split:ok:fail",
+  "clean:4/4:match:match:match:ok:ok"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "RFC 5869 HKDF test vector:1/1"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 (async () => {
   const audit = await lab.auditGrid();
@@ -391,18 +422,44 @@ const EXPECTED_CHECKS = 30;
   console.table(audit.byScenario);
   console.table(audit.criticalChecks);
   const auditShape = {
-    criticalChecks: audit.criticalTotal,
-    rows: audit.rows.length,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    totals: {
+      criticalChecks: audit.criticalTotal,
+      rows: audit.rows.length,
+      passed: audit.passed,
+      total: audit.total,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks,
+      hkdfVectorOk: audit.hkdfVectorOk
+    },
+    byScenario: audit.byScenario.map(
+      (row) => `${row.scenario}:${row.passedChecks}/${row.totalChecks}:${row.passed}`
+    ),
+    rows: audit.rows.map((row) => [
+      row.params.scenario,
+      `${row.passedChecks}/${row.totalChecks}`,
+      row.helloHashMatch ? "match" : "split",
+      row.trafficSecretMatch ? "match" : "split",
+      row.secretOnlyDemoMatch ? "match" : "split",
+      row.certificateVerifyOk ? "ok" : "fail",
+      row.finishedOk ? "ok" : "fail"
+    ].join(":")),
+    criticalChecks: audit.criticalChecks.map(
+      (row) => `${row.check}:${row.passedChecks}/${row.totalChecks}`
+    )
   };
-  if (
-    auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
-    auditShape.rows !== EXPECTED_ROWS ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS
-  ) {
-    throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
+  const shapeErrors = [
+    sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+    sameJson(auditShape.byScenario, EXPECTED_SCENARIO_SHAPE) ? null : "byScenario",
+    sameJson(auditShape.rows, EXPECTED_ROW_SHAPE) ? null : "rows",
+    sameJson(auditShape.criticalChecks, EXPECTED_CRITICAL_SHAPE)
+      ? null
+      : "criticalChecks"
+  ].filter(Boolean);
+  if (shapeErrors.length) {
+    throw new Error(
+      `audit grid drifted in ${shapeErrors.join(", ")}:\n` +
+      JSON.stringify(auditShape, null, 2)
+    );
   }
   if (
     failedRows.length ||
@@ -414,6 +471,8 @@ const EXPECTED_CHECKS = 30;
     throw new Error(JSON.stringify({
       failedRows,
       failedCriticalChecks,
+      shapeErrors,
+      auditShape,
       hkdfVectorOk: audit.hkdfVectorOk,
       passed: audit.passed,
       passedChecks: audit.passedChecks,
