@@ -352,15 +352,29 @@ not to pretend a few dozen lines of JavaScript is a tuned search engine.
   <p class="elias-fano-lab__note" data-note></p>
 </div>
 
-<script defer src="{{ '/assets/js/elias-fano-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/elias-fano-lab.js?v=20260618b' | relative_url }}"></script>
 
 The lab has a built-in audit:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/elias-fano-lab.js");
 const audit = lab.auditEliasFanoLab();
-if (!audit.passed) throw new Error(JSON.stringify(audit.details));
-console.log(audit.details.length + " scenarios passed");
+console.table(audit.cases.map((row) => ({
+  scenario: row.scenario,
+  universe: row.universe,
+  count: row.count,
+  l: row.l,
+  efBitsPerValue: row.bitsPerValue.toFixed(2),
+  varbyteBitsPerValue: row.varbyteBitsPerValue.toFixed(2),
+  targetOk: row.targetOk,
+  passed: row.passed
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit scenarios passed`);
+}
+console.log(`${audit.passed}/${audit.total} scenarios passed`);
+NODE
 ```
 
 The checks cover uniform, clustered, dense, and run-heavy lists. They assert

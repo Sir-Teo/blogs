@@ -341,6 +341,18 @@
     };
   }
 
+  function failedAuditChecks(audit, targetSweepOk) {
+    return [
+      { name: "decode", ok: audit.decodeOk },
+      { name: "monotone-input", ok: audit.monotone },
+      { name: "high-bit-positions", ok: audit.highBitsOk },
+      { name: "one-bit-count", ok: audit.onesOk },
+      { name: "access-query", ok: audit.queryOk },
+      { name: "next-geq-query", ok: audit.nextOk },
+      { name: "target-sweep", ok: targetSweepOk }
+    ].filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+  }
+
   function runAudit() {
     var scenarios = [
       {},
@@ -349,7 +361,7 @@
       { scenario: "dense", universe: 2048, count: 1200, locality: 55, target: 1200, queryRank: 1000, seed: 23 },
       { scenario: "runs", universe: 250000, count: 2200, locality: 80, target: 100000, queryRank: 128, seed: 71 }
     ];
-    var details = scenarios.map(function (params) {
+    var cases = scenarios.map(function (params, index) {
       var result = evaluate(params);
       var allTargetsOk = [0, 1, Math.floor(result.params.universe / 5), Math.floor(result.params.universe / 2), result.params.universe - 1, result.params.universe].every(function (target) {
         var idx = lowerBound(result.encoded, target);
@@ -362,17 +374,26 @@
         }
         return idx === expected;
       });
+      var passed = result.audit.passed && allTargetsOk;
       return {
-        audit: result.audit,
         bitsPerValue: result.encoded.count ? result.ledger.efBits / result.encoded.count : 0,
+        count: result.params.count,
+        failedChecks: failedAuditChecks(result.audit, allTargetsOk),
         l: result.encoded.l,
-        scenario: result.params.scenario,
-        targetOk: allTargetsOk
+        passed: passed,
+        scenario: index === 0 ? "default-" + result.params.scenario : result.params.scenario,
+        targetOk: allTargetsOk,
+        universe: result.params.universe,
+        varbyteBitsPerValue: result.encoded.count ? result.ledger.varbyteBits / result.encoded.count : 0
       };
     });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
     return {
-      details: details,
-      passed: details.every(function (row) { return row.audit.passed && row.targetOk; })
+      cases: cases,
+      details: cases,
+      ok: passed === cases.length,
+      passed: passed,
+      total: cases.length
     };
   }
 
