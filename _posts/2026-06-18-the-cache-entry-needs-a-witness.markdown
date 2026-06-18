@@ -313,7 +313,13 @@ Run it directly:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/http-cache-validator-lab.js");
+const EXPECTED_CASES = 108;
+const EXPECTED_CHECKS = 648;
+
 const audit = lab.auditHttpCacheLab();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 console.table(audit.byScenario.map((row) => ({
   scenario: row.scenario,
   cases: row.cases,
@@ -325,13 +331,28 @@ console.table(audit.byScenario.map((row) => ({
   maxBlockingSaved: row.maxBlockingSaved.toFixed(2),
   maxSwrErrors: row.maxSwrErrors
 })));
-if (audit.total !== 108 || audit.totalChecks !== 648) {
-  throw new Error(`unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`);
+if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
 }
-if (!audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.failures, null, 2));
+const summary =
+  `${audit.passed}/${audit.total} parameter cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(JSON.stringify({
+    failed,
+    passed: audit.passed,
+    total: audit.total,
+    passedChecks: audit.passedChecks,
+    totalChecks: audit.totalChecks
+  }, null, 2));
 }
-console.log(`${audit.passed}/${audit.total} parameter cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 NODE
 ```
 
