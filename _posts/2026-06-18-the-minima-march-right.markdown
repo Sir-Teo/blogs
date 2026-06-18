@@ -263,17 +263,60 @@ seven invariants across five generated Monge-like matrices.
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/smawk-monge-lab.js");
-const EXPECTED_CASES = 5;
-const EXPECTED_CHECKS = 35;
+const EXPECTED_CASE_SHAPE = [
+  "1:wide:28x84:tilt=18:seed=37:2352/236:90.0:0:7/7",
+  "2:staircase:40x92:tilt=-12:seed=19:3680/320:91.3:0:7/7",
+  "3:tall:76x38:tilt=25:seed=41:2888/373:87.1:0:7/7",
+  "4:jitter:44x88:tilt=0:seed=93:3872/294:92.4:0:7/7",
+  "5:tilted:34x72:tilt=48:seed=11:2448/230:90.6:0:7/7"
+];
+const EXPECTED_CHECK_NAMES = [
+  "SMAWK minima match brute force",
+  "brute row minima are nondecreasing",
+  "adjacent Monge inequalities hold",
+  "SMAWK touches fewer cells than brute force",
+  "all matrix values finite",
+  "one minimum per row",
+  "reduction never keeps more columns than rows at a level"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function checkNames(row) {
+  return row.checks.map((check) => check.name);
+}
+
+function caseShape(row) {
+  return `${row.caseId}:${row.scenario}:${row.rows}x${row.cols}:` +
+    `tilt=${row.tilt}:seed=${row.seed}:` +
+    `${row.bruteCells}/${row.smawkCells}:${row.savedPct.toFixed(1)}:` +
+    `${row.mongeViolations}:${row.passedChecks}/${row.totalChecks}`;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
-  );
+const shape = audit.cases.map(caseShape);
+const shapeErrors = [];
+if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
 }
+audit.cases.forEach((row) => {
+  const names = checkNames(row);
+  if (!sameList(names, EXPECTED_CHECK_NAMES)) {
+    shapeErrors.push({
+      name: `case ${row.caseId} check names`,
+      actual: names,
+      expected: EXPECTED_CHECK_NAMES
+    });
+  }
+});
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   rows: row.rows,
@@ -288,12 +331,26 @@ console.table(audit.cases.map((row) => ({
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   !audit.ok ||
+  audit.total !== EXPECTED_CASES ||
+  audit.totalChecks !== EXPECTED_CHECKS ||
   audit.passed !== audit.total ||
   audit.passedChecks !== audit.totalChecks
 ) {
-  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+  throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    failed,
+    errors: audit.errors,
+    totals: {
+      total: audit.total,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      totalChecks: audit.totalChecks
+    }
+  }, null, 2));
 }
 console.log(summary);
 NODE
