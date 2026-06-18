@@ -308,6 +308,9 @@ The simulator exports a Node-testable API:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/cross-origin-isolation-lab.js");
+const EXPECTED_CRITICAL_CHECKS = 17;
+const EXPECTED_CASES = 40;
+const EXPECTED_CHECKS = 137;
 
 console.log(lab.evaluate({}).summary);
 console.log(lab.evaluate({
@@ -325,15 +328,25 @@ const auditShape = {
   totalChecks: audit.totalChecks
 };
 if (
-  auditShape.criticalChecks !== 17 ||
-  auditShape.rows !== 40 ||
-  auditShape.checked !== 137 ||
-  auditShape.totalChecks !== 137
+  auditShape.criticalChecks !== EXPECTED_CRITICAL_CHECKS ||
+  auditShape.rows !== EXPECTED_CASES ||
+  auditShape.checked !== EXPECTED_CHECKS ||
+  auditShape.totalChecks !== EXPECTED_CHECKS
 ) {
   throw new Error("unexpected audit grid: " + JSON.stringify(auditShape));
 }
-if (!audit.ok || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(JSON.stringify(audit.errors, null, 2));
+const failedCriticalChecks = audit.criticalChecks.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCriticalChecks.length || failedCases.length || audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    errors: audit.errors,
+    failedCriticalChecks,
+    failedCases
+  }, null, 2));
 }
 console.log(`${audit.passedChecks}/${audit.totalChecks} checks passed`);
 NODE
