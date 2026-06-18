@@ -383,16 +383,48 @@ You can reproduce that sweep directly:
 
 ```js
 const lab = require("./assets/js/online-fdr-lab.js");
+const EXPECTED_HORIZONS = 2;
+const EXPECTED_SIGNAL_RATES = 3;
+const EXPECTED_ORDERS = 2;
+const EXPECTED_TARGETS = 2;
+const EXPECTED_NULL_CASES = 8;
+const EXPECTED_CASES = 24;
+const EXPECTED_CHECKS = 104;
 
 const audit = lab.auditOnlineFdrLab();
-if (!audit.ok || audit.passed !== 24 || audit.total !== 24 ||
-    audit.passedChecks !== 104 || audit.totalChecks !== 104) {
+const auditShape = {
+  horizons: new Set(audit.cases.map((row) => row.tests)).size,
+  signalRates: new Set(audit.cases.map((row) => row.signalRate)).size,
+  orders: new Set(audit.cases.map((row) => row.order)).size,
+  targets: new Set(audit.cases.map((row) => row.target)).size,
+  nullCases: audit.cases.filter((row) => row.signalRate === 0).length,
+  rows: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks,
+  maxNullLond: audit.maxNullLond
+};
+if (auditShape.horizons !== EXPECTED_HORIZONS ||
+    auditShape.signalRates !== EXPECTED_SIGNAL_RATES ||
+    auditShape.orders !== EXPECTED_ORDERS ||
+    auditShape.targets !== EXPECTED_TARGETS ||
+    auditShape.nullCases !== EXPECTED_NULL_CASES ||
+    auditShape.rows !== EXPECTED_CASES ||
+    auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+}
+
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     failures: audit.failures,
-    passed: audit.passed,
-    passedChecks: audit.passedChecks,
-    total: audit.total,
-    totalChecks: audit.totalChecks
+    failedCases,
+    auditShape
   }, null, 2));
 }
 
