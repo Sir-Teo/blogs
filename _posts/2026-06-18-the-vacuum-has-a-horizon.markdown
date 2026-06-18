@@ -269,7 +269,7 @@ policy. The point is the retention invariant.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/mvcc-vacuum-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/mvcc-vacuum-lab.js?v=20260618b' | relative_url }}"></script>
 
 At the default setting, there are `48` logical rows and `360` updates. The long
 reader starts at XID `74` and is still active at the end. Vacuum runs `15`
@@ -285,6 +285,47 @@ and the hottest key requires `44`.
 Turn **Snapshot hold** to `off` and the same update stream ends with `48`
 versions. Vacuum reclaims all `360` superseded versions. The writes did not
 change. The reader did.
+
+You can reproduce the audit from Node:
+
+```js
+const lab = require("./assets/js/mvcc-vacuum-lab.js");
+
+const audit = lab.auditMvccVacuumLab();
+const failedCases = audit.cases.filter((row) => !row.passed);
+const failedComparisons = audit.comparisons.filter((row) => !row.passed);
+if (failedCases.length || failedComparisons.length) {
+  throw new Error(JSON.stringify({ failedCases, failedComparisons }));
+}
+if (audit.passed !== audit.total) {
+  throw new Error(`only ${audit.passed}/${audit.total} checks passed`);
+}
+
+console.table(audit.cases.map((row) => ({
+  scenario: row.label,
+  reader: row.readerActiveAtEnd ? "held" : "free",
+  versions: row.versions,
+  pinned: row.pinned,
+  bloat: row.bloat.toFixed(2),
+  reclaimed: row.reclaimed,
+  avgRead: row.avgReadSteps.toFixed(2),
+  invalidRemovals: row.invalidRemovals
+})));
+
+const contrast = audit.comparisons[0];
+console.table([contrast.base, contrast.held].map((row) => ({
+  scenario: row.label,
+  versions: row.versions,
+  pinned: row.pinned,
+  bloat: row.bloat.toFixed(2),
+  reclaimed: row.reclaimed,
+  maxRead: row.maxReadSteps
+})));
+```
+
+The first table exercises four visibility-safety cases. The second table holds
+the update stream fixed and changes only the snapshot horizon, which is the
+claim the lab is meant to isolate.
 
 The source is intentionally small:
 [`assets/js/mvcc-vacuum-lab.js`]({{ '/assets/js/mvcc-vacuum-lab.js' | relative_url }}).

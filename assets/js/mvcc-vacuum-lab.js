@@ -304,26 +304,53 @@
 
   function auditMvccVacuumLab() {
     var cases = [
-      { keys: 32, updates: 180, hotShare: 25, readerHold: 0, vacuumEvery: 12, pageSlots: 64, seed: 7 },
-      { keys: 32, updates: 180, hotShare: 80, readerHold: 170, vacuumEvery: 12, pageSlots: 64, seed: 7 },
-      { keys: 56, updates: 420, hotShare: 75, readerHold: 360, vacuumEvery: 28, pageSlots: 96, seed: 19 },
-      { keys: 80, updates: 520, hotShare: 10, readerHold: 0, vacuumEvery: 40, pageSlots: 128, seed: 29 }
+      { label: "no reader, cool keys", params: { keys: 32, updates: 180, hotShare: 25, readerHold: 0, vacuumEvery: 12, pageSlots: 64, seed: 7 } },
+      { label: "hot keys, long reader", params: { keys: 32, updates: 180, hotShare: 80, readerHold: 170, vacuumEvery: 12, pageSlots: 64, seed: 7 } },
+      { label: "larger table, long reader", params: { keys: 56, updates: 420, hotShare: 75, readerHold: 360, vacuumEvery: 28, pageSlots: 96, seed: 19 } },
+      { label: "larger table, free horizon", params: { keys: 80, updates: 520, hotShare: 10, readerHold: 0, vacuumEvery: 40, pageSlots: 128, seed: 29 } }
     ];
     var total = 0;
     var passed = 0;
+    var rows = [];
 
-    cases.forEach(function (params) {
+    function rowFromResult(label, result) {
+      return {
+        avgReadSteps: result.summary.avgReadSteps,
+        bloat: result.summary.bloat,
+        failedChecks: Object.keys(result.audit).filter(function (key) {
+          return result.audit[key] === false;
+        }),
+        horizon: result.summary.horizon,
+        invalidRemovals: result.audit.invalidRemovals,
+        label: label,
+        maxReadSteps: result.summary.maxReadSteps,
+        passed: result.audit.passed,
+        pinned: result.summary.pinned,
+        readerActiveAtEnd: result.reader.activeAtEnd,
+        reclaimed: result.summary.totalReclaimed,
+        vacuumRuns: result.audit.vacuumRuns,
+        versions: result.summary.versions
+      };
+    }
+
+    cases.forEach(function (entry) {
       total += 1;
-      var result = evaluate(params);
+      var result = evaluate(entry.params);
       if (result.audit.passed) passed += 1;
+      rows.push(rowFromResult(entry.label, result));
     });
 
     var base = evaluate({ keys: 48, updates: 360, hotShare: 74, readerHold: 0, vacuumEvery: 24, pageSlots: 96, seed: 41 });
     var held = evaluate({ keys: 48, updates: 360, hotShare: 74, readerHold: 320, vacuumEvery: 24, pageSlots: 96, seed: 41 });
+    var pinnedContrast = {
+      base: rowFromResult("default, no reader", base),
+      held: rowFromResult("default, pinned reader", held),
+      passed: held.summary.pinned > base.summary.pinned + 100 && held.summary.bloat > base.summary.bloat + 2
+    };
     total += 1;
-    if (held.summary.pinned > base.summary.pinned + 100 && held.summary.bloat > base.summary.bloat + 2) passed += 1;
+    if (pinnedContrast.passed) passed += 1;
 
-    return { total: total, passed: passed };
+    return { cases: rows, comparisons: [pinnedContrast], total: total, passed: passed };
   }
 
   function metric(label, value, tone) {
