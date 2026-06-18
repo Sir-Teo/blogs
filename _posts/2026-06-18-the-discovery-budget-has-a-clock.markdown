@@ -383,53 +383,161 @@ You can reproduce that sweep directly:
 
 ```js
 const lab = require("./assets/js/online-fdr-lab.js");
-const EXPECTED_HORIZONS = 2;
-const EXPECTED_SIGNAL_RATES = 3;
-const EXPECTED_ORDERS = 2;
-const EXPECTED_TARGETS = 2;
-const EXPECTED_NULL_CASES = 8;
-const EXPECTED_CASES = 24;
-const EXPECTED_CHECKS = 104;
+const EXPECTED_BASE_CHECK_NAMES = [
+  "finite outputs",
+  "valid thresholds",
+  "alpha-spending contained in LOND",
+  "gamma mass is summable"
+];
+const EXPECTED_NULL_CHECK_NAME = "all-null LOND FDR guard";
+const EXPECTED_MAX_NULL_LOND_PCT = "3.05";
+const EXPECTED_CASE_SHAPE = [
+  "160:0:early:5:fdr=37.98/0.26/0.56/4.24:disc=18.49/4.13/5.01/6.76:power=26.2/33.8:nullGuard=true:checks=5/5",
+  "160:0:early:10:fdr=51.46/0.31/0.43/7.93:disc=26.24/4.49/5.51/7.96:power=28.8/37.9:nullGuard=true:checks=5/5",
+  "160:0:late:5:fdr=37.44/1.51/1.37/3.48:disc=18.17/1.61/1.73/6.52:power=8.9/32.9:nullGuard=true:checks=5/5",
+  "160:0:late:10:fdr=51.90/3.19/2.84/7.93:disc=26.95/2.15/2.37/8.07:power=12.0/38.6:nullGuard=true:checks=5/5",
+  "160:8:early:5:fdr=48.48/0.80/0.70/5.73:disc=14.71/3.06/3.48/4.36:power=26.5/31.4:nullGuard=not-applicable:checks=4/4",
+  "160:8:early:10:fdr=63.32/0.75/0.70/9.11:disc=23.34/3.45/4.04/5.42:power=30.8/36.7:nullGuard=not-applicable:checks=4/4",
+  "160:8:late:5:fdr=48.22/3.59/3.39/5.35:disc=14.94/1.33/1.43/4.32:power=10.5/31.1:nullGuard=not-applicable:checks=4/4",
+  "160:8:late:10:fdr=62.10/7.63/6.84/10.02:disc=23.14/1.46/1.58/5.43:power=11.1/36.3:nullGuard=not-applicable:checks=4/4",
+  "160:18:early:5:fdr=26.78/0.25/0.37/4.17:disc=23.18/5.95/7.62/10.97:power=26.1/36.0:nullGuard=not-applicable:checks=4/4",
+  "160:18:early:10:fdr=40.83/0.23/0.25/7.97:disc=32.01/6.35/8.09/13.07:power=27.8/41.1:nullGuard=not-applicable:checks=4/4",
+  "160:18:late:5:fdr=28.96/2.35/2.11/3.93:disc=23.98/2.69/3.09/11.18:power=10.4/36.9:nullGuard=not-applicable:checks=4/4",
+  "160:18:late:10:fdr=41.30/3.56/3.38/8.94:disc=32.62/3.07/3.56/13.44:power=11.8/41.8:nullGuard=not-applicable:checks=4/4",
+  "260:0:early:5:fdr=38.53/1.28/0.83/4.87:disc=29.19/5.76/7.17/10.90:power=23.0/33.3:nullGuard=true:checks=5/5",
+  "260:0:early:10:fdr=52.73/0.30/0.63/9.42:disc=43.37/6.42/8.38/13.26:power=26.8/38.4:nullGuard=true:checks=5/5",
+  "260:0:late:5:fdr=38.37/2.10/2.10/3.80:disc=29.61/2.39/2.75/10.45:power=8.7/32.2:nullGuard=true:checks=5/5",
+  "260:0:late:10:fdr=51.70/3.27/3.05/8.07:disc=43.02/2.63/3.04/13.42:power=9.4/39.5:nullGuard=true:checks=5/5",
+  "260:8:early:5:fdr=49.66/0.38/0.62/5.59:disc=24.43/4.04/4.92/6.72:power=23.3/30.0:nullGuard=not-applicable:checks=4/4",
+  "260:8:early:10:fdr=63.00/1.51/1.69/8.67:disc=38.10/4.74/5.81/8.24:power=27.1/35.4:nullGuard=not-applicable:checks=4/4",
+  "260:8:late:5:fdr=49.38/2.34/2.34/5.24:disc=24.33/1.40/1.56/6.72:power=7.3/30.1:nullGuard=not-applicable:checks=4/4",
+  "260:8:late:10:fdr=63.20/3.71/3.62/9.64:disc=37.76/1.89/2.08/8.47:power=9.4/36.0:nullGuard=not-applicable:checks=4/4",
+  "260:18:early:5:fdr=28.19/0.00/0.00/4.03:disc=37.66/7.89/10.38/17.33:power=22.1/35.3:nullGuard=not-applicable:checks=4/4",
+  "260:18:early:10:fdr=40.47/0.47/0.42/8.08:disc=51.81/9.14/12.23/20.93:power=25.9/40.8:nullGuard=not-applicable:checks=4/4",
+  "260:18:late:5:fdr=28.97/1.65/1.34/4.13:disc=38.16/3.57/4.14/17.37:power=8.7/35.4:nullGuard=not-applicable:checks=4/4",
+  "260:18:late:10:fdr=40.85/2.45/2.18/9.17:disc=52.11/3.72/4.43/21.66:power=9.2/41.6:nullGuard=not-applicable:checks=4/4"
+];
+
+function caseFields(shape) {
+  const [tests, signalRate, order, target] = shape.split(":");
+  return { tests, signalRate: Number(signalRate), order, target };
+}
+
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_NULL_CASES = EXPECTED_CASE_SHAPE.filter(
+  (shape) => caseFields(shape).signalRate === 0
+).length;
+const EXPECTED_CHECK_SHAPE = EXPECTED_CASE_SHAPE.flatMap((shape) => {
+  const fields = caseFields(shape);
+  const caseId = `${fields.tests}:${fields.signalRate}:${fields.order}:${fields.target}`;
+  const names = fields.signalRate === 0
+    ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_NULL_CHECK_NAME])
+    : EXPECTED_BASE_CHECK_NAMES;
+  return names.map((name) => `${caseId}:${name}:true`);
+});
+const EXPECTED_CHECKS = EXPECTED_CHECK_SHAPE.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function pct(value, digits = 2) {
+  return (100 * value).toFixed(digits);
+}
+
+function caseShape(row) {
+  return `${row.tests}:${row.signalRate}:${row.order}:${row.target}:` +
+    `fdr=${pct(row.rawFdr)}/${pct(row.spendFdr)}/${pct(row.londFdr)}/${pct(row.bhFdr)}:` +
+    `disc=${row.rawDiscoveries.toFixed(2)}/${row.spendDiscoveries.toFixed(2)}/` +
+    `${row.londDiscoveries.toFixed(2)}/${row.bhDiscoveries.toFixed(2)}:` +
+    `power=${pct(row.londPower, 1)}/${pct(row.bhPower, 1)}:` +
+    `nullGuard=${row.signalRate === 0 ? row.nullLondOk : "not-applicable"}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}`;
+}
+
+function checkRowsFor(row) {
+  const result = lab.evaluate({
+    tests: row.tests,
+    signalRate: row.signalRate,
+    strength: 55,
+    target: row.target,
+    order: row.order
+  });
+  const lond = result.summary.find((summaryRow) => summaryRow.key === "lond");
+  const nullLondOk =
+    row.signalRate !== 0 || lond.fdr <= Math.max(0.18, row.target / 100 * 2.6);
+  const checks = [
+    ["finite outputs", result.audit.finite],
+    ["valid thresholds", result.audit.levelsValid],
+    ["alpha-spending contained in LOND", result.audit.spendInsideLond],
+    ["gamma mass is summable", result.audit.gammaOk]
+  ];
+  if (row.signalRate === 0) checks.push([EXPECTED_NULL_CHECK_NAME, nullLondOk]);
+  return checks.map(([name, passed]) => ({ name, passed }));
+}
 
 const audit = lab.auditOnlineFdrLab();
-const auditShape = {
-  horizons: new Set(audit.cases.map((row) => row.tests)).size,
-  signalRates: new Set(audit.cases.map((row) => row.signalRate)).size,
-  orders: new Set(audit.cases.map((row) => row.order)).size,
-  targets: new Set(audit.cases.map((row) => row.target)).size,
-  nullCases: audit.cases.filter((row) => row.signalRate === 0).length,
-  rows: audit.cases.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks,
-  maxNullLond: audit.maxNullLond
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checks: audit.cases.flatMap((row) =>
+    checkRowsFor(row).map(
+      (check) => `${row.tests}:${row.signalRate}:${row.order}:${row.target}:` +
+        `${check.name}:${check.passed}`
+    )
+  ),
+  maxNullLondPct: pct(audit.maxNullLond)
 };
-if (auditShape.horizons !== EXPECTED_HORIZONS ||
-    auditShape.signalRates !== EXPECTED_SIGNAL_RATES ||
-    auditShape.orders !== EXPECTED_ORDERS ||
-    auditShape.targets !== EXPECTED_TARGETS ||
-    auditShape.nullCases !== EXPECTED_NULL_CASES ||
-    auditShape.rows !== EXPECTED_CASES ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
+}
+if (!sameList(shape.checks, EXPECTED_CHECK_SHAPE)) {
+  shapeErrors.push({
+    name: "checks",
+    actual: shape.checks,
+    expected: EXPECTED_CHECK_SHAPE
+  });
+}
+if (shape.maxNullLondPct !== EXPECTED_MAX_NULL_LOND_PCT) {
+  shapeErrors.push({
+    name: "maxNullLondPct",
+    actual: shape.maxNullLondPct,
+    expected: EXPECTED_MAX_NULL_LOND_PCT
+  });
 }
 
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (!audit.ok || failedCases.length || audit.passed !== audit.total ||
+const summary =
+  `${audit.passed}/${audit.total} audit cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+const nullCases = audit.cases.filter((row) => row.signalRate === 0).length;
+if (shapeErrors.length ||
+    !audit.ok ||
+    failedCases.length ||
+    nullCases !== EXPECTED_NULL_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
     failures: audit.failures,
     failedCases,
-    auditShape
+    totals: {
+      nullCases,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
-console.log(`${audit.passed}/${audit.total} audit cases and ` +
-  `${audit.passedChecks}/${audit.totalChecks} checks passed`);
+console.log(summary);
 console.log(`max all-null LOND FDR: ${(audit.maxNullLond * 100).toFixed(2)}%`);
 console.table(audit.cases.map((row) => ({
   tests: row.tests,
