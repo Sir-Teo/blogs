@@ -376,16 +376,77 @@ Reproduce it from the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/affine-alignment-lab.js");
-const EXPECTED_CASES = 6;
-const EXPECTED_CHECKS = 84;
+const EXPECTED_CASE_SHAPE = [
+  "1:clustered:52/36:31/40:5/1/16:10/2/6/37",
+  "2:longGap:54/47:53/49:5/2/7:8/2/8/12",
+  "3:scattered:48/45:63/51:5/3/3:12/7/1/92",
+  "4:substitution:52/52:68/68:0/0/0:24/0/3/5",
+  "5:repeat:56/52:84/84:1/1/4:7/2/7/4",
+  "6:clustered:80/63:80/89:4/2/17:6/4/5/211"
+];
+const EXPECTED_CRITICAL_SHAPE = [
+  "affine DP matches brute force for AACG/ACCG:6/6",
+  "affine DP matches brute force for ACGT/AGT:6/6",
+  "affine DP matches brute force for GATT/GCT:6/6",
+  "affine DP matches brute force for TGA/TGACA:6/6",
+  "affine backtrace is a valid alignment:6/6",
+  "affine final score is max of end states:6/6",
+  "affine matrix has expected shape:6/6",
+  "linear DP matches brute force for AACG/ACCG:6/6",
+  "linear DP matches brute force for ACGT/AGT:6/6",
+  "linear DP matches brute force for GATT/GCT:6/6",
+  "linear DP matches brute force for TGA/TGACA:6/6",
+  "linear backtrace is a valid alignment:6/6",
+  "linear matrix has expected shape:6/6",
+  "scores are finite:6/6"
+];
+const EXPECTED_PATTERN_SHAPE = [
+  "clustered:2 cases/28 checks:111/129:9/3/33",
+  "longGap:1 cases/14 checks:53/49:5/2/7",
+  "repeat:1 cases/14 checks:84/84:1/1/4",
+  "scattered:1 cases/14 checks:63/51:5/3/3",
+  "substitution:1 cases/14 checks:68/68:0/0/0"
+];
+const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
+const EXPECTED_CHECKS = EXPECTED_CRITICAL_SHAPE.length * EXPECTED_CASES;
+
+function sameList(left, right) {
+  return left.length === right.length &&
+    left.every((value, index) => value === right[index]);
+}
+
+function auditShape(audit) {
+  return {
+    cases: audit.cases.map(
+      (row) => `${row.caseId}:${row.pattern}:${row.sourceLength}/${row.targetLength}:` +
+        `${row.linearScore}/${row.affineScore}:` +
+        `${row.linearGapRuns}/${row.affineGapRuns}/${row.affineGapChars}:` +
+        `${row.substitutions}/${row.gapEvents}/${row.gapMean}/${row.seed}`
+    ),
+    criticalChecks: audit.criticalChecks.map(
+      (row) => `${row.check}:${row.passed}/${row.total}`
+    ),
+    byPattern: audit.byPattern.map(
+      (row) => `${row.pattern}:${row.cases} cases/${row.totalChecks} checks:` +
+        `${row.linearScore}/${row.affineScore}:` +
+        `${row.linearGapRuns}/${row.affineGapRuns}/${row.affineGapChars}`
+    )
+  };
+}
 
 const audit = lab.auditGrid();
+const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.ok || row.passed !== row.total
 );
+const shapeErrors = [
+  sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks",
+  sameList(shape.byPattern, EXPECTED_PATTERN_SHAPE) ? null : "byPattern"
+].filter(Boolean);
 console.table(audit.cases.map((row) => ({
   pattern: row.pattern,
   source: row.sourceLength,
@@ -395,11 +456,16 @@ console.table(audit.cases.map((row) => ({
   linearGapRuns: row.linearGapRuns,
   affineGapRuns: row.affineGapRuns,
   affineGapChars: row.affineGapChars,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
 console.table(audit.byPattern);
 console.table(audit.criticalChecks);
-if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
+if (
+  audit.total !== EXPECTED_CASES ||
+  audit.checked !== EXPECTED_CHECKS ||
+  audit.totalChecks !== EXPECTED_CHECKS
+) {
   throw new Error(
     `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
   );
@@ -407,6 +473,7 @@ if (audit.total !== EXPECTED_CASES || audit.totalChecks !== EXPECTED_CHECKS) {
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
+  shapeErrors.length ||
   failed.length ||
   failedCriticalChecks.length ||
   !audit.ok ||
@@ -414,8 +481,12 @@ if (
   audit.passedChecks !== audit.totalChecks
 ) {
   throw new Error(JSON.stringify({
+    summary,
+    shapeErrors,
+    shape,
     failed,
     failedCriticalChecks,
+    errors: audit.errors,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
