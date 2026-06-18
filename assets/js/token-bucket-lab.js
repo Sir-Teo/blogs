@@ -426,34 +426,70 @@
 
   function auditTokenBucketLab() {
     var scenarios = Object.keys(SCENARIOS);
-    var checked = 0;
-    var failures = [];
+    var cases = [];
     scenarios.forEach(function (scenario) {
       [2, 5, 9].forEach(function (rate) {
         [3, 8, 16].forEach(function (burst) {
           [3, 6, 10].forEach(function (window) {
             [0, 8, 24].forEach(function (queue) {
               var result = evaluate({ scenario: scenario, rate: rate, burst: burst, window: window, queue: queue });
-              checked += 1;
-              if (!result.audit.ok) {
-                failures.push({
-                  scenario: scenario,
-                  rate: rate,
-                  burst: burst,
-                  window: window,
-                  queue: queue,
-                  issues: result.audit.issues
-                });
-              }
+              cases.push({
+                arrivals: result.trace.events.length,
+                burst: burst,
+                failedChecks: result.audit.issues,
+                fixedAccepted: result.fixed.accepted,
+                fixedExcess: result.fixedWorst.excess,
+                maxDelay: result.shaper.maxDelay,
+                passed: result.audit.ok,
+                queue: queue,
+                rate: rate,
+                scenario: scenario,
+                shaperAccepted: result.shaper.accepted,
+                tokenAccepted: result.token.accepted,
+                tokenExcess: result.tokenWorst.excess,
+                window: window
+              });
             });
           });
         });
       });
     });
+    var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        burst: row.burst,
+        issues: row.failedChecks,
+        queue: row.queue,
+        rate: row.rate,
+        scenario: row.scenario,
+        window: row.window
+      };
+    });
+    var byScenario = scenarios.map(function (scenario) {
+      var rows = cases.filter(function (row) { return row.scenario === scenario; });
+      return {
+        cases: rows.length,
+        failedChecks: rows.reduce(function (acc, row) {
+          row.failedChecks.forEach(function (name) {
+            if (acc.indexOf(name) < 0) acc.push(name);
+          });
+          return acc;
+        }, []),
+        maxDelay: rows.reduce(function (max, row) { return Math.max(max, row.maxDelay); }, 0),
+        maxFixedExcess: rows.reduce(function (max, row) { return Math.max(max, row.fixedExcess); }, 0),
+        maxTokenExcess: rows.reduce(function (max, row) { return Math.max(max, row.tokenExcess); }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        scenario: scenario
+      };
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
     return {
+      byScenario: byScenario,
+      cases: cases,
       ok: failures.length === 0,
-      checked: checked,
-      failures: failures
+      checked: cases.length,
+      failures: failures,
+      passed: passed,
+      total: cases.length
     };
   }
 

@@ -264,7 +264,7 @@ queue, but its worst delay is `3.6s`; that is not free capacity, only waiting.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/token-bucket-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/token-bucket-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The Timestamp Form Is The Same Contract
 
@@ -287,11 +287,23 @@ The lab audits that equivalence for every request in every built-in scenario.
 The default browser run is only one view; the exported verifier checks 324
 scenario/parameter combinations:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/token-bucket-lab.js");
 const audit = lab.auditTokenBucketLab();
-if (!audit.ok) throw new Error(JSON.stringify(audit.failures));
-console.log(audit.checked + " checks passed");
+console.table(audit.byScenario.map((row) => ({
+  scenario: row.scenario,
+  cases: row.cases,
+  passed: row.passed,
+  maxTokenExcess: row.maxTokenExcess.toFixed(3),
+  maxFixedExcess: row.maxFixedExcess.toFixed(3),
+  maxDelay: row.maxDelay.toFixed(3)
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} parameter cases passed`);
+NODE
 ```
 
 The checks are deliberately mechanical:
