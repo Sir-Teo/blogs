@@ -405,8 +405,18 @@
 
   function auditPasswordHashLab() {
     var checks = [];
+    var criticalChecks = [];
+    var cases = [];
     function check(ok, name, extra) {
-      checks.push({ ok: !!ok, name: name, extra: extra || null });
+      var row = { ok: !!ok, name: name, extra: extra || null };
+      checks.push(row);
+      return row.ok;
+    }
+    function addCritical(ok, name, extra) {
+      criticalChecks.push({
+        check: name,
+        passed: check(ok, name, extra)
+      });
     }
     var base = evaluate(DEFAULTS);
     var moreMemory = evaluate(Object.assign({}, DEFAULTS, { memory: 256 }));
@@ -415,17 +425,17 @@
     var unique = evaluate(Object.assign({}, DEFAULTS, { salt: "unique" }));
     var quarter = evaluate(Object.assign({}, DEFAULTS, { tradeoff: "quarter" }));
 
-    check(base.latencyMs > 0 && Number.isFinite(base.latencyMs), "default latency is finite");
-    check(moreMemory.latencyMs > base.latencyMs, "raising memory raises defender latency");
-    check(moreMemory.hashRate < base.hashRate, "raising memory lowers attacker rate in model");
-    check(morePasses.latencyMs > base.latencyMs, "raising passes raises defender latency");
-    check(morePasses.hashRate < base.hashRate, "raising passes lowers attacker rate in model");
-    check(unique.evalsPerDictionaryWord === unique.params.accounts, "unique salts force one KDF per account per word");
-    check(shared.evalsPerDictionaryWord === 1, "shared salt lets one KDF cover the breach word");
-    check(shared.breachMedianSeconds < unique.breachMedianSeconds, "shared salt accelerates breach-wide search");
-    check(quarter.tradeoffPenalty > 1 / quarter.alpha, "toy tradeoff penalty is memory-hard shaped");
-    check(quarter.hashRate < base.hashRate, "quarter-memory tradeoff does not improve total rate in toy model");
-    check(base.maxConcurrentLogins === Math.floor(SERVER_MEMORY_BUDGET_MIB / base.params.memory), "server concurrency budget is memory divided by per-login memory");
+    addCritical(base.latencyMs > 0 && Number.isFinite(base.latencyMs), "default latency is finite");
+    addCritical(moreMemory.latencyMs > base.latencyMs, "raising memory raises defender latency");
+    addCritical(moreMemory.hashRate < base.hashRate, "raising memory lowers attacker rate in model");
+    addCritical(morePasses.latencyMs > base.latencyMs, "raising passes raises defender latency");
+    addCritical(morePasses.hashRate < base.hashRate, "raising passes lowers attacker rate in model");
+    addCritical(unique.evalsPerDictionaryWord === unique.params.accounts, "unique salts force one KDF per account per word");
+    addCritical(shared.evalsPerDictionaryWord === 1, "shared salt lets one KDF cover the breach word");
+    addCritical(shared.breachMedianSeconds < unique.breachMedianSeconds, "shared salt accelerates breach-wide search");
+    addCritical(quarter.tradeoffPenalty > 1 / quarter.alpha, "toy tradeoff penalty is memory-hard shaped");
+    addCritical(quarter.hashRate < base.hashRate, "quarter-memory tradeoff does not improve total rate in toy model");
+    addCritical(base.maxConcurrentLogins === Math.floor(SERVER_MEMORY_BUDGET_MIB / base.params.memory), "server concurrency budget is memory divided by per-login memory");
 
     var grid = 0;
     [16, 64, 256, 1024].forEach(function (memory) {
@@ -433,20 +443,99 @@
         ["full", "half", "quarter"].forEach(function (tradeoff) {
           ["unique", "shared"].forEach(function (salt) {
             var row = evaluate({ memory: memory, passes: passes, tradeoff: tradeoff, salt: salt, accounts: 1000, bits: 36, lanes: 4, attackerMemory: 24 });
+            var failedChecks = [];
+            var label;
             grid += 1;
-            check(Number.isFinite(row.hashRate) && row.hashRate > 0, "grid " + grid + " hash rate finite");
-            check(Number.isFinite(row.singleMedianSeconds) && row.singleMedianSeconds > 0, "grid " + grid + " target horizon finite");
-            check(row.perGuessMemoryMiB <= row.params.memory, "grid " + grid + " tradeoff memory does not exceed full memory");
+            label = "grid " + grid + " hash rate finite";
+            if (!check(Number.isFinite(row.hashRate) && row.hashRate > 0, label)) failedChecks.push(label);
+            label = "grid " + grid + " target horizon finite";
+            if (!check(Number.isFinite(row.singleMedianSeconds) && row.singleMedianSeconds > 0, label)) failedChecks.push(label);
+            label = "grid " + grid + " tradeoff memory does not exceed full memory";
+            if (!check(row.perGuessMemoryMiB <= row.params.memory, label)) failedChecks.push(label);
+            cases.push({
+              attackerSlots: row.attackerSlots,
+              breachMedianSeconds: row.breachMedianSeconds,
+              evalsPerDictionaryWord: row.evalsPerDictionaryWord,
+              failedChecks: failedChecks,
+              hashRate: row.hashRate,
+              latencyMs: row.latencyMs,
+              memory: memory,
+              passed: failedChecks.length === 0,
+              passes: passes,
+              perGuessMemoryMiB: row.perGuessMemoryMiB,
+              salt: salt,
+              serverBudgetOk: row.serverBudgetOk ? 1 : 0,
+              singleMedianSeconds: row.singleMedianSeconds,
+              tradeoff: tradeoff,
+              tradeoffPenalty: row.tradeoffPenalty
+            });
           });
         });
       });
     });
-    check(grid === 72, "72-case password hash grid completed", { grid: grid });
+    addCritical(grid === 72, "72-case password hash grid completed", { grid: grid });
+
+    function summarize(groupBy) {
+      var groups = {};
+      cases.forEach(function (row) {
+        var key = String(row[groupBy]);
+        if (!groups[key]) {
+          groups[key] = {
+            avgBreachMedianSeconds: 0,
+            avgEvalsPerDictionaryWord: 0,
+            avgHashRate: 0,
+            avgLatencyMs: 0,
+            avgSingleMedianSeconds: 0,
+            cases: 0,
+            maxLatencyMs: 0,
+            minHashRate: Infinity,
+            passed: 0,
+            serverBudgetOk: 0
+          };
+          groups[key][groupBy] = row[groupBy];
+        }
+        groups[key].avgBreachMedianSeconds += row.breachMedianSeconds;
+        groups[key].avgEvalsPerDictionaryWord += row.evalsPerDictionaryWord;
+        groups[key].avgHashRate += row.hashRate;
+        groups[key].avgLatencyMs += row.latencyMs;
+        groups[key].avgSingleMedianSeconds += row.singleMedianSeconds;
+        groups[key].cases += 1;
+        groups[key].maxLatencyMs = Math.max(groups[key].maxLatencyMs, row.latencyMs);
+        groups[key].minHashRate = Math.min(groups[key].minHashRate, row.hashRate);
+        groups[key].serverBudgetOk += row.serverBudgetOk;
+        if (row.passed) groups[key].passed += 1;
+      });
+      return Object.keys(groups).sort(function (a, b) {
+        return Number.isFinite(Number(a)) && Number.isFinite(Number(b)) ? Number(a) - Number(b) : a.localeCompare(b);
+      }).map(function (key) {
+        var group = groups[key];
+        group.avgBreachMedianSeconds /= group.cases;
+        group.avgEvalsPerDictionaryWord /= group.cases;
+        group.avgHashRate /= group.cases;
+        group.avgLatencyMs /= group.cases;
+        group.avgSingleMedianSeconds /= group.cases;
+        return group;
+      });
+    }
+
+    var passedChecks = checks.filter(function (row) { return row.ok; }).length;
+    var errors = checks.filter(function (row) { return !row.ok; }).map(function (row) { return row.name; });
+    var ok = errors.length === 0;
 
     return {
-      passed: checks.every(function (row) { return row.ok; }),
+      byMemory: summarize("memory"),
+      byPasses: summarize("passes"),
+      bySalt: summarize("salt"),
+      byTradeoff: summarize("tradeoff"),
+      cases: cases,
       checks: checks,
-      defaultResult: base
+      criticalChecks: criticalChecks,
+      defaultResult: base,
+      errors: errors,
+      ok: ok,
+      passed: ok,
+      passedChecks: passedChecks,
+      total: checks.length
     };
   }
 

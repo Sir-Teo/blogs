@@ -299,14 +299,29 @@ evaluation.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/password-hash-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/password-hash-lab.js?v=20260618b' | relative_url }}"></script>
 
-The audit exported by the script runs 228 checks:
+The audit exported by the script runs 228 checks over a 72-row
+memory/pass/tradeoff/salt grid:
 
-```javascript
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/password-hash-lab.js");
 const audit = lab.auditPasswordHashLab();
-if (!audit.passed) throw new Error("audit failed");
+console.log(audit.defaultResult);
+console.table(audit.byMemory);
+console.table(audit.byPasses);
+console.table(audit.byTradeoff);
+console.table(audit.bySalt);
+console.table(audit.criticalChecks);
+if (audit.total !== 228) {
+  throw new Error("unexpected check count: " + audit.total);
+}
+if (!audit.ok || audit.passedChecks !== audit.total) {
+  throw new Error(JSON.stringify(audit.errors, null, 2));
+}
+console.log(`${audit.passedChecks}/${audit.total} checks passed`);
+NODE
 ```
 
 It verifies monotone behavior for memory and passes, the salt accounting, the
