@@ -297,17 +297,73 @@ The compact reproduction check is:
 
 ```js
 const lab = require("./assets/js/cartesian-rmq-lab.js");
+const EXPECTED_SCENARIOS = 4;
+const EXPECTED_TIES = 2;
+const EXPECTED_MAIN_CASES = 8;
+const EXPECTED_EDGE_CASES = 3;
+const EXPECTED_ROWS = 11;
+const EXPECTED_CHECKS = 43;
+const EXPECTED_INTERVALS = 78;
+const EXPECTED_CASE_SHAPE = [
+  "jagged/left:5:78",
+  "jagged/right:5:78",
+  "plateau/left:5:78",
+  "plateau/right:5:78",
+  "saw/left:5:78",
+  "saw/right:5:78",
+  "valley/left:5:78",
+  "valley/right:5:78"
+];
+const EXPECTED_EDGE_SHAPE = [
+  "plateau left tie:1:4",
+  "plateau right tie:1:8",
+  "single point:1:5"
+];
 
 const audit = lab.auditCartesianRmqLab();
-const failed = audit.details.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
-if (audit.total !== 11 || audit.totalChecks !== 43) {
-  throw new Error(`unexpected audit size: ${audit.total} rows, ${audit.totalChecks} checks`);
+const auditShape = {
+  caseChecks: audit.cases
+    .map((row) => `${row.scenario}/${row.tie}:${row.totalChecks}:${row.intervalsChecked}`)
+    .sort(),
+  edgeChecks: audit.edgeCases
+    .map((row) => `${row.name}:${row.totalChecks}:${row.rmqIndex}`)
+    .sort(),
+  edgeCases: audit.edgeCases.length,
+  intervalCounts: Array.from(new Set(audit.cases.map((row) => row.intervalsChecked)))
+    .sort((a, b) => a - b),
+  mainCases: audit.cases.length,
+  passed: audit.passed,
+  scenarios: audit.scenarios,
+  ties: new Set(audit.cases.map((row) => row.tie)).size,
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.scenarios !== EXPECTED_SCENARIOS ||
+    auditShape.ties !== EXPECTED_TIES ||
+    auditShape.mainCases !== EXPECTED_MAIN_CASES ||
+    auditShape.edgeCases !== EXPECTED_EDGE_CASES ||
+    auditShape.total !== EXPECTED_ROWS ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.intervalCounts) !== JSON.stringify([EXPECTED_INTERVALS]) ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.edgeChecks) !== JSON.stringify(EXPECTED_EDGE_SHAPE)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 const summary =
   `${audit.passed}/${audit.total} audit rows and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+const failedCases = audit.details.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (failedCases.length || !audit.ok ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    summary,
+    errors: audit.errors,
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 
 console.table(audit.cases.map((row) => ({
