@@ -459,19 +459,22 @@
 
   function auditMyersDiff() {
     var issues = [];
-    var reports = [];
+    var cases = [];
     Object.keys(EXAMPLES).forEach(function (key) {
       ["delete", "insert"].forEach(function (tie) {
         var data = exampleData(key);
         var result = myersDiff(data.old, data.neu, { tie: tie });
         var audit = verifyResult(result);
+        var failedChecks = [];
         if (!audit.ok) {
           audit.issues.forEach(function (issue) {
             issues.push(key + "/" + tie + ": " + issue);
+            failedChecks.push(issue);
           });
         }
-        reports.push({
+        cases.push({
           example: key,
+          failedChecks: failedChecks,
           label: data.label,
           tie: tie,
           oldLength: data.old.length,
@@ -479,7 +482,8 @@
           distance: result.distance,
           lcsLength: result.lcsLength,
           layers: result.layers.length,
-          operations: result.ops.length
+          operations: result.ops.length,
+          passed: audit.ok
         });
       });
     });
@@ -490,21 +494,45 @@
     }
 
     var checked = 0;
+    var binaryIssues = [];
     small.forEach(function (a) {
       small.forEach(function (b) {
         var result = myersDiff(a, b, { tie: "delete" });
         var audit = verifyResult(result);
         checked += 1;
         if (!audit.ok) {
-          issues.push("binary case " + a.join("") + " -> " + b.join("") + ": " + audit.issues.join("; "));
+          var issue = "binary case " + a.join("") + " -> " + b.join("") + ": " + audit.issues.join("; ");
+          issues.push(issue);
+          binaryIssues.push(issue);
         }
       });
     });
+    var exhaustive = {
+      checked: checked,
+      failedChecks: binaryIssues,
+      passed: binaryIssues.length === 0
+    };
+    var byTie = ["delete", "insert"].map(function (tie) {
+      var rows = cases.filter(function (row) { return row.tie === tie; });
+      return {
+        cases: rows.length,
+        maxDistance: rows.reduce(function (max, row) { return Math.max(max, row.distance); }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        tie: tie
+      };
+    });
+    var total = cases.length + 1;
+    var passed = cases.filter(function (row) { return row.passed; }).length + (exhaustive.passed ? 1 : 0);
 
     return {
+      byTie: byTie,
+      cases: cases,
+      exhaustive: exhaustive,
       ok: issues.length === 0,
       issues: issues,
-      reports: reports,
+      passed: passed,
+      reports: cases,
+      total: total,
       exhaustiveBinaryCases: checked
     };
   }

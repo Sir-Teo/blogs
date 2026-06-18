@@ -305,7 +305,7 @@ Green is the final kept-token path; red and blue are deletes and inserts.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/myers-diff-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/myers-diff-lab.js?v=20260618b' | relative_url }}"></script>
 
 In the default example, the old sequence has 7 tokens and the new sequence has
 8. The LCS keeps 7 tokens, so the shortest script has:
@@ -330,22 +330,29 @@ solving a different problem.
 
 The browser file is also a CommonJS module:
 
-```js
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/myers-diff-lab.js");
 
 const audit = lab.auditMyersDiff();
-if (!audit.ok) throw new Error(JSON.stringify(audit.issues));
+console.table(audit.byTie);
 if (audit.exhaustiveBinaryCases !== 3969) {
   throw new Error("unexpected exhaustive case count: " + audit.exhaustiveBinaryCases);
 }
 console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
-console.table(audit.reports.map((row) => ({
+console.table(audit.cases.map((row) => ({
   example: row.label,
   tie: row.tie,
   distance: row.distance,
   lcs: row.lcsLength,
-  layers: row.layers
+  layers: row.layers,
+  passed: row.passed
 })));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.issues, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} audit groups passed`);
+NODE
 ```
 
 The audit checks all included examples under both tie-break rules, then checks
