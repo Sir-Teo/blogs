@@ -271,33 +271,140 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/tarjan-scc-lab.js");
-const EXPECTED_NAMED_CASES = 4;
-const EXPECTED_AUDIT_GROUPS = 5;
-const EXPECTED_EXHAUSTIVE_SIZES = 4;
-const EXPECTED_EXHAUSTIVE_CASES = 66066;
-const EXPECTED_CHECKS = 330350;
+const EXPECTED_CHECK_NAMES = [
+  "vertices-appear-once",
+  "partition-matches-oracle",
+  "components-strongly-connected",
+  "condensation-is-dag",
+  "lowlinks-in-index-range"
+];
+const EXPECTED_CASES = [
+  {
+    example: "bowtie", label: "bow-tie loops", nodes: 7, edges: 10,
+    components: 3, condensationEdges: 3, maxStackDepth: 7, events: 37,
+    passed: true, passedChecks: 5, totalChecks: 5
+  },
+  {
+    example: "compiler", label: "module imports", nodes: 8, edges: 10,
+    components: 3, condensationEdges: 2, maxStackDepth: 8, events: 40,
+    passed: true, passedChecks: 5, totalChecks: 5
+  },
+  {
+    example: "dag", label: "plain DAG", nodes: 6, edges: 7,
+    components: 6, condensationEdges: 7, maxStackDepth: 5, events: 37,
+    passed: true, passedChecks: 5, totalChecks: 5
+  },
+  {
+    example: "nested", label: "nested escape", nodes: 7, edges: 10,
+    components: 1, condensationEdges: 0, maxStackDepth: 7, events: 33,
+    passed: true, passedChecks: 5, totalChecks: 5
+  }
+];
+const EXPECTED_COMPONENT_GROUPS = [
+  {
+    components: 1, cases: 1, graphs: "nested", maxCondensationEdges: 0,
+    maxStackDepth: 7, passed: 1, passedChecks: 5, totalChecks: 5
+  },
+  {
+    components: 3, cases: 2, graphs: "bowtie, compiler",
+    maxCondensationEdges: 3, maxStackDepth: 8, passed: 2,
+    passedChecks: 10, totalChecks: 10
+  },
+  {
+    components: 6, cases: 1, graphs: "dag", maxCondensationEdges: 7,
+    maxStackDepth: 5, passed: 1, passedChecks: 5, totalChecks: 5
+  }
+];
+const EXPECTED_EXHAUSTIVE_BY_SIZE = [
+  { nodes: 1, cases: 2, failed: 0, passed: true, passedChecks: 10, totalChecks: 10 },
+  { nodes: 2, cases: 16, failed: 0, passed: true, passedChecks: 80, totalChecks: 80 },
+  { nodes: 3, cases: 512, failed: 0, passed: true, passedChecks: 2560, totalChecks: 2560 },
+  { nodes: 4, cases: 65536, failed: 0, passed: true, passedChecks: 327680, totalChecks: 327680 }
+];
+const EXPECTED_TOTALS = {
+  namedCases: 4,
+  auditGroups: 5,
+  exhaustiveSizes: 4,
+  exhaustiveCases: 66066,
+  passedGroups: 5,
+  totalGroups: 5,
+  passedChecks: 330350,
+  totalChecks: 330350
+};
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 const audit = lab.auditTarjanScc();
-console.table(audit.byComponentCount);
-console.table(audit.exhaustive.bySize);
+const caseRows = audit.cases.map((row) => ({
+  example: row.example,
+  label: row.label,
+  nodes: row.nodes,
+  edges: row.edges,
+  components: row.components,
+  condensationEdges: row.condensationEdges,
+  maxStackDepth: row.maxStackDepth,
+  events: row.events,
+  passed: row.passed,
+  passedChecks: row.passedChecks,
+  totalChecks: row.totalChecks
+}));
+const componentRows = audit.byComponentCount.map((row) => ({
+  components: row.components,
+  cases: row.cases,
+  graphs: row.graphs,
+  maxCondensationEdges: row.maxCondensationEdges,
+  maxStackDepth: row.maxStackDepth,
+  passed: row.passed,
+  passedChecks: row.passedChecks,
+  totalChecks: row.totalChecks
+}));
+const exhaustiveRows = audit.exhaustive.bySize.map((row) => ({
+  nodes: row.nodes,
+  cases: row.cases,
+  failed: row.failed,
+  passed: row.passed,
+  passedChecks: row.passedChecks,
+  totalChecks: row.totalChecks
+}));
+const checkRows = audit.cases.map((row) => ({
+  example: row.example,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = EXPECTED_CASES.map((row) => ({
+  example: row.example,
+  checks: EXPECTED_CHECK_NAMES
+}));
 const auditShape = {
   namedCases: audit.cases.length,
   auditGroups: audit.total,
   exhaustiveSizes: audit.exhaustive.bySize.length,
   exhaustiveCases: audit.exhaustiveCases,
+  passedGroups: audit.passed,
+  totalGroups: audit.total,
+  passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
 if (
-  auditShape.namedCases !== EXPECTED_NAMED_CASES ||
-  auditShape.auditGroups !== EXPECTED_AUDIT_GROUPS ||
-  auditShape.exhaustiveSizes !== EXPECTED_EXHAUSTIVE_SIZES ||
-  auditShape.exhaustiveCases !== EXPECTED_EXHAUSTIVE_CASES ||
-  auditShape.totalChecks !== EXPECTED_CHECKS
+  !sameJson(auditShape, EXPECTED_TOTALS) ||
+  !sameJson(caseRows, EXPECTED_CASES) ||
+  !sameJson(componentRows, EXPECTED_COMPONENT_GROUPS) ||
+  !sameJson(exhaustiveRows, EXPECTED_EXHAUSTIVE_BY_SIZE) ||
+  !sameJson(checkRows, expectedCheckRows)
 ) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+  throw new Error("unexpected Tarjan audit shape: " + JSON.stringify({
+    auditShape,
+    caseRows,
+    componentRows,
+    exhaustiveRows,
+    checkRows
+  }, null, 2));
 }
 console.log(audit.exhaustiveCases + " exhaustive graphs checked");
-console.table(audit.cases.map((row) => ({
+console.table(componentRows);
+console.table(exhaustiveRows);
+console.table(caseRows.map((row) => ({
   graph: row.label,
   components: row.components,
   condensationEdges: row.condensationEdges,
