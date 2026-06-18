@@ -378,16 +378,69 @@ The compact reproduction check is:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/iblt-reconciliation-lab.js");
+const EXPECTED_CASES = 5;
+const EXPECTED_CHECKS = 25;
+const EXPECTED_CHECK_NAMES = [
+  "decoded-difference-exact",
+  "peeled-cell-sign-valid",
+  "shared-set-cancels-empty",
+  "subtracted-cells-bounded",
+  "successful-decode-empty-residual"
+];
+const EXPECTED_CASE_SHAPE = [
+  "alice:5:24:62:3:2.55:19:24:0:744:3296",
+  "balanced:5:140:308:5:2.2:73:140:0:3696:26160",
+  "bob:5:48:84:4:1.75:16:48:0:1008:7392",
+  "default-balanced:5:84:185:3:2.2:59:84:0:2220:20336",
+  "split:5:90:171:3:1.9:61:90:0:2052:9960"
+];
+
 const audit = lab.auditIBLTLab();
-const failed = audit.cases.filter((row) => !row.passed || row.passedChecks !== row.totalChecks);
-if (audit.total !== 5 || audit.totalChecks !== 25) {
-  throw new Error(`unexpected audit size: ${audit.total} scenarios, ${audit.totalChecks} checks`);
+const auditShape = {
+  caseChecks: audit.cases.map((row) => [
+    row.scenario,
+    row.totalChecks,
+    row.diffSize,
+    row.cells,
+    row.hashes,
+    row.factor,
+    row.initialPure,
+    row.peeled,
+    row.residual,
+    row.bytesIblt,
+    row.bytesLists
+  ].join(":")).sort(),
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  passed: audit.passed,
+  residualByScenario: Object.fromEntries(Object.entries(audit.byScenario).map(
+    ([scenario, row]) => [scenario, row.residual]
+  )),
+  total: audit.total,
+  totalChecks: audit.totalChecks
+};
+if (auditShape.total !== EXPECTED_CASES ||
+    auditShape.totalChecks !== EXPECTED_CHECKS ||
+    JSON.stringify(auditShape.caseChecks) !== JSON.stringify(EXPECTED_CASE_SHAPE) ||
+    JSON.stringify(auditShape.checkNames) !== JSON.stringify(EXPECTED_CHECK_NAMES)) {
+  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
 }
 const summary =
   `${audit.passed}/${audit.total} scenarios and ` +
   `${audit.passedChecks}/${audit.totalChecks} checks passed`;
-if (failed.length || !audit.ok || audit.passed !== audit.total || audit.passedChecks !== audit.totalChecks) {
-  throw new Error(`${summary}: ${audit.errors.join("; ")}`);
+const failedCases = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
+if (failedCases.length || !audit.ok ||
+    audit.passed !== audit.total ||
+    audit.passedChecks !== audit.totalChecks) {
+  throw new Error(JSON.stringify({
+    summary,
+    errors: audit.errors,
+    failedCases,
+    auditShape
+  }, null, 2));
 }
 
 console.table(audit.cases.map((row) => ({
