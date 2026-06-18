@@ -328,33 +328,123 @@ state key counts, and finite summary metrics.
 
 ```js
 const lab = require("./assets/js/btree-split-lab.js");
-const EXPECTED_PATTERNS = 4;
-const EXPECTED_MAX_KEYS = 4;
-const EXPECTED_COUNTS = 3;
-const EXPECTED_SEEDS = 2;
-const EXPECTED_CASES = 96;
-const EXPECTED_CHECKS = 960;
+const EXPECTED_GRID_SHAPE = [
+  "patterns=append/reverse/shuffle/alternating",
+  "maxKeys=3/5/7/9",
+  "counts=12/31/64",
+  "seeds=3/17"
+];
+const EXPECTED_BY_PATTERN = [
+  "pattern=append:cases=24:checks=240/240:height=2..4:pages=3..48:leaves=2..32:splits=1..44:fill=0.571..0.689",
+  "pattern=reverse:cases=24:checks=240/240:height=2..5:pages=3..58:leaves=2..32:splits=1..53:fill=0.571..0.689",
+  "pattern=shuffle:cases=24:checks=240/240:height=2..4:pages=3..42:leaves=2..28:splits=1..38:fill=0.600..0.886",
+  "pattern=alternating:cases=24:checks=240/240:height=2..5:pages=3..53:leaves=2..32:splits=1..48:fill=0.571..0.689"
+];
+const EXPECTED_BY_MAX_KEYS = [
+  "maxKeys=3:cases=24:checks=240/240:height=3..5:pages=8..58:leaves=5..32:splits=5..53:fill=0.667..0.861",
+  "maxKeys=5:cases=24:checks=240/240:height=2..3:pages=4..28:leaves=3..21:splits=2..25:fill=0.600..0.886",
+  "maxKeys=7:cases=24:checks=240/240:height=2..3:pages=3..20:leaves=2..16:splits=1..17:fill=0.571..0.857",
+  "maxKeys=9:cases=24:checks=240/240:height=2..3:pages=3..15:leaves=2..12:splits=1..12:fill=0.574..0.861"
+];
+const EXPECTED_BY_COUNT = [
+  "count=12:cases=32:checks=320/320:height=2..3:pages=3..9:leaves=2..6:splits=1..6:fill=0.571..0.857",
+  "count=31:cases=32:checks=320/320:height=2..4:pages=5..26:leaves=4..15:splits=3..22:fill=0.574..0.886",
+  "count=64:cases=32:checks=320/320:height=2..5:pages=11..58:leaves=10..32:splits=9..53:fill=0.571..0.762"
+];
+const EXPECTED_CHECK_NAMES = [
+  "all-leaves-balanced",
+  "finite-summary-metrics",
+  "internal-child-counts",
+  "keys-sorted-within-pages",
+  "leaf-chain-sorted",
+  "page-occupancy",
+  "search-routes-to-key",
+  "separator-min-keys",
+  "split-accounting",
+  "state-key-counts"
+];
+const EXPECTED_CASES = 4 * 4 * 3 * 2;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+
+function sameList(actual, expected) {
+  return actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index]);
+}
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+function range(values) {
+  return `${Math.min(...values)}..${Math.max(...values)}`;
+}
+
+function groupShape(name, rows) {
+  return `${name}:cases=${rows.length}:` +
+    `checks=${rows.reduce((sum, row) => sum + row.passedChecks, 0)}/` +
+    `${rows.reduce((sum, row) => sum + row.totalChecks, 0)}:` +
+    `height=${range(rows.map((row) => row.height))}:` +
+    `pages=${range(rows.map((row) => row.pages))}:` +
+    `leaves=${range(rows.map((row) => row.leafPages))}:` +
+    `splits=${range(rows.map((row) => row.splits))}:` +
+    `fill=${fixed3(Math.min(...rows.map((row) => row.avgLeafFill)))}..` +
+    `${fixed3(Math.max(...rows.map((row) => row.avgLeafFill)))}`;
+}
+
+function groupBy(audit, key) {
+  return Array.from(new Set(audit.cases.map((row) => row[key]))).map((value) =>
+    groupShape(`${key}=${value}`, audit.cases.filter((row) => row[key] === value))
+  );
+}
+
+function uniqueNumbers(audit, key) {
+  return Array.from(new Set(audit.cases.map((row) => row[key])))
+    .sort((a, b) => a - b)
+    .join("/");
+}
 
 const audit = lab.auditBtreeSplitLab();
-const auditShape = {
-  patterns: new Set(audit.cases.map((row) => row.pattern)).size,
-  maxKeys: new Set(audit.cases.map((row) => row.maxKeys)).size,
-  counts: new Set(audit.cases.map((row) => row.count)).size,
-  seeds: new Set(audit.cases.map((row) => row.seed)).size,
-  rows: audit.cases.length,
-  passed: audit.passed,
-  total: audit.total,
-  passedChecks: audit.passedChecks,
-  totalChecks: audit.totalChecks
+const shape = {
+  byCount: groupBy(audit, "count"),
+  byMaxKeys: groupBy(audit, "maxKeys"),
+  byPattern: groupBy(audit, "pattern"),
+  checkNames: Array.from(new Set(audit.cases.flatMap(
+    (row) => row.checks.map((check) => check.name)
+  ))).sort(),
+  grid: [
+    `patterns=${Array.from(new Set(audit.cases.map((row) => row.pattern))).join("/")}`,
+    `maxKeys=${uniqueNumbers(audit, "maxKeys")}`,
+    `counts=${uniqueNumbers(audit, "count")}`,
+    `seeds=${uniqueNumbers(audit, "seed")}`
+  ]
 };
-if (auditShape.patterns !== EXPECTED_PATTERNS ||
-    auditShape.maxKeys !== EXPECTED_MAX_KEYS ||
-    auditShape.counts !== EXPECTED_COUNTS ||
-    auditShape.seeds !== EXPECTED_SEEDS ||
-    auditShape.rows !== EXPECTED_CASES ||
-    auditShape.total !== EXPECTED_CASES ||
-    auditShape.totalChecks !== EXPECTED_CHECKS) {
-  throw new Error("unexpected audit size: " + JSON.stringify(auditShape));
+const shapeErrors = [];
+if (!sameList(shape.grid, EXPECTED_GRID_SHAPE)) {
+  shapeErrors.push({ name: "grid", actual: shape.grid, expected: EXPECTED_GRID_SHAPE });
+}
+if (!sameList(shape.byPattern, EXPECTED_BY_PATTERN)) {
+  shapeErrors.push({
+    name: "byPattern",
+    actual: shape.byPattern,
+    expected: EXPECTED_BY_PATTERN
+  });
+}
+if (!sameList(shape.byMaxKeys, EXPECTED_BY_MAX_KEYS)) {
+  shapeErrors.push({
+    name: "byMaxKeys",
+    actual: shape.byMaxKeys,
+    expected: EXPECTED_BY_MAX_KEYS
+  });
+}
+if (!sameList(shape.byCount, EXPECTED_BY_COUNT)) {
+  shapeErrors.push({ name: "byCount", actual: shape.byCount, expected: EXPECTED_BY_COUNT });
+}
+if (!sameList(shape.checkNames, EXPECTED_CHECK_NAMES)) {
+  shapeErrors.push({
+    name: "checkNames",
+    actual: shape.checkNames,
+    expected: EXPECTED_CHECK_NAMES
+  });
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
@@ -362,13 +452,26 @@ const summary =
 const failedCases = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-if (failedCases.length || !audit.ok || audit.passed !== audit.total ||
+if (shapeErrors.length ||
+    failedCases.length ||
+    !audit.ok ||
+    audit.cases.length !== EXPECTED_CASES ||
+    audit.total !== EXPECTED_CASES ||
+    audit.totalChecks !== EXPECTED_CHECKS ||
+    audit.passed !== audit.total ||
     audit.passedChecks !== audit.totalChecks) {
   throw new Error(JSON.stringify({
     summary,
+    shapeErrors,
     errors: audit.errors.slice(0, 10),
     failedCases: failedCases.slice(0, 10),
-    auditShape
+    totals: {
+      cases: audit.cases.length,
+      passed: audit.passed,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    }
   }, null, 2));
 }
 
