@@ -362,7 +362,7 @@ lab is deliberately coarse.
   <p class="knight-lab__note" data-note></p>
 </div>
 
-<script src="{{ '/assets/js/knight-deploy-lab.js?v=20260617a' | relative_url }}"></script>
+<script src="{{ '/assets/js/knight-deploy-lab.js?v=20260617b' | relative_url }}"></script>
 
 ## What the Controls Change
 
@@ -418,27 +418,49 @@ The lab exports the same calculation for Node:
 ```js
 const lab = require("./assets/js/knight-deploy-lab.js");
 
-const rows = lab.auditGrid();
-const failed = rows.filter((row) => !row.passed);
-if (failed.length) throw new Error(JSON.stringify(failed));
+const audit = lab.auditGrid();
+const failed = audit.cases.filter(
+  (row) => !row.passed || row.passedChecks !== row.totalChecks
+);
 
-console.table(rows.map((row) => ({
+if (audit.total !== 6 || audit.totalChecks !== 39) {
+  throw new Error(
+    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+  );
+}
+
+const summary =
+  `${audit.passed}/${audit.total} cases and ` +
+  `${audit.passedChecks}/${audit.totalChecks} checks passed`;
+if (
+  failed.length ||
+  !audit.ok ||
+  audit.passed !== audit.total ||
+  audit.passedChecks !== audit.totalChecks
+) {
+  throw new Error(`${summary}: ${JSON.stringify(failed, null, 2)}`);
+}
+
+console.table(audit.cases.map((row) => ({
   stale: row.params.staleServers,
   check: row.params.deploymentCheck,
   router: row.params.routerGuard,
   capital: row.params.capitalGuard,
+  checks: `${row.passedChecks}/${row.totalChecks}`,
   executions: Math.round(row.executions),
   sharesM: (row.shares / 1e6).toFixed(1),
   lossM: (row.estimatedLoss / 1e6).toFixed(1),
   minutes: row.activeMinutes.toFixed(2),
   passed: row.passed
 })));
+console.log(summary);
 ```
 
 The audit checks that the default calibration is close to the SEC aggregate
 execution, share, and loss scale; that a deployment check prevents stale-server
 activation; that a zero-stale-server case creates no erroneous executions; and
 that router and capital guards enforce their configured bounds.
+The current grid covers six counterfactual scenarios and 39 named checks.
 
 ## The Smaller Lesson
 

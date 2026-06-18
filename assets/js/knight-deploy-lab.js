@@ -166,7 +166,7 @@
   }
 
   function auditGrid() {
-    return [
+    var cases = [
       {},
       { deploymentCheck: 1 },
       { routerGuard: 1, outputCap: 25 },
@@ -175,6 +175,7 @@
       { staleServers: 2, badParentOrders: 120, exposureMinutes: 20, executionsPerParentMinute: 350 }
     ].map(function (row) {
       var result = evaluate(row);
+      var passedChecks = result.audit.checks.filter(function (check) { return check.passed; }).length;
       return {
         params: result.params,
         executions: result.executions,
@@ -183,9 +184,31 @@
         activeMinutes: result.activeMinutes,
         amplification: result.amplification,
         passed: result.audit.passed,
+        passedChecks: passedChecks,
+        failedChecks: result.audit.checks.filter(function (check) {
+          return !check.passed;
+        }).map(function (check) {
+          return check.name;
+        }),
+        totalChecks: result.audit.checks.length,
         checks: result.audit.checks
       };
     });
+    var totalChecks = cases.reduce(function (sum, row) {
+      return sum + row.totalChecks;
+    }, 0);
+    var passedChecks = cases.reduce(function (sum, row) {
+      return sum + row.passedChecks;
+    }, 0);
+    var passed = cases.filter(function (row) { return row.passed; }).length;
+    return {
+      cases: cases,
+      ok: passed === cases.length && passedChecks === totalChecks,
+      passed: passed,
+      passedChecks: passedChecks,
+      total: cases.length,
+      totalChecks: totalChecks
+    };
   }
 
   function metric(label, value, className) {
