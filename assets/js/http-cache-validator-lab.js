@@ -551,25 +551,62 @@
   }
 
   function auditHttpCacheLab() {
-    var failures = [];
-    var checked = 0;
+    var cases = [];
     Object.keys(SCENARIOS).forEach(function (scenario) {
       [2, 6, 12].forEach(function (maxAge) {
         [0, 6, 14].forEach(function (swr) {
           [120, 420, 900].forEach(function (latency) {
             var result = evaluate({ scenario: scenario, maxAge: maxAge, swr: swr, latency: latency, cadence: DEFAULTS.cadence });
-            checked += 1;
-            if (!result.audit.ok) {
-              failures.push({ scenario: scenario, maxAge: maxAge, swr: swr, latency: latency, issues: result.audit.issues });
-            }
+            cases.push({
+              blockingSaved: result.policies.validator.summary.blocking - result.policies.swr.summary.blocking,
+              failedChecks: result.audit.issues,
+              latency: latency,
+              maxAge: maxAge,
+              passed: result.audit.ok,
+              scenario: scenario,
+              swr: swr,
+              swrErrors: result.policies.swr.summary.errors,
+              swrStale: result.policies.swr.summary.staleServed,
+              ttlBytes: result.policies.ttl.summary.bytes,
+              validator304: result.policies.validator.summary.notModified,
+              validatorBytes: result.policies.validator.summary.bytes,
+              validatorOriginCalls: result.policies.validator.summary.originCalls
+            });
           });
         });
       });
     });
+    var failures = cases.filter(function (row) { return !row.passed; }).map(function (row) {
+      return {
+        issues: row.failedChecks,
+        latency: row.latency,
+        maxAge: row.maxAge,
+        scenario: row.scenario,
+        swr: row.swr
+      };
+    });
+    var byScenario = Object.keys(SCENARIOS).map(function (scenario) {
+      var rows = cases.filter(function (row) { return row.scenario === scenario; });
+      return {
+        cases: rows.length,
+        maxBlockingSaved: rows.reduce(function (max, row) { return Math.max(max, row.blockingSaved); }, 0),
+        maxSwrErrors: rows.reduce(function (max, row) { return Math.max(max, row.swrErrors); }, 0),
+        passed: rows.filter(function (row) { return row.passed; }).length,
+        scenario: scenario,
+        swrStale: rows.reduce(function (sum, row) { return sum + row.swrStale; }, 0),
+        validator304: rows.reduce(function (sum, row) { return sum + row.validator304; }, 0),
+        validatorOriginCalls: rows.reduce(function (sum, row) { return sum + row.validatorOriginCalls; }, 0)
+      };
+    });
+    var passed = cases.filter(function (row) { return row.passed; }).length;
     return {
+      byScenario: byScenario,
+      cases: cases,
       ok: failures.length === 0,
-      checked: checked,
-      failures: failures
+      checked: cases.length,
+      failures: failures,
+      passed: passed,
+      total: cases.length
     };
   }
 

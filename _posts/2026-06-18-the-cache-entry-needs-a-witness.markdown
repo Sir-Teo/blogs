@@ -265,7 +265,7 @@ in the background.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/http-cache-validator-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/http-cache-validator-lab.js?v=20260618b' | relative_url }}"></script>
 
 ## The 304 Is Not A Cache Hit
 
@@ -304,6 +304,28 @@ each policy returns one response per request
 validator byte count never exceeds expiry-only byte count
 SWR stale responses are served only inside the configured SWR window
 SWR never increases max blocking wait relative to ordinary validation
+```
+
+Run it directly:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/http-cache-validator-lab.js");
+const audit = lab.auditHttpCacheLab();
+console.table(audit.byScenario.map((row) => ({
+  scenario: row.scenario,
+  cases: row.cases,
+  passed: row.passed,
+  validator304: row.validator304,
+  swrStale: row.swrStale,
+  maxBlockingSaved: row.maxBlockingSaved.toFixed(2),
+  maxSwrErrors: row.maxSwrErrors
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(JSON.stringify(audit.failures, null, 2));
+}
+console.log(`${audit.passed}/${audit.total} parameter cases passed`);
+NODE
 ```
 
 The full source is in
