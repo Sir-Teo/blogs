@@ -666,62 +666,151 @@
     var failures = [];
     function assert(condition, message) {
       if (!condition) failures.push(message);
+      return !!condition;
     }
 
+    function failedNames(checks) {
+      return checks.filter(function (check) { return !check.ok; }).map(function (check) { return check.name; });
+    }
+
+    function summarizeGrid(rows) {
+      var byGraph = {};
+      rows.forEach(function (row) {
+        if (!byGraph[row.graph]) {
+          byGraph[row.graph] = {
+            cases: 0,
+            failedChecks: [],
+            graph: row.graph,
+            maxSuccessRate: 0,
+            minSuccessRate: Infinity,
+            passed: 0
+          };
+        }
+        var bucket = byGraph[row.graph];
+        bucket.cases += 1;
+        if (row.passed) bucket.passed += 1;
+        bucket.minSuccessRate = Math.min(bucket.minSuccessRate, row.successRate);
+        bucket.maxSuccessRate = Math.max(bucket.maxSuccessRate, row.successRate);
+        row.failedChecks.forEach(function (name) {
+          if (bucket.failedChecks.indexOf(name) < 0) bucket.failedChecks.push(name);
+        });
+      });
+      return Object.keys(byGraph).sort().map(function (key) {
+        var row = byGraph[key];
+        if (!Number.isFinite(row.minSuccessRate)) row.minSuccessRate = 0;
+        return row;
+      });
+    }
+
+    var byGraph = [];
     ["bridge", "cycle", "islands", "ladder"].forEach(function (key) {
       var graph = buildGraph(key);
       var exact = exactMinCut(graph);
-      assert(graph.nodes.length >= 10, key + " has enough vertices");
-      assert(graph.edges.length >= graph.nodes.length, key + " has enough edges");
-      assert(exact.lambda >= 2, key + " min cut is nontrivial");
-      assert(exact.count >= 1, key + " has at least one min cut");
+      var checks = [
+        { name: "vertex-count", ok: assert(graph.nodes.length >= 10, key + " has enough vertices") },
+        { name: "edge-count", ok: assert(graph.edges.length >= graph.nodes.length, key + " has enough edges") },
+        { name: "nontrivial-mincut", ok: assert(exact.lambda >= 2, key + " min cut is nontrivial") },
+        { name: "mincut-exists", ok: assert(exact.count >= 1, key + " has at least one min cut") }
+      ];
+      var trialLowerBoundOk = true;
+      var fixedCutSurvivalOk = true;
+      var optimalTrials = 0;
+      var survivals = 0;
       for (var i = 0; i < 32; i += 1) {
         var trial = runTrial(graph, rng(1000 + i * 37 + graph.edges.length), exact.mask, exact.lambda);
-        assert(trial.cutValue >= exact.lambda, key + " trial never beats exact oracle");
+        if (trial.optimal) optimalTrials += 1;
+        var lowerOk = assert(trial.cutValue >= exact.lambda, key + " trial never beats exact oracle");
+        if (!lowerOk) trialLowerBoundOk = false;
         if (trial.survivedFixedCut) {
-          assert(trial.cutValue === exact.lambda, key + " fixed-cut survival returns a min cut");
+          survivals += 1;
+          var survivalOk = assert(trial.cutValue === exact.lambda, key + " fixed-cut survival returns a min cut");
+          if (!survivalOk) fixedCutSurvivalOk = false;
         }
       }
+      checks.push({ name: "trial-lower-bound", ok: trialLowerBoundOk });
+      checks.push({ name: "fixed-cut-survival", ok: fixedCutSurvivalOk });
+      byGraph.push({
+        edges: graph.edges.length,
+        failedChecks: failedNames(checks),
+        graph: key,
+        lambda: exact.lambda,
+        minCuts: exact.count,
+        nodes: graph.nodes.length,
+        optimalTrials: optimalTrials,
+        passed: checks.every(function (check) { return check.ok; }),
+        survivals: survivals,
+        trials: 32
+      });
     });
+
+    var namedChecks = [];
+    function namedCheck(name, condition, message) {
+      var ok = assert(condition, message);
+      namedChecks.push({
+        failedChecks: ok ? [] : [name],
+        name: name,
+        passed: ok
+      });
+      return ok;
+    }
 
     var bridge = buildGraph("bridge");
     var bridgeExact = exactMinCut(bridge);
-    assert(bridgeExact.lambda === 2, "bridge lambda is 2");
-    assert(bridgeExact.count === 1, "bridge graph has one canonical min cut");
+    namedCheck("bridge-lambda", bridgeExact.lambda === 2, "bridge lambda is 2");
+    namedCheck("bridge-mincut-count", bridgeExact.count === 1, "bridge graph has one canonical min cut");
     var bridgeSim = runSimulation(bridge, 400, 37, bridgeExact.mask, bridgeExact.lambda);
-    assert(bridgeSim.successes > 0, "bridge simulation finds the min cut");
-    assert(bridgeSim.bestValue === bridgeExact.lambda, "bridge best value matches oracle");
+    namedCheck("bridge-finds-mincut", bridgeSim.successes > 0, "bridge simulation finds the min cut");
+    namedCheck("bridge-best-value", bridgeSim.bestValue === bridgeExact.lambda, "bridge best value matches oracle");
 
     var cycle = buildGraph("cycle");
     var cycleExact = exactMinCut(cycle);
-    assert(cycleExact.lambda === 2, "cycle lambda is 2");
-    assert(cycleExact.count === 45, "ten-cycle has 45 canonical min cuts");
+    namedCheck("cycle-lambda", cycleExact.lambda === 2, "cycle lambda is 2");
+    namedCheck("cycle-mincut-count", cycleExact.count === 45, "ten-cycle has 45 canonical min cuts");
     var cycleSim = runSimulation(cycle, 80, 19, cycleExact.mask, cycleExact.lambda);
-    assert(cycleSim.successes === 80, "cycle always returns a min cut");
+    namedCheck("cycle-all-trials-optimal", cycleSim.successes === 80, "cycle always returns a min cut");
 
     var deterministicA = evaluate(DEFAULTS);
     var deterministicB = evaluate(DEFAULTS);
-    assert(JSON.stringify(deterministicA.simulation.histogram) === JSON.stringify(deterministicB.simulation.histogram), "default run is deterministic");
-    assert(deterministicA.simulation.bestValue === deterministicA.exact.lambda, "default best value is exact");
-    assert(repetitionsFor(0.05, 10) === 134, "n=10 95 percent repetition count");
+    namedCheck("default-deterministic", JSON.stringify(deterministicA.simulation.histogram) === JSON.stringify(deterministicB.simulation.histogram), "default run is deterministic");
+    namedCheck("default-best-is-exact", deterministicA.simulation.bestValue === deterministicA.exact.lambda, "default best value is exact");
+    namedCheck("n10-repetition-count", repetitionsFor(0.05, 10) === 134, "n=10 95 percent repetition count");
 
-    var cases = 0;
+    var gridCases = [];
     ["bridge", "cycle", "islands", "ladder"].forEach(function (graphKey) {
       [1, 17, 83, 211].forEach(function (seed) {
         [40, 120, 240].forEach(function (trials) {
           var result = evaluate({ graph: graphKey, seed: seed, trials: trials, trace: 3 });
-          cases += 1;
-          assert(result.bound > 0 && result.bound <= 1, graphKey + " bound is a probability");
-          assert(result.simulation.successRate >= 0 && result.simulation.successRate <= 1, graphKey + " success rate is a probability");
-          assert(result.simulation.bestValue >= result.exact.lambda, graphKey + " repeated best respects exact oracle");
-          assert(Object.keys(result.simulation.histogram).length >= 1, graphKey + " histogram is populated");
+          var checks = [
+            { name: "bound-probability", ok: assert(result.bound > 0 && result.bound <= 1, graphKey + " bound is a probability") },
+            { name: "success-rate-probability", ok: assert(result.simulation.successRate >= 0 && result.simulation.successRate <= 1, graphKey + " success rate is a probability") },
+            { name: "best-respects-oracle", ok: assert(result.simulation.bestValue >= result.exact.lambda, graphKey + " repeated best respects exact oracle") },
+            { name: "histogram-populated", ok: assert(Object.keys(result.simulation.histogram).length >= 1, graphKey + " histogram is populated") }
+          ];
+          gridCases.push({
+            bestValue: result.simulation.bestValue,
+            failedChecks: failedNames(checks),
+            graph: graphKey,
+            histogramBins: Object.keys(result.simulation.histogram).length,
+            lambda: result.exact.lambda,
+            passed: checks.every(function (check) { return check.ok; }),
+            seed: seed,
+            successRate: result.simulation.successRate,
+            successes: result.simulation.successes,
+            trials: trials
+          });
         });
       });
     });
-    assert(cases === 48, "grid covered 48 cases");
+    namedCheck("grid-size", gridCases.length === 48, "grid covered 48 cases");
+
+    var total = byGraph.length + namedChecks.length + gridCases.length;
+    var passed = byGraph.filter(function (row) { return row.passed; }).length +
+      namedChecks.filter(function (row) { return row.passed; }).length +
+      gridCases.filter(function (row) { return row.passed; }).length;
 
     return {
-      cases: cases + 32 * 4 + 7,
+      byGraph: byGraph,
+      cases: gridCases,
       defaultSummary: {
         bestValue: deterministicA.simulation.bestValue,
         bound: deterministicA.bound,
@@ -734,7 +823,11 @@
         trials: deterministicA.params.trials
       },
       failures: failures,
-      passed: failures.length === 0
+      gridSummary: summarizeGrid(gridCases),
+      namedChecks: namedChecks,
+      ok: failures.length === 0,
+      passed: passed,
+      total: total
     };
   }
 

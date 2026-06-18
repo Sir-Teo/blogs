@@ -257,18 +257,40 @@ Karger lower-bound chance.
   </p>
 </div>
 
-<script defer src="{{ '/assets/js/karger-mincut-lab.js?v=20260618a' | relative_url }}"></script>
+<script defer src="{{ '/assets/js/karger-mincut-lab.js?v=20260618b' | relative_url }}"></script>
 
-The audit exported by the script runs 183 checks:
+The audit exported by the script gives the randomized experiment a deterministic
+receipt:
 
-```javascript
+```bash
+node - <<'NODE'
 const lab = require("./assets/js/karger-mincut-lab.js");
 const audit = lab.auditKargerMincutLab();
-if (!audit.passed) throw new Error("audit failed");
+console.table(audit.byGraph.map((row) => ({
+  graph: row.graph,
+  lambda: row.lambda,
+  minCuts: row.minCuts,
+  trialChecks: row.trials,
+  optimalTrials: row.optimalTrials,
+  survivals: row.survivals,
+  passed: row.passed
+})));
+console.table(audit.gridSummary.map((row) => ({
+  graph: row.graph,
+  cases: row.cases,
+  passed: row.passed,
+  minSuccessRate: row.minSuccessRate.toFixed(3),
+  maxSuccessRate: row.maxSuccessRate.toFixed(3)
+})));
+if (!audit.ok || audit.passed !== audit.total) {
+  throw new Error(`${audit.passed}/${audit.total} audit rows passed`);
+}
+console.log(`${audit.passed}/${audit.total} audit rows passed`);
+NODE
 ```
 
-It verifies the brute-force oracle on every preset, checks that random
-contraction never returns a cut below the oracle, checks that fixed-cut survival
+It verifies the brute-force oracle on every preset, checks 32 single
+contractions per graph against the oracle, checks that fixed-cut survival
 implies an optimal result, confirms that the ten-cycle always returns a min
 cut, and runs a 48-case grid over graph presets, seeds, and trial counts.
 
