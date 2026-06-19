@@ -333,16 +333,16 @@ The browser file is also a CommonJS module:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/myers-diff-lab.js");
-const EXPECTED_CHECK_NAMES = [
-  "distance-matches-dp",
-  "lcs-matches-dp",
-  "script-replays-new-sequence",
-  "edit-count-equals-distance",
-  "equal-count-equals-lcs",
-  "path-starts-at-origin",
-  "path-ends-at-target",
-  "path-steps-monotone",
-  "equal-ops-match-tokens"
+const EXPECTED_CHECKS = [
+  { name: "distance-matches-dp", passed: true },
+  { name: "lcs-matches-dp", passed: true },
+  { name: "script-replays-new-sequence", passed: true },
+  { name: "edit-count-equals-distance", passed: true },
+  { name: "equal-count-equals-lcs", passed: true },
+  { name: "path-starts-at-origin", passed: true },
+  { name: "path-ends-at-target", passed: true },
+  { name: "path-steps-monotone", passed: true },
+  { name: "equal-ops-match-tokens", passed: true }
 ];
 const EXPECTED_TOTALS = {
   namedRows: 10,
@@ -420,11 +420,14 @@ const caseRows = audit.cases.map((row) =>
 );
 const checkRows = audit.cases.map((row) => ({
   example: `${row.example}/${row.tie}`,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    passed: check.passed
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
   example: row.split(":")[0],
-  checks: EXPECTED_CHECK_NAMES
+  checks: EXPECTED_CHECKS
 }));
 const byTieDrifts = rowDrifts(byTieRows, EXPECTED_BY_TIE);
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
