@@ -301,6 +301,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -333,22 +346,32 @@ const checkRows = audit.cases.map((row) => ({
   caseId: row.caseId,
   checks: row.checks.map((check) => check.name)
 }));
-const expectedCheckRows = audit.cases.map((row) => ({
-  caseId: row.caseId,
-  checks: row.caseId === 2
-    ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_DEFAULT_CHECK_NAME])
-    : EXPECTED_BASE_CHECK_NAMES
-}));
-if (
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
-  !sameJson(checkRows, expectedCheckRows)
-) {
-  throw new Error("unexpected cache-layout audit shape: " + JSON.stringify({
-    totals,
-    caseRows,
-    checkRows
-  }, null, 2));
+const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
+  const caseId = Number(row.split(":")[0]);
+  return {
+    caseId,
+    checks: caseId === 2
+      ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_DEFAULT_CHECK_NAME])
+      : EXPECTED_BASE_CHECK_NAMES
+  };
+});
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const driftShape = {
+  totals,
+  caseRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `cache-layout audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
