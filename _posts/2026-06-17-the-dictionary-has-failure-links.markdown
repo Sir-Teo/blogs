@@ -451,6 +451,59 @@ the patterns that suffix the current state word, the dense DFA table agrees with
 the sparse failure-walk transition function, and streams stay under the
 two-transitions-per-character recognition bound.
 
+The block below is the static-site audit runner target:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/aho-corasick-lab.js");
+const EXPECTED_CHECKS = 145384;
+const EXPECTED_EXHAUSTIVE = { cases: 1875, totalMatches: 4550 };
+const EXPECTED_KNOWN = { gata: 2, she: 2, ushers: 3 };
+const EXPECTED_SUMMARY = {
+  classic: "45:1699:1.542",
+  dna: "45:1328:1.917",
+  logs: "45:536:1.333"
+};
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.audit();
+const summary = {};
+Object.keys(audit.summary).sort().forEach((key) => {
+  const row = audit.summary[key];
+  summary[key] = [
+    row.cases,
+    row.totalMatches,
+    fixed3(row.maxSparseStepsPerChar)
+  ].join(":");
+});
+
+if (
+  !audit.ok ||
+  audit.checked !== EXPECTED_CHECKS ||
+  !sameJson(audit.exhaustive, EXPECTED_EXHAUSTIVE) ||
+  !sameJson(audit.knownExamples, EXPECTED_KNOWN) ||
+  !sameJson(summary, EXPECTED_SUMMARY)
+) {
+  throw new Error(JSON.stringify({
+    checked: audit.checked,
+    exhaustive: audit.exhaustive,
+    knownExamples: audit.knownExamples,
+    ok: audit.ok,
+    summary
+  }, null, 2));
+}
+
+console.log(`${audit.checked} Aho-Corasick checks passed`);
+NODE
+```
+
 [^aho-acm]: Alfred V. Aho and Margaret J. Corasick, ["Efficient string matching: an aid to bibliographic search"](https://dl.acm.org/doi/10.1145/360825.360855), *Communications of the ACM*, 1975. A PDF is mirrored at [cr.yp.to](https://cr.yp.to/bib/1975/aho.pdf).
 
 [^rust-docs]: Andrew Gallant, [`aho-corasick` crate documentation](https://docs.rs/aho-corasick), docs.rs.
