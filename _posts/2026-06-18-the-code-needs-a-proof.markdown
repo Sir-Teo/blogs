@@ -335,15 +335,15 @@ const EXPECTED_CASE_ROWS = [
   "S256/injectedUnbound/downgradeGuard:1:1:0:0:0:1:8/8:true",
   "S256/injectedUnbound/requirePkce:1:1:0:1:0:1:8/8:true"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "s256-rfc7636-vector",
-  "s256-blocks-intercepted-code",
-  "s256-allows-legitimate-client",
-  "plain-observer-can-redeem",
-  "no-pkce-first-redeemer",
-  "pkce-required-rejects-no-pkce",
-  "optional-shows-injected-unbound-risk",
-  "guarded-server-blocks-injected-unbound"
+const EXPECTED_CHECKS = [
+  { name: "s256-rfc7636-vector", passed: true },
+  { name: "s256-blocks-intercepted-code", passed: true },
+  { name: "s256-allows-legitimate-client", passed: true },
+  { name: "plain-observer-can-redeem", passed: true },
+  { name: "no-pkce-first-redeemer", passed: true },
+  { name: "pkce-required-rejects-no-pkce", passed: true },
+  { name: "optional-shows-injected-unbound-risk", passed: true },
+  { name: "guarded-server-blocks-injected-unbound", passed: true }
 ];
 
 function sameJson(actual, expected) {
@@ -405,11 +405,14 @@ const caseRows = audit.cases.map((row) => [
 ].join(":"));
 const checkRows = audit.cases.map((row) => ({
   case: `${row.proof}/${row.attacker}/${row.server}`,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    passed: check.passed
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
   case: row.split(":")[0],
-  checks: EXPECTED_CHECK_NAMES
+  checks: EXPECTED_CHECKS
 }));
 const byProofDrifts = rowDrifts(byProofRows, EXPECTED_BY_PROOF);
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
