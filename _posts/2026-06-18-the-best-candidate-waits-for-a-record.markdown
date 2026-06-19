@@ -298,24 +298,24 @@ The compact reproduction check is:
 node - <<'NODE'
 const lab = require("./assets/js/secretary-stopping-lab.js");
 const EXPECTED_EXACT_CASE_SHAPE = [
-  "5:1:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force",
-  "5:2:0.416666666667:0.416666666667:5.551e-17:1/1:closed form equals brute force",
-  "5:3:0.433333333333:0.433333333333:5.551e-17:1/1:closed form equals brute force",
-  "5:4:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force",
-  "5:5:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force",
-  "6:1:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force",
-  "6:2:0.380555555556:0.380555555556:0.000e+0:1/1:closed form equals brute force",
-  "6:3:0.427777777778:0.427777777778:0.000e+0:1/1:closed form equals brute force",
-  "6:4:0.391666666667:0.391666666667:5.551e-17:1/1:closed form equals brute force",
-  "6:5:0.300000000000:0.300000000000:0.000e+0:1/1:closed form equals brute force",
-  "6:6:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force",
-  "7:1:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force",
-  "7:2:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force",
-  "7:3:0.414285714286:0.414285714286:5.551e-17:1/1:closed form equals brute force",
-  "7:4:0.407142857143:0.407142857143:5.551e-17:1/1:closed form equals brute force",
-  "7:5:0.352380952381:0.352380952381:0.000e+0:1/1:closed form equals brute force",
-  "7:6:0.261904761905:0.261904761905:0.000e+0:1/1:closed form equals brute force",
-  "7:7:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force"
+  "5:1:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force=true",
+  "5:2:0.416666666667:0.416666666667:5.551e-17:1/1:closed form equals brute force=true",
+  "5:3:0.433333333333:0.433333333333:5.551e-17:1/1:closed form equals brute force=true",
+  "5:4:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force=true",
+  "5:5:0.200000000000:0.200000000000:0.000e+0:1/1:closed form equals brute force=true",
+  "6:1:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force=true",
+  "6:2:0.380555555556:0.380555555556:0.000e+0:1/1:closed form equals brute force=true",
+  "6:3:0.427777777778:0.427777777778:0.000e+0:1/1:closed form equals brute force=true",
+  "6:4:0.391666666667:0.391666666667:5.551e-17:1/1:closed form equals brute force=true",
+  "6:5:0.300000000000:0.300000000000:0.000e+0:1/1:closed form equals brute force=true",
+  "6:6:0.166666666667:0.166666666667:0.000e+0:1/1:closed form equals brute force=true",
+  "7:1:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force=true",
+  "7:2:0.350000000000:0.350000000000:0.000e+0:1/1:closed form equals brute force=true",
+  "7:3:0.414285714286:0.414285714286:5.551e-17:1/1:closed form equals brute force=true",
+  "7:4:0.407142857143:0.407142857143:5.551e-17:1/1:closed form equals brute force=true",
+  "7:5:0.352380952381:0.352380952381:0.000e+0:1/1:closed form equals brute force=true",
+  "7:6:0.261904761905:0.261904761905:0.000e+0:1/1:closed form equals brute force=true",
+  "7:7:0.142857142857:0.142857142857:0.000e+0:1/1:closed form equals brute force=true"
 ];
 const EXPECTED_EXACT_SUMMARY_SHAPE = [
   "5:5:5/5:5.55e-17",
@@ -323,16 +323,16 @@ const EXPECTED_EXACT_SUMMARY_SHAPE = [
   "7:7:7/7:5.55e-17"
 ];
 const EXPECTED_DP_CASE_SHAPE = [
-  "12:5:5:0.395514670515:0.395514670515:0.000e+0:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
-  "25:10:10:0.380916372563:0.380916372563:5.551e-17:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
-  "80:30:30:0.371855486992:0.371855486992:1.110e-16:2/2:DP cutoff equals finite optimum|DP value equals finite optimum",
-  "150:56:56:0.369997293685:0.369997293685:6.106e-16:2/2:DP cutoff equals finite optimum|DP value equals finite optimum"
+  "12:5:5:0.395514670515:0.395514670515:0.000e+0:2/2:DP cutoff equals finite optimum=true|DP value equals finite optimum=true",
+  "25:10:10:0.380916372563:0.380916372563:5.551e-17:2/2:DP cutoff equals finite optimum=true|DP value equals finite optimum=true",
+  "80:30:30:0.371855486992:0.371855486992:1.110e-16:2/2:DP cutoff equals finite optimum=true|DP value equals finite optimum=true",
+  "150:56:56:0.369997293685:0.369997293685:6.106e-16:2/2:DP cutoff equals finite optimum=true|DP value equals finite optimum=true"
 ];
 const EXPECTED_DEFAULT_CHECK_SHAPE = [
-  "cutoff range:1/1",
-  "curve bounded:1/1",
-  "formula finite:1/1",
-  "simulation close:1/1"
+  "cutoff range:1/1:passed=true",
+  "curve bounded:1/1:passed=true",
+  "formula finite:1/1:passed=true",
+  "simulation close:1/1:passed=true"
 ];
 const EXPECTED_ROWS =
   EXPECTED_EXACT_CASE_SHAPE.length +
@@ -349,14 +349,14 @@ function sameList(actual, expected) {
     actual.every((value, index) => value === expected[index]);
 }
 
-function checkNames(row) {
-  return row.checks.map((check) => check.name).join("|");
+function checkResults(row) {
+  return row.checks.map((check) => `${check.name}=${check.passed}`).join("|");
 }
 
 function exactCaseShape(row) {
   return `${row.n}:${row.cutoff}:${row.exact.toFixed(12)}:` +
     `${row.brute.toFixed(12)}:${row.difference.toExponential(3)}:` +
-    `${row.passedChecks}/${row.totalChecks}:${checkNames(row)}`;
+    `${row.passedChecks}/${row.totalChecks}:${checkResults(row)}`;
 }
 
 function exactSummaryShape(row) {
@@ -367,11 +367,11 @@ function dpCaseShape(row) {
   return `${row.n}:${row.bestCutoff}:${row.dpFirstAccept}:` +
     `${row.bestProbability.toFixed(12)}:${row.dpValue.toFixed(12)}:` +
     `${row.valueDifference.toExponential(3)}:` +
-    `${row.passedChecks}/${row.totalChecks}:${checkNames(row)}`;
+    `${row.passedChecks}/${row.totalChecks}:${checkResults(row)}`;
 }
 
 function defaultCheckShape(row) {
-  return `${row.name}:${row.passedChecks}/${row.totalChecks}`;
+  return `${row.name}:${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`;
 }
 
 const audit = lab.auditSecretaryStoppingLab();
