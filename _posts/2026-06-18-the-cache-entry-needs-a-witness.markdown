@@ -325,6 +325,10 @@ const EXPECTED_CHECK_NAMES = [
   "SWR stale responses stay inside the SWR window",
   "SWR never increases max blocking wait"
 ];
+const EXPECTED_CHECK_SHAPE = EXPECTED_CHECK_NAMES.map((name) => ({
+  name,
+  ok: true
+}));
 const EXPECTED_BY_SCENARIO = [
   "release:27 cases/162 checks:81/468/7.200/0:162",
   "newsroom:27 cases/162 checks:42/696/5.400/0:129",
@@ -435,7 +439,10 @@ function auditShape(audit) {
         maxAge: row.maxAge,
         swr: row.swr,
         latency: row.latency
-      }).audit.checks.map((check) => check.name)
+      }).audit.checks.map((check) => ({
+        name: check.name,
+        ok: check.ok
+      }))
     ),
     byScenario: audit.byScenario.map(
       (row) => `${row.scenario}:${row.cases} cases/${row.totalChecks} checks:` +
@@ -459,7 +466,7 @@ const shapeErrors = [
   sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   sameList(checkNameShape, EXPECTED_CHECK_NAMES) ? null : "checkNames",
-  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+  shape.checksByCase.every((checks) => sameJson(checks, EXPECTED_CHECK_SHAPE))
     ? null
     : "checksByCase",
   sameList(shape.byScenario, EXPECTED_BY_SCENARIO) ? null : "byScenario",
