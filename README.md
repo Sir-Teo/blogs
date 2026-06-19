@@ -41,3 +41,10 @@ To inspect the discovered audit set without running it:
 ```sh
 node scripts/run-post-audit.js --list --all
 ```
+
+To find posts that reference a JavaScript lab but do not expose a runnable
+embedded audit:
+
+```sh
+node scripts/run-post-audit.js --missing --all
+```

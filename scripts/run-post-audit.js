@@ -7,7 +7,7 @@ const { spawnSync } = require("child_process");
 
 function usage() {
   console.error(
-    "Usage: node scripts/run-post-audit.js [--quiet] [--list] [--all] [--date YYYY-MM-DD] " +
+    "Usage: node scripts/run-post-audit.js [--quiet] [--list] [--missing] [--all] [--date YYYY-MM-DD] " +
     "_posts/post.markdown [...]"
   );
 }
@@ -44,7 +44,7 @@ function runnableAuditBlock(markdown) {
   return candidates[0] || null;
 }
 
-function discoverPosts(filter) {
+function postFiles(filter) {
   const postsDir = path.resolve("_posts");
   if (!fs.existsSync(postsDir)) {
     console.error("[audit] _posts directory not found");
@@ -54,11 +54,30 @@ function discoverPosts(filter) {
   return fs.readdirSync(postsDir)
     .filter((name) => name.endsWith(".markdown") && filter(name))
     .map((name) => path.join("_posts", name))
-    .filter((file) => {
-      const markdown = fs.readFileSync(path.resolve(file), "utf8");
-      return runnableAuditBlock(markdown) !== null;
-    })
     .sort();
+}
+
+function markdownHasLabAsset(markdown) {
+  return /assets\/js\/[^'")\s]+\.js/.test(markdown);
+}
+
+function hasRunnableAudit(file) {
+  const markdown = fs.readFileSync(path.resolve(file), "utf8");
+  return runnableAuditBlock(markdown) !== null;
+}
+
+function isMissingAuditPost(file) {
+  if (!fs.existsSync(file)) return false;
+  const markdown = fs.readFileSync(path.resolve(file), "utf8");
+  return markdownHasLabAsset(markdown) && runnableAuditBlock(markdown) === null;
+}
+
+function discoverPosts(filter) {
+  return postFiles(filter).filter(hasRunnableAudit);
+}
+
+function discoverMissingPosts(filter) {
+  return postFiles(filter).filter(isMissingAuditPost);
 }
 
 function runAudit(file, options) {
@@ -101,6 +120,7 @@ const options = {
   all: false,
   date: null,
   list: false,
+  missing: false,
   quiet: false
 };
 const files = [];
@@ -110,6 +130,8 @@ for (let index = 0; index < args.length; index += 1) {
     options.quiet = true;
   } else if (arg === "--list") {
     options.list = true;
+  } else if (arg === "--missing") {
+    options.missing = true;
   } else if (arg === "--all") {
     options.all = true;
   } else if (arg === "--date") {
@@ -123,6 +145,23 @@ for (let index = 0; index < args.length; index += 1) {
 if (options.date && !/^\d{4}-\d{2}-\d{2}$/.test(options.date)) {
   console.error("[audit] --date must use YYYY-MM-DD");
   process.exit(2);
+}
+
+if (options.missing) {
+  const missingFiles = [];
+  if (options.all || (!options.date && files.length === 0)) {
+    missingFiles.push(...discoverMissingPosts(() => true));
+  }
+  if (options.date) {
+    missingFiles.push(...discoverMissingPosts((name) => name.startsWith(`${options.date}-`)));
+  }
+  if (files.length) {
+    missingFiles.push(...files.filter(isMissingAuditPost));
+  }
+  const missingAuditFiles = Array.from(new Set(missingFiles));
+  missingAuditFiles.forEach((file) => console.log(file));
+  console.error(`[audit] ${missingAuditFiles.length} posts with lab assets but no runnable audit`);
+  process.exit(0);
 }
 
 if (options.all) {
