@@ -23,4 +23,9 @@ audit for one or more posts from the repository root:
 node scripts/run-post-audit.js _posts/2026-06-18-the-best-candidate-waits-for-a-record.markdown
 ```
 
-Use `--quiet` for compact per-post pass/fail output and a final total.
+Use `--quiet` for compact per-post pass/fail output and a final total. To run
+every embedded audit for a publishing day:
+
+```sh
+node scripts/run-post-audit.js --quiet --date 2026-06-18
+```
