@@ -165,6 +165,96 @@ and low-correlation smoke case.
 </div>
 <script defer src="{{ '/assets/js/cuped-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner treats the darkroom metaphor as executable
+arithmetic:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/cuped-lab.js");
+const DEFAULTS = {
+  usersPerArm: 1200,
+  trueLift: 0.08,
+  correlation: 65,
+  coverage: 100,
+  leakage: 0,
+  trials: 220
+};
+const EXPECTED_AUDIT = { checked: 32, failureCount: 0, ok: true, passed: 32 };
+const EXPECTED_DEFAULT = [
+  "1200:0.080000:65:100:0:220:220",
+  "0.648484:0.551066:0.551066:0.522727:0.777273:0.777273",
+  "unadj=0.082664/0.013738/0.081509/0.153185/0.001809",
+  "cuped=0.083255/0.029980/0.085058/0.132105/0.000997",
+  "bad=0.083255/0.029980/0.085058/0.132105/0.000997",
+  "leaky=0.031336/0.079035/0.542984"
+].join(":");
+
+function fixed(value) {
+  return Number(value).toFixed(6);
+}
+
+function summaryShape(label, stats) {
+  return `${label}=${[
+    stats.mean,
+    stats.p05,
+    stats.p50,
+    stats.p95,
+    stats.variance
+  ].map(fixed).join("/")}`;
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.simulate(DEFAULTS);
+const leaky = lab.simulate({ ...DEFAULTS, leakage: 100 });
+const auditShape = {
+  checked: audit.checked,
+  failureCount: audit.checks.filter((check) => !check.passed).length,
+  ok: audit.ok,
+  passed: audit.passed
+};
+const paramsShape = [
+  result.params.usersPerArm,
+  fixed(result.params.trueLift),
+  result.params.correlation,
+  result.params.coverage,
+  result.params.leakage,
+  result.params.trials,
+  result.trials
+].join(":");
+const metricShape = [
+  result.avgCorr,
+  result.varianceRatio,
+  result.badVarianceRatio,
+  result.unadjDetection,
+  result.cupedDetection,
+  result.badDetection
+].map(fixed).join(":");
+const leakageShape = `leaky=${[
+  leaky.bad.mean,
+  leaky.xBadDiff.mean,
+  leaky.badVarianceRatio
+].map(fixed).join("/")}`;
+const defaultShape = [
+  paramsShape,
+  metricShape,
+  summaryShape("unadj", result.unadj),
+  summaryShape("cuped", result.cuped),
+  summaryShape("bad", result.bad),
+  leakageShape
+].join(":");
+
+if (!sameJson(auditShape, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ auditShape, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} CUPED checks passed`);
+NODE
+```
+
 With the default settings, the pre-period covariate is strongly correlated with
 the outcome. The unadjusted estimator is centered near the true lift, but its
 distribution is wide. CUPED stays centered and tightens the distribution. The
