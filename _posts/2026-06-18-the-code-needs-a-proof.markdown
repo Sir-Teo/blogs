@@ -350,6 +350,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const vector = lab.challengeFor(
   "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
   "S256"
@@ -398,6 +411,25 @@ const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
   case: row.split(":")[0],
   checks: EXPECTED_CHECK_NAMES
 }));
+const byProofDrifts = rowDrifts(byProofRows, EXPECTED_BY_PROOF);
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const auditShape = {
+  vector,
+  defaultSummary,
+  totals,
+  byProofDrifts,
+  caseRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  vector === EXPECTED_VECTOR ? null : "vector",
+  sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  byProofDrifts.length === 0 ? null : "byProofRows",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
 console.table(audit.byProof);
 console.table(audit.cases.map((row) => ({
   proof: row.proof,
@@ -411,22 +443,11 @@ console.table(audit.cases.map((row) => ({
   checks: `${row.passedChecks}/${row.totalChecks}`,
   passed: row.passed
 })));
-if (
-  vector !== EXPECTED_VECTOR ||
-  !sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ||
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(byProofRows, EXPECTED_BY_PROOF) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
-  !sameJson(checkRows, expectedCheckRows)
-) {
-  throw new Error("unexpected PKCE audit shape: " + JSON.stringify({
-    vector,
-    defaultSummary,
-    totals,
-    byProofRows,
-    caseRows,
-    checkRows
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `PKCE audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} policy cases and ` +
