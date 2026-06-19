@@ -338,6 +338,9 @@ const EXPECTED_CHECK_NAMES = [
 ];
 const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CHECK_ROWS = Array.from({ length: EXPECTED_CASES }, (_, index) =>
+  `${index + 1}:` + EXPECTED_CHECK_NAMES.map((name) => `${name}=true`).join("|")
+);
 
 function sameList(actual, expected) {
   return actual.length === expected.length &&
@@ -358,6 +361,22 @@ function byCaseShape(row) {
     `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
 }
 
+function checkRow(row) {
+  return `${row.caseId}:` +
+    row.checks.map((check) => `${check.name}=${check.ok}`).join("|");
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -365,8 +384,10 @@ const failed = audit.cases.filter(
 console.table(audit.byCase);
 const shape = {
   byCase: audit.byCase.map(byCaseShape),
-  cases: audit.cases.map(caseShape)
+  cases: audit.cases.map(caseShape),
+  checkRows: audit.cases.map(checkRow)
 };
+const checkRowDrifts = rowDrifts(shape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [];
 if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
   shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
@@ -388,6 +409,9 @@ audit.cases.forEach((row) => {
     });
   }
 });
+if (hasRowDrift(checkRowDrifts)) {
+  shapeErrors.push({ name: "checkRows", drift: checkRowDrifts });
+}
 console.table(audit.cases.map((row) => ({
   case: row.caseId,
   bid: row.bid,
@@ -416,6 +440,8 @@ if (
     summary,
     failed,
     shapeErrors,
+    shape,
+    checkRowDrifts,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
