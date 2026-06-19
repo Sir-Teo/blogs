@@ -123,7 +123,9 @@ if (options.date) {
   files.push(...discoverPostsByDate(options.date));
 }
 
-if (files.length === 0) {
+const auditFiles = Array.from(new Set(files));
+
+if (auditFiles.length === 0) {
   usage();
   process.exit(2);
 }
@@ -131,7 +133,7 @@ if (files.length === 0) {
 let exitCode = 0;
 let passedAudits = 0;
 let failedAudits = 0;
-for (const file of files) {
+for (const file of auditFiles) {
   if (!fs.existsSync(file)) {
     console.error(`[audit] ${file}: file not found`);
     failedAudits += 1;
