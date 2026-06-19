@@ -349,6 +349,22 @@ const EXPECTED_CASE_SHAPE = [
   "stress-3:7:25000:500:24:300:11:24:0",
   "stress-4:7:70000:2500:48:560:17:48:0"
 ];
+const EXPECTED_CASE_ROWS = [
+  "default:checks=7/7:passed=true:events=50000:vocab=2000:counters=64:min=592:threshold=600:trueHeavy=10:reported=15:noMiss=true",
+  "fixed-seed-replay:checks=1/1:passed=true:events=50000:vocab=2000:counters=64:min=592:threshold=600:trueHeavy=10:reported=15:noMiss=true",
+  "stress-1:checks=7/7:passed=true:events=5000:vocab=100:counters=8:min=624:threshold=100:trueHeavy=0:reported=8:noMiss=false",
+  "stress-2:checks=7/7:passed=true:events=120000:vocab=8000:counters=160:min=93:threshold=240:trueHeavy=38:reported=39:noMiss=true",
+  "stress-3:checks=7/7:passed=true:events=25000:vocab=500:counters=24:min=973:threshold=300:trueHeavy=11:reported=24:noMiss=false",
+  "stress-4:checks=7/7:passed=true:events=70000:vocab=2500:counters=48:min=864:threshold=560:trueHeavy=17:reported=48:noMiss=false"
+];
+const EXPECTED_CHECK_ROWS = [
+  "default:counter-total=true|monitored-intervals=true|unmonitored-min-bound=true|threshold-no-miss=true|guaranteed-threshold=true|minimum-n-over-k=true|top-k-range=true",
+  "fixed-seed-replay:fixed-seed-replay=true",
+  "stress-1:counter-total=true|monitored-intervals=true|unmonitored-min-bound=true|threshold-no-miss=true|guaranteed-threshold=true|minimum-n-over-k=true|top-k-range=true",
+  "stress-2:counter-total=true|monitored-intervals=true|unmonitored-min-bound=true|threshold-no-miss=true|guaranteed-threshold=true|minimum-n-over-k=true|top-k-range=true",
+  "stress-3:counter-total=true|monitored-intervals=true|unmonitored-min-bound=true|threshold-no-miss=true|guaranteed-threshold=true|minimum-n-over-k=true|top-k-range=true",
+  "stress-4:counter-total=true|monitored-intervals=true|unmonitored-min-bound=true|threshold-no-miss=true|guaranteed-threshold=true|minimum-n-over-k=true|top-k-range=true"
+];
 const EXPECTED_TOTALS = {
   scenarioRows: EXPECTED_SCENARIO_ROWS,
   replayRows: EXPECTED_REPLAY_ROWS,
@@ -360,6 +376,17 @@ const EXPECTED_TOTALS = {
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
 }
 
 const audit = lab.auditSpaceSavingLab();
@@ -397,6 +424,17 @@ const auditShape = {
     row.reported,
     row.noMissCondition ? 1 : 0
   ].join(":")).sort(),
+  caseRows: audit.cases.map((row) =>
+    `${row.scenario}:checks=${row.passedChecks}/${row.totalChecks}:` +
+    `passed=${row.passed}:events=${row.events}:vocab=${row.vocabulary}:` +
+    `counters=${row.counters}:min=${row.minCount}:` +
+    `threshold=${row.thresholdCount}:trueHeavy=${row.trueHeavy}:` +
+    `reported=${row.reported}:noMiss=${row.noMissCondition}`
+  ).sort(),
+  checkRows: audit.cases.map((row) =>
+    `${row.scenario}:` +
+    row.checks.map((check) => `${check.name}=${check.passed}`).join("|")
+  ).sort(),
   replayCheckNames: Array.from(new Set(replayRows.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
@@ -404,9 +442,13 @@ const auditShape = {
     (row) => row.checks.map((check) => check.name)
   ))).sort()
 };
+const caseRowDrifts = rowDrifts(auditShape.caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(auditShape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  caseRowDrifts.length ? "caseRows" : null,
+  checkRowDrifts.length ? "checkRows" : null,
   sameJson(auditShape.scenarioCheckNames, EXPECTED_SCENARIO_CHECK_NAMES)
     ? null
     : "scenarioCheckNames",
@@ -417,7 +459,13 @@ const shapeErrors = [
 if (shapeErrors.length) {
   throw new Error(
     `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    JSON.stringify({
+      auditShape,
+      drifts: {
+        caseRows: caseRowDrifts,
+        checkRows: checkRowDrifts
+      }
+    }, null, 2)
   );
 }
 
