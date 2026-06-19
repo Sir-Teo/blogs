@@ -417,15 +417,110 @@ The lab exports the same calculation for Node:
 
 ```js
 const lab = require("./assets/js/knight-deploy-lab.js");
+const EXPECTED_TOTALS = {
+  rows: 6,
+  passed: 6,
+  total: 6,
+  passedChecks: 39,
+  totalChecks: 39
+};
+const EXPECTED_CASE_ROWS = [
+  "1:1:212:45:419:0:0:40:0:50:3997260:396.7:459.7:45.00:18855.00:9/9:true",
+  "2:1:212:45:419:1:0:40:0:50:0:0.0:0.0:0.00:0.00:6/6:true",
+  "3:1:212:45:419:0:1:25:0:50:5300:0.5:0.6:0.06:25.00:6/6:true",
+  "4:1:212:45:419:0:0:40:1:20:173913:17.3:20.0:1.96:820.34:6/6:true",
+  "5:0:212:45:419:0:0:40:0:50:0:0.0:0.0:0.00:0.00:6/6:true",
+  "6:2:120:20:350:0:0:40:0:50:1680000:166.7:193.2:20.00:7000.00:6/6:true"
+];
+const EXPECTED_BASE_CHECK_NAMES = [
+  "outputs are finite and non-negative",
+  "deployment check prevents stale-server activation",
+  "zero stale servers cause zero erroneous executions",
+  "actual executions do not exceed raw loop",
+  "router guard enforces per-parent cap",
+  "capital guard enforces configured loss bound"
+];
+const EXPECTED_BASELINE_CHECK_NAMES = [
+  ...EXPECTED_BASE_CHECK_NAMES,
+  "default calibration is near SEC execution count",
+  "default calibration is near SEC share count",
+  "default calibration is near SEC loss scale"
+];
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
 
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-
-if (audit.total !== 6 || audit.totalChecks !== 39) {
+const totals = {
+  rows: audit.cases.length,
+  passed: audit.passed,
+  total: audit.total,
+  passedChecks: audit.passedChecks,
+  totalChecks: audit.totalChecks
+};
+const caseRows = audit.cases.map((row, index) => [
+  index + 1,
+  row.params.staleServers,
+  row.params.badParentOrders,
+  row.params.exposureMinutes,
+  row.params.executionsPerParentMinute,
+  row.params.deploymentCheck,
+  row.params.routerGuard,
+  row.params.outputCap,
+  row.params.capitalGuard,
+  row.params.capitalLimit,
+  Math.round(row.executions),
+  (row.shares / 1e6).toFixed(1),
+  (row.estimatedLoss / 1e6).toFixed(1),
+  row.activeMinutes.toFixed(2),
+  row.amplification.toFixed(2),
+  `${row.passedChecks}/${row.totalChecks}`,
+  row.passed
+].join(":"));
+const checkRows = audit.cases.map((row, index) => ({
+  caseId: index + 1,
+  checks: row.checks.map((check) => check.name)
+}));
+const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
+  const caseId = Number(row.split(":")[0]);
+  return {
+    caseId,
+    checks: caseId === 1 ? EXPECTED_BASELINE_CHECK_NAMES : EXPECTED_BASE_CHECK_NAMES
+  };
+});
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const driftShape = {
+  totals,
+  caseRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
+if (shapeErrors.length) {
   throw new Error(
-    `unexpected audit size: ${audit.total} cases, ${audit.totalChecks} checks`
+    `Knight audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
   );
 }
 
