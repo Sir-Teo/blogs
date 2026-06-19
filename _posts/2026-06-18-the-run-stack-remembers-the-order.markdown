@@ -383,17 +383,17 @@ const EXPECTED_CASE_ROWS = [
   "5:random:128:16:80:71:8:366:743:741:741:896:1027:4:10/10:true",
   "6:runs:224:24:48:202:6:223:1129:678:678:1760:620:3:10/10:true"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "fixed merge sort matches stable reference",
-  "natural queue matches stable reference",
-  "run stack matches stable reference",
-  "all outputs are sorted and stable",
-  "detected runs cover the input",
-  "detected runs are sorted after extension",
-  "stack performs one merge per pending-run reduction",
-  "queue performs one merge per pending-run reduction",
-  "stack merge records conserve run length",
-  "run-aware methods include finite accounting"
+const EXPECTED_CHECKS = [
+  { name: "fixed merge sort matches stable reference", ok: true },
+  { name: "natural queue matches stable reference", ok: true },
+  { name: "run stack matches stable reference", ok: true },
+  { name: "all outputs are sorted and stable", ok: true },
+  { name: "detected runs cover the input", ok: true },
+  { name: "detected runs are sorted after extension", ok: true },
+  { name: "stack performs one merge per pending-run reduction", ok: true },
+  { name: "queue performs one merge per pending-run reduction", ok: true },
+  { name: "stack merge records conserve run length", ok: true },
+  { name: "run-aware methods include finite accounting", ok: true }
 ];
 
 function sameJson(actual, expected) {
@@ -444,11 +444,14 @@ const caseRows = audit.cases.map((row) => [
 ].join(":"));
 const checkRows = audit.cases.map((row) => ({
   caseId: row.caseId,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
   caseId: Number(row.split(":")[0]),
-  checks: EXPECTED_CHECK_NAMES
+  checks: EXPECTED_CHECKS
 }));
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
 const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
