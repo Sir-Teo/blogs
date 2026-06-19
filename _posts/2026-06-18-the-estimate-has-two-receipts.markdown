@@ -437,6 +437,26 @@ const EXPECTED_DECILE_SHAPE = [
   "900:90:14:14:20:0.025:608",
   "900:90:6:4:15:0.010:430"
 ];
+const EXPECTED_CASE_ROWS = [
+  "600:45:14:true=0.549:both=0.001:outcome=0.000:propensity=0.002:neither=0.050:orWrong=0.053:arms=14/18:minE=0.109:ess=543:checks=3/3:passed=true",
+  "600:45:6:true=0.549:both=0.006:outcome=0.008:propensity=0.017:neither=0.069:orWrong=0.072:arms=9/15:minE=0.048:ess=497:checks=3/3:passed=true",
+  "600:90:14:true=0.547:both=-0.028:outcome=-0.026:propensity=-0.014:neither=0.070:orWrong=0.080:arms=13/13:minE=0.033:ess=419:checks=3/3:passed=true",
+  "600:90:6:true=0.552:both=-0.019:outcome=-0.011:propensity=-0.015:neither=0.120:orWrong=0.141:arms=8/10:minE=0.012:ess=291:checks=3/3:passed=true",
+  "900:45:14:true=0.549:both=-0.002:outcome=-0.001:propensity=0.000:neither=0.049:orWrong=0.051:arms=22/32:minE=0.087:ess=813:checks=3/3:passed=true",
+  "900:45:6:true=0.550:both=-0.002:outcome=-0.002:propensity=-0.007:neither=0.052:orWrong=0.056:arms=15/24:minE=0.044:ess=753:checks=3/3:passed=true",
+  "900:90:14:true=0.551:both=0.001:outcome=-0.001:propensity=0.013:neither=0.092:orWrong=0.103:arms=14/20:minE=0.025:ess=608:checks=3/3:passed=true",
+  "900:90:6:true=0.549:both=0.006:outcome=0.002:propensity=0.027:neither=0.108:orWrong=0.140:arms=4/15:minE=0.010:ess=430:checks=3/3:passed=true"
+];
+const EXPECTED_CHECK_ROWS = [
+  "600:45:14:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "600:45:6:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "600:90:14:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "600:90:6:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "900:45:14:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "900:45:6:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "900:90:14:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true",
+  "900:90:6:aipw-quadrant-shape=true|finite-estimates=true|propensity-deciles-have-both-arms=true"
+];
 const EXPECTED_TOTALS = {
   rows: EXPECTED_CASES,
   passed: EXPECTED_CASES,
@@ -447,6 +467,48 @@ const EXPECTED_TOTALS = {
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function formatCaseRow(row) {
+  return [
+    row.rows,
+    row.confounding,
+    row.overlap,
+    `true=${row.trueAte.toFixed(3)}`,
+    `both=${row.aipwBothBias.toFixed(3)}`,
+    `outcome=${row.aipwOutcomeBias.toFixed(3)}`,
+    `propensity=${row.aipwPropensityBias.toFixed(3)}`,
+    `neither=${row.aipwNeitherBias.toFixed(3)}`,
+    `orWrong=${row.outcomeRegressionWrongBias.toFixed(3)}`,
+    `arms=${row.minDecileTreated}/${row.minDecileControl}`,
+    `minE=${row.overlapMinPropensity.toFixed(3)}`,
+    `ess=${row.minEffectiveSampleSize.toFixed(0)}`,
+    `checks=${row.passedChecks}/${row.totalChecks}`,
+    `passed=${row.passed}`
+  ].join(":");
+}
+
+function formatCheckRow(row) {
+  return [
+    row.rows,
+    row.confounding,
+    row.overlap,
+    row.checks
+      .map((check) => `${check.name}=${check.passed}`)
+      .sort()
+      .join("|")
+  ].join(":");
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
 }
 
 const audit = lab.auditDoublyRobustLab();
@@ -462,6 +524,8 @@ const auditShape = {
     passedChecks: audit.passedChecks,
     totalChecks: audit.totalChecks
   },
+  caseRows: audit.cases.map(formatCaseRow).sort(),
+  checkRows: audit.cases.map(formatCheckRow).sort(),
   biasShape: audit.cases.map((row) => [
     row.rows,
     row.confounding,
@@ -493,17 +557,23 @@ const auditShape = {
     row.minEffectiveSampleSize.toFixed(0)
   ].join(":")).sort()
 };
+const shapeDrifts = {
+  caseRows: rowDrifts(auditShape.caseRows, EXPECTED_CASE_ROWS),
+  checkRows: rowDrifts(auditShape.checkRows, EXPECTED_CHECK_ROWS)
+};
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
   sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
   sameJson(auditShape.biasShape, EXPECTED_BIAS_SHAPE) ? null : "biasShape",
-  sameJson(auditShape.decileShape, EXPECTED_DECILE_SHAPE) ? null : "decileShape"
+  sameJson(auditShape.decileShape, EXPECTED_DECILE_SHAPE) ? null : "decileShape",
+  hasRowDrift(shapeDrifts.caseRows) ? "caseRows" : null,
+  hasRowDrift(shapeDrifts.checkRows) ? "checkRows" : null
 ].filter(Boolean);
 if (shapeErrors.length) {
   throw new Error(
     `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    JSON.stringify({ auditShape, shapeDrifts }, null, 2)
   );
 }
 
@@ -520,6 +590,7 @@ if (
     failed,
     shapeErrors,
     auditShape,
+    shapeDrifts,
     passed: audit.passed,
     passedChecks: audit.passedChecks,
     total: audit.total
