@@ -188,6 +188,73 @@ argument below; they do not make it a calibrated recommender benchmark.
 </div>
 <script defer src="{{ '/assets/js/recommender-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner replays the default programming desk and checks the
+policy ledger against deterministic outputs:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/recommender-lab.js");
+const EXPECTED_AUDIT = { checked: 20, failureCount: 0, ok: true, passed: 20 };
+const EXPECTED_DEFAULT = [
+  "45:65:12:55:35:420:180:audit",
+  "random=0.318452/0.647758/0.923030/0.028446/0.561905/1070",
+  "popularity=0.467262/0.757217/0.084343/0.661456/1.000000/1570",
+  "click=0.458929/0.728437/0.000000/0.699110/1.000000/1542",
+  "audit=0.442560/0.778053/0.250127/0.624133/0.942857/1487",
+  "diversity=0.346131/0.713017/0.976728/0.083837/0.471131/1163"
+].join(":");
+
+function fixed(value) {
+  return Number(value).toFixed(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  feedback: 45,
+  positionBias: 65,
+  exploration: 12,
+  catalogSkew: 55,
+  familiarity: 35,
+  sessions: 420
+});
+const auditShape = {
+  checked: audit.checked,
+  failureCount: audit.failures.length,
+  ok: audit.ok,
+  passed: audit.passed
+};
+const paramsShape = [
+  result.params.feedback,
+  result.params.positionBias,
+  result.params.exploration,
+  result.params.catalogSkew,
+  result.params.familiarity,
+  result.params.sessions,
+  result.catalog.length,
+  result.bestValue.key
+].join(":");
+const policyShape = result.results.map((row) => `${row.key}=${[
+  row.clickRate,
+  row.latentValue,
+  row.diversity,
+  row.drift,
+  row.headShare,
+  row.clicks
+].map((value, index) => index === 5 ? String(value) : fixed(value)).join("/")}`).join(":");
+const defaultShape = [paramsShape, policyShape].join(":");
+
+if (!sameJson(auditShape, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ auditShape, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} recommender intervention checks passed`);
+NODE
+```
+
 Try increasing feedback strength and catalog skew. The click-only policy often
 looks better by click rate while losing diversity and drifting farther from the
 initial taste profile. Increase exploration. The audit policy gets cleaner
