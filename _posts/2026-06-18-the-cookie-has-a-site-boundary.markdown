@@ -346,6 +346,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const site = lab.siteFor("https://app.bank.example/dashboard");
 const defaultSummary = lab.evaluate({}).summary;
 console.log(site);
@@ -407,6 +420,25 @@ const byRequestRows = Object.values(audit.cases.reduce((groups, row) => {
 const namedRows = audit.namedChecks.map((row) =>
   `${row.name}:${row.passedChecks}/${row.totalChecks}:${row.passed}`
 );
+const byCookieDrifts = rowDrifts(byCookieRows, EXPECTED_BY_COOKIE);
+const byRequestDrifts = rowDrifts(byRequestRows, EXPECTED_BY_REQUEST);
+const namedDrifts = rowDrifts(namedRows, EXPECTED_NAMED_CHECKS);
+const auditShape = {
+  site,
+  defaultSummary,
+  totals,
+  byCookieDrifts,
+  byRequestDrifts,
+  namedDrifts
+};
+const shapeErrors = [
+  site === EXPECTED_SITE ? null : "site",
+  sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  byCookieDrifts.length === 0 ? null : "byCookieRows",
+  byRequestDrifts.length === 0 ? null : "byRequestRows",
+  namedDrifts.length === 0 ? null : "namedRows"
+].filter(Boolean);
 console.table(audit.byCookie.map((row) => ({
   cookie: row.cookie,
   cases: row.cases,
@@ -418,22 +450,11 @@ console.table(audit.byCookie.map((row) => ({
   csrfRisk: row.csrfRisk,
   checks: `${row.passedChecks}/${row.totalChecks}`
 })));
-if (
-  site !== EXPECTED_SITE ||
-  !sameJson(defaultSummary, EXPECTED_DEFAULT_SUMMARY) ||
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(byCookieRows, EXPECTED_BY_COOKIE) ||
-  !sameJson(byRequestRows, EXPECTED_BY_REQUEST) ||
-  !sameJson(namedRows, EXPECTED_NAMED_CHECKS)
-) {
-  throw new Error("unexpected SameSite audit shape: " + JSON.stringify({
-    site,
-    defaultSummary,
-    totals,
-    byCookieRows,
-    byRequestRows,
-    namedRows
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `SameSite audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
