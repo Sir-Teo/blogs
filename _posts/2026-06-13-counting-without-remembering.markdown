@@ -183,6 +183,51 @@ $$1.04/\sqrt{m}$$ standard-error ledger.
 </div>
 <script defer src="{{ '/assets/js/hyperloglog-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner executes the exported lab checks and pins the
+default model shape:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/hyperloglog-lab.js");
+const EXPECTED_AUDIT = { checked: 83, failures: [], ok: true, passed: 83 };
+const EXPECTED_DEFAULT = "1024:768:250000:49398.406:raw:0:28:22";
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+const audit = lab.runAudit();
+const result = lab.simulate({
+  duplicates: 5,
+  exactBytes: 16,
+  precision: 10,
+  shards: 4,
+  trials: 28,
+  uniques: 50000
+});
+const defaultShape = [
+  result.m,
+  result.hllBytes,
+  result.streamEvents,
+  fixed3(result.sketch.directEstimate.estimate),
+  result.sketch.directEstimate.correction,
+  result.sketch.directEstimate.zeros,
+  result.trials.errors.length,
+  result.curve.points.length
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} HyperLogLog checks passed`);
+NODE
+```
+
 The default setting uses $$m=1024$$ registers, which predicts a standard error
 near 3.25 percent. That number is not a worst-case guarantee for every hash
 family and every input adversary. It is the sampling scale of the estimator
