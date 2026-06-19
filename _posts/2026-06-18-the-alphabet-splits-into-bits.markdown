@@ -384,6 +384,10 @@ const EXPECTED_TOTALS = {
   passedChecks: EXPECTED_CHECKS,
   totalChecks: EXPECTED_CHECKS
 };
+const EXPECTED_CASE_ROWS = EXPECTED_CASE_SHAPE.map(
+  (row) => `${row}:checks=${EXPECTED_CRITICAL_SHAPE.length}/${EXPECTED_CRITICAL_SHAPE.length}:` +
+    "failed=none:passed=true"
+);
 
 function sameList(left, right) {
   return left.length === right.length &&
@@ -398,6 +402,30 @@ function symbolKey(symbol) {
   return symbol == null ? "all" : symbol;
 }
 
+function caseShape(row) {
+  return `${row.caseId}:${row.sample}:${symbolKey(row.symbol)}:` +
+    `${row.length}/${row.alphabet}:${row.waveletBits}:` +
+    `${row.accessChecks}/${row.rankChecks}/` +
+    `${row.selectChecks}/${row.rangeQuantileChecks}:${row.totalChecks}`;
+}
+
+function caseRow(row) {
+  return `${caseShape(row)}:checks=${row.passedChecks}/${row.totalChecks}:` +
+    `failed=${row.failedChecks.length ? row.failedChecks.join("|") : "none"}:` +
+    `passed=${row.passed}`;
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 function auditShape(audit) {
   return {
     totals: {
@@ -410,12 +438,8 @@ function auditShape(audit) {
       passedChecks: audit.passedChecks,
       totalChecks: audit.totalChecks
     },
-    cases: audit.cases.map(
-      (row) => `${row.caseId}:${row.sample}:${symbolKey(row.symbol)}:` +
-        `${row.length}/${row.alphabet}:${row.waveletBits}:` +
-        `${row.accessChecks}/${row.rankChecks}/` +
-        `${row.selectChecks}/${row.rangeQuantileChecks}:${row.totalChecks}`
-    ),
+    cases: audit.cases.map(caseShape),
+    caseRows: audit.cases.map(caseRow),
     bySample: audit.bySample.map(
       (row) => `${row.sample}:${row.cases} cases/${row.totalChecks} checks:` +
         `${row.length}/${row.alphabet}:${row.waveletBits}:` +
@@ -436,9 +460,11 @@ const failed = audit.cases.filter(
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.ok || row.passed !== row.total
 );
+const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
 const shapeErrors = [
   sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  hasRowDrift(caseRowDrifts) ? "caseRows" : null,
   sameList(shape.bySample, EXPECTED_SAMPLE_SHAPE) ? null : "bySample",
   sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks"
 ].filter(Boolean);
@@ -458,6 +484,7 @@ if (
     summary,
     shapeErrors,
     shape,
+    caseRowDrifts,
     failed,
     failedCriticalChecks,
     errors: audit.errors,
