@@ -327,6 +327,34 @@ const criticalRows = audit.criticalChecks.map((row) =>
   `${row.check}:${row.passed}/${row.total}:${row.ok}:` +
   `${row.failedCases.join(",") || "none"}`
 );
+const caseKeyErrors = caseKeys
+  .map((actual, index) =>
+    actual === EXPECTED_CASE_KEYS[index]
+      ? null
+      : { index, actual, expected: EXPECTED_CASE_KEYS[index] }
+  )
+  .filter(Boolean);
+if (caseKeys.length !== EXPECTED_CASE_KEYS.length) {
+  caseKeyErrors.push({
+    index: "length",
+    actual: caseKeys.length,
+    expected: EXPECTED_CASE_KEYS.length
+  });
+}
+const auditShape = {
+  totals,
+  byShapeRows,
+  criticalRows,
+  caseKeyErrors,
+  caseKeyHead: caseKeys.slice(0, 10),
+  caseKeyTail: caseKeys.slice(-10)
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  caseKeyErrors.length === 0 ? null : "caseKeys",
+  sameJson(byShapeRows, EXPECTED_BY_SHAPE) ? null : "byShapeRows",
+  sameJson(criticalRows, EXPECTED_CRITICAL_CHECKS) ? null : "criticalRows"
+].filter(Boolean);
 const displayRows = audit.byShape.map((row) => ({
   shape: row.shape,
   cases: row.cases,
@@ -338,19 +366,11 @@ const displayRows = audit.byShape.map((row) => ({
 }));
 console.table(displayRows);
 console.table(audit.criticalChecks);
-if (
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(caseKeys, EXPECTED_CASE_KEYS) ||
-  !sameJson(byShapeRows, EXPECTED_BY_SHAPE) ||
-  !sameJson(criticalRows, EXPECTED_CRITICAL_CHECKS)
-) {
-  throw new Error("unexpected rotating-calipers audit shape: " + JSON.stringify({
-    totals,
-    byShapeRows,
-    criticalRows,
-    caseKeyHead: caseKeys.slice(0, 10),
-    caseKeyTail: caseKeys.slice(-10)
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `rotating-calipers audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
