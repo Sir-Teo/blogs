@@ -418,6 +418,28 @@ const EXPECTED_CHECK_NAMES = [
   "time-average L splits into closed product plus edge debt",
   "window is finite and positive"
 ];
+const EXPECTED_COMMON_CHECKS = [
+  { name: "area is finite and nonnegative", ok: true },
+  { name: "window is finite and positive", ok: true },
+  { name: "area equals residence-time ledger", ok: true },
+  { name: "ledger components sum to total", ok: true },
+  { name: "time-average L splits into closed product plus edge debt", ok: true },
+  { name: "closed lambda-W product matches closed rate times mean W", ok: true },
+  { name: "time-average L equals area divided by window", ok: true },
+  { name: "queue length stays nonnegative", ok: true },
+  { name: "max queue length bounds endpoints", ok: true },
+  { name: "edge debt is nonnegative", ok: true }
+];
+const EXPECTED_CHECKS_BY_MODE = {
+  drain: EXPECTED_COMMON_CHECKS.concat([
+    { name: "drain closes all rectangles", ok: true },
+    { name: "drain starts empty", ok: true },
+    { name: "drain ends empty", ok: true }
+  ]),
+  slice: EXPECTED_COMMON_CHECKS.concat([
+    { name: "slice edge debt equals boundary rectangles", ok: true }
+  ])
+};
 const EXPECTED_MODES = EXPECTED_MODE_SHAPE.length;
 const EXPECTED_LOADS = EXPECTED_LOAD_SHAPE.length;
 const EXPECTED_CASES = 2 * 3 * 3 * 3 * 2;
@@ -427,6 +449,10 @@ const EXPECTED_MAX_RESIDUAL = "0.000000000000";
 function sameList(actual, expected) {
   return actual.length === expected.length &&
     actual.every((value, index) => value === expected[index]);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
 function fixed(value, digits) {
@@ -471,6 +497,14 @@ const shape = {
   maxResidual: fixed(audit.maxResidual, 12),
   worstResiduals: audit.worstResiduals.map(residualShape)
 };
+const checkRowDrifts = audit.cases.map((row) => ({
+  key: `${row.mode}/${row.load}/${row.arrivalCv}/${row.serviceCv}/${row.seed}`,
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  })),
+  expected: EXPECTED_CHECKS_BY_MODE[row.mode]
+})).filter((row) => !sameJson(row.checks, row.expected));
 const shapeErrors = [];
 if (!sameList(shape.grid, EXPECTED_GRID_SHAPE)) {
   shapeErrors.push({ name: "grid", actual: shape.grid, expected: EXPECTED_GRID_SHAPE });
@@ -500,6 +534,13 @@ if (shape.maxResidual !== EXPECTED_MAX_RESIDUAL) {
     name: "maxResidual",
     actual: shape.maxResidual,
     expected: EXPECTED_MAX_RESIDUAL
+  });
+}
+if (checkRowDrifts.length) {
+  shapeErrors.push({
+    name: "checkRows",
+    actual: checkRowDrifts.slice(0, 10),
+    expected: EXPECTED_CHECKS_BY_MODE
   });
 }
 
