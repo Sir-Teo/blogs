@@ -210,6 +210,54 @@ Try three moves:
 </div>
 <script defer src="{{ '/assets/js/bloom-filter-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks the exported lab contract and pins the
+default filter shape:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/bloom-filter-lab.js");
+const EXPECTED_AUDIT = { checked: 88, failures: [], ok: true, passed: 88 };
+const EXPECTED_DEFAULT = "40000:4000:7:5000:20077:0.501925:0.008194:0.011000:55:0";
+
+function fixed6(value) {
+  return Number(value).toFixed(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.simulate({
+  bitsPerItem: 10,
+  duplicatePasses: 1,
+  hashes: 7,
+  items: 4000,
+  keyBytes: 16,
+  presentShare: 10,
+  queries: 5000
+});
+const defaultShape = [
+  result.filter.m,
+  result.filter.n,
+  result.filter.k,
+  result.filterBytes,
+  result.filter.ones,
+  fixed6(result.occupancy),
+  fixed6(result.theoryFpr),
+  fixed6(result.empiricalFpr),
+  result.falsePositives,
+  result.falseNegatives
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} Bloom filter checks passed`);
+NODE
+```
+
 The default setting is deliberately ordinary: 4,000 inserted keys, 10 bits per
 key, 7 hash probes, and 5,000 absent queries. The measured false-positive rate
 wiggles because the query tape is finite. The formula is the smoother object:
