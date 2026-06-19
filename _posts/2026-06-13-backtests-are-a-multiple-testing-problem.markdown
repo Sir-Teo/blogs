@@ -200,6 +200,79 @@ budget. It is a simulator contract, not evidence that any trading rule works.
 </div>
 <script defer src="{{ '/assets/js/backtest-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner replays the default research department and checks
+the policy ledger against fixed deterministic outputs:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/backtest-lab.js");
+const EXPECTED_AUDIT = { checked: 20, failureCount: 0, ok: true, passed: 20 };
+const EXPECTED_DEFAULT = [
+  "400:6:4:70:35:20:260",
+  "1.450498:0.425884:0.188462:0.380769:0.604551:0.211538",
+  "best=1.000000/0.188462/1.450498/0.425884",
+  "nominal=1.000000/0.188462/1.450498/0.425884",
+  "bonferroni=0.380769/0.070707/1.675096/0.547244",
+  "bh=0.553846/0.111111/1.603352/0.501656",
+  "holdout=0.211538/0.000000/0.830600/0.604551"
+].join(":");
+
+function fixed(value) {
+  return Number(value).toFixed(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  strategies: 400,
+  years: 6,
+  edgeRate: 4,
+  edgeSharpe: 70,
+  correlation: 35,
+  liveDrag: 20
+});
+const auditShape = {
+  checked: audit.checked,
+  failureCount: audit.failures.length,
+  ok: audit.ok,
+  passed: audit.passed
+};
+const paramsShape = [
+  result.params.strategies,
+  result.params.years,
+  result.params.edgeRate,
+  result.params.edgeSharpe,
+  result.params.correlation,
+  result.params.liveDrag,
+  result.campaigns
+].join(":");
+const headlineShape = [
+  result.headline.bestBacktest,
+  result.headline.bestLive,
+  result.headline.bestFalse,
+  result.headline.bonferroniSelection,
+  result.headline.holdoutLive,
+  result.headline.holdoutSelection
+].map(fixed).join(":");
+const policyShape = result.policies.map((row) => `${row.key}=${[
+  row.selectedRate,
+  row.falseRate,
+  row.backtest,
+  row.live
+].map(fixed).join("/")}`).join(":");
+const defaultShape = [paramsShape, headlineShape, policyShape].join(":");
+
+if (!sameJson(auditShape, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ auditShape, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} backtest lab checks passed`);
+NODE
+```
+
 Try increasing the number of tested strategies while leaving the edge rate near
 zero. The best in-sample Sharpe improves, but the expected live Sharpe does not
 magically improve with it. The search is finding noise.
