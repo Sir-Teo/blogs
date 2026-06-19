@@ -419,6 +419,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -458,25 +471,36 @@ const checkRows = audit.cases.map((row) => ({
   case: `${row.params.scenario}/${row.params.minRto}/${row.params.jitter}/${row.params.extraLoss}`,
   checks: row.checks.map((check) => check.name)
 }));
-const expectedCheckRows = audit.cases.map((row) => ({
-  case: `${row.params.scenario}/${row.params.minRto}/${row.params.jitter}/${row.params.extraLoss}`,
-  checks: row.params.scenario === "route"
-    ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_ROUTE_CHECK_NAME])
-    : EXPECTED_BASE_CHECK_NAMES
-}));
+const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
+  const parts = row.split(":");
+  return {
+    case: `${parts[0]}/${parts[1]}/${parts[2]}/${parts[3]}`,
+    checks: parts[0] === "route"
+      ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_ROUTE_CHECK_NAME])
+      : EXPECTED_BASE_CHECK_NAMES
+  };
+});
+const byScenarioDrifts = rowDrifts(byScenarioRows, EXPECTED_BY_SCENARIO);
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const driftShape = {
+  totals,
+  byScenarioDrifts,
+  caseRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  byScenarioDrifts.length === 0 ? null : "byScenarioRows",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
 console.table(audit.byScenario);
-if (
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(byScenarioRows, EXPECTED_BY_SCENARIO) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
-  !sameJson(checkRows, expectedCheckRows)
-) {
-  throw new Error("unexpected RTO audit shape: " + JSON.stringify({
-    totals,
-    byScenarioRows,
-    caseRows,
-    checkRows
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `RTO audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
