@@ -339,6 +339,14 @@ const EXPECTED_CASE_SHAPE = [
   "5:ring:decider:0:26:0:41:676/136/140/4:0/4:6.939e-18:8",
   "6:waves:center:0.1:22:0.12:57:484/142/142/0:0/0:2.776e-17:7"
 ];
+const EXPECTED_CASE_ROWS = [
+  "1:saddle:decider:iso=0.01:grid=17:cells=289/33/34/1:decisions=0/1:residual=6.418e-17:checks=9/9:failed=none:passed=true",
+  "2:saddle:slash:iso=0.01:grid=17:cells=289/33/34/1:decisions=0/1:residual=6.418e-17:checks=8/8:failed=none:passed=true",
+  "3:saddle:backslash:iso=0.01:grid=17:cells=289/33/34/1:decisions=0/1:residual=6.418e-17:checks=8/8:failed=none:passed=true",
+  "4:hills:decider:iso=0:grid=24:cells=576/48/48/0:decisions=0/0:residual=1.388e-17:checks=7/7:failed=none:passed=true",
+  "5:ring:decider:iso=0:grid=26:cells=676/136/140/4:decisions=0/4:residual=6.939e-18:checks=8/8:failed=none:passed=true",
+  "6:waves:center:iso=0.1:grid=22:cells=484/142/142/0:decisions=0/0:residual=2.776e-17:checks=7/7:failed=none:passed=true"
+];
 const EXPECTED_FIELD_SHAPE = [
   "hills:1 cases/7 checks:576/48/48/0:1.388e-17",
   "ring:1 cases/8 checks:676/136/140/4:6.939e-18",
@@ -381,6 +389,28 @@ function caseShape(row) {
     `${row.maxResidual.toExponential(3)}:${row.totalChecks}`;
 }
 
+function caseRow(row) {
+  return `${row.caseId}:${row.field}:${row.ambiguity}:iso=${row.iso}:` +
+    `grid=${row.resolution}:` +
+    `cells=${row.cells}/${row.activeCells}/${row.segments}/${row.ambiguous}:` +
+    `decisions=${row.highDecisions}/${row.lowDecisions}:` +
+    `residual=${row.maxResidual.toExponential(3)}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:` +
+    `failed=${row.failedChecks.length ? row.failedChecks.join("|") : "none"}:` +
+    `passed=${row.passed}`;
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 function aggregateShape(row, key) {
   return `${row[key]}:${row.cases} cases/${row.totalChecks} checks:` +
     `${row.cells}/${row.activeCells}/${row.segments}/${row.ambiguous}:` +
@@ -397,12 +427,15 @@ const failed = audit.cases.filter(
 );
 const shape = {
   cases: audit.cases.map(caseShape),
+  caseRows: audit.cases.map(caseRow),
   byField: audit.byField.map((row) => aggregateShape(row, "field")),
   byRule: audit.byRule.map((row) => aggregateShape(row, "ambiguity")),
   criticalChecks: audit.criticalChecks.map(criticalShape)
 };
+const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
 const shapeErrors = [
   ["cases", shape.cases, EXPECTED_CASE_SHAPE],
+  ["caseRows", hasRowDrift(caseRowDrifts) ? shape.caseRows : EXPECTED_CASE_ROWS, EXPECTED_CASE_ROWS],
   ["byField", shape.byField, EXPECTED_FIELD_SHAPE],
   ["byRule", shape.byRule, EXPECTED_RULE_SHAPE],
   ["criticalChecks", shape.criticalChecks, EXPECTED_CRITICAL_SHAPE]
@@ -439,6 +472,8 @@ if (
   throw new Error(JSON.stringify({
     summary,
     shapeErrors,
+    caseRowDrifts,
+    shape,
     failed,
     errors: audit.errors,
     totals: {
