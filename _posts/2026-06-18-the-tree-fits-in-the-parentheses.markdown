@@ -351,6 +351,7 @@ const EXPECTED_CHECK_NAMES = [
   "next sibling navigation matches source tree",
   "focus interval contains full subtree"
 ];
+const EXPECTED_CHECK_ROW = EXPECTED_CHECK_NAMES.map((name) => `${name}=true`);
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
@@ -412,9 +413,9 @@ const badCheckRows = audit.cases
     shape: row.shape,
     focus: row.focus,
     rankPos: row.rankPos,
-    checks: row.checks.map((check) => check.name)
+    checks: row.checks.map((check) => `${check.name}=${check.ok}`)
   }))
-  .filter((row) => !sameJson(row.checks, EXPECTED_CHECK_NAMES));
+  .filter((row) => !sameJson(row.checks, EXPECTED_CHECK_ROW));
 const auditShape = {
   totals,
   byShapeRows,
