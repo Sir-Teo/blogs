@@ -358,6 +358,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditExactCover();
 console.table([audit.matrix]);
 console.table(audit.byOutcome);
@@ -400,18 +413,25 @@ const caseRows = audit.cases.map((row) =>
   `${row.outcome}:${row.passedChecks}/${row.totalChecks}:${row.passed}:` +
   `${row.contradiction || "none"}`
 );
-if (
-  !sameJson(auditShape, EXPECTED_TOTALS) ||
-  !sameJson(matrixShape, EXPECTED_MATRIX) ||
-  !sameJson(outcomeRows, EXPECTED_OUTCOME_ROWS) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS)
-) {
-  throw new Error("unexpected exact-cover audit shape: " + JSON.stringify({
-    auditShape,
-    matrixShape,
-    outcomeRows,
-    caseRows
-  }, null, 2));
+const outcomeRowDrifts = rowDrifts(outcomeRows, EXPECTED_OUTCOME_ROWS);
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const driftShape = {
+  auditShape,
+  matrixShape,
+  outcomeRowDrifts,
+  caseRowDrifts
+};
+const shapeErrors = [
+  sameJson(auditShape, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(matrixShape, EXPECTED_MATRIX) ? null : "matrixShape",
+  outcomeRowDrifts.length === 0 ? null : "outcomeRows",
+  caseRowDrifts.length === 0 ? null : "caseRows"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `exact-cover audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 
 const failedOutcomeGroups = audit.byOutcome.filter(
