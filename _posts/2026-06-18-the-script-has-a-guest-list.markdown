@@ -339,17 +339,85 @@ const EXPECTED_SCENARIO_SHAPE = [
   "inlineInjection:5 cases/5 checks",
   "untrustedLoader:5 cases/5 checks"
 ];
+const EXPECTED_HASH_SOURCE =
+  "'sha256-ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0='";
+const EXPECTED_SUMMARY_KEYS = [
+  "scripts",
+  "executed",
+  "blocked",
+  "attackerExecuted",
+  "dynamicLoaded",
+  "parserInsertedBlockedByStrict",
+  "eventHandlersBlocked",
+  "loaderHazards"
+];
+const EXPECTED_DEFAULT_SUMMARY_SHAPE = [
+  "scripts:3",
+  "executed:2",
+  "blocked:1",
+  "attackerExecuted:0",
+  "dynamicLoaded:1",
+  "parserInsertedBlockedByStrict:0",
+  "eventHandlersBlocked:0",
+  "loaderHazards:0"
+];
 const EXPECTED_CRITICAL_CHECKS = EXPECTED_CRITICAL_CHECK_NAMES.length;
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
 const EXPECTED_CHECKS = EXPECTED_CRITICAL_CHECKS + EXPECTED_CASES;
+const EXPECTED_TOTALS = {
+  criticalChecks: EXPECTED_CRITICAL_CHECKS,
+  cases: EXPECTED_CASES,
+  checked: EXPECTED_CHECKS,
+  passedChecks: EXPECTED_CHECKS,
+  total: EXPECTED_CHECKS,
+  totalChecks: EXPECTED_CHECKS
+};
+const EXPECTED_POLICY_DETAIL_SHAPE = [
+  "hashAndSelf:4/4:13/5/0:0/0/0",
+  "hostAllowlist:4/4:13/7/1:1/0/0",
+  "nonceOnly:4/4:13/9/0:0/0/0",
+  "nonceStrictDynamic:4/4:13/7/1:2/1/1",
+  "unsafeInline:4/4:13/0/4:2/0/1"
+];
+const EXPECTED_SCENARIO_DETAIL_SHAPE = [
+  "cdnCompromise:5/5:15/6/2:0/1/0",
+  "dynamicDependency:5/5:15/5/0:3/0/0",
+  "inlineInjection:5/5:20/11/2:0/0/0",
+  "untrustedLoader:5/5:15/6/2:2/0/2"
+];
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
 }
 
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function summaryShape(summary) {
+  return EXPECTED_SUMMARY_KEYS.map((key) => `${key}:${summary[key]}`);
+}
+
+function groupDetailShape(row, key) {
+  return [
+    row[key],
+    `${row.cases}/${row.totalChecks}`,
+    `${row.scripts}/${row.blocked}/${row.attackerExecuted}`,
+    `${row.dynamicLoaded}/${row.parserInsertedBlockedByStrict}/${row.loaderHazards}`
+  ].join(":");
+}
+
 function auditShape(audit) {
   return {
+    totals: {
+      criticalChecks: audit.criticalTotal,
+      cases: audit.cases.length,
+      checked: audit.checked,
+      passedChecks: audit.passedChecks,
+      total: audit.total,
+      totalChecks: audit.totalChecks
+    },
     criticalChecks: audit.criticalChecks.map((row) => row.check),
     cases: audit.cases.map((row) => `${row.policy}/${row.scenario}`),
     byPolicy: audit.byPolicy.map(
@@ -357,12 +425,16 @@ function auditShape(audit) {
     ),
     byScenario: audit.byScenario.map(
       (row) => `${row.scenario}:${row.cases} cases/${row.totalChecks} checks`
-    )
+    ),
+    byPolicyDetails: audit.byPolicy.map((row) => groupDetailShape(row, "policy")),
+    byScenarioDetails: audit.byScenario.map((row) => groupDetailShape(row, "scenario"))
   };
 }
 
-console.log(lab.hashSourceFor("abc"));
-console.log(lab.evaluate({}).summary);
+const hashSource = lab.hashSourceFor("abc");
+const defaultSummary = lab.evaluate({}).summary;
+console.log(hashSource);
+console.log(defaultSummary);
 const audit = lab.auditCspScriptLab();
 const shape = auditShape(audit);
 const failed = audit.cases.filter(
@@ -372,25 +444,29 @@ const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
 const shapeErrors = [
+  hashSource === EXPECTED_HASH_SOURCE ? null : "hashSource",
+  sameJson(summaryShape(defaultSummary), EXPECTED_DEFAULT_SUMMARY_SHAPE)
+    ? null
+    : "defaultSummary",
+  sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.criticalChecks, EXPECTED_CRITICAL_CHECK_NAMES) ? null : "criticalChecks",
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   sameList(shape.byPolicy, EXPECTED_POLICY_SHAPE) ? null : "byPolicy",
-  sameList(shape.byScenario, EXPECTED_SCENARIO_SHAPE) ? null : "byScenario"
+  sameList(shape.byScenario, EXPECTED_SCENARIO_SHAPE) ? null : "byScenario",
+  sameList(shape.byPolicyDetails, EXPECTED_POLICY_DETAIL_SHAPE)
+    ? null
+    : "byPolicyDetails",
+  sameList(shape.byScenarioDetails, EXPECTED_SCENARIO_DETAIL_SHAPE)
+    ? null
+    : "byScenarioDetails"
 ].filter(Boolean);
 console.table(audit.byPolicy);
 console.table(audit.byScenario);
 console.table(audit.criticalChecks);
-if (audit.checked !== EXPECTED_CHECKS || audit.total !== EXPECTED_CHECKS) {
-  throw new Error("unexpected check count: " + audit.checked);
-}
-if (
-  audit.criticalTotal !== EXPECTED_CRITICAL_CHECKS ||
-  audit.cases.length !== EXPECTED_CASES ||
-  audit.totalChecks !== EXPECTED_CHECKS
-) {
+if (shapeErrors.length) {
   throw new Error(
-    `unexpected audit grid: ${audit.criticalTotal} critical checks, ` +
-    `${audit.cases.length} generated cases, ${audit.totalChecks} total checks`
+    `audit grid drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(shape, null, 2)
   );
 }
 const summary = `${audit.passedChecks}/${audit.totalChecks} checks passed`;
