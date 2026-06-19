@@ -250,6 +250,60 @@ certificate.
 
 <script src="{{ '/assets/js/cuckoo-core-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks the exported graph contract and the default
+coatroom certificate:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/cuckoo-core-lab.js");
+const EXPECTED_AUDIT = { checked: 451, failures: [], ok: true, passed: 451 };
+const EXPECTED_DEFAULT = "72:86:1:64:1:0.597222:1:1:1:62:61:1:19:18:1:0:13";
+
+function fixed6(value) {
+  return Number(value).toFixed(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  slots: 72,
+  keys: 86,
+  stash: 1,
+  trials: 64,
+  seed: 1
+});
+const largest = result.analysis.largest || {};
+const defaultShape = [
+  result.params.slots,
+  result.params.keys,
+  result.params.stash,
+  result.params.trials,
+  result.params.seed,
+  fixed6(result.load),
+  result.analysis.stashNeeded,
+  result.successWithStash ? 1 : 0,
+  result.analysis.badComponents,
+  largest.edgeCount,
+  largest.vertexCount,
+  largest.excess,
+  result.core.edges,
+  result.core.vertices,
+  result.core.excess,
+  result.analysis.noStashSuccess ? 1 : 0,
+  result.sweep.length
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} cuckoo graph checks passed`);
+NODE
+```
+
 The refreshed audit reads `451/451` at the default setting. It checks hand-built
 tree, unicyclic, parallel-edge, and two-component obstruction graphs; verifies
 that leaf peeling preserves the same excess as the connected-component ledger;
