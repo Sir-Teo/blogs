@@ -271,12 +271,12 @@ The browser file is also a CommonJS module. From the repository root:
 ```bash
 node - <<'NODE'
 const lab = require("./assets/js/tarjan-scc-lab.js");
-const EXPECTED_CHECK_NAMES = [
-  "vertices-appear-once",
-  "partition-matches-oracle",
-  "components-strongly-connected",
-  "condensation-is-dag",
-  "lowlinks-in-index-range"
+const EXPECTED_CHECKS = [
+  { name: "vertices-appear-once", ok: true },
+  { name: "partition-matches-oracle", ok: true },
+  { name: "components-strongly-connected", ok: true },
+  { name: "condensation-is-dag", ok: true },
+  { name: "lowlinks-in-index-range", ok: true }
 ];
 const EXPECTED_CASES = [
   {
@@ -383,11 +383,14 @@ const exhaustiveRows = audit.exhaustive.bySize.map((row) => ({
 }));
 const checkRows = audit.cases.map((row) => ({
   example: row.example,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASES.map((row) => ({
   example: row.example,
-  checks: EXPECTED_CHECK_NAMES
+  checks: EXPECTED_CHECKS
 }));
 const auditShape = {
   namedCases: audit.cases.length,
