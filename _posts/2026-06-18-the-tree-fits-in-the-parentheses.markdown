@@ -406,20 +406,33 @@ const focusShapeRows = audit.byShape.map((row) => {
     Array.from(group.focusKeys).join("|")
   ].join(":");
 });
-const checkRows = audit.cases.map((row) => row.checks.map((check) => check.name));
+const badCheckRows = audit.cases
+  .map((row, index) => ({
+    index,
+    shape: row.shape,
+    focus: row.focus,
+    rankPos: row.rankPos,
+    checks: row.checks.map((check) => check.name)
+  }))
+  .filter((row) => !sameJson(row.checks, EXPECTED_CHECK_NAMES));
+const auditShape = {
+  totals,
+  byShapeRows,
+  focusShapeRows,
+  badCheckRows
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  sameJson(byShapeRows, EXPECTED_BY_SHAPE) ? null : "byShapeRows",
+  sameJson(focusShapeRows, EXPECTED_FOCUS_SHAPE) ? null : "focusShapeRows",
+  badCheckRows.length === 0 ? null : "checkRows"
+].filter(Boolean);
 console.table(audit.byShape);
-if (
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(byShapeRows, EXPECTED_BY_SHAPE) ||
-  !sameJson(focusShapeRows, EXPECTED_FOCUS_SHAPE) ||
-  !checkRows.every((checks) => sameJson(checks, EXPECTED_CHECK_NAMES))
-) {
-  throw new Error("unexpected succinct-tree audit shape: " + JSON.stringify({
-    totals,
-    byShapeRows,
-    focusShapeRows,
-    firstCheckRows: checkRows.slice(0, 3)
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `succinct-tree audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(auditShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ` +
