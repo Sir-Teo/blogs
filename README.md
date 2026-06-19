@@ -23,4 +23,4 @@ audit for one or more posts from the repository root:
 node scripts/run-post-audit.js _posts/2026-06-18-the-best-candidate-waits-for-a-record.markdown
 ```
 
-Use `--quiet` for compact pass/fail output across several posts.
+Use `--quiet` for compact per-post pass/fail output and a final total.

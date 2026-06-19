@@ -95,14 +95,27 @@ if (files.length === 0) {
 }
 
 let exitCode = 0;
+let passedAudits = 0;
+let failedAudits = 0;
 for (const file of files) {
   if (!fs.existsSync(file)) {
     console.error(`[audit] ${file}: file not found`);
+    failedAudits += 1;
     exitCode = 1;
     continue;
   }
   const status = runAudit(file, options);
-  if (status !== 0) exitCode = status;
+  if (status === 0) {
+    passedAudits += 1;
+  } else {
+    failedAudits += 1;
+    exitCode = status;
+  }
+}
+
+if (options.quiet) {
+  const totalAudits = passedAudits + failedAudits;
+  console.error(`[audit] ${passedAudits}/${totalAudits} audits passed`);
 }
 
 process.exit(exitCode);
