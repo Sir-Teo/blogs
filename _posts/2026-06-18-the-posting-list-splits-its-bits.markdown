@@ -375,21 +375,25 @@ const EXPECTED_CASE_ROWS = [
   "4:dense:2048:1200:l=0:ef=2.71:varbyte=8.01:target=true:checks=7/7:passed=true",
   "5:runs:250000:2200:l=6:ef=8.78:varbyte=8.35:target=true:checks=7/7:passed=true"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "decode",
-  "monotone-input",
-  "high-bit-positions",
-  "one-bit-count",
-  "access-query",
-  "next-geq-query",
-  "target-sweep"
+const EXPECTED_CHECK_SHAPE = [
+  { name: "decode", ok: true },
+  { name: "monotone-input", ok: true },
+  { name: "high-bit-positions", ok: true },
+  { name: "one-bit-count", ok: true },
+  { name: "access-query", ok: true },
+  { name: "next-geq-query", ok: true },
+  { name: "target-sweep", ok: true }
 ];
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
-const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_SHAPE.length;
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function rowDrifts(actual, expected) {
@@ -415,7 +419,12 @@ function auditShape(audit) {
         `target=${row.targetOk}:checks=${row.passedChecks}/${row.totalChecks}:` +
         `passed=${row.passed}`
     ),
-    checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name))
+    checksByCase: audit.cases.map((row) =>
+      row.checks.map((check) => ({
+        name: check.name,
+        ok: check.ok
+      }))
+    )
   };
 }
 
@@ -428,7 +437,7 @@ const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
 const shapeErrors = [
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   caseRowDrifts.length ? "caseRows" : null,
-  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+  shape.checksByCase.every((checks) => sameJson(checks, EXPECTED_CHECK_SHAPE))
     ? null
     : "checksByCase"
 ].filter(Boolean);
