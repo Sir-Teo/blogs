@@ -29,3 +29,9 @@ every embedded audit for a publishing day:
 ```sh
 node scripts/run-post-audit.js --quiet --date 2026-06-18
 ```
+
+To run every discovered embedded audit:
+
+```sh
+node scripts/run-post-audit.js --quiet --all
+```

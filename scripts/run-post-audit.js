@@ -7,7 +7,7 @@ const { spawnSync } = require("child_process");
 
 function usage() {
   console.error(
-    "Usage: node scripts/run-post-audit.js [--quiet] [--date YYYY-MM-DD] " +
+    "Usage: node scripts/run-post-audit.js [--quiet] [--all] [--date YYYY-MM-DD] " +
     "_posts/post.markdown [...]"
   );
 }
@@ -44,7 +44,7 @@ function runnableAuditBlock(markdown) {
   return candidates[0] || null;
 }
 
-function discoverPostsByDate(date) {
+function discoverPosts(filter) {
   const postsDir = path.resolve("_posts");
   if (!fs.existsSync(postsDir)) {
     console.error("[audit] _posts directory not found");
@@ -52,7 +52,7 @@ function discoverPostsByDate(date) {
   }
 
   return fs.readdirSync(postsDir)
-    .filter((name) => name.startsWith(`${date}-`) && name.endsWith(".markdown"))
+    .filter((name) => name.endsWith(".markdown") && filter(name))
     .map((name) => path.join("_posts", name))
     .filter((file) => {
       const markdown = fs.readFileSync(path.resolve(file), "utf8");
@@ -98,6 +98,7 @@ function runAudit(file, options) {
 
 const args = process.argv.slice(2);
 const options = {
+  all: false,
   date: null,
   quiet: false
 };
@@ -106,6 +107,8 @@ for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
   if (arg === "--quiet" || arg === "-q") {
     options.quiet = true;
+  } else if (arg === "--all") {
+    options.all = true;
   } else if (arg === "--date") {
     options.date = args[index + 1];
     index += 1;
@@ -119,8 +122,12 @@ if (options.date && !/^\d{4}-\d{2}-\d{2}$/.test(options.date)) {
   process.exit(2);
 }
 
+if (options.all) {
+  files.push(...discoverPosts(() => true));
+}
+
 if (options.date) {
-  files.push(...discoverPostsByDate(options.date));
+  files.push(...discoverPosts((name) => name.startsWith(`${options.date}-`)));
 }
 
 const auditFiles = Array.from(new Set(files));
