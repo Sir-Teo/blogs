@@ -393,27 +393,27 @@ const EXPECTED_CASE_ROWS = [
   "radio:1000:90:0:0:0:0:5:5:5:18/18:true",
   "radio:700:110:6:1:2:0:9:10:8:18/18:true"
 ];
-const EXPECTED_BASE_CHECK_NAMES = [
-  "rfc row count",
-  "rfc finite elapsed",
-  "rfc finite RTO",
-  "rfc event accounting",
-  "rfc retransmission accounting",
-  "recent row count",
-  "recent finite elapsed",
-  "recent finite RTO",
-  "recent event accounting",
-  "recent retransmission accounting",
-  "mean row count",
-  "mean finite elapsed",
-  "mean finite RTO",
-  "mean event accounting",
-  "mean retransmission accounting",
-  "RFC ignores ambiguous samples",
-  "recent sampler accepts ambiguous samples",
-  "mean-only accepts ambiguous samples"
+const EXPECTED_BASE_CHECKS = [
+  { name: "rfc row count", ok: true },
+  { name: "rfc finite elapsed", ok: true },
+  { name: "rfc finite RTO", ok: true },
+  { name: "rfc event accounting", ok: true },
+  { name: "rfc retransmission accounting", ok: true },
+  { name: "recent row count", ok: true },
+  { name: "recent finite elapsed", ok: true },
+  { name: "recent finite RTO", ok: true },
+  { name: "recent event accounting", ok: true },
+  { name: "recent retransmission accounting", ok: true },
+  { name: "mean row count", ok: true },
+  { name: "mean finite elapsed", ok: true },
+  { name: "mean finite RTO", ok: true },
+  { name: "mean event accounting", ok: true },
+  { name: "mean retransmission accounting", ok: true },
+  { name: "RFC ignores ambiguous samples", ok: true },
+  { name: "recent sampler accepts ambiguous samples", ok: true },
+  { name: "mean-only accepts ambiguous samples", ok: true }
 ];
-const EXPECTED_ROUTE_CHECK_NAME = "route step punishes recent sampler";
+const EXPECTED_ROUTE_CHECK = { name: "route step punishes recent sampler", ok: true };
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
@@ -469,15 +469,18 @@ const caseRows = audit.cases.map((row) => [
 ].join(":"));
 const checkRows = audit.cases.map((row) => ({
   case: `${row.params.scenario}/${row.params.minRto}/${row.params.jitter}/${row.params.extraLoss}`,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
   const parts = row.split(":");
   return {
     case: `${parts[0]}/${parts[1]}/${parts[2]}/${parts[3]}`,
     checks: parts[0] === "route"
-      ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_ROUTE_CHECK_NAME])
-      : EXPECTED_BASE_CHECK_NAMES
+      ? EXPECTED_BASE_CHECKS.concat([EXPECTED_ROUTE_CHECK])
+      : EXPECTED_BASE_CHECKS
   };
 });
 const byScenarioDrifts = rowDrifts(byScenarioRows, EXPECTED_BY_SCENARIO);
