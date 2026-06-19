@@ -280,9 +280,110 @@ const EXPECTED_TOTALS = {
   passedChecks: EXPECTED_CHECKS,
   totalChecks: EXPECTED_CHECKS
 };
+const EXPECTED_DEFAULT_SUMMARY = {
+  bestValue: 2,
+  bound: "0.022",
+  exactCount: 1,
+  firstSuccess: 13,
+  lambda: 2,
+  repetitions95: 134,
+  successRate: "0.304",
+  successes: 73,
+  trials: 240
+};
+const EXPECTED_GRAPH_ROWS = [
+  "bridge:10/22:lambda=2:cuts=1:trials=32:optimal=11:survivals=11:checks=47/47:passed=true",
+  "cycle:10/10:lambda=2:cuts=45:trials=32:optimal=32:survivals=1:checks=37/37:passed=true",
+  "islands:15/36:lambda=3:cuts=2:trials=32:optimal=4:survivals=3:checks=39/39:passed=true",
+  "ladder:12/18:lambda=2:cuts=7:trials=32:optimal=20:survivals=3:checks=39/39:passed=true"
+];
+const EXPECTED_NAMED_ROWS = [
+  "bridge-lambda:1/1:true",
+  "bridge-mincut-count:1/1:true",
+  "bridge-finds-mincut:1/1:true",
+  "bridge-best-value:1/1:true",
+  "cycle-lambda:1/1:true",
+  "cycle-mincut-count:1/1:true",
+  "cycle-all-trials-optimal:1/1:true",
+  "default-deterministic:1/1:true",
+  "default-best-is-exact:1/1:true",
+  "n10-repetition-count:1/1:true",
+  "grid-size:1/1:true"
+];
+const EXPECTED_GRID_SUMMARY_ROWS = [
+  "bridge:cases=12/12:checks=48/48:success=0.175..0.308",
+  "cycle:cases=12/12:checks=48/48:success=1.000..1.000",
+  "islands:cases=12/12:checks=48/48:success=0.125..0.300",
+  "ladder:cases=12/12:checks=48/48:success=0.550..0.650"
+];
+const EXPECTED_GRID_CASE_ROWS = [
+  "bridge:1:40:lambda=2:best=2:successes=12:rate=0.300:bins=3:checks=4/4:passed=true",
+  "bridge:1:120:lambda=2:best=2:successes=37:rate=0.308:bins=3:checks=4/4:passed=true",
+  "bridge:1:240:lambda=2:best=2:successes=62:rate=0.258:bins=3:checks=4/4:passed=true",
+  "bridge:17:40:lambda=2:best=2:successes=9:rate=0.225:bins=3:checks=4/4:passed=true",
+  "bridge:17:120:lambda=2:best=2:successes=31:rate=0.258:bins=3:checks=4/4:passed=true",
+  "bridge:17:240:lambda=2:best=2:successes=64:rate=0.267:bins=3:checks=4/4:passed=true",
+  "bridge:83:40:lambda=2:best=2:successes=12:rate=0.300:bins=3:checks=4/4:passed=true",
+  "bridge:83:120:lambda=2:best=2:successes=27:rate=0.225:bins=3:checks=4/4:passed=true",
+  "bridge:83:240:lambda=2:best=2:successes=68:rate=0.283:bins=3:checks=4/4:passed=true",
+  "bridge:211:40:lambda=2:best=2:successes=7:rate=0.175:bins=3:checks=4/4:passed=true",
+  "bridge:211:120:lambda=2:best=2:successes=34:rate=0.283:bins=3:checks=4/4:passed=true",
+  "bridge:211:240:lambda=2:best=2:successes=70:rate=0.292:bins=3:checks=4/4:passed=true",
+  "cycle:1:40:lambda=2:best=2:successes=40:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:1:120:lambda=2:best=2:successes=120:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:1:240:lambda=2:best=2:successes=240:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:17:40:lambda=2:best=2:successes=40:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:17:120:lambda=2:best=2:successes=120:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:17:240:lambda=2:best=2:successes=240:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:83:40:lambda=2:best=2:successes=40:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:83:120:lambda=2:best=2:successes=120:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:83:240:lambda=2:best=2:successes=240:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:211:40:lambda=2:best=2:successes=40:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:211:120:lambda=2:best=2:successes=120:rate=1.000:bins=1:checks=4/4:passed=true",
+  "cycle:211:240:lambda=2:best=2:successes=240:rate=1.000:bins=1:checks=4/4:passed=true",
+  "islands:1:40:lambda=3:best=3:successes=7:rate=0.175:bins=3:checks=4/4:passed=true",
+  "islands:1:120:lambda=3:best=3:successes=31:rate=0.258:bins=3:checks=4/4:passed=true",
+  "islands:1:240:lambda=3:best=3:successes=59:rate=0.246:bins=3:checks=4/4:passed=true",
+  "islands:17:40:lambda=3:best=3:successes=12:rate=0.300:bins=3:checks=4/4:passed=true",
+  "islands:17:120:lambda=3:best=3:successes=25:rate=0.208:bins=3:checks=4/4:passed=true",
+  "islands:17:240:lambda=3:best=3:successes=42:rate=0.175:bins=3:checks=4/4:passed=true",
+  "islands:83:40:lambda=3:best=3:successes=9:rate=0.225:bins=3:checks=4/4:passed=true",
+  "islands:83:120:lambda=3:best=3:successes=25:rate=0.208:bins=3:checks=4/4:passed=true",
+  "islands:83:240:lambda=3:best=3:successes=45:rate=0.188:bins=3:checks=4/4:passed=true",
+  "islands:211:40:lambda=3:best=3:successes=5:rate=0.125:bins=3:checks=4/4:passed=true",
+  "islands:211:120:lambda=3:best=3:successes=17:rate=0.142:bins=3:checks=4/4:passed=true",
+  "islands:211:240:lambda=3:best=3:successes=41:rate=0.171:bins=3:checks=4/4:passed=true",
+  "ladder:1:40:lambda=2:best=2:successes=25:rate=0.625:bins=3:checks=4/4:passed=true",
+  "ladder:1:120:lambda=2:best=2:successes=78:rate=0.650:bins=4:checks=4/4:passed=true",
+  "ladder:1:240:lambda=2:best=2:successes=141:rate=0.588:bins=4:checks=4/4:passed=true",
+  "ladder:17:40:lambda=2:best=2:successes=25:rate=0.625:bins=4:checks=4/4:passed=true",
+  "ladder:17:120:lambda=2:best=2:successes=68:rate=0.567:bins=5:checks=4/4:passed=true",
+  "ladder:17:240:lambda=2:best=2:successes=140:rate=0.583:bins=5:checks=4/4:passed=true",
+  "ladder:83:40:lambda=2:best=2:successes=24:rate=0.600:bins=3:checks=4/4:passed=true",
+  "ladder:83:120:lambda=2:best=2:successes=67:rate=0.558:bins=4:checks=4/4:passed=true",
+  "ladder:83:240:lambda=2:best=2:successes=132:rate=0.550:bins=5:checks=4/4:passed=true",
+  "ladder:211:40:lambda=2:best=2:successes=26:rate=0.650:bins=4:checks=4/4:passed=true",
+  "ladder:211:120:lambda=2:best=2:successes=67:rate=0.558:bins=4:checks=4/4:passed=true",
+  "ladder:211:240:lambda=2:best=2:successes=137:rate=0.571:bins=4:checks=4/4:passed=true"
+];
 
 function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
+}
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
 }
 
 const audit = lab.auditKargerMincutLab();
@@ -303,6 +404,37 @@ console.table(audit.gridSummary.map((row) => ({
   maxSuccessRate: row.maxSuccessRate.toFixed(3)
 })));
 const auditShape = {
+  defaultSummary: {
+    bestValue: audit.defaultSummary.bestValue,
+    bound: fixed3(audit.defaultSummary.bound),
+    exactCount: audit.defaultSummary.exactCount,
+    firstSuccess: audit.defaultSummary.firstSuccess,
+    lambda: audit.defaultSummary.lambda,
+    repetitions95: audit.defaultSummary.repetitions95,
+    successRate: fixed3(audit.defaultSummary.successRate),
+    successes: audit.defaultSummary.successes,
+    trials: audit.defaultSummary.trials
+  },
+  graphRows: audit.byGraph.map((row) =>
+    `${row.graph}:${row.nodes}/${row.edges}:lambda=${row.lambda}:` +
+    `cuts=${row.minCuts}:trials=${row.trials}:optimal=${row.optimalTrials}:` +
+    `survivals=${row.survivals}:checks=${row.passedChecks}/${row.totalChecks}:` +
+    `passed=${row.passed}`
+  ),
+  gridCaseRows: audit.cases.map((row) =>
+    `${row.graph}:${row.seed}:${row.trials}:lambda=${row.lambda}:` +
+    `best=${row.bestValue}:successes=${row.successes}:` +
+    `rate=${fixed3(row.successRate)}:bins=${row.histogramBins}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`
+  ),
+  gridSummaryRows: audit.gridSummary.map((row) =>
+    `${row.graph}:cases=${row.passed}/${row.cases}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:` +
+    `success=${fixed3(row.minSuccessRate)}..${fixed3(row.maxSuccessRate)}`
+  ),
+  namedRows: audit.namedChecks.map((row) =>
+    `${row.name}:${row.passedChecks}/${row.totalChecks}:${row.passed}`
+  ),
   totals: {
     graphRows: audit.byGraph.length,
     gridSummaries: audit.gridSummary.length,
@@ -314,13 +446,37 @@ const auditShape = {
     totalChecks: audit.totalChecks
   }
 };
+const graphRowDrifts = rowDrifts(auditShape.graphRows, EXPECTED_GRAPH_ROWS);
+const namedRowDrifts = rowDrifts(auditShape.namedRows, EXPECTED_NAMED_ROWS);
+const gridSummaryDrifts = rowDrifts(
+  auditShape.gridSummaryRows,
+  EXPECTED_GRID_SUMMARY_ROWS
+);
+const gridCaseDrifts = rowDrifts(auditShape.gridCaseRows, EXPECTED_GRID_CASE_ROWS);
 const shapeErrors = [
-  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals"
+  sameJson(auditShape.defaultSummary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
+  sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
+  graphRowDrifts.length ? "graphRows" : null,
+  namedRowDrifts.length ? "namedRows" : null,
+  gridSummaryDrifts.length ? "gridSummaryRows" : null,
+  gridCaseDrifts.length ? "gridCaseRows" : null
 ].filter(Boolean);
 if (shapeErrors.length) {
   throw new Error(
-    `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    `Karger audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify({
+      auditShape,
+      expected: {
+        defaultSummary: EXPECTED_DEFAULT_SUMMARY,
+        totals: EXPECTED_TOTALS
+      },
+      drifts: {
+        graphRows: graphRowDrifts,
+        namedRows: namedRowDrifts,
+        gridSummaryRows: gridSummaryDrifts,
+        gridCaseRows: gridCaseDrifts
+      }
+    }, null, 2)
   );
 }
 
