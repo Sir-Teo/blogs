@@ -276,6 +276,12 @@ const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS =
   EXPECTED_CASES * EXPECTED_COMMON_CHECK_NAMES.length +
   (EXPECTED_CLASSIC_CHECK_NAMES.length - EXPECTED_COMMON_CHECK_NAMES.length);
+const EXPECTED_CHECK_ROWS = EXPECTED_CASE_SHAPE.map((shape, index) => {
+  const scenario = shape.split(":")[1];
+  const names =
+    scenario === "classic" ? EXPECTED_CLASSIC_CHECK_NAMES : EXPECTED_COMMON_CHECK_NAMES;
+  return `${index + 1}:` + names.map((name) => `${name}=true`).join("|");
+});
 
 function sameList(actual, expected) {
   return actual.length === expected.length &&
@@ -293,6 +299,22 @@ function byScenarioShape(row) {
     `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
 }
 
+function checkRow(row, index) {
+  return `${index + 1}:` +
+    row.checks.map((check) => `${check.name}=${check.ok}`).join("|");
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -300,8 +322,10 @@ const failed = audit.cases.filter(
 console.table(audit.byScenario);
 const shape = {
   byScenario: audit.byScenario.map(byScenarioShape),
-  cases: audit.cases.map(caseShape)
+  cases: audit.cases.map(caseShape),
+  checkRows: audit.cases.map(checkRow)
 };
+const checkRowDrifts = rowDrifts(shape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [];
 if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
   shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
@@ -325,6 +349,9 @@ audit.cases.forEach((row, index) => {
     });
   }
 });
+if (hasRowDrift(checkRowDrifts)) {
+  shapeErrors.push({ name: "checkRows", drift: checkRowDrifts });
+}
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
 if (
@@ -340,6 +367,8 @@ if (
     summary,
     failed,
     shapeErrors,
+    shape,
+    checkRowDrifts,
     passed: audit.passed,
     total: audit.total,
     passedChecks: audit.passedChecks,
