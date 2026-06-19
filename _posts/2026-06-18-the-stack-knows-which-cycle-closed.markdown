@@ -336,6 +336,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditTarjanScc();
 const caseRows = audit.cases.map((row) => ({
   example: row.example,
@@ -386,20 +399,29 @@ const auditShape = {
   passedChecks: audit.passedChecks,
   totalChecks: audit.totalChecks
 };
-if (
-  !sameJson(auditShape, EXPECTED_TOTALS) ||
-  !sameJson(caseRows, EXPECTED_CASES) ||
-  !sameJson(componentRows, EXPECTED_COMPONENT_GROUPS) ||
-  !sameJson(exhaustiveRows, EXPECTED_EXHAUSTIVE_BY_SIZE) ||
-  !sameJson(checkRows, expectedCheckRows)
-) {
-  throw new Error("unexpected Tarjan audit shape: " + JSON.stringify({
-    auditShape,
-    caseRows,
-    componentRows,
-    exhaustiveRows,
-    checkRows
-  }, null, 2));
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASES);
+const componentRowDrifts = rowDrifts(componentRows, EXPECTED_COMPONENT_GROUPS);
+const exhaustiveRowDrifts = rowDrifts(exhaustiveRows, EXPECTED_EXHAUSTIVE_BY_SIZE);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const driftShape = {
+  auditShape,
+  caseRowDrifts,
+  componentRowDrifts,
+  exhaustiveRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  sameJson(auditShape, EXPECTED_TOTALS) ? null : "totals",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  componentRowDrifts.length === 0 ? null : "componentRows",
+  exhaustiveRowDrifts.length === 0 ? null : "exhaustiveRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `Tarjan audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 console.log(audit.exhaustiveCases + " exhaustive graphs checked");
 console.table(componentRows);
