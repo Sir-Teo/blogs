@@ -436,6 +436,12 @@ const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS =
   EXPECTED_CASES * EXPECTED_COMMON_CHECK_NAMES.length +
   (EXPECTED_SCAN_CHECK_NAMES.length - EXPECTED_COMMON_CHECK_NAMES.length);
+const EXPECTED_CHECK_ROWS = EXPECTED_CASE_SHAPE.map((shape, index) => {
+  const scenario = shape.split(":")[1];
+  const names =
+    scenario === "scan" ? EXPECTED_SCAN_CHECK_NAMES : EXPECTED_COMMON_CHECK_NAMES;
+  return `${index + 1}:` + names.map((name) => `${name}=true`).join("|");
+});
 
 function sameList(actual, expected) {
   return actual.length === expected.length &&
@@ -455,14 +461,34 @@ function caseShape(row) {
     `${row.passedChecks}/${row.totalChecks}`;
 }
 
+function checkRow(row) {
+  return `${row.caseId}:` +
+    row.checks.map((check) => `${check.name}=${check.ok}`).join("|");
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
-const shape = audit.cases.map(caseShape);
+const shape = {
+  cases: audit.cases.map(caseShape),
+  checkRows: audit.cases.map(checkRow)
+};
+const checkRowDrifts = rowDrifts(shape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [];
-if (!sameList(shape, EXPECTED_CASE_SHAPE)) {
-  shapeErrors.push({ name: "cases", actual: shape, expected: EXPECTED_CASE_SHAPE });
+if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
+  shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
 }
 audit.cases.forEach((row) => {
   const names = row.checks.map((check) => check.name);
@@ -476,6 +502,9 @@ audit.cases.forEach((row) => {
     });
   }
 });
+if (hasRowDrift(checkRowDrifts)) {
+  shapeErrors.push({ name: "checkRows", drift: checkRowDrifts });
+}
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
   keys: row.keys,
@@ -500,6 +529,8 @@ if (
   throw new Error(JSON.stringify({
     summary,
     shapeErrors,
+    shape,
+    checkRowDrifts,
     failed,
     errors: audit.errors,
     totals: {
