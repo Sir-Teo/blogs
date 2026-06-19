@@ -368,6 +368,13 @@ const EXPECTED_CASE_KEYS = [
   "4:dense:2048:1200:0",
   "5:runs:250000:2200:6"
 ];
+const EXPECTED_CASE_ROWS = [
+  "1:default-clustered:100000:900:l=6:ef=8.74:varbyte=10.57:target=true:checks=7/7:passed=true",
+  "2:uniform:4096:64:l=6:ef=8.00:varbyte=8.00:target=true:checks=7/7:passed=true",
+  "3:clustered:100000:1500:l=6:ef=8.04:varbyte=9.02:target=true:checks=7/7:passed=true",
+  "4:dense:2048:1200:l=0:ef=2.71:varbyte=8.01:target=true:checks=7/7:passed=true",
+  "5:runs:250000:2200:l=6:ef=8.78:varbyte=8.35:target=true:checks=7/7:passed=true"
+];
 const EXPECTED_CHECK_NAMES = [
   "decode",
   "monotone-input",
@@ -385,10 +392,28 @@ function sameList(left, right) {
     left.every((value, index) => value === right[index]);
 }
 
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
+}
+
 function auditShape(audit) {
   return {
     cases: audit.cases.map(
       (row) => `${row.caseId}:${row.scenario}:${row.universe}:${row.count}:${row.l}`
+    ),
+    caseRows: audit.cases.map(
+      (row) => `${row.caseId}:${row.scenario}:${row.universe}:${row.count}:` +
+        `l=${row.l}:ef=${row.bitsPerValue.toFixed(2)}:` +
+        `varbyte=${row.varbyteBitsPerValue.toFixed(2)}:` +
+        `target=${row.targetOk}:checks=${row.passedChecks}/${row.totalChecks}:` +
+        `passed=${row.passed}`
     ),
     checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name))
   };
@@ -399,8 +424,10 @@ const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
 const shapeErrors = [
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
+  caseRowDrifts.length ? "caseRows" : null,
   shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
     ? null
     : "checksByCase"
@@ -432,6 +459,7 @@ if (
     summary,
     shapeErrors,
     shape,
+    drifts: { caseRows: caseRowDrifts },
     failed,
     errors: audit.errors,
     expectedCases: EXPECTED_CASES,
