@@ -234,6 +234,61 @@ replay, and bounded trade-rate/drawdown summaries.
 </div>
 <script defer src="{{ '/assets/js/kelly-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner treats the lab as an executable model-risk memo:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/kelly-lab.js");
+const EXPECTED_AUDIT = { checked: 69, failures: [], ok: true, passed: 69 };
+const EXPECTED_DEFAULT = [
+  "0.33",
+  "0.098968",
+  "0.014779",
+  "rawFull,rawHalf,calibrated,guarded",
+  "rawFull=0.007685/1.748980/332.108884/0.965865/0.997831",
+  "rawHalf=0.355387/4.928479/65.590730/0.723760/0.995363",
+  "calibrated=0.395256/6.898316/126.832009/0.752628/0.993088",
+  "guarded=0.681797/4.634650/30.212029/0.572983/0.623643"
+].join(":");
+
+function fixed(value, digits = 6) {
+  return Number(value).toFixed(digits);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  overconfidence: 180,
+  calibration: 800,
+  edge: 32,
+  cap: 25
+});
+const summaryShape = result.summaries.map((row) => `${row.key}=${[
+  fixed(row.q05),
+  fixed(row.median),
+  fixed(row.q95),
+  fixed(row.medianDrawdown),
+  fixed(row.tradeRate)
+].join("/")}`).join(":");
+const defaultShape = [
+  fixed(result.slope, 2),
+  fixed(result.rawEce),
+  fixed(result.calibratedEce),
+  result.summaries.map((row) => row.key).join(","),
+  summaryShape
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} Kelly sizing checks passed`);
+NODE
+```
+
 The point is not that a toy simulator settles portfolio theory. It does not.
 The point is more operational: when the model is overconfident, the raw Kelly
 policy often has the most impressive in-sample story and the ugliest realized
