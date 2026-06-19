@@ -384,6 +384,14 @@ const EXPECTED_CASE_SHAPE = [
   "5:repeat:56/52:84/84:1/1/4:7/2/7/4",
   "6:clustered:80/63:80/89:4/2/17:6/4/5/211"
 ];
+const EXPECTED_CASE_ROWS = [
+  "1:clustered:52/36:score=31/40:runs=5/1/16:mut=10/2/6:seed=37:checks=14/14:failed=none:passed=true",
+  "2:longGap:54/47:score=53/49:runs=5/2/7:mut=8/2/8:seed=12:checks=14/14:failed=none:passed=true",
+  "3:scattered:48/45:score=63/51:runs=5/3/3:mut=12/7/1:seed=92:checks=14/14:failed=none:passed=true",
+  "4:substitution:52/52:score=68/68:runs=0/0/0:mut=24/0/3:seed=5:checks=14/14:failed=none:passed=true",
+  "5:repeat:56/52:score=84/84:runs=1/1/4:mut=7/2/7:seed=4:checks=14/14:failed=none:passed=true",
+  "6:clustered:80/63:score=80/89:runs=4/2/17:mut=6/4/5:seed=211:checks=14/14:failed=none:passed=true"
+];
 const EXPECTED_CRITICAL_SHAPE = [
   "affine DP matches brute force for AACG/ACCG:6/6",
   "affine DP matches brute force for ACGT/AGT:6/6",
@@ -429,6 +437,27 @@ function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function caseRow(row) {
+  return `${row.caseId}:${row.pattern}:${row.sourceLength}/${row.targetLength}:` +
+    `score=${row.linearScore}/${row.affineScore}:` +
+    `runs=${row.linearGapRuns}/${row.affineGapRuns}/${row.affineGapChars}:` +
+    `mut=${row.substitutions}/${row.gapEvents}/${row.gapMean}:` +
+    `seed=${row.seed}:checks=${row.passedChecks}/${row.totalChecks}:` +
+    `failed=${row.failedChecks.length ? row.failedChecks.join("|") : "none"}:` +
+    `passed=${row.passed}`;
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 function auditShape(audit) {
   return {
     totals: {
@@ -447,6 +476,7 @@ function auditShape(audit) {
         `${row.linearGapRuns}/${row.affineGapRuns}/${row.affineGapChars}:` +
         `${row.substitutions}/${row.gapEvents}/${row.gapMean}/${row.seed}`
     ),
+    caseRows: audit.cases.map(caseRow),
     criticalChecks: audit.criticalChecks.map(
       (row) => `${row.check}:${row.passed}/${row.total}`
     ),
@@ -466,9 +496,11 @@ const failed = audit.cases.filter(
 const failedCriticalChecks = audit.criticalChecks.filter(
   (row) => !row.ok || row.passed !== row.total
 );
+const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
 const shapeErrors = [
   sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  hasRowDrift(caseRowDrifts) ? "caseRows" : null,
   sameList(shape.criticalChecks, EXPECTED_CRITICAL_SHAPE) ? null : "criticalChecks",
   sameList(shape.byPattern, EXPECTED_PATTERN_SHAPE) ? null : "byPattern"
 ].filter(Boolean);
@@ -500,6 +532,7 @@ if (
     summary,
     shapeErrors,
     shape,
+    caseRowDrifts,
     failed,
     failedCriticalChecks,
     errors: audit.errors,
