@@ -48,3 +48,10 @@ embedded audit:
 ```sh
 node scripts/run-post-audit.js --missing --all
 ```
+
+To focus on posts currently changed in the worktree:
+
+```sh
+node scripts/run-post-audit.js --list --changed
+node scripts/run-post-audit.js --missing --changed
+```

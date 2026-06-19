@@ -7,8 +7,8 @@ const { spawnSync } = require("child_process");
 
 function usage() {
   console.error(
-    "Usage: node scripts/run-post-audit.js [--quiet] [--list] [--missing] [--all] [--date YYYY-MM-DD] " +
-    "_posts/post.markdown [...]"
+    "Usage: node scripts/run-post-audit.js [--quiet] [--list] [--missing] " +
+    "[--all] [--changed] [--date YYYY-MM-DD] _posts/post.markdown [...]"
   );
 }
 
@@ -80,6 +80,27 @@ function discoverMissingPosts(filter) {
   return postFiles(filter).filter(isMissingAuditPost);
 }
 
+function changedPostFiles() {
+  const result = spawnSync("git", ["status", "--porcelain", "--", "_posts"], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+  if (result.error) {
+    console.error(`[audit] ${result.error.message}`);
+    return [];
+  }
+  if (result.status !== 0) {
+    if (result.stderr) process.stderr.write(result.stderr);
+    return [];
+  }
+  return result.stdout.split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => line.slice(3))
+    .map((file) => file.includes(" -> ") ? file.split(" -> ").pop() : file)
+    .filter((file) => file.startsWith("_posts/") && file.endsWith(".markdown"))
+    .sort();
+}
+
 function runAudit(file, options) {
   const absolute = path.resolve(file);
   const markdown = fs.readFileSync(absolute, "utf8");
@@ -118,6 +139,7 @@ function runAudit(file, options) {
 const args = process.argv.slice(2);
 const options = {
   all: false,
+  changed: false,
   date: null,
   list: false,
   missing: false,
@@ -134,6 +156,8 @@ for (let index = 0; index < args.length; index += 1) {
     options.missing = true;
   } else if (arg === "--all") {
     options.all = true;
+  } else if (arg === "--changed") {
+    options.changed = true;
   } else if (arg === "--date") {
     options.date = args[index + 1];
     index += 1;
@@ -147,13 +171,18 @@ if (options.date && !/^\d{4}-\d{2}-\d{2}$/.test(options.date)) {
   process.exit(2);
 }
 
+const changedFiles = options.changed ? changedPostFiles() : [];
+
 if (options.missing) {
   const missingFiles = [];
-  if (options.all || (!options.date && files.length === 0)) {
+  if (options.all || (!options.date && !options.changed && files.length === 0)) {
     missingFiles.push(...discoverMissingPosts(() => true));
   }
   if (options.date) {
     missingFiles.push(...discoverMissingPosts((name) => name.startsWith(`${options.date}-`)));
+  }
+  if (options.changed) {
+    missingFiles.push(...changedFiles.filter(isMissingAuditPost));
   }
   if (files.length) {
     missingFiles.push(...files.filter(isMissingAuditPost));
@@ -166,6 +195,10 @@ if (options.missing) {
 
 if (options.all) {
   files.push(...discoverPosts(() => true));
+}
+
+if (options.changed) {
+  files.push(...changedFiles.filter(hasRunnableAudit));
 }
 
 if (options.date) {
