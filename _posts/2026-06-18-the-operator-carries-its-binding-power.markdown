@@ -458,6 +458,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -490,23 +503,32 @@ const caseRows = audit.cases.map((row) =>
   `${row.nodes}:${row.traceSteps}:${String(row.value)}:` +
   `${row.passedChecks}/${row.totalChecks}:${row.passed}`
 );
+const byModeDrifts = rowDrifts(byModeRows, EXPECTED_BY_MODE);
+const byExampleDrifts = rowDrifts(byExampleRows, EXPECTED_BY_EXAMPLE);
+const criticalDrifts = rowDrifts(criticalRows, EXPECTED_CRITICAL_CHECKS);
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const driftShape = {
+  totals,
+  byModeDrifts,
+  byExampleDrifts,
+  criticalDrifts,
+  caseRowDrifts
+};
+const shapeErrors = [
+  sameJson(totals, EXPECTED_TOTALS) ? null : "totals",
+  byModeDrifts.length === 0 ? null : "byModeRows",
+  byExampleDrifts.length === 0 ? null : "byExampleRows",
+  criticalDrifts.length === 0 ? null : "criticalRows",
+  caseRowDrifts.length === 0 ? null : "caseRows"
+].filter(Boolean);
 console.table(audit.byMode);
 console.table(audit.byExample);
 console.table(audit.criticalChecks);
-if (
-  !sameJson(totals, EXPECTED_TOTALS) ||
-  !sameJson(byModeRows, EXPECTED_BY_MODE) ||
-  !sameJson(byExampleRows, EXPECTED_BY_EXAMPLE) ||
-  !sameJson(criticalRows, EXPECTED_CRITICAL_CHECKS) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS)
-) {
-  throw new Error("unexpected Pratt parser audit shape: " + JSON.stringify({
-    totals,
-    byModeRows,
-    byExampleRows,
-    criticalRows,
-    caseRows
-  }, null, 2));
+if (shapeErrors.length) {
+  throw new Error(
+    `Pratt parser audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 const summary =
   `${audit.passed}/${audit.total} cases and ${audit.passedChecks}/${audit.totalChecks} checks passed`;
