@@ -337,6 +337,12 @@ const EXPECTED_CHECK_NAMES = [
   "uniform case fits after batching",
   "hot key can exceed memory"
 ];
+const EXPECTED_CHECK_ROWS = [
+  "1:uniform:build rows preserved=true|probe rows preserved=true|batch count power of two=true|partition build rows preserved=true|partition probe rows preserved=true|temp accounting nonnegative=true|hybrid does not spill more than grace=true|fits or has skew explanation=true|top key count agrees=true|uniform case fits after batching=true|hot key can exceed memory=true",
+  "2:zipf:build rows preserved=true|probe rows preserved=true|batch count power of two=true|partition build rows preserved=true|partition probe rows preserved=true|temp accounting nonnegative=true|hybrid does not spill more than grace=true|fits or has skew explanation=true|top key count agrees=true|uniform case fits after batching=true|hot key can exceed memory=true",
+  "3:hot:build rows preserved=true|probe rows preserved=true|batch count power of two=true|partition build rows preserved=true|partition probe rows preserved=true|temp accounting nonnegative=true|hybrid does not spill more than grace=true|fits or has skew explanation=true|top key count agrees=true|uniform case fits after batching=true|hot key can exceed memory=true",
+  "4:burst:build rows preserved=true|probe rows preserved=true|batch count power of two=true|partition build rows preserved=true|partition probe rows preserved=true|temp accounting nonnegative=true|hybrid does not spill more than grace=true|fits or has skew explanation=true|top key count agrees=true|uniform case fits after batching=true|hot key can exceed memory=true"
+];
 const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
 
@@ -358,6 +364,22 @@ function byProfileShape(row) {
     `${row.passed}/${row.total}:${row.passedChecks}/${row.totalChecks}`;
 }
 
+function checkRow(row, index) {
+  return `${index + 1}:${row.profile}:` +
+    row.checks.map((check) => `${check.name}=${check.ok}`).join("|");
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
+}
+
 const audit = lab.auditGrid();
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
@@ -365,8 +387,10 @@ const failed = audit.cases.filter(
 console.table(audit.byProfile);
 const shape = {
   byProfile: audit.byProfile.map(byProfileShape),
-  cases: audit.cases.map(caseShape)
+  cases: audit.cases.map(caseShape),
+  checkRows: audit.cases.map(checkRow)
 };
+const checkRowDrifts = rowDrifts(shape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [];
 if (!sameList(shape.cases, EXPECTED_CASE_SHAPE)) {
   shapeErrors.push({ name: "cases", actual: shape.cases, expected: EXPECTED_CASE_SHAPE });
@@ -388,6 +412,9 @@ audit.cases.forEach((row, index) => {
     });
   }
 });
+if (hasRowDrift(checkRowDrifts)) {
+  shapeErrors.push({ name: "check rows", drift: checkRowDrifts });
+}
 
 console.table(audit.cases.map((row) => ({
   profile: row.profile,
@@ -413,6 +440,7 @@ if (
   throw new Error(JSON.stringify({
     summary,
     shapeErrors,
+    shape,
     failed,
     totals: {
       total: audit.total,
