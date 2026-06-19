@@ -330,14 +330,14 @@ const EXPECTED_POLICIES = [
   "rolloutChange"
 ];
 const EXPECTED_MAX_AGES = [0, 5, 12, 40];
-const EXPECTED_CHECK_NAMES = [
-  "six-attempts-expected",
-  "simple-requests-skip-preflight",
-  "outcomes-partition-attempts",
-  "cache-hits-only-for-preflighted-requests",
-  "blocked-rows-hide-responses",
-  "wildcard-hides-credentialed-responses",
-  "authorization-requires-explicit-header"
+const EXPECTED_CHECK_SHAPE = [
+  { name: "six-attempts-expected", passed: true },
+  { name: "simple-requests-skip-preflight", passed: true },
+  { name: "outcomes-partition-attempts", passed: true },
+  { name: "cache-hits-only-for-preflighted-requests", passed: true },
+  { name: "blocked-rows-hide-responses", passed: true },
+  { name: "wildcard-hides-credentialed-responses", passed: true },
+  { name: "authorization-requires-explicit-header", passed: true }
 ];
 const EXPECTED_DEFAULT_SUMMARY = {
   attempts: 6,
@@ -372,7 +372,7 @@ const EXPECTED_CASE_KEYS = EXPECTED_REQUESTS.flatMap((request) =>
   )
 );
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
-const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_SHAPE.length;
 const EXPECTED_TOTALS = {
   rows: EXPECTED_CASES,
   requests: EXPECTED_REQUESTS.length,
@@ -445,7 +445,12 @@ function auditShape(audit) {
       totalChecks: audit.totalChecks
     },
     cases: audit.cases.map((row) => `${row.request}/${row.policy}/${row.maxAge}`),
-    checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name)),
+    checksByCase: audit.cases.map((row) =>
+      row.checks.map((check) => ({
+        name: check.name,
+        passed: check.passed
+      }))
+    ),
     byRequest: audit.byRequest.map(
       (row) => `${row.request}:${row.cases} cases/${row.totalChecks} checks:` +
         `${row.preflights}/${row.cacheHits}/${row.exposed}/` +
@@ -473,7 +478,7 @@ const shapeErrors = [
   sameRecord(result.summary, EXPECTED_DEFAULT_SUMMARY) ? null : "defaultSummary",
   sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
-  shape.checksByCase.every((checks) => sameList(checks, EXPECTED_CHECK_NAMES))
+  shape.checksByCase.every((checks) => sameJson(checks, EXPECTED_CHECK_SHAPE))
     ? null
     : "checksByCase",
   sameList(shape.byRequest, EXPECTED_BY_REQUEST) ? null : "byRequest",
