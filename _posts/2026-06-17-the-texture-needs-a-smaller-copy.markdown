@@ -330,13 +330,13 @@ const EXPECTED_CASE_ROWS = [
   "3:28:12:91:90:8:0.21106:0.02582:88:3.585:6/6:true",
   "4:40:24:43:75:8:0.19227:0.00549:97:4.585:6/6:true"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "pyramid starts with 256 square texture",
-  "pyramid sizes halve",
-  "mipmap RMS does not exceed point RMS under minification",
-  "sample means remain bounded",
-  "selected LOD matches footprint",
-  "downsampling preserves constants"
+const EXPECTED_CHECKS = [
+  { name: "pyramid starts with 256 square texture", passed: true },
+  { name: "pyramid sizes halve", passed: true },
+  { name: "mipmap RMS does not exceed point RMS under minification", passed: true },
+  { name: "sample means remain bounded", passed: true },
+  { name: "selected LOD matches footprint", passed: true },
+  { name: "downsampling preserves constants", passed: true }
 ];
 
 function sameJson(actual, expected) {
@@ -383,11 +383,14 @@ const caseRows = audit.cases.map((row, index) => [
 ].join(":"));
 const checkRows = audit.cases.map((row, index) => ({
   caseId: index + 1,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    passed: check.passed
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
   caseId: Number(row.split(":")[0]),
-  checks: EXPECTED_CHECK_NAMES
+  checks: EXPECTED_CHECKS
 }));
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
 const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
