@@ -263,39 +263,42 @@ const EXPECTED_CASE_ROWS = [
   "4:12:4095:32:3021:12:2.399930:6.978266:6.978266:4.548230:3.414408:5:4:30/30:true",
   "5:13:8191:8:7777:13:4.333275:9.877182:9.877182:6.375900:5.848126:8:6:30/30:true"
 ];
-const EXPECTED_BASE_CHECK_NAMES = [
-  "inorder key count",
-  "inorder first and last key",
-  "inorder unique keys",
-  "bfs key count",
-  "bfs first and last key",
-  "bfs unique keys",
-  "dfs key count",
-  "dfs first and last key",
-  "dfs unique keys",
-  "veb key count",
-  "veb first and last key",
-  "veb unique keys",
-  "search ends at query key",
-  "search length bounded by height",
-  "inorder finite average",
-  "inorder finite worst",
-  "inorder selected path length",
-  "inorder block accounting",
-  "bfs finite average",
-  "bfs finite worst",
-  "bfs selected path length",
-  "bfs block accounting",
-  "dfs finite average",
-  "dfs finite worst",
-  "dfs selected path length",
-  "dfs block accounting",
-  "veb finite average",
-  "veb finite worst",
-  "veb selected path length",
-  "veb block accounting"
+const EXPECTED_BASE_CHECKS = [
+  { name: "inorder key count", ok: true },
+  { name: "inorder first and last key", ok: true },
+  { name: "inorder unique keys", ok: true },
+  { name: "bfs key count", ok: true },
+  { name: "bfs first and last key", ok: true },
+  { name: "bfs unique keys", ok: true },
+  { name: "dfs key count", ok: true },
+  { name: "dfs first and last key", ok: true },
+  { name: "dfs unique keys", ok: true },
+  { name: "veb key count", ok: true },
+  { name: "veb first and last key", ok: true },
+  { name: "veb unique keys", ok: true },
+  { name: "search ends at query key", ok: true },
+  { name: "search length bounded by height", ok: true },
+  { name: "inorder finite average", ok: true },
+  { name: "inorder finite worst", ok: true },
+  { name: "inorder selected path length", ok: true },
+  { name: "inorder block accounting", ok: true },
+  { name: "bfs finite average", ok: true },
+  { name: "bfs finite worst", ok: true },
+  { name: "bfs selected path length", ok: true },
+  { name: "bfs block accounting", ok: true },
+  { name: "dfs finite average", ok: true },
+  { name: "dfs finite worst", ok: true },
+  { name: "dfs selected path length", ok: true },
+  { name: "dfs block accounting", ok: true },
+  { name: "veb finite average", ok: true },
+  { name: "veb finite worst", ok: true },
+  { name: "veb selected path length", ok: true },
+  { name: "veb block accounting", ok: true }
 ];
-const EXPECTED_DEFAULT_CHECK_NAME = "default vEB improves average over inorder";
+const EXPECTED_DEFAULT_CHECK = {
+  name: "default vEB improves average over inorder",
+  ok: true
+};
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
@@ -344,15 +347,18 @@ const caseRows = audit.cases.map((row) => [
 ].join(":"));
 const checkRows = audit.cases.map((row) => ({
   caseId: row.caseId,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
   const caseId = Number(row.split(":")[0]);
   return {
     caseId,
     checks: caseId === 2
-      ? EXPECTED_BASE_CHECK_NAMES.concat([EXPECTED_DEFAULT_CHECK_NAME])
-      : EXPECTED_BASE_CHECK_NAMES
+      ? EXPECTED_BASE_CHECKS.concat([EXPECTED_DEFAULT_CHECK])
+      : EXPECTED_BASE_CHECKS
   };
 });
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
