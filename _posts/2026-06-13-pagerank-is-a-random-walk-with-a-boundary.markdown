@@ -227,6 +227,75 @@ farm, and topic-biased restarts moving mass away from spam.
 </div>
 <script defer src="{{ '/assets/js/pagerank-flow-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks the exported Markov-chain contract and the
+default flow shape:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/pagerank-flow-lab.js");
+const EXPECTED_AUDIT = { checked: 25, ok: true, passed: 25 };
+const EXPECTED_DEFAULT =
+  "Spam hub:0.170850:0.430396:0.569604:0.167462:0.035776:9.780250e-8:1.000000:1.000000";
+const EXPECTED_SWEEP = [
+  "0:0.262934",
+  "1:0.370519",
+  "2:0.430396",
+  "3:0.513015",
+  "4:0.537286",
+  "5:0.572458"
+];
+
+function fixed6(value) {
+  return Number(value).toFixed(6);
+}
+
+function exp6(value) {
+  return Number(value).toExponential(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.simulate({
+  alpha: 85,
+  iterations: 28,
+  paidLinks: 2,
+  spamLeak: 1,
+  topicBias: 30
+});
+const defaultShape = [
+  result.top.label,
+  fixed6(result.top.rank),
+  fixed6(result.spamShare),
+  fixed6(result.coreShare),
+  fixed6(result.paidLift),
+  fixed6(result.danglingMass),
+  exp6(result.residual),
+  fixed6(result.rank.reduce((sum, value) => sum + value, 0)),
+  fixed6(result.teleport.reduce((sum, value) => sum + value, 0))
+].join(":");
+const sweepShape = result.sweep.map(
+  (row) => `${row.paidLinks}:${fixed6(row.spamShare)}`
+);
+
+if (
+  !sameJson({
+    checked: audit.checked,
+    ok: audit.ok,
+    passed: audit.passed
+  }, EXPECTED_AUDIT) ||
+  defaultShape !== EXPECTED_DEFAULT ||
+  !sameJson(sweepShape, EXPECTED_SWEEP)
+) {
+  throw new Error(JSON.stringify({ audit, defaultShape, sweepShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} PageRank checks passed`);
+NODE
+```
+
 At the default setting, the spam farm gets real rank because two ordinary pages
 link into it and the farm recycles mass internally. It does not manufacture rank
 from nothing. It captures flow that enters.
