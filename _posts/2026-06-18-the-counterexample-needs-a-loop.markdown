@@ -355,19 +355,26 @@ const lab = require("./assets/js/temporal-lasso-lab.js");
 const EXPECTED_CASES = 5;
 const EXPECTED_CLAIMS = 5;
 const EXPECTED_CHECKS = 45;
-const EXPECTED_CASE_SHAPE = [
-  "bad switch:8",
-  "outage under fairness:12",
-  "safe baseline:8",
-  "unfair skip:10",
-  "weak fairness:7"
+const EXPECTED_CASE_ROWS = [
+  "bad switch:safety prefix:safety=both:lasso=none:events=none:product=2:checks=8/8:passed=true",
+  "outage under fairness:capability loss:safety=none:lasso=outage -> outage:events=wait:product=3:checks=12/12:passed=true",
+  "safe baseline:no witness:safety=none:lasso=none:events=none:product=2:checks=8/8:passed=true",
+  "unfair skip:liveness lasso:safety=none:lasso=pending -> pending:events=skip:product=2:checks=10/10:passed=true",
+  "weak fairness:fairness filter:safety=none:lasso=none:events=none:product=2:checks=7/7:passed=true"
 ];
-const EXPECTED_CLAIM_SHAPE = [
-  "capability loss:1:12:0:1",
-  "fairness filter:1:7:0:0",
-  "liveness lasso:1:10:0:1",
-  "no witness:1:8:0:0",
-  "safety prefix:1:8:1:0"
+const EXPECTED_CLAIM_ROWS = [
+  "capability loss:cases=1:checks=12/12:safety=0:lasso=1:maxProduct=3:passed=1",
+  "fairness filter:cases=1:checks=7/7:safety=0:lasso=0:maxProduct=2:passed=1",
+  "liveness lasso:cases=1:checks=10/10:safety=0:lasso=1:maxProduct=2:passed=1",
+  "no witness:cases=1:checks=8/8:safety=0:lasso=0:maxProduct=2:passed=1",
+  "safety prefix:cases=1:checks=8/8:safety=1:lasso=0:maxProduct=2:passed=1"
+];
+const EXPECTED_CHECK_ROWS = [
+  "bad switch:conflict enabled should produce a safety prefix=true|no-lasso result should have empty cycle=true|no-lasso result should have empty prefix=true|product graph should stay tiny=true|safety prefix should end at both-green=true|safety prefix should have one more state than edge=true|safety terminal should be final prefix state=true|safety witness should end in a bad state=true",
+  "outage under fairness:lasso cycle should avoid grants=true|lasso cycle should be nonempty=true|lasso cycle should close=true|lasso cycle should stay in owed states=true|lasso prefix should reach the cycle start=true|outage lasso should visit outage=true|outage loop should remain a liveness violation under grant fairness=true|product graph should stay tiny=true|safe result should not stop in a bad state=true|safety prefix should have one more state than edge=true|safety terminal should be final prefix state=true|weak-fair lasso should include a state where grant is not enabled=true",
+  "safe baseline:conflict disabled should have no safety bad prefix=true|no skip or outage should have no liveness lasso=true|no-lasso result should have empty cycle=true|no-lasso result should have empty prefix=true|product graph should stay tiny=true|safe result should not stop in a bad state=true|safety prefix should have one more state than edge=true|safety terminal should be final prefix state=true",
+  "unfair skip:lasso cycle should avoid grants=true|lasso cycle should be nonempty=true|lasso cycle should close=true|lasso cycle should stay in owed states=true|lasso prefix should reach the cycle start=true|product graph should stay tiny=true|safe result should not stop in a bad state=true|safety prefix should have one more state than edge=true|safety terminal should be final prefix state=true|unfair skip loop should violate request-response liveness=true",
+  "weak fairness:no-lasso result should have empty cycle=true|no-lasso result should have empty prefix=true|product graph should stay tiny=true|safe result should not stop in a bad state=true|safety prefix should have one more state than edge=true|safety terminal should be final prefix state=true|weak grant fairness should rule out the pure skip lasso=true"
 ];
 const EXPECTED_TOTALS = {
   rows: EXPECTED_CASES,
@@ -380,6 +387,40 @@ const EXPECTED_TOTALS = {
 
 function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function formatCaseRow(row) {
+  return `${row.name}:${row.claim}:` +
+    `safety=${row.safetyFound ? row.safetyTerminal : "none"}:` +
+    `lasso=${row.lassoFound ? row.cycleStates : "none"}:` +
+    `events=${row.cycleEvents || "none"}:product=${row.productNodes}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`;
+}
+
+function formatClaimRow(row) {
+  return `${row.claim}:cases=${row.cases}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:` +
+    `safety=${row.safetyWitnesses}:lasso=${row.lassoWitnesses}:` +
+    `maxProduct=${row.maxProductNodes}:passed=${row.passed}`;
+}
+
+function formatCheckRow(row) {
+  const checks = row.checks
+    .map((check) => `${check.name}=${check.ok}`)
+    .sort()
+    .join("|");
+  return `${row.name}:${checks}`;
+}
+
+function rowDrifts(actual, expected) {
+  return {
+    missing: expected.filter((row) => !actual.includes(row)),
+    extra: actual.filter((row) => !expected.includes(row))
+  };
+}
+
+function hasRowDrift(drift) {
+  return drift.missing.length > 0 || drift.extra.length > 0;
 }
 
 const audit = lab.audit();
@@ -403,28 +444,31 @@ const auditShape = {
     passedChecks: audit.passedChecks,
     totalChecks: audit.totalChecks
   },
-  caseChecks: audit.cases
-    .map((row) => `${row.name}:${row.totalChecks}`)
+  caseRows: audit.cases
+    .map(formatCaseRow)
     .sort(),
-  claimChecks: audit.byClaim
-    .map((row) => [
-      row.claim,
-      row.cases,
-      row.totalChecks,
-      row.safetyWitnesses,
-      row.lassoWitnesses
-    ].join(":"))
+  claimRows: audit.byClaim
+    .map(formatClaimRow)
+    .sort(),
+  checkRows: audit.cases
+    .map(formatCheckRow)
     .sort()
+};
+const shapeDrifts = {
+  caseRows: rowDrifts(auditShape.caseRows, EXPECTED_CASE_ROWS),
+  claimRows: rowDrifts(auditShape.claimRows, EXPECTED_CLAIM_ROWS),
+  checkRows: rowDrifts(auditShape.checkRows, EXPECTED_CHECK_ROWS)
 };
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
-  sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
-  sameJson(auditShape.claimChecks, EXPECTED_CLAIM_SHAPE) ? null : "claimChecks"
+  hasRowDrift(shapeDrifts.caseRows) ? "caseRows" : null,
+  hasRowDrift(shapeDrifts.claimRows) ? "claimRows" : null,
+  hasRowDrift(shapeDrifts.checkRows) ? "checkRows" : null
 ].filter(Boolean);
 if (shapeErrors.length) {
   throw new Error(
     `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    JSON.stringify({ auditShape, shapeDrifts }, null, 2)
   );
 }
 
@@ -438,7 +482,8 @@ if (!audit.ok || !audit.pass || failedCases.length ||
     failures: audit.failures,
     failedCases,
     shapeErrors,
-    auditShape
+    auditShape,
+    shapeDrifts
   }, null, 2));
 }
 console.log(
