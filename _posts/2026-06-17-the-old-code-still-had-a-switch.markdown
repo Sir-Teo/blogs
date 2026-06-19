@@ -432,19 +432,19 @@ const EXPECTED_CASE_ROWS = [
   "5:0:212:45:419:0:0:40:0:50:0:0.0:0.0:0.00:0.00:6/6:true",
   "6:2:120:20:350:0:0:40:0:50:1680000:166.7:193.2:20.00:7000.00:6/6:true"
 ];
-const EXPECTED_BASE_CHECK_NAMES = [
-  "outputs are finite and non-negative",
-  "deployment check prevents stale-server activation",
-  "zero stale servers cause zero erroneous executions",
-  "actual executions do not exceed raw loop",
-  "router guard enforces per-parent cap",
-  "capital guard enforces configured loss bound"
+const EXPECTED_BASE_CHECKS = [
+  { name: "outputs are finite and non-negative", passed: true },
+  { name: "deployment check prevents stale-server activation", passed: true },
+  { name: "zero stale servers cause zero erroneous executions", passed: true },
+  { name: "actual executions do not exceed raw loop", passed: true },
+  { name: "router guard enforces per-parent cap", passed: true },
+  { name: "capital guard enforces configured loss bound", passed: true }
 ];
-const EXPECTED_BASELINE_CHECK_NAMES = [
-  ...EXPECTED_BASE_CHECK_NAMES,
-  "default calibration is near SEC execution count",
-  "default calibration is near SEC share count",
-  "default calibration is near SEC loss scale"
+const EXPECTED_BASELINE_CHECKS = [
+  ...EXPECTED_BASE_CHECKS,
+  { name: "default calibration is near SEC execution count", passed: true },
+  { name: "default calibration is near SEC share count", passed: true },
+  { name: "default calibration is near SEC loss scale", passed: true }
 ];
 
 function sameJson(actual, expected) {
@@ -496,13 +496,16 @@ const caseRows = audit.cases.map((row, index) => [
 ].join(":"));
 const checkRows = audit.cases.map((row, index) => ({
   caseId: index + 1,
-  checks: row.checks.map((check) => check.name)
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    passed: check.passed
+  }))
 }));
 const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => {
   const caseId = Number(row.split(":")[0]);
   return {
     caseId,
-    checks: caseId === 1 ? EXPECTED_BASELINE_CHECK_NAMES : EXPECTED_BASE_CHECK_NAMES
+    checks: caseId === 1 ? EXPECTED_BASELINE_CHECKS : EXPECTED_BASE_CHECKS
   };
 });
 const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
