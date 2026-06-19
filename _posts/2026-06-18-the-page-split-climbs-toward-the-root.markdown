@@ -351,24 +351,31 @@ const EXPECTED_BY_COUNT = [
   "count=31:cases=32:checks=320/320:height=2..4:pages=5..26:leaves=4..15:splits=3..22:fill=0.574..0.886",
   "count=64:cases=32:checks=320/320:height=2..5:pages=11..58:leaves=10..32:splits=9..53:fill=0.571..0.762"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "all-leaves-balanced",
-  "finite-summary-metrics",
-  "internal-child-counts",
-  "keys-sorted-within-pages",
-  "leaf-chain-sorted",
-  "page-occupancy",
-  "search-routes-to-key",
-  "separator-min-keys",
-  "split-accounting",
-  "state-key-counts"
+const EXPECTED_CHECK_SEQUENCE = [
+  { name: "all-leaves-balanced", ok: true },
+  { name: "finite-summary-metrics", ok: true },
+  { name: "internal-child-counts", ok: true },
+  { name: "leaf-chain-sorted", ok: true },
+  { name: "page-occupancy", ok: true },
+  { name: "search-routes-to-key", ok: true },
+  { name: "separator-min-keys", ok: true },
+  { name: "keys-sorted-within-pages", ok: true },
+  { name: "split-accounting", ok: true },
+  { name: "state-key-counts", ok: true }
 ];
+const EXPECTED_CHECK_NAMES = EXPECTED_CHECK_SEQUENCE
+  .map((check) => check.name)
+  .sort();
 const EXPECTED_CASES = 4 * 4 * 3 * 2;
-const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_SEQUENCE.length;
 
 function sameList(actual, expected) {
   return actual.length === expected.length &&
     actual.every((value, index) => value === expected[index]);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
 function fixed3(value) {
@@ -418,6 +425,13 @@ const shape = {
     `seeds=${uniqueNumbers(audit, "seed")}`
   ]
 };
+const checkRowDrifts = audit.cases.map((row) => ({
+  key: `${row.pattern}/${row.maxKeys}/${row.count}/${row.seed}`,
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok
+  }))
+})).filter((row) => !sameJson(row.checks, EXPECTED_CHECK_SEQUENCE));
 const shapeErrors = [];
 if (!sameList(shape.grid, EXPECTED_GRID_SHAPE)) {
   shapeErrors.push({ name: "grid", actual: shape.grid, expected: EXPECTED_GRID_SHAPE });
@@ -444,6 +458,13 @@ if (!sameList(shape.checkNames, EXPECTED_CHECK_NAMES)) {
     name: "checkNames",
     actual: shape.checkNames,
     expected: EXPECTED_CHECK_NAMES
+  });
+}
+if (checkRowDrifts.length) {
+  shapeErrors.push({
+    name: "checkRows",
+    actual: checkRowDrifts.slice(0, 10),
+    expected: EXPECTED_CHECK_SEQUENCE
   });
 }
 const summary =
