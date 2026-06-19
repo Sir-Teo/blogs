@@ -353,6 +353,13 @@ const EXPECTED_CASE_SHAPE = [
   "4:random:768/128:23/20:2412/2334:15/13:9.000/10.000:6",
   "5:flood:256/64:404/80:32640/497:256/9:256.000/6.050:9"
 ];
+const EXPECTED_CASE_ROWS = [
+  "1:flood:keys=512:buckets=128:weak=130816:keyed=961:max=512/9:p95=512.000/7.000:amp=136.1:checks=9/9:passed=true",
+  "2:flood:keys=1024:buckets=256:weak=523776:keyed=2003:max=1024/12:p95=1024.000/6.000:amp=261.5:checks=9/9:passed=true",
+  "3:mixed:keys=768:buckets=128:weak=61118:keyed=2246:max=348/12:p95=288.100/8.000:amp=27.2:checks=6/6:passed=true",
+  "4:random:keys=768:buckets=128:weak=2412:keyed=2334:max=15/13:p95=9.000/10.000:amp=1.0:checks=6/6:passed=true",
+  "5:flood:keys=256:buckets=64:weak=32640:keyed=497:max=256/9:p95=256.000/6.050:amp=65.7:checks=9/9:passed=true"
+];
 const COMMON_CHECK_NAMES = [
   "weak rows match key count",
   "keyed rows match key count",
@@ -374,6 +381,13 @@ const EXPECTED_CHECKS_BY_CASE = [
   COMMON_CHECK_NAMES,
   COMMON_CHECK_NAMES,
   FLOOD_CHECK_NAMES
+];
+const EXPECTED_CHECK_ROWS = [
+  "1:weak rows match key count=true|keyed rows match key count=true|comparison counts finite=true|bucket accounting weak=true|bucket accounting keyed=true|flood keys share one weak bucket=true|flood comparisons are triangular=true|keyed mixer spreads flood set=true|lookup p95 finite=true",
+  "2:weak rows match key count=true|keyed rows match key count=true|comparison counts finite=true|bucket accounting weak=true|bucket accounting keyed=true|flood keys share one weak bucket=true|flood comparisons are triangular=true|keyed mixer spreads flood set=true|lookup p95 finite=true",
+  "3:weak rows match key count=true|keyed rows match key count=true|comparison counts finite=true|bucket accounting weak=true|bucket accounting keyed=true|lookup p95 finite=true",
+  "4:weak rows match key count=true|keyed rows match key count=true|comparison counts finite=true|bucket accounting weak=true|bucket accounting keyed=true|lookup p95 finite=true",
+  "5:weak rows match key count=true|keyed rows match key count=true|comparison counts finite=true|bucket accounting weak=true|bucket accounting keyed=true|flood keys share one weak bucket=true|flood comparisons are triangular=true|keyed mixer spreads flood set=true|lookup p95 finite=true"
 ];
 const EXPECTED_CASES = EXPECTED_CASE_SHAPE.length;
 const EXPECTED_CHECKS = EXPECTED_CHECKS_BY_CASE.reduce(
@@ -397,6 +411,17 @@ function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
+}
+
 function auditShape(audit) {
   return {
     totals: {
@@ -414,6 +439,19 @@ function auditShape(audit) {
         `${row.weakLookupP95.toFixed(3)}/${row.keyedLookupP95.toFixed(3)}:` +
         `${row.totalChecks}`
     ),
+    caseRows: audit.cases.map(
+      (row) => `${row.caseId}:${row.scenario}:keys=${row.keys}:` +
+        `buckets=${row.buckets}:weak=${row.weakComparisons}:` +
+        `keyed=${row.keyedComparisons}:` +
+        `max=${row.weakMaxBucket}/${row.keyedMaxBucket}:` +
+        `p95=${row.weakLookupP95.toFixed(3)}/${row.keyedLookupP95.toFixed(3)}:` +
+        `amp=${row.amplification.toFixed(1)}:` +
+        `checks=${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`
+    ),
+    checkRows: audit.cases.map(
+      (row) => `${row.caseId}:` +
+        row.checks.map((check) => `${check.name}=${check.passed}`).join("|")
+    ),
     checksByCase: audit.cases.map((row) => row.checks.map((check) => check.name))
   };
 }
@@ -423,9 +461,13 @@ const shape = auditShape(audit);
 const failed = audit.cases.filter(
   (row) => !row.passed || row.passedChecks !== row.totalChecks
 );
+const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(shape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [
   sameJson(shape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameList(shape.cases, EXPECTED_CASE_SHAPE) ? null : "cases",
+  caseRowDrifts.length ? "caseRows" : null,
+  checkRowDrifts.length ? "checkRows" : null,
   shape.checksByCase.every((checks, index) =>
     sameList(checks, EXPECTED_CHECKS_BY_CASE[index] || [])
   ) ? null : "checksByCase"
@@ -454,6 +496,10 @@ if (
     summary,
     shapeErrors,
     shape,
+    drifts: {
+      caseRows: caseRowDrifts,
+      checkRows: checkRowDrifts
+    },
     failed,
     failures: audit.failures,
     passed: audit.passed,
