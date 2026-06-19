@@ -297,32 +297,31 @@ const EXPECTED_CASE_ROWS = [
   "diagonal:2,3->22,15:dx=20:dy=12:sx=1:sy=1:points=21/21:maxError=0.400:checks=6/6:passed=true",
   "vertical:14,1->14,16:dx=0:dy=15:sx=0:sy=1:points=16/16:maxError=0.000:checks=6/6:passed=true"
 ];
-const EXPECTED_LOCAL_CHECK_NAMES = [
-  "starts at requested endpoint",
-  "ends at requested endpoint",
-  "one adjacent move per pulse",
-  "point count is max delta + 1",
-  "integer decision state",
-  "half-cell error bound"
+const EXPECTED_LOCAL_CHECKS = [
+  { name: "starts at requested endpoint", ok: true },
+  { name: "ends at requested endpoint", ok: true },
+  { name: "one adjacent move per pulse", ok: true },
+  { name: "point count is max delta + 1", ok: true },
+  { name: "integer decision state", ok: true },
+  { name: "half-cell error bound", ok: true }
 ];
-const EXPECTED_CRITICAL_CHECK_NAMES = [
-  "shallow line advances x on step 1",
-  "vertical x coordinate stays fixed",
-  "backward scenario exercises negative x direction"
-];
-const EXPECTED_CRITICAL_ROWS = [
-  "shallow line advances x on step 1:true",
-  "vertical x coordinate stays fixed:true",
-  "backward scenario exercises negative x direction:true"
+const EXPECTED_CRITICAL_CHECKS = [
+  { name: "shallow line advances x on step 1", ok: true },
+  { name: "vertical x coordinate stays fixed", ok: true },
+  { name: "backward scenario exercises negative x direction", ok: true }
 ];
 const EXPECTED_CASES = EXPECTED_CASE_KEYS.length;
 const EXPECTED_CHECKS =
-  EXPECTED_CASES * EXPECTED_LOCAL_CHECK_NAMES.length +
-  EXPECTED_CRITICAL_CHECK_NAMES.length;
+  EXPECTED_CASES * EXPECTED_LOCAL_CHECKS.length +
+  EXPECTED_CRITICAL_CHECKS.length;
 
 function sameList(left, right) {
   return left.length === right.length &&
     left.every((value, index) => value === right[index]);
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function rowDrifts(actual, expected) {
@@ -350,10 +349,15 @@ function auditShape(audit) {
         `checks=${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`
     ),
     localChecksByCase: audit.cases.map(
-      (row) => row.checks.map((check) => check.name)
+      (row) => row.checks.map((check) => ({
+        name: check.name,
+        ok: check.ok
+      }))
     ),
-    criticalChecks: audit.criticalChecks.map((row) => row.name),
-    criticalRows: audit.criticalChecks.map((row) => `${row.name}:${row.ok}`)
+    criticalChecks: audit.criticalChecks.map((row) => ({
+      name: row.name,
+      ok: row.ok
+    }))
   };
 }
 
@@ -364,15 +368,13 @@ const failed = audit.cases.filter(
 );
 const failedCriticalChecks = audit.criticalChecks.filter((row) => !row.ok);
 const caseRowDrifts = rowDrifts(shape.caseRows, EXPECTED_CASE_ROWS);
-const criticalRowDrifts = rowDrifts(shape.criticalRows, EXPECTED_CRITICAL_ROWS);
 const shapeErrors = [
   sameList(shape.cases, EXPECTED_CASE_KEYS) ? null : "cases",
   caseRowDrifts.length ? "caseRows" : null,
-  shape.localChecksByCase.every((checks) => sameList(checks, EXPECTED_LOCAL_CHECK_NAMES))
+  shape.localChecksByCase.every((checks) => sameJson(checks, EXPECTED_LOCAL_CHECKS))
     ? null
     : "localChecksByCase",
-  sameList(shape.criticalChecks, EXPECTED_CRITICAL_CHECK_NAMES) ? null : "criticalChecks",
-  criticalRowDrifts.length ? "criticalRows" : null
+  sameJson(shape.criticalChecks, EXPECTED_CRITICAL_CHECKS) ? null : "criticalChecks"
 ].filter(Boolean);
 console.table(audit.cases.map((row) => ({
   scenario: row.scenario,
@@ -405,8 +407,7 @@ if (
     shapeErrors,
     shape,
     drifts: {
-      caseRows: caseRowDrifts,
-      criticalRows: criticalRowDrifts
+      caseRows: caseRowDrifts
     },
     failed,
     failedCriticalChecks,
