@@ -265,6 +265,61 @@ queries for candidate keys; it does not by itself enumerate all candidates.
 </div>
 <script defer src="{{ '/assets/js/count-min-sketch-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks the exported lab contract and the default
+collision ledger:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/count-min-sketch-lab.js");
+const EXPECTED_AUDIT = { cases: 12, failures: [], ok: 12 };
+const EXPECTED_DEFAULT = "12:12:2560:1970:1061.829:500:5:1067:1145:1067:182:66:4:0:0:0";
+
+function fixed3(value) {
+  return Number(value).toFixed(3);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  events: 50000,
+  vocabulary: 2000,
+  skew: 105,
+  width: 128,
+  depth: 5,
+  threshold: 10,
+  queryRank: 6,
+  seed: 37
+});
+const defaultShape = [
+  audit.cases,
+  audit.ok,
+  result.memoryBytes,
+  result.observed,
+  fixed3(result.budget),
+  result.thresholdCount,
+  result.query.item,
+  result.query.count,
+  result.query.cm,
+  result.query.cu,
+  result.cmSummary.p95,
+  result.cuSummary.p95,
+  result.threshold.cmFalsePositive,
+  result.threshold.cuFalsePositive,
+  result.threshold.cmFalseNegative,
+  result.threshold.cuFalseNegative
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.ok}/${audit.cases} Count-Min checks passed`);
+NODE
+```
+
 The default stream has `50,000` events over a `2,000` key vocabulary with a
 moderate Zipf skew. The sixth-ranked key appears `1,067` times. The classic
 Count-Min estimate is `1,145`; conservative update lands exactly on `1,067` for
