@@ -6,7 +6,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 function usage() {
-  console.error("Usage: node scripts/run-post-audit.js _posts/post.markdown [...]");
+  console.error("Usage: node scripts/run-post-audit.js [--quiet] _posts/post.markdown [...]");
 }
 
 function extractFences(markdown) {
@@ -41,7 +41,7 @@ function runnableAuditBlock(markdown) {
   return candidates[0] || null;
 }
 
-function runAudit(file) {
+function runAudit(file, options) {
   const absolute = path.resolve(file);
   const markdown = fs.readFileSync(absolute, "utf8");
   const block = runnableAuditBlock(markdown);
@@ -50,23 +50,45 @@ function runAudit(file) {
     return 1;
   }
 
-  console.error(`[audit] ${file}`);
+  if (!options.quiet) console.error(`[audit] ${file}`);
   const command = block.runner === "bash" ? "bash" : "node";
   const result = spawnSync(command, [], {
     cwd: process.cwd(),
     encoding: "utf8",
     input: block.source,
-    stdio: ["pipe", "inherit", "inherit"]
+    stdio: options.quiet ? ["pipe", "pipe", "pipe"] : ["pipe", "inherit", "inherit"]
   });
 
   if (result.error) {
     console.error(`[audit] ${file}: ${result.error.message}`);
     return 1;
   }
-  return result.status || 0;
+  const status = result.status || 0;
+  if (options.quiet) {
+    if (status === 0) {
+      console.error(`[audit] PASS ${file}`);
+    } else {
+      console.error(`[audit] FAIL ${file}`);
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+    }
+  }
+  return status;
 }
 
-const files = process.argv.slice(2);
+const args = process.argv.slice(2);
+const options = {
+  quiet: false
+};
+const files = [];
+for (const arg of args) {
+  if (arg === "--quiet" || arg === "-q") {
+    options.quiet = true;
+  } else {
+    files.push(arg);
+  }
+}
+
 if (files.length === 0) {
   usage();
   process.exit(2);
@@ -79,7 +101,7 @@ for (const file of files) {
     exitCode = 1;
     continue;
   }
-  const status = runAudit(file);
+  const status = runAudit(file, options);
   if (status !== 0) exitCode = status;
 }
 

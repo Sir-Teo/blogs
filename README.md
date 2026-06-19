@@ -22,3 +22,5 @@ audit for one or more posts from the repository root:
 ```sh
 node scripts/run-post-audit.js _posts/2026-06-18-the-best-candidate-waits-for-a-record.markdown
 ```
+
+Use `--quiet` for compact pass/fail output across several posts.
