@@ -327,12 +327,18 @@ const EXPECTED_CASES = 4;
 const EXPECTED_COMPARISONS = 1;
 const EXPECTED_ROWS = 5;
 const EXPECTED_CHECKS = 17;
-const EXPECTED_CHECK_NAMES = [
-  "no-skipped-matching-group",
-  "rows-in-unit-square",
-  "scan-accounting",
-  "zone-boxes-bound-rows"
+const EXPECTED_CASE_CHECKS = [
+  { name: "rows-in-unit-square", ok: true },
+  { name: "zone-boxes-bound-rows", ok: true },
+  { name: "no-skipped-matching-group", ok: true },
+  { name: "scan-accounting", ok: true }
 ];
+const EXPECTED_COMPARISON_CHECKS = [
+  { name: "finer-aligned-groups-read-no-more", ok: true }
+];
+const EXPECTED_CHECK_NAMES = EXPECTED_CASE_CHECKS
+  .map((check) => check.name)
+  .sort();
 const EXPECTED_CASE_SHAPE = [
   "box predicate random ingest:random:box:32:32:4096:0:84:1:4",
   "box predicate z-order:z:box:4:32:512:87.5:84:2:4",
@@ -380,6 +386,13 @@ const auditShape = {
     row.falsePositiveGroups,
     row.totalChecks
   ].join(":")).sort(),
+  caseCheckRows: audit.cases.map((row) => ({
+    label: row.label,
+    checks: row.checks.map((check) => ({
+      name: check.name,
+      ok: check.ok
+    }))
+  })).sort((left, right) => left.label.localeCompare(right.label)),
   cases: audit.cases.length,
   checkNames: Array.from(new Set(audit.cases.flatMap(
     (row) => row.checks.map((check) => check.name)
@@ -391,15 +404,34 @@ const auditShape = {
     row.fineGroupSize,
     row.fineRowsRead,
     row.totalChecks
-  ].join(":")).sort()
+  ].join(":")).sort(),
+  comparisonCheckRows: audit.comparisons.map((row) => ({
+    label: row.label,
+    checks: row.checks.map((check) => ({
+      name: check.name,
+      ok: check.ok
+    }))
+  })).sort((left, right) => left.label.localeCompare(right.label))
 };
+const expectedCaseCheckRows = EXPECTED_CASE_SHAPE.map((row) => ({
+  label: row.split(":")[0],
+  checks: EXPECTED_CASE_CHECKS
+})).sort((left, right) => left.label.localeCompare(right.label));
+const expectedComparisonCheckRows = EXPECTED_COMPARISON_SHAPE.map((row) => ({
+  label: row.split(":")[0],
+  checks: EXPECTED_COMPARISON_CHECKS
+})).sort((left, right) => left.label.localeCompare(right.label));
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  sameJson(auditShape.caseCheckRows, expectedCaseCheckRows) ? null : "caseCheckRows",
   sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
   sameJson(auditShape.comparisonChecks, EXPECTED_COMPARISON_SHAPE)
     ? null
-    : "comparisonChecks"
+    : "comparisonChecks",
+  sameJson(auditShape.comparisonCheckRows, expectedComparisonCheckRows)
+    ? null
+    : "comparisonCheckRows"
 ].filter(Boolean);
 if (shapeErrors.length) {
   throw new Error(
