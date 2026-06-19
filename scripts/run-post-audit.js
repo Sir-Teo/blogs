@@ -7,7 +7,7 @@ const { spawnSync } = require("child_process");
 
 function usage() {
   console.error(
-    "Usage: node scripts/run-post-audit.js [--quiet] [--all] [--date YYYY-MM-DD] " +
+    "Usage: node scripts/run-post-audit.js [--quiet] [--list] [--all] [--date YYYY-MM-DD] " +
     "_posts/post.markdown [...]"
   );
 }
@@ -100,6 +100,7 @@ const args = process.argv.slice(2);
 const options = {
   all: false,
   date: null,
+  list: false,
   quiet: false
 };
 const files = [];
@@ -107,6 +108,8 @@ for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
   if (arg === "--quiet" || arg === "-q") {
     options.quiet = true;
+  } else if (arg === "--list") {
+    options.list = true;
   } else if (arg === "--all") {
     options.all = true;
   } else if (arg === "--date") {
@@ -133,8 +136,18 @@ if (options.date) {
 const auditFiles = Array.from(new Set(files));
 
 if (auditFiles.length === 0) {
+  if (options.list) {
+    console.error("[audit] 0 audit targets");
+    process.exit(0);
+  }
   usage();
   process.exit(2);
+}
+
+if (options.list) {
+  auditFiles.forEach((file) => console.log(file));
+  console.error(`[audit] ${auditFiles.length} audit targets`);
+  process.exit(0);
 }
 
 let exitCode = 0;

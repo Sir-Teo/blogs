@@ -35,3 +35,9 @@ To run every discovered embedded audit:
 ```sh
 node scripts/run-post-audit.js --quiet --all
 ```
+
+To inspect the discovered audit set without running it:
+
+```sh
+node scripts/run-post-audit.js --list --all
+```
