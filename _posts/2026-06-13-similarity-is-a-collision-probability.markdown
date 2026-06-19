@@ -204,6 +204,57 @@ identical documents, dissimilar documents, and boilerplate pollution.
 </div>
 <script defer src="{{ '/assets/js/minhash-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks the exported lab contract and the default
+screening shape:
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/minhash-lab.js");
+const EXPECTED_AUDIT = { checked: 79, failures: [], ok: true, passed: 79 };
+const EXPECTED_DEFAULT = "100:20:5:126:181:0.696133:0.730000:1:0.971846:0.030508:0:0.549280:3:0";
+
+function fixed6(value) {
+  return Number(value).toFixed(6);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+const audit = lab.runAudit();
+const result = lab.simulate({
+  bands: 20,
+  boilerplate: 15,
+  corpus: 2000,
+  editRate: 16,
+  rowsPerBand: 5,
+  shingleSize: 4
+});
+const defaultShape = [
+  result.rows,
+  result.bands,
+  result.rowsPerBand,
+  result.exact.shared,
+  result.exact.union,
+  fixed6(result.exact.jaccard),
+  fixed6(result.estimate),
+  result.candidate ? 1 : 0,
+  fixed6(result.candidateProbability),
+  fixed6(result.background.jaccard),
+  result.backgroundCandidate ? 1 : 0,
+  fixed6(result.threshold),
+  result.matches.filter(Boolean).length,
+  result.backgroundMatches.filter(Boolean).length
+].join(":");
+
+if (!sameJson(audit, EXPECTED_AUDIT) || defaultShape !== EXPECTED_DEFAULT) {
+  throw new Error(JSON.stringify({ audit, defaultShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} MinHash checks passed`);
+NODE
+```
+
 The default setting has 20 bands and 5 rows per band, so the signature has 100
 rows. The red point on the S-curve is the current near pair. The gray point is
 an unrelated document pair that shares only the boilerplate template.
