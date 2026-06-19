@@ -117,6 +117,148 @@ worth more than those costs.
 </div>
 <script defer src="{{ '/assets/js/speculative-decoding-lab.js?v=20260615a' | relative_url }}"></script>
 
+The static-site audit runner checks both halves of the proofroom contract: the
+exact rejection sampler and the visible latency ledger.
+
+```bash
+node - <<'NODE'
+const lab = require("./assets/js/speculative-decoding-lab.js");
+const EXPECTED_AUDIT = "20:20:0:1296:0.000000000000:0.000000000000";
+const EXPECTED_EXACT = [
+  "64:9:5:96:72:23:0",
+  "0.924730:0.075270:0.000000000000:0.027900",
+  "0.928236:3.462866:3.310345",
+  "20:100:77:7:12:4.800000",
+  "0.007951:0.009476:0.028915"
+].join(":");
+const EXPECTED_LEGACY = [
+  "74:12:5:6:80:3",
+  "2.214590:3.214590:48.000000:89.600000",
+  "143.600000:44.671321:1.790858:2.785410",
+  "4:1.819264"
+].join(":");
+
+function fixed(value, digits = 6) {
+  return Number(value).toFixed(digits);
+}
+
+function legacyAccepted(probability, lookahead) {
+  let total = 0;
+  let power = probability;
+  for (let index = 1; index <= lookahead; index += 1) {
+    total += power;
+    power *= probability;
+  }
+  return total;
+}
+
+function legacyEvaluate(params, lookahead = params.lookahead) {
+  const accepted = legacyAccepted(params.acceptance / 100, lookahead);
+  const outputTokens = 1 + accepted;
+  const draftMs = lookahead * params.targetMs * params.draftCost / 100;
+  const verifyMs = params.targetMs * (1 + (lookahead - 1) * params.verifyTax / 100);
+  const cycleMs = draftMs + verifyMs + params.overheadMs;
+  const msPerToken = cycleMs / outputTokens;
+  return {
+    accepted,
+    cycleMs,
+    draftMs,
+    lookahead,
+    msPerToken,
+    outputTokens,
+    speedup: params.targetMs / msPerToken,
+    verifyMs,
+    wastedDrafts: Math.max(0, lookahead - accepted)
+  };
+}
+
+const audit = lab.runAudit();
+const result = lab.evaluate({
+  certainty: 64,
+  draftCost: 9,
+  gamma: 5,
+  length: 96,
+  match: 72,
+  seed: 23
+});
+const auditShape = [
+  audit.checked,
+  audit.passed,
+  audit.failures.length,
+  audit.settings,
+  fixed(audit.maxExactTv, 12),
+  fixed(audit.maxAlphaGap, 12)
+].join(":");
+const exactShape = [
+  result.params.certainty,
+  result.params.draftCost,
+  result.params.gamma,
+  result.params.length,
+  result.params.match,
+  result.params.seed,
+  result.state,
+  fixed(result.contract.alpha),
+  fixed(result.contract.draftTv),
+  fixed(result.contract.exactTv, 12),
+  fixed(result.contract.wrongTv),
+  fixed(result.summaryAlpha),
+  fixed(result.theoreticalSpeedup),
+  fixed(result.trace.speedup),
+  result.trace.targetCalls,
+  result.trace.draftCalls,
+  result.trace.acceptedDraft,
+  result.trace.rejectedDraft,
+  result.trace.bonusTokens,
+  fixed(result.trace.tokensPerTargetCall),
+  fixed(result.samples.specEmpiricalTv),
+  fixed(result.samples.targetEmpiricalTv),
+  fixed(result.samples.wrongEmpiricalTv)
+].join(":");
+const legacyParams = {
+  acceptance: 74,
+  draftCost: 12,
+  lookahead: 5,
+  overheadMs: 6,
+  targetMs: 80,
+  verifyTax: 3
+};
+const legacy = legacyEvaluate(legacyParams);
+let bestLegacy = legacyEvaluate(legacyParams, 1);
+for (let lookahead = 2; lookahead <= 12; lookahead += 1) {
+  const candidate = legacyEvaluate(legacyParams, lookahead);
+  if (candidate.speedup > bestLegacy.speedup) bestLegacy = candidate;
+}
+const legacyShape = [
+  legacyParams.acceptance,
+  legacyParams.draftCost,
+  legacyParams.lookahead,
+  legacyParams.overheadMs,
+  legacyParams.targetMs,
+  legacyParams.verifyTax,
+  fixed(legacy.accepted),
+  fixed(legacy.outputTokens),
+  fixed(legacy.draftMs),
+  fixed(legacy.verifyMs),
+  fixed(legacy.cycleMs),
+  fixed(legacy.msPerToken),
+  fixed(legacy.speedup),
+  fixed(legacy.wastedDrafts),
+  bestLegacy.lookahead,
+  fixed(bestLegacy.speedup)
+].join(":");
+
+if (
+  auditShape !== EXPECTED_AUDIT ||
+  exactShape !== EXPECTED_EXACT ||
+  legacyShape !== EXPECTED_LEGACY
+) {
+  throw new Error(JSON.stringify({ auditShape, exactShape, legacyShape }, null, 2));
+}
+
+console.log(`${audit.passed}/${audit.checked} speculative decoding checks passed`);
+NODE
+```
+
 Read the heatmap horizontally. More lookahead is useful until the rejected tail
 and verifier overhead eat the benefit. Read it vertically. Acceptance quality is
 not a cosmetic metric; it decides whether speculation is acceleration or
