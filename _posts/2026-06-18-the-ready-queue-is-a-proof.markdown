@@ -349,6 +349,13 @@ const EXPECTED_CASE_SHAPE = [
   "trap critical tail:trap:critical:2:8:16:16:21:6",
   "trap shortest task:trap:shortest:2:8:17:16:21:5"
 ];
+const EXPECTED_CASE_ROWS = [
+  "cycle introduced:cycle:rule=n/a:workers=n/a:emitted=2:makespan=n/a:critical=n/a:work=n/a:checks=3/3:passed=true",
+  "package build:build:rule=critical:workers=3:emitted=10:makespan=13:critical=13:work=27:checks=6/6:passed=true",
+  "single worker build:build:rule=critical:workers=1:emitted=10:makespan=27:critical=13:work=27:checks=6/6:passed=true",
+  "trap critical tail:trap:rule=critical:workers=2:emitted=8:makespan=16:critical=16:work=21:checks=6/6:passed=true",
+  "trap shortest task:trap:rule=shortest:workers=2:emitted=8:makespan=17:critical=16:work=21:checks=5/5:passed=true"
+];
 const EXPECTED_CHECK_SHAPE = [
   "cycle introduced:cycle remainder has no zero-indegree node|cycle was detected|partial pass selected only zero-indegree nodes",
   "package build:critical path names tasks|edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree",
@@ -356,9 +363,27 @@ const EXPECTED_CHECK_SHAPE = [
   "trap critical tail:critical rule beats shortest in trap|edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree",
   "trap shortest task:edges point forward in emitted order|makespan respects critical-path lower bound|makespan respects work lower bound|schedule respects dependencies|selected node had zero indegree"
 ];
+const EXPECTED_CHECK_ROWS = [
+  "cycle introduced:cycle remainder has no zero-indegree node=true|cycle was detected=true|partial pass selected only zero-indegree nodes=true",
+  "package build:critical path names tasks=true|edges point forward in emitted order=true|makespan respects critical-path lower bound=true|makespan respects work lower bound=true|schedule respects dependencies=true|selected node had zero indegree=true",
+  "single worker build:edges point forward in emitted order=true|makespan respects critical-path lower bound=true|makespan respects work lower bound=true|one worker takes total work time=true|schedule respects dependencies=true|selected node had zero indegree=true",
+  "trap critical tail:critical rule beats shortest in trap=true|edges point forward in emitted order=true|makespan respects critical-path lower bound=true|makespan respects work lower bound=true|schedule respects dependencies=true|selected node had zero indegree=true",
+  "trap shortest task:edges point forward in emitted order=true|makespan respects critical-path lower bound=true|makespan respects work lower bound=true|schedule respects dependencies=true|selected node had zero indegree=true"
+];
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
 }
 
 const audit = lab.auditTopologicalReadyLab();
@@ -398,22 +423,50 @@ const auditShape = {
     row.totalWork || "n/a",
     row.totalChecks
   ].join(":")).sort(),
+  caseRows: audit.cases.map((row) => [
+    row.label,
+    row.scenario,
+    `rule=${row.rule || "n/a"}`,
+    `workers=${row.workers || "n/a"}`,
+    `emitted=${row.emitted}`,
+    `makespan=${row.makespan || "n/a"}`,
+    `critical=${row.criticalPath || "n/a"}`,
+    `work=${row.totalWork || "n/a"}`,
+    `checks=${row.passedChecks}/${row.totalChecks}`,
+    `passed=${row.passed}`
+  ].join(":")).sort(),
   checkNames: audit.cases.map((row) => (
     row.label + ":" + row.checks.map((check) => check.name).sort().join("|")
   )).sort(),
+  checkRows: audit.cases.map((row) => (
+    row.label + ":" + row.checks
+      .map((check) => `${check.name}=${check.passed}`)
+      .sort()
+      .join("|")
+  )).sort(),
   cycleRemaining: audit.cycleRemaining
 };
+const caseRowDrifts = rowDrifts(auditShape.caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(auditShape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameJson(auditShape.makespans, EXPECTED_MAKESPANS) ? null : "makespans",
   sameJson(auditShape.cycleRemaining, EXPECTED_CYCLE_REMAINING) ? null : "cycleRemaining",
   sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  caseRowDrifts.length ? "caseRows" : null,
+  checkRowDrifts.length ? "checkRows" : null,
   sameJson(auditShape.checkNames, EXPECTED_CHECK_SHAPE) ? null : "checkNames"
 ].filter(Boolean);
 if (shapeErrors.length) {
   throw new Error(
     `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    JSON.stringify({
+      auditShape,
+      drifts: {
+        caseRows: caseRowDrifts,
+        checkRows: checkRowDrifts
+      }
+    }, null, 2)
   );
 }
 
