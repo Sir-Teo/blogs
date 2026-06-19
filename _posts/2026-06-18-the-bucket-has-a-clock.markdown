@@ -302,23 +302,28 @@ const EXPECTED_GRID_SHAPE = [
   "steady:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=70..70:tokenAccepted=70..70:fixedAccepted=70..70:shaperAccepted=60..70",
   "herd:cases=81:rates=2/5/9:bursts=3/8/16:windows=3/6/10:queues=0/8/24:arrivals=46..78:tokenAccepted=25..68:fixedAccepted=28..78:shaperAccepted=19..78"
 ];
-const EXPECTED_CHECK_NAMES = [
-  "GCRA row count matches arrivals",
-  "accepted token stream respects burst envelope",
-  "fixed window stays within its own quota",
-  "shaper output stays ordered",
-  "tight edge case exposes fixed-window burst excess",
-  "token bucket and GCRA agree request-by-request",
-  "token count stays within bucket capacity",
-  "token row count matches arrivals"
+const EXPECTED_CHECK_SEQUENCE = [
+  { name: "token row count matches arrivals", passed: true },
+  { name: "GCRA row count matches arrivals", passed: true },
+  { name: "token bucket and GCRA agree request-by-request", passed: true },
+  { name: "token count stays within bucket capacity", passed: true },
+  { name: "accepted token stream respects burst envelope", passed: true },
+  { name: "shaper output stays ordered", passed: true },
+  { name: "fixed window stays within its own quota", passed: true },
+  { name: "tight edge case exposes fixed-window burst excess", passed: true }
 ];
+const EXPECTED_CHECK_NAMES = EXPECTED_CHECK_SEQUENCE.map((check) => check.name).sort();
 const EXPECTED_SCENARIOS = EXPECTED_SCENARIO_SHAPE.length;
 const EXPECTED_CASES = EXPECTED_SCENARIOS * 3 * 3 * 3 * 3;
-const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_NAMES.length;
+const EXPECTED_CHECKS = EXPECTED_CASES * EXPECTED_CHECK_SEQUENCE.length;
 
 function sameList(actual, expected) {
   return actual.length === expected.length &&
     actual.every((value, index) => value === expected[index]);
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
 function fixed3(value) {
@@ -369,6 +374,13 @@ const shape = {
   grid: audit.byScenario.map((row) => gridShape(audit, row.scenario)),
   scenarios: audit.byScenario.map(scenarioShape)
 };
+const checkRowDrifts = audit.cases.map((row) => ({
+  key: `${row.scenario}/${row.rate}/${row.burst}/${row.window}/${row.queue}`,
+  checks: row.checks.map((check) => ({
+    name: check.name,
+    passed: check.passed
+  }))
+})).filter((row) => !sameJson(row.checks, EXPECTED_CHECK_SEQUENCE));
 const shapeErrors = [];
 if (!sameList(shape.scenarios, EXPECTED_SCENARIO_SHAPE)) {
   shapeErrors.push({
@@ -385,6 +397,13 @@ if (!sameList(shape.checkNames, EXPECTED_CHECK_NAMES)) {
     name: "checkNames",
     actual: shape.checkNames,
     expected: EXPECTED_CHECK_NAMES
+  });
+}
+if (checkRowDrifts.length) {
+  shapeErrors.push({
+    name: "checkRows",
+    actual: checkRowDrifts.slice(0, 10),
+    expected: EXPECTED_CHECK_SEQUENCE
   });
 }
 
