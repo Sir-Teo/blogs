@@ -394,6 +394,20 @@ const EXPECTED_CASE_SHAPE = [
   "default-balanced:5:84:185:3:2.2:59:84:0:2220:20336",
   "split:5:90:171:3:1.9:61:90:0:2052:9960"
 ];
+const EXPECTED_CASE_ROWS = [
+  "alice:diff=24:cells=62:hashes=3:factor=2.55:pure=19:peeled=24:residual=0:bytes=744/3296:ratio=4.43:checks=5/5:passed=true",
+  "balanced:diff=140:cells=308:hashes=5:factor=2.2:pure=73:peeled=140:residual=0:bytes=3696/26160:ratio=7.08:checks=5/5:passed=true",
+  "bob:diff=48:cells=84:hashes=4:factor=1.75:pure=16:peeled=48:residual=0:bytes=1008/7392:ratio=7.33:checks=5/5:passed=true",
+  "default-balanced:diff=84:cells=185:hashes=3:factor=2.2:pure=59:peeled=84:residual=0:bytes=2220/20336:ratio=9.16:checks=5/5:passed=true",
+  "split:diff=90:cells=171:hashes=3:factor=1.9:pure=61:peeled=90:residual=0:bytes=2052/9960:ratio=4.85:checks=5/5:passed=true"
+];
+const EXPECTED_CHECK_ROWS = [
+  "alice:decoded-difference-exact=true|peeled-cell-sign-valid=true|shared-set-cancels-empty=true|subtracted-cells-bounded=true|successful-decode-empty-residual=true",
+  "balanced:decoded-difference-exact=true|peeled-cell-sign-valid=true|shared-set-cancels-empty=true|subtracted-cells-bounded=true|successful-decode-empty-residual=true",
+  "bob:decoded-difference-exact=true|peeled-cell-sign-valid=true|shared-set-cancels-empty=true|subtracted-cells-bounded=true|successful-decode-empty-residual=true",
+  "default-balanced:decoded-difference-exact=true|peeled-cell-sign-valid=true|shared-set-cancels-empty=true|subtracted-cells-bounded=true|successful-decode-empty-residual=true",
+  "split:decoded-difference-exact=true|peeled-cell-sign-valid=true|shared-set-cancels-empty=true|subtracted-cells-bounded=true|successful-decode-empty-residual=true"
+];
 const EXPECTED_RESIDUAL_SHAPE = [
   "alice:0",
   "balanced:0",
@@ -411,6 +425,17 @@ const EXPECTED_TOTALS = {
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function rowDrifts(actual, expected) {
+  const count = Math.max(actual.length, expected.length);
+  const drift = [];
+  for (let index = 0; index < count; index += 1) {
+    if (actual[index] !== expected[index]) {
+      drift.push({ index, actual: actual[index], expected: expected[index] });
+    }
+  }
+  return drift;
 }
 
 const audit = lab.auditIBLTLab();
@@ -435,6 +460,18 @@ const auditShape = {
     row.bytesIblt,
     row.bytesLists
   ].join(":")).sort(),
+  caseRows: audit.cases.map((row) =>
+    `${row.scenario}:diff=${row.diffSize}:cells=${row.cells}:` +
+    `hashes=${row.hashes}:factor=${row.factor}:pure=${row.initialPure}:` +
+    `peeled=${row.peeled}:residual=${row.residual}:` +
+    `bytes=${row.bytesIblt}/${row.bytesLists}:` +
+    `ratio=${row.compressionRatio.toFixed(2)}:` +
+    `checks=${row.passedChecks}/${row.totalChecks}:passed=${row.passed}`
+  ).sort(),
+  checkRows: audit.cases.map((row) =>
+    `${row.scenario}:` +
+    row.checks.map((check) => `${check.name}=${check.ok}`).sort().join("|")
+  ).sort(),
   checkNames: Array.from(new Set(audit.cases.flatMap(
     (row) => row.checks.map((check) => check.name)
   ))).sort(),
@@ -442,9 +479,13 @@ const auditShape = {
     .map(([scenario, row]) => `${scenario}:${row.residual}`)
     .sort()
 };
+const caseRowDrifts = rowDrifts(auditShape.caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(auditShape.checkRows, EXPECTED_CHECK_ROWS);
 const shapeErrors = [
   sameJson(auditShape.totals, EXPECTED_TOTALS) ? null : "totals",
   sameJson(auditShape.caseChecks, EXPECTED_CASE_SHAPE) ? null : "caseChecks",
+  caseRowDrifts.length ? "caseRows" : null,
+  checkRowDrifts.length ? "checkRows" : null,
   sameJson(auditShape.checkNames, EXPECTED_CHECK_NAMES) ? null : "checkNames",
   sameJson(auditShape.residualByScenario, EXPECTED_RESIDUAL_SHAPE)
     ? null
@@ -453,7 +494,13 @@ const shapeErrors = [
 if (shapeErrors.length) {
   throw new Error(
     `audit shape drifted in ${shapeErrors.join(", ")}:\n` +
-    JSON.stringify(auditShape, null, 2)
+    JSON.stringify({
+      auditShape,
+      drifts: {
+        caseRows: caseRowDrifts,
+        checkRows: checkRowDrifts
+      }
+    }, null, 2)
   );
 }
 const summary =
