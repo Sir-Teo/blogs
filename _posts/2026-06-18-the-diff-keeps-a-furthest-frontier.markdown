@@ -380,6 +380,19 @@ function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function rowDrifts(actualRows, expectedRows) {
+  const drifts = [];
+  const rows = Math.max(actualRows.length, expectedRows.length);
+  for (let index = 0; index < rows; index += 1) {
+    const actual = index < actualRows.length ? actualRows[index] : null;
+    const expected = index < expectedRows.length ? expectedRows[index] : null;
+    if (!sameJson(actual, expected)) {
+      drifts.push({ index, actual, expected });
+    }
+  }
+  return drifts;
+}
+
 const audit = lab.auditMyersDiff();
 const auditShape = {
   namedRows: audit.cases.length,
@@ -409,24 +422,32 @@ const checkRows = audit.cases.map((row) => ({
   example: `${row.example}/${row.tie}`,
   checks: row.checks.map((check) => check.name)
 }));
-const expectedCheckRows = audit.cases.map((row) => ({
-  example: `${row.example}/${row.tie}`,
+const expectedCheckRows = EXPECTED_CASE_ROWS.map((row) => ({
+  example: row.split(":")[0],
   checks: EXPECTED_CHECK_NAMES
 }));
-if (
-  !sameJson(auditShape, EXPECTED_TOTALS) ||
-  !sameJson(byTieRows, EXPECTED_BY_TIE) ||
-  !sameJson(exhaustiveShape, EXPECTED_EXHAUSTIVE) ||
-  !sameJson(caseRows, EXPECTED_CASE_ROWS) ||
-  !sameJson(checkRows, expectedCheckRows)
-) {
-  throw new Error("unexpected Myers diff audit shape: " + JSON.stringify({
-    auditShape,
-    byTieRows,
-    exhaustiveShape,
-    caseRows,
-    checkRows
-  }, null, 2));
+const byTieDrifts = rowDrifts(byTieRows, EXPECTED_BY_TIE);
+const caseRowDrifts = rowDrifts(caseRows, EXPECTED_CASE_ROWS);
+const checkRowDrifts = rowDrifts(checkRows, expectedCheckRows);
+const driftShape = {
+  auditShape,
+  exhaustiveShape,
+  byTieDrifts,
+  caseRowDrifts,
+  checkRowDrifts
+};
+const shapeErrors = [
+  sameJson(auditShape, EXPECTED_TOTALS) ? null : "totals",
+  byTieDrifts.length === 0 ? null : "byTieRows",
+  sameJson(exhaustiveShape, EXPECTED_EXHAUSTIVE) ? null : "exhaustiveShape",
+  caseRowDrifts.length === 0 ? null : "caseRows",
+  checkRowDrifts.length === 0 ? null : "checkRows"
+].filter(Boolean);
+if (shapeErrors.length) {
+  throw new Error(
+    `Myers diff audit shape drifted in ${shapeErrors.join(", ")}:\n` +
+    JSON.stringify(driftShape, null, 2)
+  );
 }
 console.log(audit.exhaustiveBinaryCases + " exhaustive binary pairs checked");
 console.table(audit.byTie);
