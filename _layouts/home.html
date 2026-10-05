@@ -163,5 +163,10 @@ layout: default
     </ul>
   </section>
   <p class="postlist__empty" hidden>No notes match your search.</p>
+  {%- else -%}
+  <section class="archive-empty" aria-labelledby="archive-empty-title">
+    <h1 id="archive-empty-title">No posts yet</h1>
+    <p>There are currently no published blog posts.</p>
+  </section>
   {%- endif -%}
 </div>

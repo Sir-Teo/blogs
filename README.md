@@ -6,6 +6,9 @@ statistics, mathematics, and adjacent psychology.
 The site is built with Jekyll and published under the `/blogs` path on GitHub
 Pages.
 
+The previous blog posts have been removed. The homepage and Topics page display
+an empty state until new posts are added.
+
 ## Local development
 
 ```sh

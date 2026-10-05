@@ -5,6 +5,7 @@ permalink: /tags/
 ---
 
 <div class="topics">
+  {%- if site.posts.size > 0 -%}
   <p class="topics__intro">Browse the notebook by series, category, or tag.</p>
 
   <nav class="topics__nav" aria-label="Topics sections">
@@ -73,4 +74,7 @@ permalink: /tags/
     </ul>
   </section>
   {%- endfor -%}
+  {%- else -%}
+  <p>There are currently no published blog posts. Topics will appear when new posts are added.</p>
+  {%- endif -%}
 </div>
