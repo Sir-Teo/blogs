@@ -1,0 +1,147 @@
+/* Figures for the Crown & Clan post. Site tokens from main.css, plus a muted
+   palette for building families and troops. No game art is used. */
+
+:root {
+  --v-ground: #e8ecd9;
+  --v-grid: rgba(70, 90, 40, 0.08);
+  --v-wall: #7d7d74;
+  --v-def: #9a4a3a;
+  --v-th: #3a3a3a;
+  --v-gold: #c9a227;
+  --v-elixir: #9b6bc4;
+  --v-other: #c9c6bb;
+  --v-edge: rgba(0, 0, 0, 0.28);
+  --t-giant: #2f2f2f;
+  --t-barb: #b8752a;
+  --t-archer: #2563eb;
+  --t-wb: #7a7a7a;
+  --t-air: #0f766e;
+  --zone: rgba(220, 38, 38, 0.07);
+}
+:root[data-theme="dark"] {
+  --v-ground: #1f231b;
+  --v-grid: rgba(220, 240, 200, 0.05);
+  --v-wall: #8d8d84;
+  --v-def: #c06a58;
+  --v-th: #e4e4e4;
+  --v-gold: #c9a227;
+  --v-elixir: #a77fd0;
+  --v-other: #55534c;
+  --v-edge: rgba(255, 255, 255, 0.25);
+  --t-giant: #f0f0f0;
+  --t-barb: #d99a4e;
+  --t-archer: #6ea2ff;
+  --t-wb: #a0a0a0;
+  --zone: rgba(248, 113, 113, 0.08);
+}
+
+/* --------------------------------------------------------------- village */
+.vil { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; touch-action: manipulation; border-radius: 4px; }
+.vil .ground { fill: var(--v-ground); }
+.vil .gridl { stroke: var(--v-grid); stroke-width: 0.04; }
+.vil .b { stroke: var(--v-edge); stroke-width: 0.06; }
+.vil .b.def { fill: var(--v-def); }
+.vil .b.th { fill: var(--v-th); }
+.vil .b.gold { fill: var(--v-gold); }
+.vil .b.elixir { fill: var(--v-elixir); }
+.vil .b.other { fill: var(--v-other); }
+.vil .b.wall { fill: var(--v-wall); stroke: none; }
+.vil .b.dead { fill: none; stroke: var(--fg-3); stroke-dasharray: 0.18 0.14; stroke-width: 0.05; opacity: 0.7; }
+.vil .hpbar { fill: var(--fg); opacity: 0.18; }
+.vil .u { stroke: var(--v-ground); stroke-width: 0.05; }
+.vil .u.dead { opacity: 0.25; }
+.vil .shot { stroke: var(--fg); stroke-width: 0.05; opacity: 0.45; }
+.vil .pt { fill: var(--bg); stroke: var(--fg-3); stroke-width: 0.08; cursor: pointer; }
+.vil .pt.s3 { fill: var(--accent); stroke: var(--accent); }
+.vil .pt.s2 { fill: var(--accent); fill-opacity: 0.55; stroke: var(--accent); }
+.vil .pt.s1 { fill: var(--accent); fill-opacity: 0.22; stroke: var(--accent); }
+.vil .pt.on { stroke: var(--fg); stroke-width: 0.16; }
+.vil .ptl { fill: var(--fg-2); font: 600 0.62px var(--sans); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.vil .route { fill: none; stroke: var(--accent); stroke-width: 0.16; stroke-linejoin: round; stroke-linecap: round; }
+.vil .route.faint { stroke-width: 0.06; opacity: 0.25; }
+.vil .breach { fill: none; stroke: var(--q-blunder, #dc2626); stroke-width: 0.14; }
+.vil .tgt { fill: none; stroke: var(--accent); stroke-width: 0.14; stroke-dasharray: 0.3 0.2; }
+.vil .start { fill: var(--accent); }
+.vil .trail { fill: none; stroke-width: 0.06; opacity: 0.5; }
+.vil .trail.a { stroke: var(--fg); }
+.vil .trail.b { stroke: var(--accent); }
+.vil .hit { fill: transparent; cursor: pointer; }
+
+/* --------------------------------------------------------- figure frame */
+.fig-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; margin-bottom: 18px; }
+.fig-controls .grow { flex: 1; }
+.fig-num { font-size: 13px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.fig-loading { font-size: 14px; color: var(--fg-3); }
+.fig-note { min-height: 1.5em; margin: 10px 0 0; font-size: 13px; color: var(--fg-3); }
+.post-content .fig table { margin: 0; font-size: 14px; }
+.post-content .fig th, .post-content .fig td { padding: 6px 10px 6px 0; }
+.post-content .fig th { font-weight: 400; color: var(--fg-3); font-size: 13px; }
+.post-content .fig .r { text-align: right; padding-right: 0; padding-left: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg-3); }
+.legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -0.05em; }
+.legend i.round { border-radius: 50%; }
+.transport { display: flex; align-items: center; gap: 6px; }
+.transport input { flex: 1; min-width: 40px; margin: 0 4px; }
+.transport .fig-num { min-width: 4.6em; text-align: right; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 700px) { .two { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+.col { display: grid; gap: 12px; min-width: 0; }
+
+/* ------------------------------------------------------------------ raid */
+.score { display: flex; align-items: baseline; gap: 14px; font-variant-numeric: tabular-nums; }
+.score .pct { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.stars { letter-spacing: 1px; color: var(--accent); white-space: nowrap; }
+.stars .off { color: var(--line-2); }
+.score .stars { font-size: 20px; letter-spacing: 2px; }
+.swatch { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 2px; vertical-align: -0.02em; }
+.score .time { font-size: 13px; color: var(--fg-3); }
+.dchart { display: block; width: 100%; height: auto; cursor: ew-resize; touch-action: none; }
+.dchart .other { fill: none; stroke: var(--fg-3); stroke-width: 1; opacity: 0.28; }
+.dchart .this { fill: none; stroke: var(--accent); stroke-width: 2; }
+.dchart .mark { stroke: var(--line-2); stroke-dasharray: 2 3; }
+.dchart .cursor { stroke: var(--fg); stroke-width: 1; }
+.dchart text { fill: var(--fg-3); font: 10.5px var(--sans); }
+.ring-sum { font-size: 13.5px; color: var(--fg-2); }
+
+/* ------------------------------------------------------------------ sweep */
+.sweep { display: block; width: 100%; height: auto; }
+.sweep .gl { stroke: var(--line); }
+.sweep text { fill: var(--fg-3); font: 10.5px var(--sans); }
+.sweep .bar { fill: var(--fg); fill-opacity: 0.16; }
+.sweep .bar.on { fill-opacity: 0.32; }
+.sweep .ln { fill: none; stroke-width: 1.8; }
+.sweep .ln.a0 { stroke: var(--fg-3); stroke-dasharray: 4 3; }
+.sweep .ln.a1 { stroke: var(--fg); }
+.sweep .ln.a2 { stroke: var(--accent); }
+.sweep .dt.a0 { fill: var(--fg-3); }
+.sweep .dt.a1 { fill: var(--fg); }
+.sweep .dt.a2 { fill: var(--accent); }
+.sweep .hit { fill: transparent; cursor: pointer; }
+.sweep-side { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 16px; }
+@media (max-width: 560px) { .sweep-side { grid-template-columns: minmax(0, 1fr); } .sweep-side .vil { max-width: 220px; } }
+.sweep-name { font-size: 15px; font-weight: 600; }
+.sweep-name small { display: block; font-size: 13px; font-weight: 400; color: var(--fg-3); }
+
+/* ------------------------------------------------------------ determinism */
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.pair .cap { margin: 6px 0 0; font-size: 13px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.pair .cap b { color: var(--fg); font-weight: 600; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; margin: 18px 0 0; font-size: 14px; border-top: 1px solid var(--line); }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.facts dt { color: var(--fg-2); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+.facts code { font-size: 12.5px; }
+@media (max-width: 560px) { .facts { grid-template-columns: minmax(0, 1fr); } }
+
+/* -------------------------------------------------------------- diagram */
+.arch .lbl { fill: var(--fg-3); font: 500 12px var(--sans); }
+.arch .box { fill: var(--bg); stroke: var(--line-2); stroke-width: 1; }
+.arch .box.em { stroke: var(--fg-2); }
+.arch .t { fill: var(--fg); font: 500 13px var(--sans); text-anchor: middle; dominant-baseline: central; }
+.arch .st { fill: var(--fg-3); font: 11.5px var(--sans); text-anchor: middle; dominant-baseline: central; }
+.arch .edge { fill: none; stroke: var(--fg-3); stroke-width: 1; }
+.arch .edge-strong { fill: none; stroke: var(--fg); stroke-width: 1.2; }
+.arch .el { fill: var(--fg-2); font: 11px var(--mono); text-anchor: middle; }
+.arch .head { fill: var(--fg-3); }
+.arch .head-strong { fill: var(--fg); }
