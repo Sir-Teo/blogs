@@ -1,7 +1,6 @@
-# Teo's Research Notebook
+# Teo's blog
 
-Personal essays and experiments on AI, machine learning, computer science,
-statistics, mathematics, and adjacent psychology.
+Things I build, explained with figures you can play with.
 
 The site is built with Jekyll using its own small layouts (no theme) and is
 published under the `/blogs` path on GitHub Pages.

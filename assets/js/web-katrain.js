@@ -79,9 +79,6 @@
     return { el: wrap, set: select };
   }
 
-  // Phrase instructions for the reader's actual pointer.
-  var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
-  var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
   var ICONS = {
     first: 'M11.5 4 7.5 8l4 4M4.5 4v8',
     prev: 'M10 4 6 8l4 4',
@@ -254,7 +251,7 @@
     var board = makeBoard(n, 'KataGo golden test position, 5 by 5, white to play');
     drawStones(board, g.diagram);
     var note = h('p', { class: 'board-note' });
-    var DEFAULT_NOTE = POINT + ' a point to compare both readings.';
+    var DEFAULT_NOTE = '';
 
     var gap = { policy: 0, ownership: 0 };
     ['policy', 'ownership'].forEach(function (k) {
@@ -597,7 +594,6 @@
       if (!prev) {
         head.textContent = 'Start, Black to play';
         sub.appendChild(h('span', { text: 'Komi ' + game.komi + ', Chinese rules' }));
-        sub.appendChild(h('span', { text: 'step with ← →' }));
       } else if (prev.move === 'pass') {
         head.textContent = 'Move ' + k + ', ' + who + ' passes';
       } else {
@@ -610,7 +606,7 @@
       sub2.textContent = leadText(f);
 
       var side = f.toPlay === 'b' ? 'Black' : 'White';
-      capt.textContent = cands.length ? 'Engine candidates for ' + side + ', from ' + side + '’s side. ' + POINT + ' a row to see its line.' : '';
+      capt.textContent = cands.length ? 'Engine candidates for ' + side + ', from ' + side + '’s side.' : '';
       clear(tbody);
       rowEls = cands.map(function (c, i) {
         var mine = f.toPlay === 'b';

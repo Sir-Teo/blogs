@@ -30,7 +30,6 @@
   <header class="site-header">
     <a class="site-name" href="{{ '/' | relative_url }}">{{ site.title | escape }}</a>
     <nav class="site-nav">
-      <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
       <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
         <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 0 0 14z"/></svg>
       </button>
@@ -42,7 +41,7 @@
   </main>
 
   <footer class="site-footer">
-    <span>{{ site.author.name | default: site.title }}</span>
+    <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
     <a href="https://github.com/{{ site.github_username }}">GitHub</a>
     <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
   </footer>

@@ -1,8 +1,7 @@
-title: Teo's Research Notebook
+title: Teo's blog
 email: zengwc.teo2016@outlook.com
 description: >-
-  Notes on AI, machine learning, data systems, mathematics, statistics, and
-  the psychology of building reliable things.
+  Things I build, explained with figures you can play with.
 baseurl: "/blogs"
 url: "https://sir-teo.github.io"
 lang: en

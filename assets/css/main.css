@@ -147,8 +147,7 @@ main { padding-top: 32px; padding-bottom: 96px; }
   color: var(--fg-3);
 }
 .site-footer a { color: var(--fg-3); text-decoration: none; }
-.site-footer a:hover { color: var(--fg); }
-.site-footer > :first-child { margin-right: auto; }
+.site-footer a:hover, .site-footer a[aria-current] { color: var(--fg); }
 
 /* ------------------------------------------------------------------ home */
 .home > p { color: var(--fg-2); margin: 0 0 48px; max-width: 34em; }

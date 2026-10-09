@@ -24,8 +24,8 @@ the post quote the current `web-katrain-demo.json` and need re-checking after
 one:
 
 - Figure 4's caption ("after move 20") and the paragraph after it: F6 is the
-  network's favourite, H4 takes 89 of 100 playouts at c = 1, 96 at c = 0.1,
-  and F6 gets 26 at c = 4. The links in that paragraph replay those settings.
+  network's favourite, H4 takes 89 of 100 playouts at c = 1, and F6 gets 26
+  at c = 4. The links in that paragraph replay those settings.
 - The swing paragraph: move 37 (Black J3, lost 14 points, a planted slip),
   with 15 points passing to White in the top right and 12 moving toward Black.
 - The golden paragraph: four ownership values off by one permille, policy
