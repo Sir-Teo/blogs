@@ -29,20 +29,13 @@ Run `./run.sh` (see its header). Jekyll does not publish folders starting with
 
 ## Prose tied to the shipped data
 
-Single-threaded fixed-depth search repeats exactly, so a rerun of `run.sh`
-gives the same numbers. These parts of the post quote them:
-
-- The grading paragraph: 14…Qe6 (−171 cp, 4.3 points, Good) and 15…Nxd7
-  (mate sentinel, Good).
-- The accuracy paragraph: 92.9 / 77.6 / 85.2 for the synthetic set, which only
-  changes if web-chess's formulas do.
-- The review paragraphs: 3…Bg4 Good (0.4 pawns), 6…Nf6 and 10…cxb5 the
-  only Inaccuracies, White four pawns up after 10…cxb5, accuracy 99.4 / 90.4;
-  in the club game 19.Nxf6+ leaves White at 16%, 19…Kf8 is the only Blunder
-  (8.6 pawns, 66 points), 21.Qxg3 a Mistake that lets a mate go (14.5 points).
-- The weak-levels paragraph: after 4…Bxf3, 33 of 35 moves lose 3+ pawns;
-  over all 90 positions the old Beginner loses 1.5 pawns a move and 3+ pawns on
-  17.5% of moves, the current one 0.16 and 0%; Novice 0.05.
+- Grading: 15…Nxd7 (walking into mate, already lost) is graded Good.
+- Review: the figure opens on the club game's 19…Kf8, the only Blunder
+  (66 points of winning chances); the Opera Game's worst moves are
+  Inaccuracies.
+- Weak levels: after 4…Bxf3, 33 of 35 moves lose 3+ pawns; over 90 positions
+  the old Beginner lost 3+ pawns on 17.5% of moves, the current one never.
+- The accuracy figure's 85 vs 93 only changes if web-chess's formulas do.
 
 Numbers quoted from web-chess's own docs rather than measured here: the
 2.0× review pool speedup (Opera Game, depth 18), 443k vs 3.5M nodes a second

@@ -64,7 +64,10 @@
   }
   var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
   var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ICONS = {
+    play: 'M5 3.5v9l7-4.5z',
+    pause: 'M5 3.5v9M11 3.5v9',
     first: 'M11.5 4 7.5 8l4 4M4.5 4v8',
     prev: 'M10 4 6 8l4 4',
     next: 'M6 4l4 4-4 4',
@@ -72,7 +75,8 @@
   };
   function iconButton(icon, label, onClick) {
     var b = h('button', { class: 'btn icon', type: 'button', 'aria-label': label, title: label, onclick: onClick });
-    svg('path', { d: ICONS[icon] }, svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, b));
+    var path = svg('path', { d: ICONS[icon] }, svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, b));
+    b.setIcon = function (name) { path.setAttribute('d', ICONS[name]); };
     return b;
   }
   function checkbox(label, checked, onChange) {
@@ -119,18 +123,29 @@
     }
     return { el: el, L: L };
   }
-  function drawFen(b, fen) {
+  // `move`, when given, slides the piece on its destination in from its origin.
+  function drawFen(b, fen, move) {
     clear(b.L.pieces);
     var rows = fen.split(' ')[0].split('/');
+    var to = move && !REDUCE ? sqXY(move.to) : null, from = to ? sqXY(move.from) : null;
     rows.forEach(function (row, y) {
       var x = 0;
       for (var i = 0; i < row.length; i++) {
         var ch = row[i];
         if (/\d/.test(ch)) { x += Number(ch); continue; }
         var key = (ch === ch.toUpperCase() ? 'w' : 'b') + ch.toUpperCase();
-        svg('use', { href: '#wc-' + key, x: x, y: y, width: 1, height: 1 }, b.L.pieces);
+        var u = svg('use', { href: '#wc-' + key, x: x, y: y, width: 1, height: 1 }, b.L.pieces);
+        if (to && to[0] === x && to[1] === y) slide(u, from[0] - x, from[1] - y);
         x++;
       }
+    });
+  }
+  function slide(el, dx, dy) {
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    el.getBoundingClientRect();
+    requestAnimationFrame(function () {
+      el.style.transition = 'transform 0.2s ease';
+      el.style.transform = 'translate(0px,0px)';
     });
   }
   function markSquares(b, squares) {
@@ -208,17 +223,14 @@
     var mobileBox = checkbox('Phone or tablet', state.mobile, function (v) { state.mobile = v; render(); });
     var isoBox = checkbox('Cross-origin isolated', state.isolated, function (v) { state.isolated = v; render(); });
 
-    body.appendChild(h('p', { class: 'dev-detected', text:
-      'Starts from this browser: ' + (seen.hardwareConcurrency || '?') + ' logical cores, ' +
-      (typeof seen.deviceMemoryGb === 'number' ? seen.deviceMemoryGb + ' GB reported' : 'memory not reported') +
-      (seen.isMobile ? ', a mobile browser' : '') + '. This blog page is not cross-origin isolated' +
-      (self.crossOriginIsolated ? ' (here it is)' : '') + '; the app’s own page is, through its service worker.' }));
+    body.appendChild(h('p', { class: 'dev-detected', text: 'Starting from this browser: ' + (seen.hardwareConcurrency || '?') + ' cores' +
+      (typeof seen.deviceMemoryGb === 'number' ? ', ' + seen.deviceMemoryGb + ' GB' : '') + (seen.isMobile ? ', mobile' : '') + '.' }));
     body.appendChild(h('div', { class: 'dev-inputs' }, [
       h('div', { class: 'row' }, [h('span', { class: 'lbl', text: 'Cores' }), h('label', { class: 'slider' }, [coreIn, coreOut])]),
       h('div', { class: 'row' }, [h('span', { class: 'lbl', text: 'Memory' }), memTabs.el]),
       h('div', { class: 'row' }, [mobileBox.el, isoBox.el]),
     ]));
-    var out = h('dl', { class: 'dev-out' });
+    var out = h('div', { class: 'dev-out' });
     var coreCap = h('p', { class: 'strip-cap' });
     var cores = h('div', { class: 'cells', 'aria-hidden': 'true' });
     var queueCap = h('p', { class: 'strip-cap' });
@@ -247,14 +259,8 @@
       var threaded = profile.requiresIsolation;
 
       clear(out);
-      [
-        ['Engine build', threaded ? 'Lite, multithreaded' : 'Lite, one thread'],
-        ['Threads', String(threads)],
-        ['Hash table', hash + ' MB'],
-        ['Lines shown', String(lines)],
-        ['Review engines', String(plan.workers)],
-        ['Each review engine', plan.threadsPerWorker + (plan.threadsPerWorker === 1 ? ' thread, ' : ' threads, ') + plan.hashMbPerWorker + ' MB'],
-      ].forEach(function (r) { out.appendChild(h('div', {}, [h('dt', { text: r[0] }), h('dd', { text: r[1] })])); });
+      out.appendChild(h('div', { class: 'dev-line' }, [h('b', { text: threaded ? 'Multithreaded' : 'One thread' }),
+        ' · ' + threads + (threads === 1 ? ' thread' : ' threads') + ' · ' + hash + ' MB hash · ' + lines + (lines === 1 ? ' line' : ' lines')]));
 
       // Which cores the review's engines occupy.
       clear(cores);
@@ -403,7 +409,7 @@
       verdict.lastChild.textContent = 'Move accuracy ' + C.accuracyFromWinPercentLoss(winLoss).toFixed(1) +
         ' · ' + wb.toFixed(1) + '% → ' + wa.toFixed(1) + '% to win';
     }
-    note.textContent = 'Drag either point along the curve' + (CAN_HOVER ? ', or focus one and use the arrow keys.' : '.');
+    note.textContent = '';
     body.appendChild(h('div', { class: 'grade' }, [h('div', {}, [chart, note]), h('div', {}, [raw.el, practical.el, verdict])]));
     render();
 
@@ -520,9 +526,7 @@
       state.acc = sets[k].acc.slice();
       state.w = sets[k].w.slice();
       state.hover = -1;
-      note.textContent = k === 'one'
-        ? 'Thirty-nine moves at 95 and one at 9.5, all weighted alike. Drag any bar up or down.'
-        : 'Each move’s accuracy from the review, and below it the weight from how much the game was swinging around it. Drag any bar.';
+      note.textContent = '';
       render();
     }
     body.appendChild(h('div', { class: 'fig-controls' }, [picker.el, h('span', { class: 'grow' }),
@@ -550,7 +554,16 @@
     var counter = h('span', { class: 'fig-num' });
     var slider = h('input', { type: 'range', min: '0', step: '1', 'aria-label': 'Move number' });
     slider.addEventListener('input', function () { go(Number(slider.value)); });
+    var timer = null;
+    function stopPlay() { if (timer) { clearInterval(timer); timer = null; } playBtn.setIcon('play'); }
+    var playBtn = iconButton('play', 'Play or pause', function () {
+      if (timer) { stopPlay(); return; }
+      if (state.k >= last()) go(0);
+      playBtn.setIcon('pause');
+      timer = setInterval(function () { if (state.k >= last()) { stopPlay(); return; } go(state.k + 1); }, 850);
+    });
     var transport = h('div', { class: 'transport' }, [
+      playBtn,
       iconButton('first', 'First move', function () { go(0); }),
       iconButton('prev', 'Previous move', function () { go(state.k - 1); }),
       slider,
@@ -632,9 +645,11 @@
       go(g.start || 0);
     }
 
+    var prevK = -1;
     function go(k) {
       k = Math.max(0, Math.min(last(), k));
       if (k === state.k) return;
+      prevK = state.k;
       state.k = k;
       state.hover = null;
       render();
@@ -678,7 +693,7 @@
 
       var lines = f.lines || [];
       var toMove = f.fen.split(' ')[1] === 'w' ? 'White' : 'Black';
-      capt.textContent = lines.length ? 'Stockfish’s top lines for ' + toMove + ', depth ' + data.depth + '. ' + POINT + ' a row to draw it.' : '';
+      capt.textContent = lines.length ? 'Stockfish’s top lines for ' + toMove + ' · depth ' + data.depth : '';
       clear(tbody);
       lines.forEach(function (ln, i) {
         var tr = h('tr', {}, [
@@ -703,7 +718,8 @@
 
     function drawBoard() {
       var g = game(), k = state.k, f = g.frames[k];
-      drawFen(board, f.fen);
+      drawFen(board, f.fen, k && k === prevK + 1 ? f.move : null);
+      prevK = k;
       markSquares(board, f.move ? [f.move.from, f.move.to] : []);
       clear(board.L.arrows);
       clear(board.L.badges);
@@ -714,7 +730,7 @@
         note.textContent = 'Line ' + (state.hover + 1) + ': ' + ln.san.slice(0, 8).join(' ') + (ln.san.length > 8 ? ' …' : '');
       } else {
         if (state.best && f.best) arrow(board, f.best, 'best');
-        note.textContent = state.best && f.best ? 'The green arrow is Stockfish’s choice for the side to move.' : '';
+        note.textContent = '';
       }
       if (k > 0) badge(board, f.move.to, g.rows[k - 1].quality);
     }
@@ -729,7 +745,10 @@
       go(to);
     });
 
-    var gameTabs = tabs('Game', data.games.map(function (g, i) { return [String(i), g.tab]; }), '0', function (v) { loadGame(Number(v)); });
+    // The club game opens on the move that decided it.
+    var club = data.games[1];
+    club.start = club.rows.reduce(function (a, r) { return (r.winLoss || 0) > (a.winLoss || 0) ? r : a; }, club.rows[0]).ply;
+    var gameTabs = tabs('Game', data.games.map(function (g, i) { return [String(i), g.tab]; }), '1', function (v) { stopPlay(); loadGame(Number(v)); });
     var bestBox = checkbox('Best move', true, function (v) { state.best = v; drawBoard(); });
     body.appendChild(h('div', { class: 'fig-controls' }, [gameTabs.el, h('span', { class: 'grow' }), bestBox.el]));
     body.appendChild(h('div', { class: 'review' }, [
@@ -742,10 +761,11 @@
         legend,
       ]),
     ]));
-    loadGame(0);
+    loadGame(1);
 
     fig.wc = {
       set: function (o) {
+        stopPlay();
         if (o.game !== undefined) {
           var i = data.games.map(function (g) { return g.id; }).indexOf(o.game);
           if (i !== state.g) gameTabs.set(String(i));
@@ -879,7 +899,7 @@
           '. Played ' + (pr[state.hover].old * 100).toFixed(1) + '% of the time before, ' + (pr[state.hover].now * 100).toFixed(1) + '% now.';
       } else {
         arrow(board, moves[0].uci, 'best');
-        note.textContent = POINT + ' a column or a segment to see its move.';
+        note.textContent = '';
       }
 
       var here = stats([p], state.level), every = stats(all, state.level);
