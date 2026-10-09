@@ -24,7 +24,6 @@ minima:
 
 header_pages:
   - about.markdown
-  - tags.html
 
 exclude:
   - .bundle/
