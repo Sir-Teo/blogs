@@ -1,0 +1,22 @@
+---
+layout: default
+---
+<div class="home">
+  {{ content }}
+
+  {%- if site.posts.size > 0 %}
+  <ol class="post-index" reversed>
+    {%- for post in site.posts %}
+    <li>
+      <a href="{{ post.url | relative_url }}">
+        <span class="post-index-title">{{ post.title | escape }}</span>
+        <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+      </a>
+      {%- if post.excerpt %}
+      <p>{{ post.excerpt | strip_html | normalize_whitespace }}</p>
+      {%- endif %}
+    </li>
+    {%- endfor %}
+  </ol>
+  {%- endif %}
+</div>

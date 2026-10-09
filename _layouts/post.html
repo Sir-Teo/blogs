@@ -1,0 +1,36 @@
+---
+layout: default
+---
+{%- assign words = content | strip_html | number_of_words -%}
+{%- assign minutes = words | plus: 115 | divided_by: 230 -%}
+<article class="post">
+  <header class="post-head">
+    <h1>{{ page.title | escape }}</h1>
+    <p class="meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
+      <span>{{ minutes | at_least: 1 }} min read</span>
+      {%- if page.links %}
+      <span class="meta-links">
+        {%- for link in page.links %}
+        <a href="{{ link.url }}">{{ link.title }}<span aria-hidden="true"> ↗</span></a>
+        {%- endfor %}
+      </span>
+      {%- endif %}
+    </p>
+  </header>
+
+  <div class="post-content">
+    {{ content }}
+  </div>
+
+  {%- if page.previous or page.next %}
+  <nav class="post-nav" aria-label="More posts">
+    {%- if page.previous %}
+    <a rel="prev" href="{{ page.previous.url | relative_url }}"><span>Older</span>{{ page.previous.title | escape }}</a>
+    {%- endif %}
+    {%- if page.next %}
+    <a rel="next" href="{{ page.next.url | relative_url }}"><span>Newer</span>{{ page.next.title | escape }}</a>
+    {%- endif %}
+  </nav>
+  {%- endif %}
+</article>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{ page.lang | default: site.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Apply the stored or system theme before first paint.
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <meta name="color-scheme" content="light dark">
+  {%- seo -%}
+  {%- feed_meta %}
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Ecircle%7Bfill:%23111%7D@media(prefers-color-scheme:dark)%7Bcircle%7Bfill:%23eee%7D%7D%3C/style%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+  {%- for href in page.styles %}
+  <link rel="stylesheet" href="{{ href | relative_url }}">
+  {%- endfor %}
+  <script defer src="{{ '/assets/js/site.js' | relative_url }}"></script>
+  {%- for src in page.scripts %}
+  <script defer src="{{ src | relative_url }}"></script>
+  {%- endfor %}
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="site-name" href="{{ '/' | relative_url }}">{{ site.title | escape }}</a>
+    <nav class="site-nav">
+      <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 0 0 14z"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <span>{{ site.author.name | default: site.title }}</span>
+    <a href="https://github.com/{{ site.github_username }}">GitHub</a>
+    <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+  </footer>
+</body>
+</html>

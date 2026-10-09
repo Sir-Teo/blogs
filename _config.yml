@@ -5,28 +5,29 @@ description: >-
   the psychology of building reliable things.
 baseurl: "/blogs"
 url: "https://sir-teo.github.io"
+lang: en
 github_username: Sir-Teo
 author:
   name: Teo
   email: zengwc.teo2016@outlook.com
 timezone: America/New_York
-show_excerpts: true
 
-remote_theme: jekyll/minima
+# Own layouts only. GitHub Pages applies the Primer theme unless this is null.
+theme: null
+
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
-  - jekyll-remote-theme
   - jekyll-sitemap
 
-minima:
-  date_format: "%b %-d, %Y"
-
-header_pages:
-  - about.markdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  hard_wrap: false
 
 exclude:
   - .bundle/
+  - .claude/
   - .git/
   - .github/
   - .jekyll-cache/
