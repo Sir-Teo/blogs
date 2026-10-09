@@ -1,0 +1,10 @@
+[Event "web-chess opponent levels"]
+[Site "?"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Club (level 3)"]
+[Black "Intermediate (level 4)"]
+[Result "1-0"]
+[Annotator "play.ts seed 5"]
+
+1. e3 e6 2. b3 d5 3. Be2 Nc6 4. Nf3 e5 5. Bb5 Qd6 6. Ba3 Qh6 7. Bxc6+ bxc6 8. h3 Ne7 9. d4 Qg6 10. Nxe5 Qxg2 11. Ke2 Nf5 12. Rg1 Nxd4+ 13. Qxd4 Ba6+ 14. c4 Qxg1 15. Nd2 Qg2 16. Qf4 f6 17. Ndf3 Qxh3 18. Ng4 Bxa3 19. Nxf6+ Kf8 20. Ng5 Qg3 21. Qxg3 h6 22. Qxc7 hxg5 23. Nd7+ Kf7 24. Ne5+ Ke6 25. Nxc6 Bc8 26. Rg1 Rh1 27. Nd8+ Kf5 28. Qf7+ Ke4 29. Qxd5# 1-0
