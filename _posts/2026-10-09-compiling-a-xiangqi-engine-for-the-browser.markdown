@@ -2,14 +2,14 @@
 layout: post
 title: "Compiling a xiangqi engine for the browser"
 description: >-
-  How web-xiangqi compiles Pikafish to WebAssembly, ships a 53 MB neural
-  network to a static host, and teaches a browser the rules, the notation and
-  the repetition laws of Chinese chess.
+  web-xiangqi compiles Pikafish to WebAssembly and serves its 53 MB network
+  from a static host. The rules, the notation and the repetition law, as
+  boards you can play on.
 date: 2026-10-09 12:00:00 -0400
 excerpt: >-
-  Xiangqi analysis with the engine compiled from source and running in the
-  browser tab. How web-xiangqi builds Pikafish for WebAssembly, ships its 53 MB
-  network from a static host, and checks its own rules against the engine's.
+  Xiangqi analysis with Pikafish compiled from source and running in the
+  browser tab. The rules, the notation and the repetition law, as boards you
+  can play on.
 links:
   - title: Live app
     url: https://sir-teo.github.io/web-xiangqi/
@@ -22,12 +22,12 @@ scripts:
   - /assets/js/web-xiangqi.js
 ---
 
-Xiangqi, Chinese chess, has a world-class open engine in Pikafish, a fork of Stockfish. web-xiangqi compiles it to WebAssembly itself (that was its first commit, on February 25) and builds an analysis app around it: 1,339 commits since. The boards below run the app's own rules and notation code; the engine output comes from the exact Pikafish build it ships.
+Pikafish is the strong open engine for xiangqi, Chinese chess, and a fork of Stockfish. web-xiangqi compiles it to WebAssembly and builds an analysis app around it. The boards below run the app's rules and notation code in the page. The engine output comes from the Pikafish build the app ships, run offline.
 
 ## The rules
 
 <figure class="fig" id="xq-rules">
-<figcaption>web-xiangqi's own move validation. Dots are legal; crosses are moves a rule refuses. Click a dot to play it.</figcaption>
+<figcaption>web-xiangqi's own move validation for the piece picked up. Dots are legal; crosses are moves a rule refuses, and the piece in the way is ringed.</figcaption>
 </figure>
 
 Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-preset="horse">a horse's leg can be blocked</a>, <a class="act" href="#xq-rules" data-preset="elephant">an elephant's eye too</a>, <a class="act" href="#xq-rules" data-preset="cannon">a cannon captures over exactly one screen</a>, and <a class="act" href="#xq-rules" data-preset="general">the generals may never face each other</a>. The app's move generator matches Pikafish's own counts exactly: 44 moves from the start, 1,920 two-move sequences, 79,666 three-move ones.
@@ -50,7 +50,7 @@ Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-pre
 ## Compiling Pikafish
 
 <figure class="fig">
-<svg class="arch" viewBox="0 0 680 300" role="img" aria-label="The build: Pikafish's C++ source at a pinned commit and a 340-line patch go through Emscripten 6.0.1 to four WebAssembly cores of about 0.7 MB each; the 53.7 MB network ships beside them and is 97.6% of a first visit's bytes.">
+<svg class="arch" viewBox="0 0 680 372" role="img" aria-label="The build: Pikafish's C++ source at a pinned commit and a 340-line patch go through Emscripten 6.0.1 to four WebAssembly cores of about 0.7 MB each; the 53.7 MB network ships beside them and is 97.6% of a first visit's bytes. With the isolation headers, the threaded core searches 3.7 million nodes a second on eight threads against 414,000 on one.">
 <defs>
 <marker id="xq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M0,1 L9,5 L0,9 z"/></marker>
 </defs>
@@ -82,11 +82,18 @@ Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-pre
 <text class="bl" x="92" y="244">engine code 1.7%</text>
 <text class="bl r" x="656" y="244">pikafish.nnue, 53.7 MB, 97.6%</text>
 <text class="st" x="340" y="276" style="text-anchor:middle">The network is already Zstandard-compressed: served with gzip it grows by 8.8 KB.</text>
+<text class="lbl" x="24" y="316">Nodes searched a second, with the isolation headers</text>
+<rect class="bar" x="118" y="326" width="60" height="14"/>
+<text class="bl mid" x="24" y="333">one thread</text>
+<text class="bl mid" x="186" y="333">414,000</text>
+<rect class="bar net" x="118" y="346" width="538" height="14"/>
+<text class="bl mid" x="24" y="353">eight threads</text>
+<text class="bl r in" x="650" y="353">3.7 million</text>
 </svg>
-<figcaption>One patched source tree, four cores chosen at load time by what the browser supports, and a network that is almost all of the download.</figcaption>
+<figcaption>One patched source tree, four cores chosen at load time by what the browser supports, a network that is almost all of the download, and what the threads buy.</figcaption>
 </figure>
 
-The heart of the 340-line patch turns a program that reads standard input into a library with one entry point:
+Most of the 340-line patch is plumbing. The part that matters turns a program that reads standard input into a library with one entry point:
 
 ```cpp
 extern "C" void command(const char* cmd) {
@@ -94,15 +101,15 @@ extern "C" void command(const char* cmd) {
 }
 ```
 
-The toolchain is pinned too: Emscripten 6.0.2 silently broke threads. And the network is cached by the app's own service worker, because browsers won't keep a 53 MB response in the HTTP cache. With that worker also adding the two isolation headers GitHub Pages can't send, analysis runs on eight threads at 3.7 million nodes a second, against 414,000 on one.
+Emscripten is pinned because 6.0.2 broke threads without saying so. The network is cached by the app's own service worker, since browsers won't keep a 53 MB response in the HTTP cache, and the same worker adds the two isolation headers that GitHub Pages can't send and the threaded core needs.
 
-## A clock nobody reads
+## The halfmove clock
 
 <figure class="fig" id="xq-clock" style="--reserve: 360px" data-src="{{ '/assets/data/web-xiangqi-demo.json' | relative_url }}">
 <figcaption>One endgame, searched by Pikafish at depth 14 for every value of the FEN's halfmove clock. Blue is a forced mate.</figcaption>
 </figure>
 
-Pikafish calls a game drawn after 120 plies without a capture, and reads the count from the FEN. Mate in three needs five plies, so it holds <a class="act" href="#xq-clock" data-position="0" data-clock="115">at a clock of 115</a> and is 0.00 <a class="act" href="#xq-clock" data-position="0" data-clock="116">at 116</a>. The app once wrote 0 into every FEN, and showed mate in positions the engine called drawn.
+Pikafish calls a game drawn after 120 plies without a capture, and reads the count from the FEN. Mate in three needs five plies, so the mate is still there <a class="act" href="#xq-clock" data-position="0" data-clock="115">at a clock of 115</a> and gone <a class="act" href="#xq-clock" data-position="0" data-clock="116">at 116</a>. The app used to write 0 into every FEN, and showed mates in positions the engine would have called drawn.
 
 ## Repetition
 
@@ -110,14 +117,12 @@ Pikafish calls a game drawn after 120 plies without a capture, and reads the cou
 <figcaption>Two repeating lines, judged after each move by web-xiangqi's own check and by Pikafish's rule judge.</figcaption>
 </figure>
 
-In xiangqi, the side that checks or chases on every move of a repetition loses. The app sees <a class="act" href="#xq-repetition" data-line="check" data-move="5">perpetual check</a>, but deliberately not <a class="act" href="#xq-repetition" data-line="chase" data-move="11">perpetual chase</a>, which needs to know what is attacked and protected. Pikafish already judges both, through a command the build exposes but only a test calls.
+In xiangqi, the side that checks or chases on every move of a repetition loses. The app's own check catches <a class="act" href="#xq-repetition" data-line="check" data-move="5">perpetual check</a>. It does not try to catch <a class="act" href="#xq-repetition" data-line="chase" data-move="11">perpetual chase</a>, which needs to know what is attacked and what is protected. Pikafish judges both, through a command the build exposes but only a test calls so far.
 
 ## Reviewing a game
 
 <figure class="fig wide" id="xq-review" style="--reserve: 640px" data-src="{{ '/assets/data/web-xiangqi-demo.json' | relative_url }}">
-<figcaption>A game between the app's Easy and Medium levels, reviewed by Pikafish at depth 16 with the app's review code. Read it in any notation.</figcaption>
+<figcaption>A game between the app's Easy and Medium levels, reviewed by Pikafish at depth 16 with the app's review code, opened on the move that decided it.</figcaption>
 </figure>
 
-The game is generated on purpose. The app once shipped ten "classic games" credited to grandmasters that turned out to be fabricated, and the review is what caught them: 20 to 28% accuracy, against 7% for random moves.
-
-[Open web-xiangqi](https://sir-teo.github.io/web-xiangqi/), switch the pieces to letters, and play the central cannon.
+The game is between two of the app's own levels rather than a famous one, for a reason. The app once shipped ten "classic games" credited to grandmasters, and they were made up. The review is what gave them away, at 20 to 28% accuracy where random moves score 7%.

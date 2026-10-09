@@ -90,6 +90,11 @@
 .arms { border-top: 0; }
 .arm.arm-head { padding: 0 0 6px; font-size: 12px; color: var(--fg-3); font-variant-numeric: normal; }
 .arm.arm-head span:nth-child(4) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arm-key i { display: inline-block; width: 12px; margin: 0 5px 0 0; vertical-align: middle; border-radius: 1px; }
+.arm-key i:not(:first-child) { margin-left: 10px; }
+.arm-key .k-prior { height: 2px; background: var(--fg-3); opacity: 0.6; }
+.arm-key .k-visits { height: 6px; background: var(--fg); border-radius: 3px; }
+.arm-key .k-real { width: 2px; height: 10px; background: var(--accent); }
 .arm {
   display: grid;
   grid-template-columns: 12px 14px 28px minmax(0, 1fr) 34px 44px;

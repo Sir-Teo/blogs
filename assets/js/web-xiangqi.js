@@ -63,8 +63,6 @@
     var done = false;
     new IntersectionObserver(function (es) { if (es[0].isIntersecting && !done) { done = true; fn(); } }, { threshold: 0.5 }).observe(el);
   }
-  var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
-  var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
   var ICONS = {
     play: 'M5 3.5v9l7-4.5z',
     pause: 'M5 3.5v9M11 3.5v9',
@@ -239,11 +237,11 @@
   };
   var PRESETS = {
     start: { fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w', select: 'h2' },
-    horse: { fen: '3k5/9/9/9/9/4P4/4Np3/9/9/4K4 w', select: 'e3', say: 'A horse steps one point straight, then one diagonally, and a piece on the straight step blocks it. Here the soldier and the black soldier each block two of its eight moves.' },
-    elephant: { fen: '4k4/9/9/9/9/6B2/3n5/4B4/9/3K5 w', select: 'e2', say: 'An elephant moves exactly two points diagonally, and a piece on the point between, its eye, blocks it. Pick up the other elephant to see the river stop it.' },
-    cannon: { fen: '4k4/9/9/9/4r4/9/4P4/9/4C4/3K5 w', select: 'e1', say: 'A cannon moves like a chariot but captures by jumping exactly one piece, its screen.' },
-    general: { fen: '4k4/9/9/9/9/9/9/4N4/9/4K4 w', select: 'e2', say: 'The two generals may never face each other on an open file, so this horse cannot move at all.' },
-    stack: { fen: '3k5/9/9/9/9/9/9/4R4/4R4/3AK4 w', select: 'e2', say: 'Two chariots on one file are told apart as front and rear: 前俥 and 後俥, or +R and −R.' },
+    horse: { fen: '3k5/9/9/9/9/4P4/4Np3/9/9/4K4 w', select: 'e3', say: 'One point straight, then one diagonal. A piece on the straight step blocks the move.' },
+    elephant: { fen: '4k4/9/9/9/9/6B2/3n5/4B4/9/3K5 w', select: 'e2', say: 'Two points diagonal. A piece on the point between blocks the move, and the river stops the other elephant.' },
+    cannon: { fen: '4k4/9/9/9/4r4/9/4P4/9/4C4/3K5 w', select: 'e1', say: 'Moves like a chariot, captures by jumping over exactly one piece.' },
+    general: { fen: '4k4/9/9/9/9/9/9/4N4/9/4K4 w', select: 'e2', say: 'The generals may never face each other on an open file, so this horse cannot move.' },
+    stack: { fen: '3k5/9/9/9/9/9/9/4R4/4R4/3AK4 w', select: 'e2', say: 'Two chariots on one file are front and rear: 前俥 and 後俥, or +R and −R.' },
   };
 
   function rules(fig) {
@@ -382,7 +380,7 @@
       } else if (!X.hasAnyLegalMove(game.board, game.side)) {
         say.appendChild(document.createTextNode(sideName + ' has no legal move and loses.'));
       } else {
-        say.appendChild(document.createTextNode(sideName + ' to move. Pick up a ' + (game.side === 'w' ? 'red' : 'black') + ' piece.'));
+        say.appendChild(document.createTextNode(sideName + ' to move'));
       }
       if (game.say) say.appendChild(h('span', { class: 'sub', text: game.say }));
 
@@ -394,18 +392,18 @@
           names.appendChild(h('dt', { text: s[1] }));
           names.appendChild(h('dd', { class: s[0] === 'chinese' ? 'big cjk' : 'big', text: moveText(game.board, uci, s[0]) }));
         });
-        note.textContent = 'Click to play it.';
+        note.textContent = '';
       } else if (hv && hv.reason) {
         names.appendChild(h('dt', { text: 'Refused' }));
         names.appendChild(h('dd', { text: X.formatMoveRuleHint(hv.reason) }));
-        note.textContent = 'The rule is web-xiangqi’s own: “' + hv.reason + '”.';
+        note.textContent = '';
       } else if (!game.sel && game.history.length) {
         var lastMove = game.history[game.history.length - 1];
         STYLES.forEach(function (st) {
           names.appendChild(h('dt', { text: st[1] }));
           names.appendChild(h('dd', { class: st[0] === 'chinese' ? 'big cjk' : 'big', text: moveText(lastMove.board, lastMove.uci, st[0]) }));
         });
-        note.textContent = 'The last move, three ways.';
+        note.textContent = '';
       } else if (game.sel && t.legal.length) {
         // Nothing hovered: name one of the selected piece's moves, the
         // central cannon when it is on offer.
@@ -781,7 +779,6 @@
       if (k === 0) {
         head.textContent = g.levels.red.label + ' against ' + g.levels.black.label;
         sub.appendChild(h('span', { text: 'web-xiangqi’s opponent levels, seed ' + g.seed }));
-        if (CAN_HOVER) sub.appendChild(h('span', { text: 'step with ← →' }));
       } else {
         var r = g.rows[k - 1];
         head.textContent = moveLabel(k);
@@ -829,7 +826,7 @@
       if (ln) {
         arrow(board, ln.pv[0]);
         if (ln.pv[1]) arrow(board, ln.pv[1], 'alt2');
-        note.textContent = 'Line ' + (state.hover + 1) + ', first two moves drawn.';
+        note.textContent = 'Line ' + (state.hover + 1) + ', first two moves';
       } else {
         var best = g.evals[k].best;
         if (state.best && best) arrow(board, best, 'best');

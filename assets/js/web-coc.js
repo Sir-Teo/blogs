@@ -63,8 +63,6 @@
     }
     return { el: wrap, set: select };
   }
-  var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
-  var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
   var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ICONS = { play: 'M5 3.5v9l7-4.5z', pause: 'M5 3.5v9M11 3.5v9', first: 'M11.5 4 7.5 8l4 4M4.5 4v8' };
   function iconButton(icon, label, onClick) {
@@ -258,7 +256,6 @@
     var state = { i: 0 };
     var score = h('div', { class: 'score', 'aria-live': 'polite' });
     var where = h('div', { class: 'fig-num' });
-    var sum = h('p', { class: 'ring-sum' });
     var counter = h('span', { class: 'fig-num' });
     var slider = h('input', { type: 'range', min: '0', max: '100', step: '0.1', 'aria-label': 'Battle time' });
     var W = 360, H = 120, P = { l: 38, r: 6, t: 8, b: 18 };
@@ -324,17 +321,12 @@
       if (autoplay && !REDUCE) clock.play();
     }
 
-    var counts = [0, 0, 0, 0];
-    R.runs.forEach(function (r) { counts[r.stars]++; });
-    sum.textContent = 'Same army, same village, twelve landing points: three stars from ' + counts[3] + ', two from ' + counts[2] + ', one from ' + counts[1] + ', none from ' + counts[0] + '.';
-
     var speedTabs = tabs('Speed', [['2', '2×'], ['4', '4×'], ['8', '8×']], '4', function (s) { clock.state.speed = Number(s); });
     body.appendChild(h('div', { class: 'two' }, [
       h('div', { class: 'col' }, [v.el, h('div', { class: 'transport' }, [clock.button, slider, counter])]),
       h('div', { class: 'col' }, [
         score, where, chart,
         h('div', { class: 'fig-controls', style: 'margin:0' }, [h('span', { class: 'fig-num', text: 'Speed' }), speedTabs.el]),
-        sum,
         legend(TROOP_LEGEND), legend(BUILDING_LEGEND),
       ]),
     ]));

@@ -2,12 +2,13 @@
 layout: post
 title: "Replaying a village raid"
 description: >-
-  How Crown & Clan, a village-raiding strategy game in the browser, keeps its
-  battle simulation off the screen, deterministic to the bit, and replayable.
+  Crown & Clan is a village-raiding game in the browser. Its battle
+  simulation runs without a screen, so the same raid can be replayed, tested
+  and run in Node, as the figures here do.
 date: 2026-10-09 13:00:00 -0400
 excerpt: >-
-  A village-raiding strategy game in the browser, with a battle simulation
-  that runs without a screen and replays to the bit.
+  A village-raiding game in the browser whose battle simulation runs without
+  a screen. Raids from its own engine, replayed as figures.
 links:
   - title: Live game
     url: https://coc.teozeng.dev
@@ -19,7 +20,7 @@ scripts:
   - /assets/js/web-coc.js
 ---
 
-Crown & Clan is a village-raiding game in the mould of Clash of Clans, in TypeScript and Phaser, with no server: 601 commits since September 10. It is a fan project, and its README says so: "Clash of Clans assets and trademarks belong to Supercell." So the figures draw plain shapes. Every battle in them was run by the game's own engine, in Node, on the twelve villages the project designed itself.
+Crown & Clan is a village-raiding game in the mould of Clash of Clans, written in TypeScript and Phaser with no server. It is a fan project ("Clash of Clans assets and trademarks belong to Supercell," its README says), so the figures draw plain shapes. Every battle in them was run by the game's own engine, in Node, on the twelve villages the project designed itself.
 
 ## A simulation with no screen
 
@@ -92,6 +93,4 @@ Pathfinding is A* on the tile grid, where a step costs 1 and a step into a wall 
 <figcaption>The same raid with the same taps, stepped every 0.05 s and every 0.1 s. Lines trace each troop.</figcaption>
 </figure>
 
-A replay isn't a video: it's the setup and every tap, re-simulated. That only works if re-simulating gives the same battle. There is no random number generator in combat. Distances are computed by hand, because browsers' `Math.hypot` "disagree by a few bits". And since a different step size is a different battle, the recording keeps every step size too. This 16-second raid is 45 taps and 317 steps: under 10 KB.
-
-[Play a raid](https://coc.teozeng.dev), then open its replay and scrub backwards.
+A replay is the setup and every tap, simulated again, which only works if simulating again gives the same battle. So combat uses no random number generator, distances are computed by hand because browsers' `Math.hypot` results "disagree by a few bits", and the recording keeps every step size, since a different step size is a different battle, as the two boards show.

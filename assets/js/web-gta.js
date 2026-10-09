@@ -190,6 +190,28 @@
       h('span', {}, [h('i', { class: 'k-held' }), 'held']),
     ]));
     body.appendChild(factsBox);
+
+    // What the port's own probe measured in the game (from its notes): window
+    // load times and holds on a scripted 90-second drive, before and after the
+    // streaming worker stopped re-decoding models it already had.
+    var MW = 640, MH = 78;
+    var meas = svg('svg', { class: 'chart measured', viewBox: '0 0 ' + MW + ' ' + MH, role: 'img', 'aria-label': 'In the game, on a scripted 90-second drive: windows took 1.3 to 1.9 seconds and the game held 53 times; after the fix, 60 to 350 milliseconds and one hold' });
+    var mx = function (s) { return 96 + 200 * s / 2; };
+    svg('text', { class: 'mh', x: 8, y: 12 }, meas).textContent = 'In the game, a 90 s drive';
+    svg('text', { x: 96, y: 72 }, meas).textContent = '0';
+    svg('text', { x: mx(2), y: 72, 'text-anchor': 'end' }, meas).textContent = '2 s to load a window';
+    svg('text', { x: 350, y: 72 }, meas).textContent = 'holds';
+    [['before', 1.3, 1.9, 53], ['after', 0.06, 0.35, 1]].forEach(function (r, i) {
+      var y = 30 + i * 22;
+      svg('text', { class: 'ml', x: 8, y: y + 3.5 }, meas).textContent = r[0];
+      svg('line', { class: 'gl', x1: mx(0), x2: mx(2), y1: y, y2: y }, meas);
+      svg('rect', { class: 'range', x: mx(r[1]), y: y - 4, width: Math.max(2, mx(r[2]) - mx(r[1])), height: 8, rx: 1 }, meas);
+      svg('text', { x: mx(r[2]) + 6, y: y + 3.5 }, meas).textContent = r[1] >= 1 ? r[1] + ' to ' + r[2] + ' s' : Math.round(r[1] * 1000) + ' to ' + Math.round(r[2] * 1000) + ' ms';
+      for (var k = 0; k < r[3]; k++) svg('line', { class: 'held', x1: 350 + k * 4.6, x2: 350 + k * 4.6, y1: y - 7, y2: y + 7 }, meas);
+      svg('text', { x: 350 + r[3] * 4.6 + 4, y: y + 3.5 }, meas).textContent = r[3] + (r[3] === 1 ? ' hold' : ' holds');
+    });
+    body.appendChild(meas);
+
     restart();
     draw(0);
     var seen = false;
@@ -428,6 +450,24 @@
     });
     [5, 10, 20, 30, 40].forEach(function (g) { svg('text', { x: gx(g), y: H - 8, 'text-anchor': 'middle' }, chart).textContent = String(g); });
     svg('text', { x: P.l + 6, y: P.t + 10 }, chart).textContent = 'target speed, by gap';
+    // The formula's branches, as bands: where it says stop, crawl, brake or cruise.
+    var zones = [], cur = null;
+    for (var z = GMIN; z <= GMAX + 1e-9; z += 0.05) {
+      var tz = targetAt(z), flat = Math.abs(targetAt(z + 0.05) - tz) < 0.02;
+      var kind = tz <= 0.01 ? 'stop' : tz >= CRUISE - 0.01 ? 'cruise' : flat && tz < CRUISE * 0.15 ? 'crawl' : 'brake';
+      if (!cur || cur.kind !== kind) { cur = { kind: kind, from: z, to: z }; zones.push(cur); } else cur.to = z;
+    }
+    // Slivers at a boundary belong to the zone before them.
+    zones = zones.filter(function (zn, i) {
+      if (i && zn.to - zn.from < 0.2) { zones[i - 1].to = zn.to; return false; }
+      return true;
+    });
+    zones.forEach(function (zn) {
+      var x0 = gx(zn.from), x1 = gx(Math.min(GMAX, zn.to + 0.05));
+      svg('rect', { class: 'zone ' + zn.kind, x: x0, y: P.t, width: Math.max(0, x1 - x0), height: H - P.t - P.b }, chart);
+      // Narrow neighbouring zones get their labels on two lines.
+      if (zn.kind !== 'cruise') svg('text', { class: 'zl', x: (x0 + x1) / 2, y: H - P.b - (zn.kind === 'crawl' ? 18 : 6), 'text-anchor': 'middle' }, chart).textContent = zn.kind;
+    });
     var d = '';
     for (var g = GMIN; g <= GMAX + 1e-9; g += 0.05) d += (g === GMIN ? 'M' : 'L') + gx(g).toFixed(1) + ' ' + gy(targetAt(g)).toFixed(1);
     svg('path', { class: 'ln faint', d: d }, chart);
@@ -527,7 +567,6 @@
     var state = { kind: 'gpu', base: 45 };
     var W = 640, H = 250, P = { l: 40, r: 10, t: 12, b: 28 }, SPLIT = 150;
     var chart = svg('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Frame time and resolution scale over three minutes' });
-    var list = h('div', { class: 'fig-note' });
     function render() {
       var sim = resSim(state.kind, state.base);
       clear(chart);
@@ -557,11 +596,24 @@
       });
       svg('path', { class: 'ln faint', d: d }, chart);
       svg('path', { class: 'ln acc', d: ds }, chart);
-      sim.events.forEach(function (e) { svg('circle', { class: 'dot', cx: gx(e[0]), cy: sy(e[1]), r: 3 }, chart); });
-      svg('text', { x: P.l + 4, y: SPLIT + 8 }, chart).textContent = 'resolution scale';
-      list.textContent = sim.events.length
-        ? sim.events.slice(0, 8).map(function (e) { return (e[0] / 1000).toFixed(1) + ' s → ' + Math.round(e[1] * 100) + '%'; }).join(' · ') + (sim.events.length > 8 ? ' · …' : '')
-        : 'No change: the game keeps up at full resolution.';
+      // Each change the controller made: a step down, or a step undone. The
+      // wait between an undo and the next try is drawn, since it doubles.
+      var prevScale = 1, firstDown = true, firstUp = true, lastUp = null;
+      sim.events.forEach(function (e) {
+        var down = e[1] < prevScale;
+        prevScale = e[1];
+        svg('circle', { class: 'dot' + (down ? '' : ' up'), cx: gx(e[0]), cy: sy(e[1]), r: 3 }, chart);
+        if (down && firstDown) { firstDown = false; svg('text', { class: 'ev', x: gx(e[0]) + 6, y: sy(e[1]) + 13 }, chart).textContent = 'step down'; }
+        if (!down && firstUp) { firstUp = false; svg('text', { class: 'ev', x: gx(e[0]) + 6, y: sy(e[1]) - 6 }, chart).textContent = 'undone'; }
+        if (down && lastUp !== null) {
+          var y = sy(1) - 15, wait = (e[0] - lastUp) / 1000;
+          svg('line', { class: 'wait', x1: gx(lastUp), x2: gx(e[0]), y1: y, y2: y }, chart);
+          if (gx(e[0]) - gx(lastUp) > 22) svg('text', { class: 'ev', x: (gx(lastUp) + gx(e[0])) / 2, y: y - 3, 'text-anchor': 'middle' }, chart).textContent = (wait < 10 ? wait.toFixed(1) : Math.round(wait)) + ' s';
+        }
+        lastUp = down ? null : e[0];
+      });
+      svg('text', { x: W - P.r, y: SPLIT + 8, 'text-anchor': 'end' }, chart).textContent = 'resolution scale';
+      if (!sim.events.length) svg('text', { class: 'ev', x: W - P.r, y: sy(1) - 6, 'text-anchor': 'end' }, chart).textContent = 'keeps up at full resolution';
     }
     var kindTabs = tabs('Device', [['gpu', 'GPU-bound phone'], ['cpu', 'CPU-bound phone'], ['warm', 'A phone that warms up']], state.kind, function (v) { state.kind = v; render(); });
     var baseS = slider('Frame at full resolution', 20, 70, 1, state.base, function (v) { return v + ' ms'; }, function (v) { state.base = v; render(); });
@@ -601,7 +653,7 @@
       var narrow = G.decodeDxt1To5551(block, 4, 4);
       clear(gIdx); clear(gRgba); clear(g5551);
       for (var p = 0; p < 16; p++) (function (p) {
-        var cell = h('span', { text: String(state.idx[p]), title: 'Click to change' });
+        var cell = h('span', { text: String(state.idx[p]) });
         cell.addEventListener('click', function () { state.idx[p] = (state.idx[p] + 1) % 4; render(); });
         gIdx.appendChild(cell);
         var A = rgba[p * 4 + 3];
@@ -630,17 +682,26 @@
           h('code', { text: '0x' + ('000' + cell.n[cell.i].toString(16)).slice(-4) }),
         ]));
       }
-      mode.textContent = (a > b ? 'Four colours: the first endpoint is the larger 16-bit number, so indices 2 and 3 are blends.' : 'Three colours and clear: the first endpoint is not the larger, so index 3 means transparent.') +
-        ' 8 bytes on disk; 64 decoded to RGBA, 32 decoded to 16-bit 5551.';
+      mode.textContent = a > b ? 'Four colours, since the first endpoint is the larger 16-bit number' : 'Three colours and clear, since the first endpoint is not the larger';
     }
     body.appendChild(h('div', { class: 'fig-controls' }, [h('span', { class: 'ends' }, ['Endpoints', e0, e1]), swap]));
     body.appendChild(h('div', { class: 'dxt' }, [
-      h('div', {}, [h('h4', { text: 'Index per pixel (click)' }), gIdx]),
-      h('div', {}, [h('h4', { text: 'Decoded to RGBA, 32 bits' }), gRgba]),
-      h('div', {}, [h('h4', { text: 'Decoded to 5551, 16 bits' }), g5551]),
+      h('div', {}, [h('h4', { text: 'Index per pixel · 8 bytes with the endpoints' }), gIdx]),
+      h('div', {}, [h('h4', { text: 'RGBA, 32 bits · 64 bytes' }), gRgba]),
+      h('div', {}, [h('h4', { text: '5551, 16 bits · 32 bytes' }), g5551]),
     ]));
     body.appendChild(pal);
     body.appendChild(mode);
+    // What that halving comes to in the game, from the port's notes.
+    var sz = svg('svg', { class: 'chart sizes', viewBox: '0 0 640 54', role: 'img', 'aria-label': 'The textures around Grove Street: 93 megabytes at 32 bits, 46 at 16' });
+    svg('text', { class: 'mh', x: 8, y: 12 }, sz).textContent = 'Textures around Grove Street';
+    [['32-bit', 93], ['16-bit', 46]].forEach(function (r, i) {
+      var y = 24 + i * 14;
+      svg('text', { class: 'ml', x: 8, y: y + 8 }, sz).textContent = r[0];
+      svg('rect', { class: 'range' + (i ? ' acc' : ''), x: 64, y: y, width: 560 * r[1] / 93, height: 10, rx: 1 }, sz);
+      svg('text', { class: 'in', x: 64 + 560 * r[1] / 93 - 5, y: y + 8, 'text-anchor': 'end' }, sz).textContent = r[1] + ' MB';
+    });
+    body.appendChild(sz);
     render();
     fig.gta = { set: function (o) { if (o.swap) swap.click(); } };
   }

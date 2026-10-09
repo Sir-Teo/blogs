@@ -2,12 +2,14 @@
 layout: post
 title: "Porting San Andreas to a browser tab"
 description: >-
-  How web-gta streams a whole state into a browser, runs the original game's
-  own mission scripts, ports its traffic code, and fits on a phone.
+  web-gta streams San Andreas into a browser tab and runs the original
+  mission scripts. Its streaming, script interpreter, traffic code and phone
+  tricks, run live on made-up inputs.
 date: 2026-10-09 14:00:00 -0400
 excerpt: >-
   A browser recreation of San Andreas that streams the world as you drive and
-  runs the original mission scripts. The interesting parts, as figures.
+  runs the original mission scripts. Its streaming, interpreter and traffic
+  code, run live on made-up inputs.
 links:
   - title: Live game
     url: https://sir-teo.github.io/web-gta/
@@ -21,9 +23,9 @@ scripts:
   - /assets/js/web-gta.js
 ---
 
-web-gta recreates San Andreas in a browser tab, on the original game's world, models, scripts and sounds: 2,784 commits since September 13. That content stays with its owners ("Native assets retain their original ownership," as the project's notes put it), so nothing below uses it. Every figure runs the port's own code on inputs made up for this page.
+web-gta recreates San Andreas in a browser tab, running the original game's world, models, scripts and sounds. That content belongs to Rockstar ("Native assets retain their original ownership," the project's notes say), so none of it appears here. Every figure runs the port's own code on inputs made up for this page.
 
-## The shape of the port
+## What runs where
 
 <figure class="fig">
 <svg class="arch" viewBox="0 0 680 300" role="img" aria-label="Architecture: on the main thread, a fixed 60 Hz simulation, Rapier physics in WebAssembly, a three.js renderer and the region follower; in workers, the world streamer and the chunk fetcher; underneath, Cache Storage and a service worker.">
@@ -67,49 +69,41 @@ Systems are ported from gta-reversed, the community's reconstruction of the PC g
 ## Streaming a state
 
 <figure class="fig" id="gta-stream">
-<figcaption>The port's region follower on a made-up road: one minute of driving, each window taking a fixed time to load.</figcaption>
+<figcaption>The port's region follower on a made-up road, one minute of driving with each window taking a fixed time to load. The strip at the bottom is the same follower in the real game, on a scripted 90-second drive, before and after the streaming worker stopped re-decoding models it already had.</figcaption>
 </figure>
 
-The world arrives in 180-unit windows. The follower asks for the next one when the point ahead of the car drifts 30% off-centre, and holds the game if the car passes 85% before it lands. <a class="act" href="#gta-stream" data-speed="70" data-latency="2" data-lead="fixed">At 70 m/s, 2-second windows</a> never stop the car; <a class="act" href="#gta-stream" data-speed="70" data-latency="2.1" data-lead="fixed">2.1 seconds</a> does. In the real game, windows took 1.3 to 1.9 seconds and a 90-second drive held 53 times. Once the worker stopped re-decoding models it already had, windows took 60 to 350 ms, and the same drive held once.
+The world arrives in 180-unit windows. The follower asks for the next one when the point ahead of the car drifts 30% off-centre, and holds the game if the car gets 85% of the way out before the window lands. <a class="act" href="#gta-stream" data-speed="70" data-latency="2" data-lead="fixed">At 70 m/s, 2-second windows</a> never stop the car. <a class="act" href="#gta-stream" data-speed="70" data-latency="2.1" data-lead="fixed">At 2.1 seconds</a> they do. The scripted drive is the project's probe for this; it found the holds, and a physics leak, that no unit test did.
 
 ## Running the original scripts
 
 <figure class="fig wide" id="gta-vm">
-<figcaption>The port's script decoder and interpreter on a six-instruction script assembled for this page. Below: the port's census of the 1,570 commands the original scripts use.</figcaption>
+<figcaption>The port's script decoder and interpreter on a six-instruction script assembled for this page. Below, the port's census of the 1,570 commands the original scripts use.</figcaption>
 </figure>
 
-The game's story is bytecode, and the port runs it. Threads run until a `WAIT`, then sleep. Interpreting is the easy half; each of the 1,570 commands needs an engine behind it. A command that isn't ported yet is skipped, its outputs read as "nothing found", and the mission carries on.
+The game's missions are bytecode, and the port runs the original. A thread runs until it reaches a `WAIT`, then sleeps until the game clock passes. The interpreter is the small part. Each of the 1,570 commands the scripts use needs an engine behind it, and a command that isn't ported yet is skipped, its outputs read as "nothing found", and the mission carries on.
 
 ## Traffic from the original arithmetic
 
 <figure class="fig" id="gta-traffic">
-<figcaption>Two made-up cars. The blue one brakes with the port of <code>CCarCtrl::SlowCarDownForOtherCar</code>; drag the grey one.</figcaption>
+<figcaption>Two made-up cars. The blue one brakes with the port of <code>CCarCtrl::SlowCarDownForOtherCar</code> for whatever gap the grey one leaves.</figcaption>
 </figure>
 
-<a class="act" href="#gta-traffic" data-place="8.5">Stopped 8.5 units behind</a>, the follower stays put. <a class="act" href="#gta-traffic" data-place="7.5">One unit closer</a>, it creeps forward: three branches of the formula put a "crawl" zone in front of a "stop" zone. That is the port's formula, following reVC.
+<a class="act" href="#gta-traffic" data-place="8.5">Stopped 8.5 units behind</a>, the follower stays put. <a class="act" href="#gta-traffic" data-place="7.5">One unit closer</a>, it creeps up to the inner stop zone. The zones come out of the formula's branches, which follow reVC's.
 
 ## Fitting on a phone
 
 <figure class="fig" id="gta-res">
-<figcaption>The port's adaptive-resolution controller on three made-up phones. Grey: frame time. Blue: resolution scale.</figcaption>
+<figcaption>The port's adaptive-resolution controller on three made-up phones. Grey is frame time, blue the resolution scale.</figcaption>
 </figure>
 
-Slower than 26 fps for three seconds, the controller drops a step. If that didn't help, the CPU is the bottleneck: it undoes the step and waits, twice as long each time.
+Slower than 26 fps for three seconds, the controller drops a step. If that didn't help, the CPU is the bottleneck. It undoes the step and waits before trying again, twice as long each time.
 
 <figure class="fig" id="gta-dxt">
-<figcaption>One 8-byte DXT1 block through the port's decoder: to 32-bit colour, and to the 16 bits a phone gets. Pick the two endpoints; click the indices.</figcaption>
+<figcaption>One 8-byte DXT1 block through the port's decoder, to 32-bit colour and to the 16 bits a phone gets. The two endpoint colours and the sixteen indices are the whole block.</figcaption>
 </figure>
 
-Few phone GPUs can sample the PC's compressed textures, so the port decodes them, to 16 bits instead of 32. Around Grove Street that is 46 MB instead of 93.
+Few phone GPUs can sample the PC's compressed textures, so the port decodes them on the CPU, and to 16 bits rather than 32.
 
 <figure class="fig" id="gta-steer">
-<figcaption>The port's touch-stick steering, against a stick that steers one for one. Push the stick.</figcaption>
+<figcaption>The port's touch-stick steering against a stick that steers one for one. The stick springs back when let go.</figcaption>
 </figure>
-
-## Three things I'd keep
-
-- **Write down the bar for "done":** "No subsystem is accepted merely because its browser implementation exists or its unit tests pass."
-- **Build the probe before the fix.** A scripted drive found the streaming holds and a physics leak that no unit test did.
-- **Count what's left.** "1,244 of 1,570 commands faithful" says what to port next.
-
-[Open web-gta](https://sir-teo.github.io/web-gta/) on a desktop and drive west down Grove Street.

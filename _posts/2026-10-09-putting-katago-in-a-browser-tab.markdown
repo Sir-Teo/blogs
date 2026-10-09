@@ -2,14 +2,13 @@
 layout: post
 title: "Putting KataGo in a browser tab"
 description: >-
-  How web-katrain runs a KataGo network, a KataGo-style tree search and a
-  KaTrain-style game review entirely inside the browser, and how it checks
-  that the numbers are true.
+  web-katrain runs a KataGo network and search inside the browser. Figures
+  from its own engine code, and the test that compares it with KataGo.
 date: 2026-10-09 10:00:00 -0400
 excerpt: >-
-  KaTrain-style Go analysis with the neural network, the tree search and the
-  game review all running inside a browser tab. How web-katrain fits KataGo into a
-  web page, and how it checks that the numbers are true.
+  Go analysis in a browser tab, with the network and the search running on
+  your own machine. Figures from web-katrain's engine code, and the test that
+  compares it with KataGo's.
 links:
   - title: Live app
     url: https://sir-teo.github.io/web-katrain/
@@ -21,9 +20,9 @@ scripts:
   - /assets/js/web-katrain.js
 ---
 
-web-katrain does what KaTrain does, KataGo analysis and game review, inside a browser tab with no server behind it: 1,792 commits since January 9. Every number in the figures came from running web-katrain's own engine code with its bundled network.
+web-katrain runs KataGo analysis and a KaTrain-style game review inside a browser tab, with no server behind it. Every number in the figures below came out of its own engine code, run with the network it bundles.
 
-## The shape of the app
+## Main thread and worker
 
 <figure class="fig">
 <svg class="arch" viewBox="0 0 680 296" role="img" aria-label="Architecture: the main thread holds the React components, game store, analysis queue and engine client; a Web Worker holds the message handler, MCTS search, input features and the TensorFlow.js network; the two exchange messages with postMessage.">
@@ -72,28 +71,28 @@ web-katrain does what KaTrain does, KataGo analysis and game review, inside a br
 <figcaption>Everything slow lives in the worker. Components only talk to the store, and only the store knows an engine exists.</figcaption>
 </figure>
 
-Between the two sits an analysis queue: the position on screen beats the AI's next move, which beats a background review. It cancels, drops stale results and caches, so scrubbing through a game never buries the worker.
+The analysis queue in the middle decides what the worker does next. The position on screen comes first, then the AI's next move, then any background review. Requests that have gone stale are cancelled and finished results are cached, so scrubbing through a game doesn't pile work onto the worker.
 
-## Running KataGo without KataGo
+## Which backend
 
 <figure class="fig" id="wk-env">
 <figcaption>The backend web-katrain would pick in this browser, from the same feature tests the app runs.</figcaption>
 </figure>
 
-web-katrain reads KataGo's own `.bin` networks (versions 8 to 16), rebuilds them from TensorFlow.js operations and feeds them the same 22 board planes and 19 globals. Multithreaded WASM needs cross-origin isolation, which GitHub Pages can't grant, so there WASM runs on one thread. WebGPU doesn't need it.
+web-katrain reads KataGo's own `.bin` networks (versions 8 to 16), rebuilds them from TensorFlow.js operations and feeds them the same 22 board planes and 19 globals. Multithreaded WASM needs cross-origin isolation, which GitHub Pages can't grant, so there WASM runs on one thread. WebGPU doesn't need it, though its warm-up can fail, and storage throws in private mode. Each of those has a slower path.
 
-## Is it telling the truth?
+## Checking against KataGo
 
 <figure class="fig" id="wk-golden" style="--reserve: 330px" data-src="{{ '/assets/data/web-katrain-demo.json' | relative_url }}">
-<figcaption>KataGo's golden test position (5×5, White to play, komi 7.5), read by the KataGo binary and by web-katrain with the same network.</figcaption>
+<figcaption>KataGo's golden test position (5×5, White to play, komi 7.5), read by the KataGo binary and by web-katrain with the same network. The board opens on the difference between the two.</figcaption>
 </figure>
 
-A porting bug doesn't crash; it makes the network quietly worse at Go. KataGo's repository records what its binary says about this position with `g170-b6c96`, the network web-katrain ships. In <a class="act" href="#wk-golden" data-layer="ownership" data-source="gap">the difference</a>, four ownership values are off by one permille, and the policy is exact. A second suite checks what must hold for any position: swapping the colours gives a bit-identical input, more komi lowers Black's lead, and the ownership map sums back to the score.
+The bugs to worry about in a port like this don't crash anything. They leave the network a little worse at Go, and nothing on screen looks wrong. KataGo's repository records what its binary says about this position with `g170-b6c96`, the network web-katrain ships, so there is something exact to compare against. <a class="act" href="#wk-golden" data-layer="ownership" data-source="gap">Four ownership values</a> differ, each by one permille. <a class="act" href="#wk-golden" data-layer="policy" data-source="gap">The policy</a> matches to the digit. A second test suite checks properties that hold for any position: swapping the colours gives a bit-identical input, more komi lowers Black's lead, and the ownership map sums back to the score.
 
-## Searching like KataGo
+## Where the next playout goes
 
 <figure class="fig" id="wk-puct" style="--reserve: 400px" data-src="{{ '/assets/data/web-katrain-demo.json' | relative_url }}">
-<figcaption>KataGo's rule for where the next playout goes, after move 20 of the game below, with the six candidates' real network priors.</figcaption>
+<figcaption>KataGo's selection rule on the six candidates after move 20 of the game below, with their real network priors. The blue ticks are the full 200-visit search.</figcaption>
 </figure>
 
 ```ts
@@ -101,22 +100,14 @@ const explore = (scaling * prior) / (1.0 + childWeight);
 const score = explore + sign * childUtility; // the best score gets the playout
 ```
 
-<a class="act" href="#wk-puct" data-c="1" data-playouts="100">At the default constant</a>, the network's favourite, F6, comes back worse than its prior promised, and H4 takes 89 of the first 100 playouts. <a class="act" href="#wk-puct" data-c="0.1" data-playouts="100">Lower</a>, the search commits harder; <a class="act" href="#wk-puct" data-c="4" data-playouts="100">higher</a>, it drifts back toward the priors and F6 climbs to 26. Compare <a class="act" href="#wk-puct" data-c="1" data-playouts="100" data-real="true">the real 200-visit search</a>.
+<a class="act" href="#wk-puct" data-c="1" data-playouts="100">At the default constant</a>, the network's favourite, F6, comes back worse than its prior promised, and H4 takes 89 of the first 100 playouts. <a class="act" href="#wk-puct" data-c="0.1" data-playouts="100">With less exploration</a> the search commits even harder. <a class="act" href="#wk-puct" data-c="4" data-playouts="100">With more</a>, it drifts back toward the priors and F6 gets 26.
 
 ## Reviewing a game
 
 <figure class="fig wide" id="wk-review" style="--reserve: 640px" data-src="{{ '/assets/data/web-katrain-demo.json' | relative_url }}">
-<figcaption>A 9×9 game the bundled network played against itself, every position searched at 200 visits. Dots mark moves that lost 1.5 points or more.</figcaption>
+<figcaption>A 9×9 game the bundled network played against itself, every position searched at 200 visits. It opens on move 37 with the swing overlay: ownership after the move minus ownership before, for changes of a quarter point or more.</figcaption>
 </figure>
 
-Each move is graded by the points it lost, on KaTrain's six classes from <span class="swatch" style="--c: rgb(114, 33, 107)"></span>blunder (12 or more) to <span class="swatch" style="--c: rgb(30, 150, 0)"></span>best (under 0.5). To give the review something to find, some moves are planted: a lower-ranked candidate instead of the first choice.
+Moves are graded by the points they lost, on KaTrain's six classes from <span class="swatch" style="--c: rgb(114, 33, 107)"></span>blunder (12 or more) to <span class="swatch" style="--c: rgb(30, 150, 0)"></span>best (under 0.5). Some moves are planted, a lower-ranked candidate played instead of the first choice, so the review has something to catch. The figure labels those.
 
-The swing overlay shows where the points went, as ownership after the move minus ownership before. <a class="act" href="#wk-review" data-move="37" data-overlay="swing">Move 37</a>, Black J3, lost 14 points: 15 in the top right pass to White, and 12, mostly on the left, move the other way. It paints only changes of 0.25 or more and prints no total, because ownership and score come from different heads of the network; on the bundled net they differed by 8 to 25 points.
-
-## Three things I'd keep
-
-- **Put the slow work in a worker on day one,** and send it only plain data.
-- **Test against ground truth, not plausibility.** The bugs to fear produce numbers that look fine.
-- **Expect the browser to fail.** Storage throws in private mode and WebGPU can fail its warm-up; each failure has a slower path, not a broken one.
-
-If you play Go, [open web-katrain](https://sir-teo.github.io/web-katrain/), load a game you lost, and turn on the swing map at the move you regret.
+<a class="act" href="#wk-review" data-move="37" data-overlay="swing">Move 37</a>, Black J3, lost 14 points. The swing map shows 15 points in the top right passing to White and 12, mostly on the left, going the other way, and it prints no total. Ownership and score come from different heads of the network, and on this net they disagree by 8 to 25 points.

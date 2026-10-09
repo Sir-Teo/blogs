@@ -9,6 +9,7 @@
 
   var NS = 'http://www.w3.org/2000/svg';
   var COLS = 'ABCDEFGHJKLMNOPQRST';
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // KaTrain's move classes: thresholds on points lost, theme:normal colours.
   var THRESHOLDS = [12, 6, 3, 1.5, 0.5, 0];
@@ -247,7 +248,7 @@
     var g = data.golden;
     var n = g.diagram.length;
     var body = mount(fig);
-    var state = { layer: 'policy', source: 'katago' };
+    var state = { layer: 'ownership', source: 'gap' };
     var board = makeBoard(n, 'KataGo golden test position, 5 by 5, white to play');
     drawStones(board, g.diagram);
     var note = h('p', { class: 'board-note' });
@@ -345,7 +346,7 @@
     var realTotal = arms.reduce(function (s, a) { return s + a.real; }, 0);
     var maxPrior = Math.max.apply(null, arms.map(function (a) { return a.prior; }));
     var NOISE = 0.35;
-    var state = { c: 1.0, showReal: false, total: 0 };
+    var state = { c: 1.0, showReal: true, total: 0 };
 
     var seed;
     function rand() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
@@ -457,23 +458,47 @@
       h('div', { class: 'arms' }, [
         h('div', { class: 'arm arm-head', 'aria-hidden': 'true' }, [
           h('span'), h('span'), h('span', { text: 'Move' }),
-          h('span', { text: 'Prior (thin) and share of visits' }),
+          h('span', { class: 'arm-key' }, [
+            h('i', { class: 'k-prior' }), 'prior', h('i', { class: 'k-visits' }), 'visits',
+          ]),
           h('span', { class: 'n', text: 'N' }), h('span', { class: 'q', text: 'Win' }),
         ]),
       ].concat(rows.map(function (r) { return r.row; }))),
     ]));
-    var realBox = checkbox('Mark the full search (' + frame.visits + ' visits)', false, function (v) { state.showReal = v; render(); });
+    var realBox = checkbox(h('span', { class: 'arm-key' }, [h('i', { class: 'k-real' }), 'Full search, ' + frame.visits + ' visits']), true, function (v) { state.showReal = v; render(); });
     body.appendChild(h('div', { class: 'fig-controls', style: 'margin:20px 0 0' }, [
       h('label', { class: 'slider' }, ['Exploration', cInput, cOut]),
       realBox,
     ]));
     render();
 
+    // The first hundred playouts arrive one by one when the figure scrolls
+    // into view, so the search is seen choosing rather than already chosen.
+    var anim = null;
+    function animateTo(target) {
+      if (anim) cancelAnimationFrame(anim);
+      if (REDUCE) { state.total = target; replay(); return; }
+      var t0 = performance.now(), from = state.total;
+      (function tick(now) {
+        var k = Math.min(target, from + Math.round((now - t0) / 1800 * (target - from)));
+        while (state.total < k) { state.total++; playout(); }
+        render();
+        anim = state.total < target ? requestAnimationFrame(tick) : null;
+      })(t0);
+    }
+    var seen = false;
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { if (es[0].isIntersecting && !seen) { seen = true; animateTo(100); } }, { threshold: 0.5 }).observe(board.el);
+    }
+
     fig.wk = {
       set: function (o) {
-        if (o.playouts !== undefined) state.total = parseInt(o.playouts, 10) || 0;
+        seen = true;
+        if (anim) { cancelAnimationFrame(anim); anim = null; }
         if (o.real !== undefined) { realBox.firstChild.checked = o.real === 'true'; state.showReal = realBox.firstChild.checked; }
+        state.total = 0;
         setC(o.c !== undefined ? parseFloat(o.c) : state.c);
+        animateTo(o.playouts !== undefined ? parseInt(o.playouts, 10) || 0 : 100);
       },
     };
   }
@@ -487,7 +512,7 @@
     var F = game.frames;
     var last = F.length - 1;
     var body = mount(fig);
-    var state = { k: Math.min((data.review && data.review.start) || 0, last), overlay: 'none', top: true, hover: null };
+    var state = { k: Math.min((data.review && data.review.start) || 0, last), overlay: 'swing', top: true, hover: null };
     var endedByPasses = last >= 2 && F[last - 1].move === 'pass' && F[last - 2].move === 'pass';
 
     // Points lost by the move that reached frame k, from the mover's side.
@@ -606,7 +631,7 @@
       sub2.textContent = leadText(f);
 
       var side = f.toPlay === 'b' ? 'Black' : 'White';
-      capt.textContent = cands.length ? 'Engine candidates for ' + side + ', from ' + side + '’s side.' : '';
+      capt.textContent = cands.length ? side + ' to play' : '';
       clear(tbody);
       rowEls = cands.map(function (c, i) {
         var mine = f.toPlay === 'b';
@@ -647,7 +672,6 @@
       var noteText = '';
       if (state.overlay === 'own') {
         drawSquares(board, rows, f.own, ownershipSize);
-        noteText = 'Squares show who the engine expects to own each point. Bigger means surer.';
       } else if (state.overlay === 'swing' && k > 0) {
         var before = F[k - 1].own, diff = [], peak = 0, toB = 0, toW = 0;
         for (var i = 0; i < n * n; i++) {
@@ -663,11 +687,10 @@
           return 0.45 + 0.55 * (s > 1e-6 ? Math.min(1, (a - 0.25) / s) : 1);
         });
         noteText = toB + toW
-          ? 'This move shifted ' + toB + ' point' + (toB === 1 ? '' : 's') + ' toward Black and ' + toW + ' toward White.'
-          : 'No point changed hands by more than 0.25.';
+          ? toB + ' point' + (toB === 1 ? '' : 's') + ' toward Black, ' + toW + ' toward White'
+          : 'No point changed hands by a quarter or more.';
       } else {
         drawSquares(board, rows, null);
-        if (state.overlay === 'swing') noteText = 'No move has been played yet.';
       }
 
       drawStones(board, rows, !!pv);
@@ -681,7 +704,7 @@
           svg('circle', { class: 'policy', cx: x, cy: y, r: r }, board.L.over);
           if (pr >= 0.03) label(board, x, y, String(Math.round(pr * 100)), r > 0.24 ? 'on-b' : 'on-board');
         }
-        noteText = 'The network’s first impression, in percent, before any search.';
+        noteText = 'Policy, in percent, before any search';
       }
 
       if (pv) {
@@ -695,7 +718,7 @@
           label(board, c[0], c[1], String(j + 1), isB ? 'on-b' : 'on-w');
           shown++;
         });
-        noteText = 'Engine line after ' + coordName(cands[state.hover].x, cands[state.hover].y, n) + ', ' + shown + ' moves.';
+        noteText = 'Line after ' + coordName(cands[state.hover].x, cands[state.hover].y, n) + ', ' + shown + ' moves';
       } else if (state.top && state.overlay !== 'policy') {
         cands.forEach(function (c, i) {
           if (i === 0) svg('circle', { class: 'best', cx: c.x, cy: c.y, r: 0.3 }, board.L.over);

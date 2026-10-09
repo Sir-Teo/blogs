@@ -185,6 +185,8 @@
 .arch .bar.net { fill: var(--accent); fill-opacity: 0.85; }
 .arch .bl { fill: var(--fg-2); font: 11.5px var(--sans); }
 .arch .bl.r { text-anchor: end; }
+.arch .bl.in { fill: #fff; font-weight: 600; dominant-baseline: central; }
+.arch .bl.mid { dominant-baseline: central; }
 
 /* ------------------------------------------------------------- anatomy */
 .anatomy { display: block; width: 100%; height: auto; }

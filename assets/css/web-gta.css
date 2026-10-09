@@ -44,6 +44,22 @@
 .chart .knob { fill: var(--bg); stroke: var(--accent); stroke-width: 2; cursor: grab; }
 .chart .band { fill: var(--accent); fill-opacity: 0.08; }
 .chart .warn { fill: var(--held); fill-opacity: 0.08; }
+.chart .zone { fill: none; }
+.chart .zone.stop { fill: var(--held); fill-opacity: 0.09; }
+.chart .zone.crawl { fill: var(--warm); fill-opacity: 0.12; }
+.chart .zone.brake { fill: var(--fg); fill-opacity: 0.035; }
+.chart .zl { fill: var(--fg-2); font: 600 10.5px var(--sans); }
+.chart .ev { fill: var(--fg-2); font: 600 10.5px var(--sans); }
+.chart .dot.up { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
+.chart .wait { stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 2 2; }
+.chart .mh { fill: var(--fg-2); font: 600 11.5px var(--sans); }
+.chart .ml { fill: var(--fg-2); font: 11.5px var(--sans); }
+.chart .range { fill: var(--fg); fill-opacity: 0.8; }
+.chart .range.acc { fill: var(--accent); fill-opacity: 0.85; }
+.chart .in { fill: var(--bg); font: 600 10.5px var(--sans); }
+.chart.measured { margin-top: 18px; }
+.chart.measured .held { fill: none; stroke: var(--held); stroke-width: 2.2; }
+.chart.sizes { margin-top: 14px; }
 
 /* -------------------------------------------------------------- stream */
 .road { display: block; width: 100%; height: auto; }

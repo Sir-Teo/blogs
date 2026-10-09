@@ -203,5 +203,10 @@
 .arch .el { fill: var(--fg-2); font: 11px var(--mono); text-anchor: middle; }
 .arch .head { fill: var(--fg-3); }
 .arch .head-strong { fill: var(--fg); }
+.arch .bar { fill: var(--fg); fill-opacity: 0.8; }
+.arch .bl { fill: var(--fg-2); font: 11.5px var(--sans); dominant-baseline: central; }
+.arch .bl.r { text-anchor: end; }
+.arch .bl.in { fill: var(--bg); font-weight: 600; }
+.arch .bl.mid { dominant-baseline: central; }
 
 .post-content p.credit { margin-top: 2.6em; font-size: 13px; color: var(--fg-3); }

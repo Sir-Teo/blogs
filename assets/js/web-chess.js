@@ -62,8 +62,6 @@
     }
     return { el: wrap, set: select };
   }
-  var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
-  var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
   var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ICONS = {
     play: 'M5 3.5v9l7-4.5z',
@@ -223,8 +221,6 @@
     var mobileBox = checkbox('Phone or tablet', state.mobile, function (v) { state.mobile = v; render(); });
     var isoBox = checkbox('Cross-origin isolated', state.isolated, function (v) { state.isolated = v; render(); });
 
-    body.appendChild(h('p', { class: 'dev-detected', text: 'Starting from this browser: ' + (seen.hardwareConcurrency || '?') + ' cores' +
-      (typeof seen.deviceMemoryGb === 'number' ? ', ' + seen.deviceMemoryGb + ' GB' : '') + (seen.isMobile ? ', mobile' : '') + '.' }));
     body.appendChild(h('div', { class: 'dev-inputs' }, [
       h('div', { class: 'row' }, [h('span', { class: 'lbl', text: 'Cores' }), h('label', { class: 'slider' }, [coreIn, coreOut])]),
       h('div', { class: 'row' }, [h('span', { class: 'lbl', text: 'Memory' }), memTabs.el]),
@@ -269,9 +265,7 @@
         var w = Math.floor(c / plan.threadsPerWorker);
         cores.appendChild(h('i', { class: c < used ? 'on w' + (w + 1) : '', text: c < used ? String(w + 1) : '' }));
       }
-      coreCap.textContent = plan.workers > 1
-        ? 'During a review: ' + plan.workers + ' engines on ' + used + ' of ' + state.cores + ' cores.'
-        : 'During a review: one engine on ' + used + (used === 1 ? ' core' : ' cores') + ' of ' + state.cores + '.';
+      coreCap.textContent = (plan.workers > 1 ? plan.workers + ' review engines on ' : 'One review engine on ') + used + ' of ' + state.cores + (state.cores === 1 ? ' core' : ' cores');
 
       // Which positions each engine takes: contiguous blocks.
       clear(queue);
@@ -280,8 +274,8 @@
       blocks.forEach(function (block, bi) {
         block.forEach(function () { queue.appendChild(h('i', { class: 'on w' + (bi + 1) })); });
       });
-      queueCap.textContent = 'The ' + QUEUE + ' positions of the Opera Game, split ' +
-        (blocks.length > 1 ? 'into ' + blocks.map(function (b) { return b.length; }).join(' + ') + ', in order.' : 'nowhere: one engine takes them all.');
+      queueCap.textContent = 'The Opera Game’s ' + QUEUE + ' positions' +
+        (blocks.length > 1 ? ', ' + blocks.map(function (b) { return b.length; }).join(' + ') : ', all on one engine');
     }
     render();
 
@@ -666,7 +660,6 @@
       if (k === 0) {
         head.textContent = g.title;
         sub.appendChild(h('span', { text: g.subtitle }));
-        if (CAN_HOVER) sub.appendChild(h('span', { text: 'step with ← →' }));
       } else {
         var r = g.rows[k - 1];
         head.textContent = moveLabel(g, k);

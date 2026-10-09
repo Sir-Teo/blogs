@@ -29,6 +29,7 @@ These follow from the port's code, so they change only if that code does:
   from 5.9 to 7.9, stop from 7.9 to 8.9. So a follower stopped 8.5 behind stays
   put and one placed 7.5 behind creeps up to 5.9.
 
-Numbers quoted from web-gta's docs, not measured here: the streaming-hold story
+Numbers quoted from web-gta's docs, not measured here (drawn as static strips
+inside the figures by `assets/js/web-gta.js`): the streaming-hold story
 (1.3 to 1.9 s windows and 53 holds, then 60 to 350 ms and one hold), the census
 (CENSUS.md, 2026-10-08) and the 46 vs 93 MB texture figure.
