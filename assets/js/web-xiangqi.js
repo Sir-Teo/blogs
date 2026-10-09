@@ -57,9 +57,17 @@
     }
     return { el: wrap, set: select };
   }
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function onView(el, fn) {
+    if (!('IntersectionObserver' in window)) return;
+    var done = false;
+    new IntersectionObserver(function (es) { if (es[0].isIntersecting && !done) { done = true; fn(); } }, { threshold: 0.5 }).observe(el);
+  }
   var CAN_HOVER = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
   var POINT = CAN_HOVER ? 'Hover over' : 'Tap';
   var ICONS = {
+    play: 'M5 3.5v9l7-4.5z',
+    pause: 'M5 3.5v9M11 3.5v9',
     first: 'M11.5 4 7.5 8l4 4M4.5 4v8',
     prev: 'M10 4 6 8l4 4',
     next: 'M6 4l4 4-4 4',
@@ -67,7 +75,8 @@
   };
   function iconButton(icon, label, onClick) {
     var b = h('button', { class: 'btn icon', type: 'button', 'aria-label': label, title: label, onclick: onClick });
-    svg('path', { d: ICONS[icon] }, svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, b));
+    var path = svg('path', { d: ICONS[icon] }, svg('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, b));
+    b.setIcon = function (name) { path.setAttribute('d', ICONS[name]); };
     return b;
   }
   function mount(fig) {
@@ -80,12 +89,21 @@
     var r = el.getBoundingClientRect();
     return [(e.clientX - r.left) / r.width * w, (e.clientY - r.top) / r.height * hgt];
   }
-  function transport(onGo, getK, getLast) {
+  function transport(onGo, getK, getLast, interval) {
     var counter = h('span', { class: 'fig-num' });
     var slider = h('input', { type: 'range', min: '0', step: '1', 'aria-label': 'Move number' });
-    slider.addEventListener('input', function () { onGo(Number(slider.value)); });
+    var timer = null;
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.setIcon('play'); }
+    function play() {
+      if (getK() >= getLast()) onGo(0);
+      playBtn.setIcon('pause');
+      timer = setInterval(function () { if (getK() >= getLast()) { stop(); return; } onGo(getK() + 1); }, interval || 800);
+    }
+    var playBtn = iconButton('play', 'Play or pause', function () { if (timer) stop(); else play(); });
+    slider.addEventListener('input', function () { stop(); onGo(Number(slider.value)); });
     var el = h('div', { class: 'transport' }, [
-      iconButton('first', 'First move', function () { onGo(0); }),
+      playBtn,
+      iconButton('first', 'First move', function () { stop(); onGo(0); }),
       iconButton('prev', 'Previous move', function () { onGo(getK() - 1); }),
       slider,
       iconButton('next', 'Next move', function () { onGo(getK() + 1); }),
@@ -94,6 +112,8 @@
     ]);
     return {
       el: el,
+      play: play,
+      stop: stop,
       update: function () {
         slider.max = String(getLast());
         slider.value = String(getK());
@@ -166,7 +186,20 @@
       svg('circle', { cx: xy[0], cy: xy[1], r: 0.44 }, g);
       svg('circle', { class: 'ring', cx: xy[0], cy: xy[1], r: 0.36 }, g);
       svg('text', { x: xy[0], y: xy[1] + 0.02 }, g).textContent = X.pieceLabel(p, pieceStyle);
+      if (opts.anim && !REDUCE) slideIn(g, opts.anim, f, r);
     }
+  }
+  // The piece that just moved starts on its old point and slides to its new one.
+  function slideIn(g, uci, f, r) {
+    var a = sq(uci.slice(0, 2)), z = sq(uci.slice(2, 4));
+    if (z.file !== f || z.rank !== r) return;
+    var from = XY(a.file, a.rank), to = XY(f, r);
+    g.style.transform = 'translate(' + (from[0] - to[0]) + 'px,' + (from[1] - to[1]) + 'px)';
+    g.getBoundingClientRect();
+    requestAnimationFrame(function () {
+      g.style.transition = 'transform 0.22s ease';
+      g.style.transform = 'translate(0px,0px)';
+    });
   }
   function markLast(b, uci) {
     clear(b.L.marks);
@@ -205,7 +238,7 @@
     'generals cannot face each other': 1, 'move leaves general in check': 1, 'pawn move is illegal': 1,
   };
   var PRESETS = {
-    start: { fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w' },
+    start: { fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w', select: 'h2' },
     horse: { fen: '3k5/9/9/9/9/4P4/4Np3/9/9/4K4 w', select: 'e3', say: 'A horse steps one point straight, then one diagonally, and a piece on the straight step blocks it. Here the soldier and the black soldier each block two of its eight moves.' },
     elephant: { fen: '4k4/9/9/9/9/6B2/3n5/4B4/9/3K5 w', select: 'e2', say: 'An elephant moves exactly two points diagonally, and a piece on the point between, its eye, blocks it. Pick up the other elephant to see the river stop it.' },
     cannon: { fen: '4k4/9/9/9/4r4/9/4P4/9/4C4/3K5 w', select: 'e1', say: 'A cannon moves like a chariot but captures by jumping exactly one piece, its screen.' },
@@ -268,7 +301,8 @@
 
     function render() {
       drawCoords(board, state.style);
-      drawPieces(board, game.board, state.pieces, { sel: game.sel });
+      drawPieces(board, game.board, state.pieces, { sel: game.sel, anim: game.anim });
+      game.anim = null;
       var last = game.history.length ? game.history[game.history.length - 1].uci : null;
       markLast(board, last);
       clear(board.L.hits);
@@ -282,8 +316,8 @@
         hit.addEventListener('pointerleave', function (e) {
           if (e.pointerType === 'touch') return;
           state.hover = null;
-          paintInfo(t);
           drawOverlay(t);
+          paintInfo(t);
         });
         hit.addEventListener('click', function () { clickAt(f, r, t); });
       })(f, r);
@@ -323,6 +357,7 @@
         game.side = game.side === 'w' ? 'b' : 'w';
         game.sel = null;
         game.say = null;
+        game.anim = uci;
         state.hover = null;
         render();
         return;
@@ -371,9 +406,20 @@
           names.appendChild(h('dd', { class: st[0] === 'chinese' ? 'big cjk' : 'big', text: moveText(lastMove.board, lastMove.uci, st[0]) }));
         });
         note.textContent = 'The last move, three ways.';
+      } else if (game.sel && t.legal.length) {
+        // Nothing hovered: name one of the selected piece's moves, the
+        // central cannon when it is on offer.
+        var from = X.squareToUci(game.sel.file, game.sel.rank);
+        var pick = t.legal.filter(function (m) { return from + X.squareToUci(m.file, m.rank) === 'h2e2'; })[0] || t.legal[0];
+        var pu = from + X.squareToUci(pick.file, pick.rank);
+        STYLES.forEach(function (st) {
+          names.appendChild(h('dt', { text: st[1] }));
+          names.appendChild(h('dd', { class: st[0] === 'chinese' ? 'big cjk' : 'big', text: moveText(game.board, pu, st[0]) }));
+        });
+        var pxy = XY(pick.file, pick.rank);
+        svg('circle', { class: 'preview', cx: pxy[0], cy: pxy[1], r: 0.3 }, board.L.over);
+        note.textContent = '';
       } else {
-        names.appendChild(h('dt', { text: 'Move' }));
-        names.appendChild(h('dd', { text: game.sel ? POINT + ' a dot to name the move, or a cross to see why it is refused.' : 'Pick up a piece to see where it can go.' }));
         note.textContent = '';
       }
 
@@ -388,7 +434,7 @@
         }
         pair.appendChild(h('span', { class: 'm' + (state.style === 'chinese' ? ' cjk' : ''), text: moveText(m.board, m.uci, state.style) }));
       });
-      if (!game.history.length) record.appendChild(h('span', { text: 'Moves you play are recorded here.' }));
+
     }
     function cap(s) { return s[0].toUpperCase() + s.slice(1); }
 
@@ -419,9 +465,10 @@
             game.history.push({ board: game.board, side: game.side, uci: uci });
             game.board = play(game.board, uci);
             game.side = game.side === 'w' ? 'b' : 'w';
+            game.anim = uci;
           });
           game.sel = null;
-          render();
+          setTimeout(render, 350);
         }
         if (o.style) styleTabs.set(o.style);
         if (o.pieces) pieceTabs.set(o.pieces);
@@ -489,15 +536,31 @@
       readout.appendChild(document.createTextNode('Clock ' + state.k + ': ' + (r.mate !== null ? 'mate in ' + r.mate : r.cp === 0 ? '0.00, a draw' : '+' + (r.cp / 100).toFixed(2))));
       readout.appendChild(h('span', { class: 'sub', text: 'Pikafish’s line: ' + line.join(' ') + (r.pv.length > 6 ? ' …' : '') }));
     }
+    var sweeping = null;
+    function sweep() {
+      if (sweeping) { cancelAnimationFrame(sweeping); sweeping = null; sweepBtn.setIcon('play'); return; }
+      if (REDUCE) { state.k = 116; render(); return; }
+      sweepBtn.setIcon('pause');
+      var t0 = performance.now();
+      (function tick(now) {
+        state.k = Math.min(120, Math.round((now - t0) / 1000 * 32));
+        render();
+        if (state.k < 120) sweeping = requestAnimationFrame(tick);
+        else { sweeping = null; sweepBtn.setIcon('play'); }
+      })(t0);
+    }
+    var sweepBtn = iconButton('play', 'Sweep the clock from 0 to 120', sweep);
     var picker = tabs('Position', data.clocks.map(function (c, i) { return [String(i), c.tab]; }), '0', function (v) { state.c = Number(v); draw(); render(); });
-    body.appendChild(h('div', { class: 'fig-controls' }, [picker.el, h('span', { class: 'grow' }), h('label', { class: 'slider' }, ['Clock', input, out])]));
+    body.appendChild(h('div', { class: 'fig-controls' }, [picker.el, h('span', { class: 'grow' }), sweepBtn, h('label', { class: 'slider' }, ['Clock', input, out])]));
     body.appendChild(h('div', { class: 'clockfig' }, [board.el, readout]));
     body.appendChild(chart);
     draw();
     render();
+    onView(chart, function () { state.k = 0; sweep(); });
 
     fig.xq = {
       set: function (o) {
+        if (sweeping) sweep();
         if (o.position !== undefined) picker.set(o.position);
         if (o.clock !== undefined) { state.k = Number(o.clock); render(); }
       },
@@ -530,17 +593,20 @@
       });
       go(state.k);
     }
+    var prevK = -1;
     function go(k) {
+      prevK = state.k;
       state.k = Math.max(0, Math.min(line.moves.length, k));
       render();
     }
-    var tp = transport(go, function () { return state.k; }, function () { return line.moves.length; });
+    var tp = transport(go, function () { return state.k; }, function () { return line.moves.length; }, 700);
 
     function render() {
       var k = state.k, b = boards[k];
       tp.update();
       drawCoords(board, state.style);
-      drawPieces(board, b, 'traditional');
+      drawPieces(board, b, 'traditional', { anim: k && k === prevK + 1 ? line.moves[k - 1] : null });
+      prevK = k;
       markLast(board, k ? line.moves[k - 1] : null);
       clear(board.L.badges);
       if (k && plies[k - 1].inCheck) {
@@ -603,9 +669,11 @@
       h('div', { class: 'side' }, [head, list, local, engine]),
     ]));
     load('check');
+    onView(board.el, function () { if (!REDUCE) { go(0); tp.play(); } });
 
     fig.xq = {
       set: function (o) {
+        tp.stop();
         if (o.line && o.line !== state.line) lineTabs.set(o.line);
         if (o.move !== undefined) go(Number(o.move));
       },
@@ -629,7 +697,8 @@
     var sub = h('div', { class: 'move-sub' });
     var evalLine = h('div', { class: 'move-sub' });
     var note = h('p', { class: 'fig-note' });
-    var tp = transport(go, function () { return state.k; }, function () { return last; });
+    var tp = transport(go, function () { return state.k; }, function () { return last; }, 900);
+    var prevK = -1;
 
     var GW = 360, GH = 120, PAD = { l: 30, r: 4, t: 8, b: 16 };
     var graph = svg('svg', { class: 'graph', viewBox: '0 0 ' + GW + ' ' + GH, role: 'img', 'aria-label': 'Red’s winning chances by move; dots mark inaccuracies and mistakes' });
@@ -691,6 +760,7 @@
 
     function go(k) {
       k = Math.max(0, Math.min(last, k));
+      prevK = state.k;
       state.k = k;
       state.hover = null;
       render();
@@ -724,7 +794,7 @@
 
       var lines = g.lines[k] || [];
       var toMove = k % 2 === 0 ? 'Red' : 'Black';
-      capt.textContent = lines.length ? 'Pikafish’s top lines for ' + toMove + ', depth ' + g.reviewDepth + '. ' + POINT + ' a row to draw it.' : '';
+      capt.textContent = lines.length ? 'Pikafish’s top lines for ' + toMove + ' · depth ' + g.reviewDepth : '';
       clear(tbody);
       lines.forEach(function (ln, i) {
         var tok = X.formatLineTokensInStyle(boards[k], ln.pv, state.style, 6).tokens;
@@ -750,7 +820,8 @@
     function drawBoard() {
       var k = state.k;
       drawCoords(board, state.style);
-      drawPieces(board, boards[k], state.pieces || 'traditional');
+      drawPieces(board, boards[k], state.pieces || 'traditional', { anim: k && k === prevK + 1 ? g.moves[k - 1] : null });
+      prevK = k;
       markLast(board, k ? g.moves[k - 1] : null);
       clear(board.L.arrows);
       clear(board.L.badges);
@@ -762,7 +833,7 @@
       } else {
         var best = g.evals[k].best;
         if (state.best && best) arrow(board, best, 'best');
-        note.textContent = state.best && best ? 'The green arrow is Pikafish’s choice for the side to move.' : '';
+        note.textContent = '';
       }
       if (k > 0) badge(board, g.moves[k - 1].slice(2, 4), g.rows[k - 1].quality);
     }
@@ -798,10 +869,13 @@
       ]),
     ]));
     buildMoves();
-    go(0);
+    // Open on the move that decided the game.
+    var worst = g.rows.reduce(function (a, r) { return r.winLoss > a.winLoss ? r : a; }, g.rows[0]);
+    go(worst.ply);
 
     fig.xq = {
       set: function (o) {
+        tp.stop();
         if (o.style) styleTabs.set(o.style);
         if (o.move !== undefined) go(Number(o.move));
       },

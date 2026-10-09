@@ -33,14 +33,11 @@ the wall-clock time of the grading pass (checked 2026-10-09).
 
 ## Prose tied to the shipped data
 
-- Clock figure: mate in 3 through clock 115, 0.00 from 116 (horse ending); the
-  chariot ending reads +3 to +6 up to about 100, +1.98 at 107, 0.00 from 108.
-- Repetition figure: the app reports the perpetual check at move 5 and the
-  chase only as a threefold repetition at move 9; Pikafish rules against Red
-  from move 9 in both lines.
-- Review: Easy vs Medium, seed 3, 100 plies, 0-1; level for 55 plies; 32…士5進6
-  and 33.兵三平四 cost 23.8 and 22.4 points; 45.帥五進一 takes Red from 43% to
-  17%; mate at ply 100; accuracy Red 81, Black 87.
+- Clock figure: mate in 3 through clock 115, 0.00 from 116 (horse ending).
+- Repetition figure: the app reports the perpetual check at move 5; Pikafish
+  rules against Red in both lines from move 9.
+- Review: the figure opens on the move that lost the most winning chances,
+  45.帥五進一 (ply 89).
 
 Numbers quoted from web-xiangqi's docs rather than measured here: 414k vs
 3.7M nodes a second and depth 16 vs 22 with and without isolation, 97.6% of a

@@ -57,6 +57,7 @@
 .xb .pc.dim { opacity: 0.45; }
 .xb .last { fill: none; stroke: var(--xq-last); stroke-width: 0.05; }
 .xb .target { fill: var(--accent); }
+.xb .preview { fill: none; stroke: var(--accent); stroke-width: 0.06; stroke-dasharray: 0.12 0.08; }
 .xb .target.cap { fill: none; stroke: var(--accent); stroke-width: 0.07; }
 .xb .no { stroke: var(--xq-no); stroke-width: 0.06; stroke-linecap: round; }
 .xb .blocker { fill: none; stroke: var(--xq-no); stroke-width: 0.06; stroke-dasharray: 0.12 0.09; }
@@ -184,3 +185,13 @@
 .arch .bar.net { fill: var(--accent); fill-opacity: 0.85; }
 .arch .bl { fill: var(--fg-2); font: 11.5px var(--sans); }
 .arch .bl.r { text-anchor: end; }
+
+/* ------------------------------------------------------------- anatomy */
+.anatomy { display: block; width: 100%; height: auto; }
+.anatomy .cell rect { fill: var(--subtle); stroke: var(--line-2); stroke-width: 1; }
+.anatomy .cell.em rect { stroke: var(--accent); stroke-width: 1.5; }
+.anatomy .big { fill: var(--xq-red); font: 600 34px "Kaiti SC", "STKaiti", "Songti SC", "Noto Serif CJK SC", serif; text-anchor: middle; dominant-baseline: central; }
+.anatomy .cap { fill: var(--fg); font: 600 13px var(--sans); text-anchor: middle; }
+.anatomy .sub { fill: var(--fg-3); font: 12px var(--sans); text-anchor: middle; }
+.anatomy .wxf { fill: var(--fg-2); font: 600 15px var(--mono); dominant-baseline: central; }
+@media (max-width: 560px) { .anatomy .wxf { display: none; } }
