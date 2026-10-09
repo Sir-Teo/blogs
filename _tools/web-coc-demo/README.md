@@ -23,12 +23,8 @@ figures replay recordings instead of running the simulation in the page.
 
 ## Prose tied to the shipped data
 
-- Ember Keep: 3★ from 6 points, 2★ from 4, 1★ from 1, 0★ from 1; point 4
-  (northeast) is wiped out at 37%; point 6 takes 100% in 42 s with four Giants
-  standing; two raids are ended by hand.
-- Routes: Giants go through a wall from 20 of 64 points; Barbarians and Goblins
-  from none.
-- Sweep: Small 3★ on villages 1–4; Medium 3★ to 8 and 2★ on 9–11; Air 3★ to 8
-  then 1★/0★; nothing takes King's End.
-- Determinism: 317 vs 154 steps, 15.85 vs 15.4 s, different hashes; rerun and
-  replay identical; recording 45 actions, 9,860 bytes.
+- Ember Keep: point 4 (northeast) is wiped out at 37%; point 6 takes three
+  stars in 42 s. The raid figure opens on point 6.
+- Routes: Giants go through a wall from 20 of 64 points; Barbarians from none.
+- Sweep: the Air army three-stars villages 1–8, then falls off.
+- Determinism: a 16 s raid recorded as 45 actions and 317 steps, under 10 KB.

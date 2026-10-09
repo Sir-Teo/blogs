@@ -66,6 +66,11 @@
 .vil .trail.a { stroke: var(--fg); }
 .vil .trail.b { stroke: var(--accent); }
 .vil .hit { fill: transparent; cursor: pointer; }
+.vil .zone rect { fill: var(--held, #dc2626); stroke: none; }
+.vil .zone { opacity: 0.09; }
+.vil .walker { stroke: var(--v-ground); stroke-width: 0.08; }
+.vil .pt { transition: r 0.15s; }
+.vil .pt:hover { stroke: var(--fg); stroke-width: 0.16; }
 
 /* --------------------------------------------------------- figure frame */
 .fig-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; margin-bottom: 18px; }
@@ -99,6 +104,7 @@
 .dchart { display: block; width: 100%; height: auto; cursor: ew-resize; touch-action: none; }
 .dchart .other { fill: none; stroke: var(--fg-3); stroke-width: 1; opacity: 0.28; }
 .dchart .this { fill: none; stroke: var(--accent); stroke-width: 2; }
+.dchart .pre { fill: none; stroke: var(--fg); stroke-width: 1.5; opacity: 0.8; }
 .dchart .mark { stroke: var(--line-2); stroke-dasharray: 2 3; }
 .dchart .cursor { stroke: var(--fg); stroke-width: 1; }
 .dchart text { fill: var(--fg-3); font: 10.5px var(--sans); }

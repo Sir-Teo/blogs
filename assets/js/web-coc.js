@@ -84,6 +84,23 @@
     var r = el.getBoundingClientRect();
     return [(e.clientX - r.left) / r.width * w, (e.clientY - r.top) / r.height * hgt];
   }
+  function vlocal(v, e) {
+    var r = v.el.getBoundingClientRect();
+    return [v.bb.x + (e.clientX - r.left) / r.width * v.bb.w, v.bb.y + (e.clientY - r.top) / r.height * v.bb.h];
+  }
+  function onView(el, fn, leave) {
+    if (!('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (es) { if (es[0].isIntersecting) fn(); else if (leave) leave(); }, { threshold: 0.5 }).observe(el);
+  }
+  // The deploy red zone: 1.5 tiles around every building except walls and traps.
+  function drawZone(v, layout) {
+    var g = svg('g', { class: 'zone' }, v.L.under);
+    layout.forEach(function (b) {
+      var f = family(b[0]);
+      if (!f || f === 'wall') return;
+      svg('rect', { x: b[1] - 1.5, y: b[2] - 1.5, width: b[3] + 3, height: b[3] + 3 }, g);
+    });
+  }
   function stars(n) {
     var s = h('span', { class: 'stars', 'aria-label': n + (n === 1 ? ' star' : ' stars') });
     for (var i = 0; i < 3; i++) s.appendChild(h('span', { class: i < n ? '' : 'off', text: '★' }));
@@ -268,11 +285,16 @@
     chart.addEventListener('pointerdown', function (e) { chart.setPointerCapture(e.pointerId); scrub(e); });
     chart.addEventListener('pointermove', function (e) { if (e.buttons) scrub(e); });
 
-    // Landing points, coloured by the stars each raid took.
+    drawZone(v, layout);
+    // Landing points, coloured by the stars each raid took. Hover previews a
+    // raid's curve; click plays it.
     R.runs.forEach(function (r, i) {
       var c = svg('circle', { class: 'pt s' + r.stars, cx: r.at[0], cy: r.at[1], r: 0.75 }, v.L.pts);
       svg('text', { class: 'ptl', x: r.at[0], y: r.at[1] + 1.45 }, v.L.pts).textContent = r.stars + '★';
+      svg('title', {}, c).textContent = r.stars + (r.stars === 1 ? ' star, ' : ' stars, ') + r.destruction + '%';
       c.addEventListener('click', function () { select(i, true); });
+      c.addEventListener('pointerenter', function () { if (i !== state.i) curves[i].setAttribute('class', 'pre'); });
+      c.addEventListener('pointerleave', function () { if (i !== state.i) curves[i].setAttribute('class', 'other'); });
       runs[i].dot = c;
     });
 
@@ -316,12 +338,14 @@
         legend(TROOP_LEGEND), legend(BUILDING_LEGEND),
       ]),
     ]));
-    select(0, false);
+    select(5, false);
     show(0);
+    var played = false;
+    onView(v.el, function () { if (!played && !REDUCE) { played = true; clock.play(); } });
 
     fig.coc = {
       set: function (o) {
-        if (o.point !== undefined) select(Number(o.point), true);
+        if (o.point !== undefined) { played = true; select(Number(o.point), true); }
       },
     };
   }
@@ -336,44 +360,68 @@
     var v = makeVillage(layout, data.villages[P.index].name + ': routes from the edge');
     var walls = {};
     layout.forEach(function (b) { if (b[0] === 'wall') walls[b[1] + ',' + b[2]] = 1; });
-    var state = { troop: 'giant', i: 40 };
-    var note = h('p', { class: 'fig-note' });
-    var head = h('div', { class: 'ring-sum' });
-    var LABEL = { barbarian: 'Barbarian', giant: 'Giant', goblin: 'Goblin' };
-    var WANTS = { barbarian: 'the nearest building', giant: 'the nearest defense', goblin: 'the nearest resource building' };
+    // Open on a Giant route that breaks a wall: the thing the figure is about.
+    var firstBreach = Math.max(0, P.routes.giant.findIndex(function (r) { return r.walls > 0; }));
+    var state = { troop: 'giant', i: firstBreach, t: 0, visible: false };
+    var read = h('div', { class: 'ring-sum' });
+    var faint = svg('g', {}, v.L.under), live = svg('g', {}, v.L.over), dots = svg('g', {}, v.L.pts);
+    var walker = svg('circle', { class: 'walker', r: 0.5 }, v.L.units);
+    var pts = [];
 
-    function render() {
+    function drawAll() {
       var routes = P.routes[state.troop];
-      clear(v.L.under); clear(v.L.over); clear(v.L.pts); clear(v.L.hits);
+      clear(faint); clear(dots);
       routes.forEach(function (r, i) {
-        svg('polyline', { class: 'route faint', points: [r.s].concat(r.p).map(function (p) { return p[0] + ',' + p[1]; }).join(' ') }, v.L.under);
-        var dot = svg('circle', { class: 'start', cx: r.s[0], cy: r.s[1], r: i === state.i ? 0.42 : 0.18, opacity: i === state.i ? 1 : 0.45 }, v.L.pts);
-        var hit = svg('circle', { class: 'hit', cx: r.s[0], cy: r.s[1], r: 0.9 }, v.L.hits);
-        hit.addEventListener('pointerenter', function () { state.i = i; render(); });
-        hit.addEventListener('click', function () { state.i = i; render(); });
-        void dot;
+        svg('polyline', { class: 'route faint', points: [r.s].concat(r.p).map(function (p) { return p[0] + ',' + p[1]; }).join(' ') }, faint);
+        svg('circle', { class: 'start', cx: r.s[0], cy: r.s[1], r: 0.2, opacity: 0.5 }, dots);
       });
+      drawOne();
+    }
+    function drawOne() {
+      var routes = P.routes[state.troop];
       var r = routes[state.i];
       var t = layout[r.t];
-      svg('rect', { class: 'tgt', x: t[1] - 0.1, y: t[2] - 0.1, width: t[3] + 0.2, height: t[3] + 0.2, rx: 0.3 }, v.L.over);
-      svg('polyline', { class: 'route', points: [r.s].concat(r.p).map(function (p) { return p[0] + ',' + p[1]; }).join(' ') }, v.L.over);
+      clear(live);
+      svg('rect', { class: 'tgt', x: t[1] - 0.1, y: t[2] - 0.1, width: t[3] + 0.2, height: t[3] + 0.2, rx: 0.3 }, live);
+      pts = [r.s].concat(r.p);
+      svg('polyline', { class: 'route', points: pts.map(function (p) { return p[0] + ',' + p[1]; }).join(' ') }, live);
+      svg('circle', { class: 'start', cx: r.s[0], cy: r.s[1], r: 0.45 }, live);
       var crossed = 0;
       r.p.forEach(function (p) {
-        var key = Math.floor(p[0]) + ',' + Math.floor(p[1]);
-        if (walls[key]) { crossed++; svg('rect', { class: 'breach', x: Math.floor(p[0]) + 0.05, y: Math.floor(p[1]) + 0.05, width: 0.9, height: 0.9 }, v.L.over); }
+        if (walls[Math.floor(p[0]) + ',' + Math.floor(p[1])]) { crossed++; svg('rect', { class: 'breach', x: Math.floor(p[0]) + 0.05, y: Math.floor(p[1]) + 0.05, width: 0.9, height: 0.9 }, live); }
       });
       var through = routes.filter(function (x) { return x.walls > 0; }).length;
-      head.textContent = LABEL[state.troop] + ' heads for ' + WANTS[state.troop] + '. ' + through + ' of ' + routes.length + ' starting points route through a wall.';
-      note.textContent = 'From this point: ' + r.p.length + ' waypoints to the ' + (NAMES[t[0]] || t[0]) + (crossed ? ', breaking ' + crossed + (crossed === 1 ? ' wall' : ' walls') + ' on the way.' : ', around every wall.') + ' ' + POINT + ' another dot on the edge.';
+      read.textContent = (NAMES[t[0]] || t[0]) + (crossed ? ', through ' + crossed + (crossed === 1 ? ' wall' : ' walls') : ', around the walls') + ' · ' + through + ' of ' + routes.length + ' routes break a wall';
+      state.t = 0;
     }
-    var troopTabs = tabs('Troop', [['barbarian', 'Barbarian'], ['giant', 'Giant'], ['goblin', 'Goblin']], state.troop, function (t) { state.troop = t; render(); });
-    body.appendChild(h('div', { class: 'fig-controls' }, [troopTabs.el]));
-    body.appendChild(h('div', { class: 'two' }, [
-      h('div', { class: 'col' }, [v.el, note]),
-      h('div', { class: 'col' }, [head, legend(BUILDING_LEGEND), legend([['Route', 'var(--accent)'], ['Wall it breaks', 'var(--q-blunder, #dc2626)']])]),
-    ]));
-    render();
-    fig.coc = { set: function (o) { if (o.troop) troopTabs.set(o.troop); if (o.start !== undefined) { state.i = Number(o.start); render(); } } };
+    // A troop walking the route, at a steady pace, again and again.
+    function walk(now) {
+      if (!state.visible) return;
+      var len = 0, seg = [];
+      for (var i = 1; i < pts.length; i++) { var d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); len += d; }
+      state.t = (state.t + 1 / 60 * 3) % (len + 2);
+      var at = Math.min(state.t, len), k = 0;
+      while (k < seg.length && at > seg[k]) { at -= seg[k]; k++; }
+      var p = k >= seg.length ? pts[pts.length - 1] : [pts[k][0] + (pts[k + 1][0] - pts[k][0]) * at / (seg[k] || 1), pts[k][1] + (pts[k + 1][1] - pts[k][1]) * at / (seg[k] || 1)];
+      walker.setAttribute('cx', p[0]); walker.setAttribute('cy', p[1]);
+      walker.setAttribute('fill', state.troop === 'giant' ? 'var(--t-giant)' : state.troop === 'goblin' ? '#65a30d' : 'var(--t-barb)');
+      requestAnimationFrame(walk);
+    }
+    function nearest(e) {
+      var q = vlocal(v, e), routes = P.routes[state.troop], best = state.i, bd = Infinity;
+      routes.forEach(function (r, i) { var d = Math.hypot(r.s[0] - q[0], r.s[1] - q[1]); if (d < bd) { bd = d; best = i; } });
+      if (best !== state.i) { state.i = best; drawOne(); }
+    }
+    v.el.addEventListener('pointermove', nearest);
+    v.el.addEventListener('pointerdown', nearest);
+    v.el.style.cursor = 'crosshair';
+    onView(v.el, function () { if (!state.visible && !REDUCE) { state.visible = true; requestAnimationFrame(walk); } }, function () { state.visible = false; });
+    var troopTabs = tabs('Troop', [['barbarian', 'Barbarian'], ['giant', 'Giant'], ['goblin', 'Goblin']], state.troop, function (t) { state.troop = t; drawAll(); });
+    body.appendChild(h('div', { class: 'fig-controls' }, [troopTabs.el, h('span', { class: 'grow' }), read]));
+    body.appendChild(v.el);
+    body.appendChild(h('div', { style: 'margin-top:10px' }, [legend(BUILDING_LEGEND)]));
+    drawAll();
+    fig.coc = { set: function (o) { if (o.troop) troopTabs.set(o.troop); if (o.start !== undefined) { state.i = Number(o.start); drawOne(); } } };
   }
 
   // =========================================================================
@@ -484,6 +532,8 @@
     body.appendChild(h('div', { class: 'transport', style: 'margin-top:12px' }, [clock.button, slider, counter]));
     body.appendChild(facts);
     show(0);
+    var played = false;
+    onView(a.el, function () { if (!played && !REDUCE) { played = true; clock.play(); } });
     fig.coc = { set: function (o) { if (o.time !== undefined) { clock.stop(); clock.seek(Number(o.time)); } } };
   }
 
