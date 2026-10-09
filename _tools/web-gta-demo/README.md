@@ -23,19 +23,12 @@ catching the interpreter's watchdog error.
 
 These follow from the port's code, so they change only if that code does:
 
-- Streaming at 70 m/s with the figure's toy loop: no holds up to 2.0 s per
-  window, holds from 2.1 s, 17.9 s held at 3.0 s; looking ahead by loading time
-  moves the cliff only to about 2.2 s (the look-ahead caps at 0.8 radius).
+- Streaming at 70 m/s with the figure's toy loop: no holds with 2.0 s windows,
+  holds from 2.1 s.
 - Braking at cruise 20, cars 4.8 long: stop below a 5.9-unit gap, crawl at 1
-  from 5.9 to 7.9, stop from 7.9 to 8.9, then proportional, capped at 0.615 of
-  cruise.
-- Adaptive resolution at 45 ms: GPU-bound 3.1 s → 85%, 33.3 s → 100%,
-  36.3 s → 85%, next try 96.8 s; CPU-bound reverts at 6.1 s, retries at 66.4 s;
-  the warming phone first steps down at 63.5 s.
-- Steering: a third of the stick gives 22.2%.
+  from 5.9 to 7.9, stop from 7.9 to 8.9. So a follower stopped 8.5 behind stays
+  put and one placed 7.5 behind creeps up to 5.9.
 
-Numbers quoted from web-gta's docs, not measured here: the chunking (1,943
-chunks, Grove window 30.8 vs 80.4 MB, 5.6 vs 8.1 s), the streaming-hold story
-(53 holds and 28.6 s down to one 1.4 s hold), the census (CENSUS.md,
-2026-10-08), the pedestrian leak and freed-handle stories, and the texture
-memory figures.
+Numbers quoted from web-gta's docs, not measured here: the streaming-hold story
+(1.3 to 1.9 s windows and 53 holds, then 60 to 350 ms and one hold), the census
+(CENSUS.md, 2026-10-08) and the 46 vs 93 MB texture figure.

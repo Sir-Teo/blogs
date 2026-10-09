@@ -154,7 +154,7 @@
       var lead = Math.min(state.speed * sim.lead, RADIUS * 0.8);
       svg('line', { class: 'lead', x1: X(f.x), x2: X(f.x + lead), y1: cy - 22, y2: cy - 22 }, road);
       svg('rect', { class: 'car' + (f.held ? ' held' : ''), x: X(f.x) - 9, y: cy - 5, width: 18, height: 10, rx: 2 }, road);
-      svg('text', { x: 8, y: 16 }, road).textContent = f.held ? 'Held: the car is past 85% of the loaded window and the next is not in' : f.pend !== null ? 'Next window requested, loading…' : 'Inside the loaded window';
+      svg('text', { class: f.held ? 'st held' : 'st', x: X(f.x), y: cy + 30, 'text-anchor': 'middle' }, road).textContent = f.held ? 'held' : f.pend !== null ? 'loading' : '';
       if (timeline.cursor) { timeline.cursor.setAttribute('x1', timeline.gx(f.t)); timeline.cursor.setAttribute('x2', timeline.gx(f.t)); }
     }
     function run() {
@@ -184,7 +184,11 @@
     body.appendChild(h('div', { class: 'fig-controls' }, [leadTabs.el, h('span', { class: 'grow' }), play]));
     body.appendChild(road);
     body.appendChild(timeline);
-    body.appendChild(h('p', { class: 'fig-note', style: 'margin-top:4px', text: 'Solid circle: the loaded window. Dotted: the hold line at 85% of it. Dashed: a window still loading. The line above the car reaches to the point it asks for. Below, each tick is a window arriving and red is time held.' }));
+    body.appendChild(h('div', { class: 'key' }, [
+      h('span', {}, [h('i', { class: 'k-win' }), 'loaded window']), h('span', {}, [h('i', { class: 'k-hold' }), 'hold line']),
+      h('span', {}, [h('i', { class: 'k-pend' }), 'loading']), h('span', {}, [h('i', { class: 'k-tick' }), 'window arrives']),
+      h('span', {}, [h('i', { class: 'k-held' }), 'held']),
+    ]));
     body.appendChild(factsBox);
     restart();
     draw(0);
@@ -231,6 +235,31 @@
     var listEl = h('div', { class: 'listing', role: 'list' });
     var stateEl = h('dl', { class: 'vmstate' });
     var traceEl = h('div', { class: 'trace', 'aria-live': 'polite' });
+    var anatEl = h('div', { class: 'anat', 'aria-live': 'polite' });
+    var hoverAt = null;
+    var TYPE = { 1: ['32-bit', 4], 2: ['global var', 2], 3: ['local var', 2], 4: ['8-bit', 1], 5: ['16-bit', 2], 6: ['float', 4] };
+    // One instruction's bytes, split the way the decoder reads them.
+    function anatomy(ins) {
+      clear(anatEl);
+      var end = ins.offset, parts = [];
+      var hex = function (b) { return (b < 16 ? '0' : '') + b.toString(16); };
+      var op = bytes[end] | bytes[end + 1] << 8;
+      parts.push({ b: [bytes[end], bytes[end + 1]], k: 'op', l: 'opcode 0x' + ('000' + op.toString(16)).slice(-4) });
+      end += 2;
+      ins.parameters.forEach(function (p) {
+        var t = TYPE[bytes[end]] || ['type ' + bytes[end], 0];
+        parts.push({ b: [bytes[end]], k: 'ty', l: t[0] });
+        end += 1;
+        parts.push({ b: bytes.slice(end, end + t[1]), k: 'va', l: p.type === 3 ? p.value + '@' : String(p.value) });
+        end += t[1];
+      });
+      anatEl.appendChild(h('div', { class: 'anat-name', text: ins.offset + ': ' + ins.name }));
+      var row = h('div', { class: 'anat-row' });
+      parts.forEach(function (p) {
+        row.appendChild(h('span', { class: 'part ' + p.k }, [h('code', { text: p.b.map(hex).join(' ') }), h('small', { text: p.l })]));
+      });
+      anatEl.appendChild(row);
+    }
     var playing = false;
 
     function param(p, name) {
@@ -268,6 +297,10 @@
       }
       if (ran.length) trace.unshift(state.now + ' ms: ' + ran.map(function (o) { return nameAt(o); }).join(', '));
     }
+    function current() {
+      for (var i = 0; i < listing.length; i++) if (listing[i].offset === thread.ip) return listing[i];
+      return listing[listing.length - 1];
+    }
     function nameAt(off) {
       for (var i = 0; i < listing.length; i++) if (listing[i].offset === off) return listing[i].name;
       return '?';
@@ -283,8 +316,11 @@
           h('span', { class: 'hex', text: hex, title: hex }),
           h('span', { class: 'op' }, [ins.name + ' ', h('small', { text: ins.parameters.map(function (p) { return param(p, ins.name); }).join(' ') })]),
         ]);
+        row.addEventListener('pointerenter', function () { hoverAt = ins.offset; anatomy(ins); });
+        row.addEventListener('pointerleave', function () { hoverAt = null; anatomy(current()); });
         listEl.appendChild(row);
       });
+      anatomy(hoverAt !== null ? listing.filter(function (x) { return x.offset === hoverAt; })[0] : current());
       clear(stateEl);
       var status = thread.terminated ? 'terminated' : state.now < thread.wakeTime ? 'waiting until ' + thread.wakeTime + ' ms' : 'running';
       [
@@ -295,7 +331,7 @@
       ].forEach(function (r) { stateEl.appendChild(h('dt', { text: r[0] })); stateEl.appendChild(h('dd', { class: r[2] || '', text: r[1] })); });
       clear(traceEl);
       trace.slice(0, 12).forEach(function (t) { traceEl.appendChild(h('div', { text: t })); });
-      if (!trace.length) traceEl.appendChild(h('div', { text: 'Each frame, the instructions that ran.' }));
+      if (!trace.length) traceEl.appendChild(h('div', { text: '—' }));
     }
     function nextFrame() {
       if (thread.terminated) return;
@@ -347,8 +383,7 @@
         h('button', { class: 'btn', type: 'button', text: 'Reset', onclick: function () { stop(); load(); } }),
       ]),
     ]));
-    body.appendChild(h('div', { class: 'vm' }, [h('div', {}, [listEl, h('div', { class: 'fig-controls', style: 'margin:14px 0 0' }, [waitS.el, countS.el])]), h('div', {}, [stateEl, traceEl])]));
-    body.appendChild(h('p', { class: 'fig-note', style: 'margin-top:18px', text: 'Below: what the port does with every command the original scripts use, from its census of October 8.' }));
+    body.appendChild(h('div', { class: 'vm' }, [h('div', {}, [listEl, anatEl, h('div', { class: 'fig-controls', style: 'margin:14px 0 0' }, [waitS.el, countS.el])]), h('div', {}, [stateEl, traceEl])]));
     body.appendChild(census);
     body.appendChild(h('div', { class: 'census-key' }, CENSUS.map(function (c) {
       return h('span', {}, [h('i', { style: 'background:' + c[2] }), c[0] + ' ' + c[1].toLocaleString('en-US')]);
@@ -358,67 +393,113 @@
   }
 
   // =========================================================================
-  // Braking for the car ahead (CCarCtrl::SlowCarDownForOtherCar)
+  // Braking for the car ahead (CCarCtrl::SlowCarDownForOtherCar), live
   // =========================================================================
+  // Each simulated frame the blue car asks the port's function for a target
+  // speed and accelerates or brakes toward it; positions are in game units.
   function traffic(fig) {
     var body = mount(fig);
-    var state = { gap: 14, cruise: 20, lead: 0 };
-    var car = { position: { x: 0, y: 0 }, forward: { x: 0, y: 1 }, front: 2.4, back: 2.4, halfWidth: 1 };
-    function target(gap) {
-      var other = { position: { x: 0, y: gap }, forward: { x: 0, y: 1 }, front: 2.4, back: 2.4, halfWidth: 1, moveSpeed: { x: 0, y: state.lead / 60 } };
-      var r = G.slowCarDownForOtherCar(car, other, state.cruise, state.cruise);
-      return r ? r.speed : state.cruise;
+    var CRUISE = 20, SPAN = 64, LEN = 4.8, K = 0.5; // K: speed units to units per second, for the picture only
+    var state = { lead: 52, x: 12, v: CRUISE, trail: [], running: false };
+    function targetAt(gap) {
+      var me = { position: { x: 0, y: 0 }, forward: { x: 0, y: 1 }, front: LEN / 2, back: LEN / 2, halfWidth: 1 };
+      var other = { position: { x: 0, y: gap }, forward: { x: 0, y: 1 }, front: LEN / 2, back: LEN / 2, halfWidth: 1, moveSpeed: { x: 0, y: 0 } };
+      var r = G.slowCarDownForOtherCar(me, other, CRUISE, CRUISE);
+      return r ? r.speed : CRUISE;
     }
-    var LW = 12, LH = 56, base = 50;
-    var lane = svg('svg', { class: 'lane-view', viewBox: '0 0 ' + LW + ' ' + LH, role: 'img', 'aria-label': 'Two cars in a lane; drag the car ahead' });
-    var W = 440, H = 220, P = { l: 34, r: 10, t: 12, b: 30 }, GMAX = 45, GMIN = 5;
-    var chart = svg('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Target speed against the gap to the car ahead' });
-    var readout = h('div', { class: 'readout', 'aria-live': 'polite' });
-    var gx = function (g) { return P.l + (W - P.l - P.r) * (g - GMIN) / (GMAX - GMIN); };
-    function gy(v) { return P.t + (H - P.t - P.b) * (1 - v / Math.max(1, state.cruise)); }
-    function render() {
-      clear(lane);
-      svg('rect', { class: 'bg', x: 2, y: 0, width: 8, height: LH }, lane);
-      svg('line', { class: 'mark', x1: 2, x2: 2, y1: 0, y2: LH }, lane);
-      svg('line', { class: 'mark', x1: 10, x2: 10, y1: 0, y2: LH }, lane);
-      var me = svg('rect', { class: 'me', x: 5, y: base - 2.4, width: 2, height: 4.8, rx: 0.4 }, lane);
-      void me;
-      var y = base - Math.min(state.gap, base - 3);
-      var them = svg('rect', { class: 'them', x: 5, y: y - 2.4, width: 2, height: 4.8, rx: 0.4 }, lane);
-      svg('text', { x: 6, y: base + 5 }, lane).textContent = 'you';
-      void them;
+    var RW = 640, RH = 96, sx = RW / SPAN;
+    var road = svg('svg', { class: 'road2', viewBox: '0 0 ' + RW + ' ' + RH, role: 'img', 'aria-label': 'A lane with two cars; drag the grey car' });
+    svg('rect', { class: 'bg', x: 0, y: 30, width: RW, height: 36 }, road);
+    svg('line', { class: 'edge', x1: 0, x2: RW, y1: 30, y2: 30 }, road);
+    svg('line', { class: 'edge', x1: 0, x2: RW, y1: 66, y2: 66 }, road);
+    var gapLine = svg('line', { class: 'gapl', y1: 22, y2: 22 }, road);
+    var gapText = svg('text', { class: 'gapt', y: 16 }, road);
+    var me = svg('rect', { class: 'me', y: 38, height: 20, rx: 4, width: LEN * sx }, road);
+    var them = svg('rect', { class: 'them', y: 38, height: 20, rx: 4, width: LEN * sx }, road);
+    var speedText = svg('text', { class: 'spd', y: 86 }, road);
 
-      clear(chart);
-      [0, 0.5, 1].forEach(function (f) {
-        var v = state.cruise * f;
-        svg('line', { class: 'gl', x1: P.l, x2: W - P.r, y1: gy(v), y2: gy(v) }, chart);
-        svg('text', { x: P.l - 6, y: gy(v) + 3.5, 'text-anchor': 'end' }, chart).textContent = v.toFixed(0);
-      });
-      [5, 15, 25, 35, 45].forEach(function (g) { svg('text', { x: gx(g), y: H - 12, 'text-anchor': 'middle' }, chart).textContent = String(g); });
-      svg('text', { x: W - P.r, y: H - 1, 'text-anchor': 'end' }, chart).textContent = 'gap between the cars’ centres';
-      var d = '';
-      for (var g = GMIN; g <= GMAX + 1e-9; g += 0.05) d += (g === GMIN ? 'M' : 'L') + gx(g).toFixed(1) + ' ' + gy(target(g)).toFixed(1);
-      svg('path', { class: 'ln acc', d: d }, chart);
-      var v = target(state.gap);
-      svg('circle', { class: 'knob', cx: gx(state.gap), cy: gy(v), r: 6 }, chart);
-      clear(readout);
-      readout.appendChild(document.createTextNode('Target speed ' + v.toFixed(2) + ' of ' + state.cruise));
-      readout.appendChild(h('span', { class: 'sub', text: v === 0 ? 'Stopped: contact would come within one unit.' : v === 1 && state.gap < 12 ? 'Crawling at 1: contact within three units.' : v < state.cruise * 0.61 ? 'Slowing in proportion to how soon the cars would touch.' : 'A car in the zone ahead: capped at about 62% of cruise.' }));
+    var W = 640, H = 190, P = { l: 34, r: 10, t: 10, b: 26 }, GMIN = 5, GMAX = 40;
+    var chart = svg('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Target speed by gap, with the blue car’s path' });
+    var gx = function (g) { return P.l + (W - P.l - P.r) * (Math.max(GMIN, Math.min(GMAX, g)) - GMIN) / (GMAX - GMIN); };
+    var gy = function (v) { return P.t + (H - P.t - P.b) * (1 - v / CRUISE); };
+    [0, 10, 20].forEach(function (v) {
+      svg('line', { class: 'gl', x1: P.l, x2: W - P.r, y1: gy(v), y2: gy(v) }, chart);
+      svg('text', { x: P.l - 6, y: gy(v) + 3.5, 'text-anchor': 'end' }, chart).textContent = String(v);
+    });
+    [5, 10, 20, 30, 40].forEach(function (g) { svg('text', { x: gx(g), y: H - 8, 'text-anchor': 'middle' }, chart).textContent = String(g); });
+    svg('text', { x: P.l + 6, y: P.t + 10 }, chart).textContent = 'target speed, by gap';
+    var d = '';
+    for (var g = GMIN; g <= GMAX + 1e-9; g += 0.05) d += (g === GMIN ? 'M' : 'L') + gx(g).toFixed(1) + ' ' + gy(targetAt(g)).toFixed(1);
+    svg('path', { class: 'ln faint', d: d }, chart);
+    var trail = svg('polyline', { class: 'ln acc' }, chart);
+    var dot = svg('circle', { class: 'knob', r: 5 }, chart);
+
+    function draw() {
+      var gap = state.lead - state.x;
+      me.setAttribute('x', ((state.x - LEN / 2) * sx).toFixed(1));
+      them.setAttribute('x', ((state.lead - LEN / 2) * sx).toFixed(1));
+      gapLine.setAttribute('x1', ((state.x + LEN / 2) * sx).toFixed(1));
+      gapLine.setAttribute('x2', ((state.lead - LEN / 2) * sx).toFixed(1));
+      gapText.setAttribute('x', (((state.x + state.lead) / 2) * sx).toFixed(1));
+      gapText.textContent = 'gap ' + gap.toFixed(1);
+      speedText.setAttribute('x', ((state.x - LEN / 2) * sx).toFixed(1));
+      speedText.textContent = 'speed ' + state.v.toFixed(1) + (state.v < 0.05 ? ', stopped' : '');
+      trail.setAttribute('points', state.trail.map(function (p) { return gx(p[0]).toFixed(1) + ',' + gy(p[1]).toFixed(1); }).join(' '));
+      dot.setAttribute('cx', gx(gap)); dot.setAttribute('cy', gy(state.v));
     }
-    function setGap(g) { state.gap = Math.max(GMIN, Math.min(GMAX, g)); render(); }
-    var drag = false;
-    chart.addEventListener('pointerdown', function (e) { drag = true; chart.setPointerCapture(e.pointerId); var p = local(chart, e, W, H); setGap((p[0] - P.l) / (W - P.l - P.r) * (GMAX - GMIN) + GMIN); });
-    chart.addEventListener('pointermove', function (e) { if (!drag) return; var p = local(chart, e, W, H); setGap((p[0] - P.l) / (W - P.l - P.r) * (GMAX - GMIN) + GMIN); });
-    chart.addEventListener('pointerup', function () { drag = false; });
-    lane.addEventListener('pointerdown', function (e) { lane.setPointerCapture(e.pointerId); var p = local(lane, e, LW, LH); setGap(base - p[1]); drag = true; });
-    lane.addEventListener('pointermove', function (e) { if (!drag || !e.buttons) return; var p = local(lane, e, LW, LH); setGap(base - p[1]); });
-    lane.addEventListener('pointerup', function () { drag = false; });
-    var cruiseS = slider('Cruise speed', 10, 40, 1, state.cruise, String, function (v) { state.cruise = v; state.lead = Math.min(state.lead, v); render(); });
-    var leadS = slider('Car ahead moving at', 0, 30, 1, state.lead, String, function (v) { state.lead = v; render(); });
-    body.appendChild(h('div', { class: 'fig-controls' }, [cruiseS.el, leadS.el]));
-    body.appendChild(h('div', { class: 'traffic' }, [lane, h('div', {}, [readout, chart, h('p', { class: 'fig-note', text: 'Drag the car ahead, or along the curve.' })])]));
-    render();
-    fig.gta = { set: function (o) { if (o.gap) setGap(Number(o.gap)); if (o.cruise) cruiseS.set(Number(o.cruise)); if (o.lead !== undefined) leadS.set(Number(o.lead)); } };
+    function step(dt) {
+      var gap = state.lead - state.x;
+      var t = targetAt(gap);
+      var dv = t - state.v;
+      state.v += Math.max(-40 * dt, Math.min(12 * dt, dv));
+      if (state.v < 0) state.v = 0;
+      state.x += state.v * K * dt;
+      state.trail.push([state.lead - state.x, state.v]);
+      if (state.trail.length > 2000) state.trail.shift();
+    }
+    function run() {
+      if (state.running) return;
+      state.running = true;
+      var last = performance.now(), quiet = 0;
+      function tick(now) {
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        for (var i = 0; i < 4; i++) step(dt / 4);
+        draw();
+        quiet = state.v < 0.02 ? quiet + dt : 0;
+        if (quiet > 1.5) { state.running = false; return; }
+        requestAnimationFrame(tick);
+      }
+      if (REDUCE) { for (var j = 0; j < 4000 && !(state.v < 0.02 && j > 50); j++) step(1 / 60); draw(); state.running = false; return; }
+      requestAnimationFrame(tick);
+    }
+    function restart(gap, v) {
+      state.x = state.lead - gap;
+      state.v = v;
+      state.trail = [];
+      draw();
+      run();
+    }
+    var dragging = false;
+    function dragTo(e) {
+      var p = local(road, e, RW, RH);
+      state.lead = Math.max(state.x + LEN + 0.3, Math.min(SPAN - LEN / 2, p[0] / sx));
+      draw();
+      run();
+    }
+    them.addEventListener('pointerdown', function (e) { dragging = true; road.setPointerCapture(e.pointerId); dragTo(e); });
+    road.addEventListener('pointermove', function (e) { if (dragging) dragTo(e); });
+    road.addEventListener('pointerup', function () { dragging = false; });
+    var again = h('button', { class: 'btn', type: 'button', text: 'From the back', onclick: function () { restart(40, CRUISE); } });
+    body.appendChild(h('div', { class: 'fig-controls' }, [h('span', { class: 'grow' }), again]));
+    body.appendChild(road);
+    body.appendChild(chart);
+    restart(40, CRUISE);
+    var seen = false;
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { if (es[0].isIntersecting && !seen) { seen = true; restart(40, CRUISE); } }, { threshold: 0.6 }).observe(road);
+    }
+    fig.gta = { set: function (o) { if (o.place) restart(Number(o.place), 0); } };
   }
 
   // =========================================================================
@@ -487,7 +568,6 @@
     body.appendChild(h('div', { class: 'fig-controls' }, [kindTabs.el]));
     body.appendChild(h('div', { class: 'fig-controls' }, [baseS.el]));
     body.appendChild(chart);
-    body.appendChild(list);
     render();
     fig.gta = { set: function (o) { if (o.kind) kindTabs.set(o.kind); if (o.base) baseS.set(Number(o.base)); } };
   }
@@ -566,45 +646,95 @@
   }
 
   // =========================================================================
-  // Touch stick to steering
+  // Touch stick to steering: a thumbstick and two wheels
   // =========================================================================
+  function wheel(parent, label) {
+    var s = svg('svg', { class: 'wheel', viewBox: '-60 -60 120 136', role: 'img', 'aria-label': label }, parent);
+    var g = svg('g', {}, s);
+    svg('circle', { class: 'rim', r: 46 }, g);
+    svg('circle', { class: 'hub', r: 9 }, g);
+    svg('path', { class: 'spoke', d: 'M-46 0H-9M9 0H46M0 9V46' }, g);
+    svg('rect', { class: 'top', x: -3, y: -50, width: 6, height: 10, rx: 2 }, g);
+    var t = svg('text', { class: 'wl', y: 66, 'text-anchor': 'middle' }, s);
+    return { g: g, t: t };
+  }
   function steering(fig) {
     var body = mount(fig);
-    var state = { v: 1 / 3 };
-    var W = 440, H = 260, P = { l: 40, r: 12, t: 12, b: 30 };
-    var chart = svg('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Steering against stick deflection' });
-    var readout = h('div', { class: 'readout', 'aria-live': 'polite' });
-    var gx = function (v) { return P.l + (W - P.l - P.r) * v; };
-    var gy = function (v) { return P.t + (H - P.t - P.b) * (1 - v); };
-    function render() {
-      clear(chart);
-      [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
-        svg('line', { class: 'gl', x1: P.l, x2: W - P.r, y1: gy(f), y2: gy(f) }, chart);
-        svg('text', { x: P.l - 6, y: gy(f) + 3.5, 'text-anchor': 'end' }, chart).textContent = Math.round(f * 100) + '%';
-        svg('text', { x: gx(f), y: H - 12, 'text-anchor': 'middle' }, chart).textContent = Math.round(f * 100) + '%';
-      });
-      svg('text', { x: W - P.r, y: H - 1, 'text-anchor': 'end' }, chart).textContent = 'how far the thumb pushes the stick';
-      svg('rect', { class: 'band', x: gx(0), y: P.t, width: gx(0.35) - gx(0), height: H - P.t - P.b }, chart);
-      svg('path', { class: 'ln faint dash', d: 'M' + gx(0) + ' ' + gy(0) + 'L' + gx(1) + ' ' + gy(1) }, chart);
-      var d = '';
-      for (var v = 0; v <= 1.0001; v += 0.01) d += (v === 0 ? 'M' : 'L') + gx(v).toFixed(1) + ' ' + gy(G.stickSteering(v)).toFixed(1);
-      svg('path', { class: 'ln acc', d: d }, chart);
-      var out = G.stickSteering(state.v);
-      svg('line', { class: 'cursor', x1: gx(state.v), x2: gx(state.v), y1: gy(0), y2: gy(out) }, chart);
-      svg('circle', { class: 'knob', cx: gx(state.v), cy: gy(out), r: 6 }, chart);
-      svg('text', { x: gx(0.175), y: P.t + 14, 'text-anchor': 'middle' }, chart).textContent = 'fine-control zone';
-      clear(readout);
-      readout.appendChild(document.createTextNode('Stick ' + Math.round(state.v * 100) + '% → steering ' + (out * 100).toFixed(1) + '%'));
-      readout.appendChild(h('span', { class: 'sub', text: 'Dashed: steering that follows the stick one for one.' }));
+    var R = 70, state = { x: 0, dragging: false };
+    var pad = svg('svg', { class: 'stick', viewBox: '-100 -100 200 200', role: 'img', 'aria-label': 'A touch stick; drag the knob left or right' });
+    svg('circle', { class: 'base', r: R + 26 }, pad);
+    svg('line', { class: 'axis', x1: -R, x2: R, y1: 0, y2: 0 }, pad);
+    var knob = svg('circle', { class: 'nub', r: 26 }, pad);
+    var wheels = h('div', { class: 'wheels' });
+    var flat = wheel(wheels, 'Steering one for one');
+    var port = wheel(wheels, 'The port’s steering');
+    var W = 200, H = 110, P = 8;
+    var inset = svg('svg', { class: 'chart inset', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'The steering curve' });
+    var gx = function (v) { return P + (W - 2 * P) * v; }, gy = function (v) { return H - P - (H - 2 * P) * v; };
+    svg('path', { class: 'ln faint dash', d: 'M' + gx(0) + ' ' + gy(0) + 'L' + gx(1) + ' ' + gy(1) }, inset);
+    var d = '';
+    for (var v = 0; v <= 1.0001; v += 0.02) d += (v === 0 ? 'M' : 'L') + gx(v).toFixed(1) + ' ' + gy(G.stickSteering(v)).toFixed(1);
+    svg('path', { class: 'ln acc', d: d }, inset);
+    var mark = svg('circle', { class: 'dot', r: 4 }, inset);
+
+    function draw() {
+      var out = G.stickSteering(state.x);
+      knob.setAttribute('cx', (state.x * R).toFixed(1));
+      flat.g.setAttribute('transform', 'rotate(' + (state.x * 120).toFixed(1) + ')');
+      port.g.setAttribute('transform', 'rotate(' + (out * 120).toFixed(1) + ')');
+      flat.t.textContent = 'one for one: ' + Math.round(Math.abs(state.x) * 100) + '%';
+      port.t.textContent = 'web-gta: ' + Math.round(Math.abs(out) * 100) + '%';
+      var a = Math.abs(state.x);
+      mark.setAttribute('cx', gx(a)); mark.setAttribute('cy', gy(Math.abs(out)));
     }
-    var drag = false;
-    function at(e) { var p = local(chart, e, W, H); state.v = Math.max(0, Math.min(1, (p[0] - P.l) / (W - P.l - P.r))); render(); }
-    chart.addEventListener('pointerdown', function (e) { drag = true; chart.setPointerCapture(e.pointerId); at(e); });
-    chart.addEventListener('pointermove', function (e) { if (drag || (CAN_HOVER && e.pointerType === 'mouse')) at(e); });
-    chart.addEventListener('pointerup', function () { drag = false; });
-    body.appendChild(h('div', { class: 'traffic', style: 'grid-template-columns:minmax(0,1fr)' }, [readout, chart]));
-    render();
-    fig.gta = { set: function (o) { if (o.stick !== undefined) { state.v = Number(o.stick); render(); } } };
+    function at(e) {
+      var p = local(pad, e, 200, 200);
+      state.x = Math.max(-1, Math.min(1, (p[0] - 100) / R));
+      draw();
+    }
+    // Let go and the stick springs back to the centre, as a thumbstick does.
+    function release() {
+      state.dragging = false;
+      if (REDUCE) { state.x = 0; draw(); return; }
+      (function spring() {
+        if (state.dragging) return;
+        state.x *= 0.78;
+        if (Math.abs(state.x) < 0.004) state.x = 0;
+        draw();
+        if (state.x) requestAnimationFrame(spring);
+      })();
+    }
+    pad.addEventListener('pointerdown', function (e) { state.dragging = true; pad.setPointerCapture(e.pointerId); at(e); });
+    pad.addEventListener('pointermove', function (e) { if (state.dragging) at(e); });
+    pad.addEventListener('pointerup', release);
+    pad.addEventListener('pointercancel', release);
+    pad.setAttribute('tabindex', '0');
+    pad.addEventListener('keydown', function (e) {
+      var step = { ArrowLeft: -0.05, ArrowRight: 0.05 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      state.x = Math.max(-1, Math.min(1, state.x + step));
+      draw();
+    });
+    body.appendChild(h('div', { class: 'steer' }, [pad, wheels, inset]));
+    draw();
+    // A slow push to the right and back, once, so the difference shows before anyone touches it.
+    var shown = false;
+    if ('IntersectionObserver' in window && !REDUCE) {
+      new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting || shown) return;
+        shown = true;
+        var t0 = performance.now();
+        (function demo(now) {
+          if (state.dragging) return;
+          var t = (now - t0) / 1000;
+          state.x = t < 2.4 ? Math.sin(Math.min(1, t / 2.4) * Math.PI) * 0.7 : 0;
+          draw();
+          if (t < 2.4) requestAnimationFrame(demo);
+        })(t0);
+      }, { threshold: 0.6 }).observe(pad);
+    }
+    fig.gta = { set: function (o) { if (o.stick !== undefined) { state.x = Number(o.stick); draw(); } } };
   }
 
   // ---- Boot ------------------------------------------------------------------

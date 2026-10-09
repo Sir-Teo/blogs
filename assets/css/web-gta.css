@@ -86,16 +86,55 @@
 .census-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 12.5px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
 .census-key i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -0.02em; }
 
+/* ----------------------------------------------------------- vm anatomy */
+.anat { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); min-height: 64px; }
+.anat-name { font: 12px var(--mono); color: var(--fg-3); margin-bottom: 6px; }
+.anat-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.anat .part { display: grid; gap: 2px; padding: 4px 7px; border-radius: 4px; background: var(--subtle); }
+.anat .part code { padding: 0; background: none; font-size: 12.5px; color: var(--fg); }
+.anat .part small { font-size: 11px; color: var(--fg-3); white-space: nowrap; }
+.anat .part.op { box-shadow: inset 0 -2px 0 var(--accent); }
+.anat .part.ty code { color: var(--fg-3); }
+.key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; font-size: 12.5px; color: var(--fg-3); }
+.key i { display: inline-block; width: 14px; height: 9px; margin-right: 6px; vertical-align: -0.02em; border-radius: 2px; }
+.key .k-win { border: 1.5px solid var(--accent); background: var(--accent-soft); }
+.key .k-hold { border-top: 1.5px dotted var(--accent); height: 0; }
+.key .k-pend { border-top: 1.5px dashed var(--fg-3); height: 0; }
+.key .k-tick { width: 1.5px; background: var(--fg-3); }
+.key .k-held { background: var(--held); }
+.road .st { font: 600 11px var(--sans); fill: var(--fg-3); }
+.road .st.held { fill: var(--held); }
+
 /* -------------------------------------------------------------- traffic */
-.traffic { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
-@media (max-width: 560px) { .traffic { gap: 16px; } }
-.lane-view { display: block; height: 260px; width: auto; max-width: 64px; touch-action: none; }
-@media (max-width: 560px) { .lane-view { height: 200px; } }
-.lane-view .bg { fill: var(--road); }
-.lane-view .mark { stroke: var(--road-line); stroke-width: 0.25; stroke-dasharray: 1.5 1.5; }
-.lane-view .me { fill: var(--accent); }
-.lane-view .them { fill: var(--fg); cursor: grab; }
-.lane-view text { fill: var(--fg-3); font: 2.2px var(--sans); text-anchor: middle; }
+.road2 { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; touch-action: none; }
+.road2 .bg { fill: var(--road); }
+.road2 .edge { stroke: var(--road-line); stroke-width: 1.5; }
+.road2 .me { fill: var(--accent); }
+.road2 .them { fill: var(--fg-3); cursor: grab; }
+.road2 .them:active { cursor: grabbing; }
+.road2 .gapl { stroke: var(--fg-3); stroke-width: 1; }
+.road2 text { fill: var(--fg-3); font: 11.5px var(--sans); }
+.road2 .gapt { text-anchor: middle; font-variant-numeric: tabular-nums; }
+.road2 .spd { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------- steering */
+.steer { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) minmax(0, 170px); gap: 24px; align-items: center; }
+@media (max-width: 620px) { .steer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .steer .stick { grid-column: 1 / -1; max-width: 200px; justify-self: center; } }
+.stick { display: block; width: 100%; height: auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.stick:active { cursor: grabbing; }
+.stick .base { fill: var(--subtle); stroke: var(--line-2); stroke-width: 1.5; }
+.stick .axis { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.stick .nub { fill: var(--fg); fill-opacity: 0.86; }
+.wheels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.wheel { display: block; width: 100%; height: auto; }
+.wheel .rim { fill: none; stroke: var(--fg-3); stroke-width: 7; }
+.wheel .hub { fill: var(--fg-3); }
+.wheel .spoke { stroke: var(--fg-3); stroke-width: 5; stroke-linecap: round; }
+.wheel .top { fill: var(--accent); }
+.wheels svg:last-child .rim, .wheels svg:last-child .spoke { stroke: var(--accent); }
+.wheels svg:last-child .hub { fill: var(--accent); }
+.wheel .wl { fill: var(--fg-2); font: 11px var(--sans); font-variant-numeric: tabular-nums; }
+.inset { max-width: 170px; }
 .readout { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .readout .sub { display: block; margin-top: 2px; font-size: 13.5px; font-weight: 400; color: var(--fg-2); }
 
