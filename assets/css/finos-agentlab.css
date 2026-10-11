@@ -1,0 +1,261 @@
+/* Figures for the FinOS-AgentLab post. Site tokens from main.css, plus a few
+   muted colours for the desk's stages, pass/fail marks and the prompt rungs. */
+
+:root {
+  --s-analyst: #8a8a8a;
+  --s-research: #2563eb;
+  --s-trader: #0f766e;
+  --s-risk: #b8752a;
+  --s-decision: #111111;
+  --bad: #dc2626;
+  --ok: #2e7d32;
+  --skip: #b8752a;
+  --r-system: #111111;
+  --r-commands: #545454;
+  --r-policy: #8a8a8a;
+  --r-history: #c9c6bb;
+  --r-context: #2563eb;
+}
+:root[data-theme="dark"] {
+  --s-analyst: #8d8d8d;
+  --s-research: #6ea2ff;
+  --s-trader: #2dd4bf;
+  --s-risk: #d99a4e;
+  --s-decision: #ececec;
+  --bad: #f87171;
+  --ok: #4ade80;
+  --skip: #d99a4e;
+  --r-system: #ececec;
+  --r-commands: #a3a3a3;
+  --r-policy: #6f6f72;
+  --r-history: #3a3a3e;
+  --r-context: #6ea2ff;
+}
+
+/* --------------------------------------------------------- figure frame */
+.fig-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; margin-bottom: 16px; }
+.fig-controls .grow { flex: 1; }
+.fig-num { font-size: 13px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.fig-loading { font-size: 14px; color: var(--fg-3); }
+.fig-note { min-height: 1.5em; margin: 10px 0 0; font-size: 13px; color: var(--fg-3); }
+.fig-note b { color: var(--fg); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg-3); }
+.legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -0.05em; }
+.legend i.round { border-radius: 50%; }
+.legend i.hollow { background: none !important; box-shadow: inset 0 0 0 1.5px var(--fg-3); }
+.chart { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--fg-3); font: 10.5px var(--sans); }
+.chart .gl { stroke: var(--line); }
+.chart .tick { stroke: var(--fg-3); stroke-width: 1; }
+.chart .lbl { fill: var(--fg-2); font: 11px var(--sans); }
+.chart .lbl.strong { fill: var(--fg); font-weight: 600; }
+.chart .mono { font-family: var(--mono); font-size: 10px; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart .hit.plain { cursor: default; }
+
+/* -------------------------------------------------------------- diagram */
+.arch .lbl { fill: var(--fg-3); font: 500 12px var(--sans); }
+.arch .box { fill: var(--bg); stroke: var(--line-2); stroke-width: 1; }
+.arch .box.em { stroke: var(--fg-2); }
+.arch .t { fill: var(--fg); font: 500 13px var(--sans); text-anchor: middle; dominant-baseline: central; }
+.arch .st { fill: var(--fg-3); font: 11.5px var(--sans); text-anchor: middle; dominant-baseline: central; }
+.arch .edge { fill: none; stroke: var(--fg-3); stroke-width: 1; }
+.arch .edge-strong { fill: none; stroke: var(--fg); stroke-width: 1.2; }
+.arch .el { fill: var(--fg-2); font: 11px var(--mono); text-anchor: middle; }
+.arch .head { fill: var(--fg-3); }
+.arch .head-strong { fill: var(--fg); }
+.arch .dot { fill: var(--accent); pointer-events: none; }
+
+/* ----------------------------------------------------------------- firm */
+.firm .node { fill: var(--bg); stroke: var(--line-2); stroke-width: 1; transition: stroke 0.2s, fill 0.2s, opacity 0.2s; }
+.firm .node.lit { stroke: var(--fg); stroke-width: 1.4; }
+.firm .node.junk { stroke: var(--bad); stroke-width: 1.6; fill: color-mix(in srgb, var(--bad) 7%, var(--bg)); }
+.firm .node.silent { stroke: var(--fg-2); stroke-dasharray: 3 3; }
+.firm .node.dead { stroke: var(--bad); stroke-dasharray: 3 3; }
+.firm .ng { transition: opacity 0.2s; cursor: default; }
+.firm .ng.off { opacity: 0.32; }
+:root[data-theme="dark"] .firm .ng.off { opacity: 0.45; }
+.firm .ng:hover .node { stroke: var(--fg-2); }
+.firm .nt { fill: var(--fg); font: 500 11px var(--sans); text-anchor: middle; dominant-baseline: central; pointer-events: none; transition: fill 0.2s; }
+.firm .nt.dim { fill: var(--fg-3); font-weight: 400; }
+.firm .ns { fill: var(--fg-3); font: 10px var(--sans); text-anchor: middle; dominant-baseline: central; pointer-events: none; font-variant-numeric: tabular-nums; }
+.firm .ns.bad { fill: var(--bad); font-weight: 600; }
+.firm .track { fill: transparent; }
+.firm .track.on { fill: var(--line); }
+.firm .bytes { pointer-events: none; }
+.firm .e { fill: none; stroke: var(--line-2); stroke-width: 1; transition: stroke 0.25s; }
+.firm .e.cond { stroke-dasharray: 3 3; }
+.firm .e.on { stroke: var(--fg-2); stroke-width: 1.3; stroke-dasharray: none; }
+.firm .head { fill: var(--line-2); }
+.firm .head.on { fill: var(--fg-2); }
+.firm .pulse { fill: var(--fg); }
+.firm .pulse.bad { fill: var(--bad); }
+.firm .said text { fill: var(--bad); font: 500 10.5px var(--mono); }
+.firm .lbl { fill: var(--fg-3); font: 10.5px var(--sans); }
+.firm .said-l { stroke: var(--bad); stroke-width: 1; }
+.firm .said { transition: none; }
+.firm .ob { fill: var(--fg); font: 600 17px var(--mono); dominant-baseline: central; letter-spacing: 0.02em; }
+.firm .ob.bad { fill: var(--bad); font: 500 12px var(--sans); letter-spacing: 0; }
+.firm .os { fill: var(--fg-3); font: 10px var(--mono); }
+.runs { display: block; width: 100%; height: auto; }
+.runs text { fill: var(--fg-3); font: 10.5px var(--sans); }
+.runs .sym { fill: var(--fg-2); font: 500 11px var(--sans); pointer-events: none; }
+.runs .sym.on { fill: var(--fg); font-weight: 600; }
+.runs .date { font-variant-numeric: tabular-nums; pointer-events: none; }
+.runs .tally { font-variant-numeric: tabular-nums; }
+.runs .act { font-family: var(--mono); font-size: 10px; fill: var(--fg-2); pointer-events: none; }
+.runs .blk { stroke: var(--bg); stroke-width: 0.8; pointer-events: none; transition: opacity 0.15s; }
+.runs .blk.faded { opacity: 0.12; }
+.runs .blk.analyst { fill: var(--s-analyst); }
+.runs .blk.research { fill: var(--s-research); }
+.runs .blk.trader { fill: var(--s-trader); }
+.runs .blk.risk { fill: var(--s-risk); }
+.runs .blk.decision { fill: var(--s-decision); }
+.runs .blk.junk { fill: var(--bad); }
+.runs .junkmark { stroke: var(--bad); stroke-width: 1.5; pointer-events: none; }
+.runs .errg { pointer-events: none; }
+.runs .err { fill: none; stroke: var(--bad); stroke-width: 1.2; }
+.runs .errl { fill: var(--bad); font: 10px var(--sans); }
+.runs .row { fill: transparent; cursor: pointer; }
+.runs .row:hover, .runs .row.peek { fill: var(--subtle); }
+.runs .row.on { fill: var(--accent); fill-opacity: 0.08; }
+.runs .scale { stroke: var(--fg-3); }
+.fig-note.readout { font-variant-numeric: tabular-nums; white-space: pre-wrap; }
+.legend i.redline { background: none !important; box-shadow: inset 0 0 0 1.5px var(--bad); }
+.legend i.dashed { background: none !important; box-shadow: none; border: 1px dashed var(--fg-2); width: 11px; height: 8px; box-sizing: border-box; }
+
+/* -------------------------------------------------------------- payload */
+.post-content .fig .tabs.q { gap: 4px 14px; }
+.post-content .fig .tabs.q button { font-size: 13px; }
+.pay .bar { stroke: var(--bg); stroke-width: 0.7; }
+.pay .bar.prompt { fill: var(--r-system); }
+.pay .bar.core { fill: var(--fg); fill-opacity: 0.42; }
+.pay .bar.page { fill: var(--accent); }
+.pay .bar.intent { fill: var(--accent); fill-opacity: 0.38; }
+.pay .bar.all { fill: color-mix(in srgb, var(--fg) 10%, var(--bg)); stroke: none; }
+.pay .bar:hover { fill-opacity: 1; }
+.pay .bar.core:hover { fill: var(--fg-2); }
+.pay .brk { stroke: var(--bg); stroke-width: 3; }
+.pay .ceil { stroke: var(--bad); stroke-width: 2; }
+.pay .gap { stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 1 3; stroke-linecap: round; }
+.pay .pl { fill: var(--fg-2); font: 11.5px var(--mono); }
+.pay .pl.dim { fill: var(--fg-3); font-family: var(--sans); }
+.pay .pl.on { fill: var(--fg); font-weight: 600; }
+.pay .n { fill: var(--fg-2); font: 10.5px var(--sans); font-variant-numeric: tabular-nums; }
+.pay .room { fill: var(--fg-3); font: 10.5px var(--sans); font-variant-numeric: tabular-nums; }
+.pay .room.over { fill: var(--bad); font-weight: 600; }
+.pay .prow .hit { cursor: default; }
+.pay .prow:hover .hit { fill: var(--subtle); }
+
+/* ---------------------------------------------------------------- rungs */
+.rungs .seg { stroke: var(--bg); stroke-width: 0.8; }
+.rungs .seg.system { fill: var(--r-system); }
+.rungs .seg.commands { fill: var(--r-commands); }
+.rungs .seg.policy { fill: var(--r-policy); }
+.rungs .seg.history { fill: var(--r-history); }
+.rungs .seg.context { fill: var(--r-context); }
+.rungs .seg.question { fill: var(--bg); stroke: var(--fg); stroke-width: 1; }
+.rungs .resend { fill: none; stroke: var(--bad); stroke-width: 1.3; }
+.rungs .cache { fill: var(--ok); fill-opacity: 0.16; stroke: none; }
+.rungs .brk { stroke: var(--bg); stroke-width: 3; }
+.rungs .ax { fill: var(--fg-3); font: 10.5px var(--sans); }
+.rungs .ax.strong { fill: var(--fg-2); font-weight: 500; }
+.rungs .tl { fill: var(--fg-2); font: 11px var(--sans); }
+.rungs .tn { fill: var(--fg-2); font: 10.5px var(--sans); font-variant-numeric: tabular-nums; }
+.rungs .tn.bad { fill: var(--bad); }
+.rungs .sum { cursor: pointer; }
+.rungs .sum .sbar { fill: none; stroke: var(--fg-3); stroke-width: 1; transition: fill 0.25s, stroke 0.25s; }
+.rungs .sum.on .sbar { fill: var(--fg-2); stroke: var(--fg-2); }
+.rungs .sum:not(.on):last-child .sbar { stroke: var(--bad); }
+.rungs .sum.on:last-child .sbar { fill: var(--bad); stroke: var(--bad); }
+.rungs .sl { fill: var(--fg-3); font: 11px var(--sans); }
+.rungs .sum.on .sl { fill: var(--fg); }
+.rungs .sn { fill: var(--fg-2); font: 600 11px var(--sans); font-variant-numeric: tabular-nums; }
+.rungs .sum:hover .hit { fill: var(--subtle); }
+
+/* ----------------------------------------------------------- specialists */
+.spec .cell { fill: var(--line); stroke: none; transition: fill 0.25s, stroke 0.25s, opacity 0.25s; cursor: default; }
+.spec .cell.on { fill: var(--accent); }
+.spec .cell.par { fill: var(--fg); fill-opacity: 0.62; }
+.spec .cell.was { fill: transparent; stroke: var(--fg-3); stroke-width: 1; }
+.spec .cell.never { fill: url(#spec-hatch); stroke: var(--line-2); stroke-width: 1; }
+.spec .cell:hover { stroke: var(--fg); stroke-width: 1.5; }
+.spec .hatchl { stroke: var(--fg-3); stroke-width: 1.2; }
+.spec .refused { stroke: var(--bad); stroke-width: 1.6; pointer-events: none; }
+.spec .gl-l { fill: var(--fg-3); font: 10.5px var(--sans); }
+.spec .ax { fill: var(--fg-3); font: 10.5px var(--sans); }
+.spec .big { fill: var(--fg); font: 600 26px var(--sans); font-variant-numeric: tabular-nums; }
+.spec .n { fill: var(--fg); font: 600 12px var(--sans); font-variant-numeric: tabular-nums; }
+.spec .strack { fill: var(--line); }
+.spec .sbar { fill: var(--fg); fill-opacity: 0.62; }
+.spec .sbar.spec { fill: var(--accent); fill-opacity: 1; }
+.legend i.hatch { background: repeating-linear-gradient(45deg, var(--fg-3) 0 1px, transparent 1px 3px) !important; box-shadow: inset 0 0 0 1px var(--line-2); }
+.decl { margin-top: 14px; padding-left: 12px; border-left: 1px solid var(--line-2); font: 12px/1.55 var(--mono); color: var(--fg-2); max-width: 84ch; }
+.decl b { color: var(--fg); font-weight: 600; }
+.decl-i { margin-top: 2px; color: var(--fg-2); }
+.decl-r { margin-top: 6px; color: var(--fg-3); font-size: 11.5px; }
+
+/* ----------------------------------------------------------------- jobs */
+.jobs .day { stroke: var(--line); }
+.jobs .down { fill: var(--fg); fill-opacity: 0.09; }
+.jobs .outage { fill: var(--bad); fill-opacity: 0.1; }
+.jobs .closed { fill: var(--skip); fill-opacity: 0.11; }
+.jobs .jl { fill: var(--fg-2); font: 11px var(--sans); }
+.jobs .js { fill: var(--fg-3); font: 10px var(--sans); }
+.jobs .zl { fill: var(--fg-3); font: 10.5px var(--sans); }
+.jobs .m { fill: var(--fg); }
+.jobs .m.ok { fill: var(--fg); fill-opacity: 0.55; }
+.jobs .m.fail { fill: var(--bad); }
+.jobs .m.skip { fill: var(--bg); stroke: var(--skip); stroke-width: 1.5; }
+.jobs .chain { stroke: var(--bad); stroke-width: 1.5; stroke-opacity: 0.5; }
+.jobs .att { fill: var(--bad); font: 600 8.5px var(--sans); }
+.jobs .hit { fill: transparent; cursor: default; }
+.jobs .dl { fill: var(--fg-3); font: 10.5px var(--sans); }
+.jobs .clock { fill: var(--fg-2); font: 500 11px var(--mono); }
+.jobs .lens { fill: var(--accent); fill-opacity: 0.08; stroke: var(--accent); stroke-width: 1.2; cursor: grab; touch-action: none; }
+.jobs.dragging, .jobs.dragging .lens { cursor: grabbing; }
+.jobs .funnel { stroke: var(--accent); stroke-width: 1; stroke-opacity: 0.45; fill: none; }
+.jobs .zt { stroke: var(--line); }
+.jobs .ztl { fill: var(--fg-3); font: 10px var(--sans); font-variant-numeric: tabular-nums; }
+.jobs .ztl.dn { fill: var(--fg-2); font-weight: 600; }
+.jobs .zt.mid { stroke: var(--line-2); }
+.jobs .m { transition: opacity 0.12s; }
+.counts { font-size: 13px; color: var(--fg-3); white-space: pre; font-variant-numeric: tabular-nums; }
+.counts b { color: var(--fg); font-weight: 600; font-size: 15px; }
+.counts b.bad { color: var(--bad); }
+.counts b.skipc { color: var(--skip); }
+
+/* ---------------------------------------------------------------- evals */
+.evals .cell { stroke: none; transition: fill 0.12s; }
+.evals .cell.pass { fill: var(--fg); fill-opacity: 0.72; }
+.evals .cell.fail { fill: var(--bad); }
+.evals .cell.none { fill: var(--line); }
+.evals .cell.pending { fill: transparent; stroke: var(--line-2); stroke-width: 1; }
+.evals .sl { fill: var(--fg-2); font: 11px var(--mono); pointer-events: none; transition: fill 0.12s; }
+.evals .sl.on { fill: var(--fg); font-weight: 600; }
+.evals .sl.wait { fill: var(--fg-3); }
+.evals .sl.run { fill: var(--accent); }
+.evals .sl.skip { fill: var(--fg-3); font-size: 10.5px; }
+.evals .cl { fill: var(--fg-3); font: 10px var(--mono); }
+.evals .num { fill: var(--fg-3); font: 10.5px var(--sans); font-variant-numeric: tabular-nums; pointer-events: none; }
+.evals .num.strong { fill: var(--fg); font-weight: 600; }
+.evals .call { stroke: var(--fg-2); stroke-width: 1.4; pointer-events: none; }
+.evals .hit { fill: transparent; cursor: pointer; }
+.evals .hit.plain { cursor: default; }
+.evals .hit:hover, .evals .hit.on { fill: var(--accent); fill-opacity: 0.08; }
+.evals .rule { stroke: var(--line-2); }
+.evals .grp { fill: var(--fg-2); font: 500 11px var(--sans); }
+.timer { font: 500 13px var(--mono); color: var(--fg-2); background: none; border: 0; padding: 2px 0; cursor: pointer; font-variant-numeric: tabular-nums; }
+.timer::before { content: "↻ "; color: var(--fg-3); }
+.timer.running { color: var(--accent); }
+.timer.running::before { content: "● "; }
+
+/* Wide charts pan sideways on a phone rather than shrink their type. */
+.pan { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.pan > svg { display: block; width: 100%; height: auto; }
+@media (max-width: 700px) {
+  .pan > svg { min-width: 680px; }
+}
+@media (max-width: 600px) {
+  .fig-controls { gap: 8px 18px; }
+}
