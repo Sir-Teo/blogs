@@ -2,14 +2,14 @@
 layout: post
 title: "Grading chess moves in a browser tab"
 description: >-
-  web-chess runs Stockfish inside the browser. How its review turns a score
-  into a verdict, and how a weak level is made to play badly without
-  hanging its queen.
+  How web-chess runs Stockfish 18 across a pool of Web Workers, turns raw
+  centipawn scores into human move grades, and weakens its beginner opponent
+  without letting it randomly hang its queen.
 date: 2026-10-09 11:00:00 -0400
 excerpt: >-
-  Stockfish in a browser tab. How web-chess turns an engine score into the
-  label a player reads, and how its weakest level plays badly without hanging
-  its queen.
+  Stockfish 18 inside a browser tab—how web-chess sizes its worker pool,
+  translates engine evaluations into verdicts a human player can use, and makes
+  its weakest level play badly on purpose without hanging its queen.
 links:
   - title: Live app
     url: https://sir-teo.github.io/web-chess/
@@ -22,7 +22,7 @@ scripts:
   - /assets/js/web-chess.js
 ---
 
-web-chess is a chess app with Stockfish 18 running in the browser tab, for playing, importing and reviewing games. The figures run its grading code, compiled for this page. The games were reviewed by its review code, with the same Stockfish build, in Node.
+Putting a chess engine in a Web Worker is the easy half of building a browser chess app. The harder half starts once the engine speaks: turning raw centipawn numbers into move grades that match how a human experiences a game, and weakening a 3,500-Elo monster into a beginner opponent that makes natural mistakes without randomly giving away its queen. **web-chess** runs Stockfish 18 directly in the browser tab for playing, importing, and reviewing games. Every interactive figure below runs the app's own sizing and grading code in the page, using evaluations recorded from the same Stockfish build in Node.
 
 ## Three engines in one tab
 
@@ -73,13 +73,13 @@ web-chess is a chess app with Stockfish 18 running in the browser tab, for playi
 <figcaption>Three kinds of Stockfish, each in its own worker. The review pool exists only while a review runs, and splits the game into one contiguous run of moves per engine.</figcaption>
 </figure>
 
-The opponent gets its own engine because it plays with different settings. The timing at the bottom is from the app's own notes, which also record a change that looked 37% faster on one run and came out slower over five.
+Instead of multiplexing a single Stockfish instance across every task, web-chess keeps separate engines in separate Web Workers. Live analysis wants `MultiPV` and win-draw-loss statistics; the AI opponent wants `UCI_LimitStrength` and an Elo cap; and re-sending UCI options like `Hash` between turns silently flushes the engine's transposition table even when the hash size hasn't changed. When you ask for a full game review, the app spins up a temporary pool of two to four workers and hands each one a contiguous slice of the game so its hash table stays warm from move to move. (An earlier experiment tried to speed reviews up further and clocked a 37% win on a single run—until a five-run benchmark showed it was actually slower.)
 
 <figure class="fig" id="wc-device">
 <figcaption>What web-chess sets up on a device like this one, from its own sizing code. Numbered cells are review engines.</figcaption>
 </figure>
 
-<a class="act" href="#wc-device" data-device="phone">A phone</a> gets one small engine. <a class="act" href="#wc-device" data-device="desktop">An 18-core desktop</a> reviews with four. <a class="act" href="#wc-device" data-device="pages">Without cross-origin isolation</a>, which GitHub Pages can't grant without the app's service worker, it loses threads but keeps the pool, since separate engines share no memory. For a while the multithreaded engine never ran at all, and nothing said so.
+How many workers and threads the app spawns depends on what the browser reports. <a class="act" href="#wc-device" data-device="phone">A phone</a> gets one small, single-threaded engine, a 16 MB hash table, and a single principal variation, since a second line costs two to four times the search effort. <a class="act" href="#wc-device" data-device="desktop">An 18-core desktop</a> spins up four review engines with two threads each. <a class="act" href="#wc-device" data-device="pages">Without cross-origin isolation</a>—which GitHub Pages cannot grant unless the app's service worker intercepts the page—shared memory disappears and each engine drops to one thread, but the four-worker review pool still runs at full width because separate workers share no memory. For a long time, a missing bootstrap wrapper meant the multithreaded build died at startup and silently fell back to single-threaded WASM; fixing that one silent fallback took a depth-16 search from 443,000 to 3.5 million nodes a second.
 
 ## From a score to a verdict
 
@@ -87,7 +87,9 @@ The opponent gets its own engine because it plays with different settings. The t
 <figcaption>One move graded on both ladders, by web-chess's own functions, for any <em>before</em> and <em>after</em> score.</figcaption>
 </figure>
 
-A pawn in a level game matters; a pawn when you're a rook up barely does. So each move is judged on centipawns and on winning chances, and the review reports the milder verdict. <a class="act" href="#wc-grade" data-before="0" data-after="-300">Three pawns from a level position</a> is a Blunder on both ladders; <a class="act" href="#wc-grade" data-before="1000" data-after="700">the same three pawns at +10</a> is Good. <a class="act" href="#wc-grade" data-game="opera" data-ply="30">Walking into mate when already lost</a> is Good too.
+Stockfish measures positions in *centipawns* (hundredths of a pawn), which is the right unit for searching a tree and the wrong unit for judging a person. Losing a pawn in a level endgame can cost the game; losing a pawn when you are already a rook ahead changes nothing.
+
+To judge moves in context, web-chess converts centipawn evaluations into winning chances using Lichess's logistic curve, grades every move on both centipawns lost and winning chances lost, and reports the milder of the two verdicts. <a class="act" href="#wc-grade" data-before="0" data-after="-300">Three pawns from a level position</a> cuts your winning chances from 50% to 25% and registers as a Blunder on both ladders; <a class="act" href="#wc-grade" data-before="1000" data-after="700">the same three pawns at +10</a> nudges your winning chances from 97% to 93% and is graded Good. Even <a class="act" href="#wc-grade" data-game="opera" data-ply="30">walking into mate when already lost</a> (`15…Nxd7` in the Opera Game) comes out Good: Stockfish encodes forced mate with a 100-pawn sentinel, which looks like a 90-pawn catastrophe on the raw scale—and once inflated the Opera Game's average centipawn loss to 316 beside zero mistakes—whereas the winning-chance curve simply sees a lost position ending a move sooner.
 
 ## One number for a game
 
@@ -95,7 +97,9 @@ A pawn in a level game matters; a pawn when you're a rook up barely does. So eac
 <figcaption>Per-move accuracy for one player, each move's weight in grey below it, and four ways to sum it up. Every bar can be moved.</figcaption>
 </figure>
 
-<a class="act" href="#wc-accuracy" data-set="one">One blunder in forty moves</a> barely dents the average. web-chess does what Lichess does and averages a volatility-weighted mean with a harmonic mean, which the worst move dominates. The game comes out at 85 rather than 93.
+Turning forty per-move scores into a single game accuracy looks like a job for a plain average, and for its first seven months web-chess used one. The trouble is that <a class="act" href="#wc-accuracy" data-set="one">one blunder in forty moves</a> barely dents an arithmetic mean: thirty-nine solid moves at 95 and a single game-throwing blunder at 9.5 still average 93, which reads like a near-flawless game.
+
+Following Lichess, web-chess now averages two different summaries instead. The first weights each move by how volatile the game was around it—the standard deviation of winning chances over a local window—so moves played while the balance is swinging count far more than routine moves in a dead ending. The second is the harmonic mean, which is dominated by the worst move on the board. Averaging the two pulls that one-blunder game down from 93 to 85, while dragging the blunder bar back up shows the penalty disappearing as soon as the mistake is no longer fatal.
 
 ## Reviewing a game
 
@@ -103,7 +107,7 @@ A pawn in a level game matters; a pawn when you're a rook up barely does. So eac
 <figcaption>Two games as web-chess reviews them, Stockfish 18 at depth 16. The badge grades the move just played; the green arrow is the engine's choice.</figcaption>
 </figure>
 
-The second game was played by two of web-chess's own levels. Black was winning until <a class="act" href="#wc-review" data-game="club" data-move="38">19…Kf8</a>, which gave up 66 points of winning chances in one move. In <a class="act" href="#wc-review" data-game="opera" data-move="20">the Opera Game</a> Black's worst moves are only inaccuracies, and after 10…cxb5 the position is already gone.
+Putting the worker pool, the dual grading ladders, and the opening book together produces the full review above, searched at depth 16. The default game was played between two of web-chess's own levels, Club as White and Intermediate as Black. Black was winning for most of the afternoon until White played `19.Nxf6+`; instead of taking the knight back, Black stepped away with <a class="act" href="#wc-review" data-game="club" data-move="38">19…Kf8</a>, surrendering 8.6 pawns and 66 points of winning chances in a single move—the only Blunder in either game. Switch to <a class="act" href="#wc-review" data-game="opera" data-move="20">the Opera Game</a> and Black's worst slips (`6…Nf6` and `10…cxb5`) are only Inaccuracies: after `10…cxb5` the position is already four pawns down in the engine's eyes, so none of the famous fireworks that follow cost Black many winning chances it still had.
 
 ## Playing badly on purpose
 
@@ -111,6 +115,8 @@ The second game was played by two of web-chess's own levels. Black was winning u
 <figcaption>Every legal move in a position, by what it costs (full-strength search), and where each rule's choices land.</figcaption>
 </figure>
 
-The two weakest levels used to play a random legal move 38% and 20% of the time. <a class="act" href="#wc-variety" data-level="1" data-position="8">After 4…Bxf3</a>, 33 of White's 35 moves lose three pawns or more, so a random move was usually a blunder. Now the level picks among the engine's top lines, within 1.8 pawns of its first choice. Across all 90 positions, Beginner went from losing three pawns on one move in six to never.
+Stockfish's built-in `UCI_LimitStrength` option only goes down to 1,320 Elo, which is still strong enough to overwhelm a casual player. To soften the two weakest levels (`Beginner` and `Novice`), web-chess originally injected variety by picking a uniformly random legal move 38% and 20% of the time.
+
+No human beginner plays chess by rolling a die across every legal move on the board. <a class="act" href="#wc-variety" data-level="1" data-position="8">After 4…Bxf3</a> in the Opera Game, White has to recapture the bishop; 33 of White's 35 legal moves leave the piece hanging and immediately lose three pawns or more. Under the old rule, Beginner wandered into one of those unforced blunders more than a third of the time. Now the opponent asks Stockfish for its top four candidate lines and only varies among moves that stay within 1.8 pawns of its first choice (0.9 for Novice)—which here means choosing between the two sensible recaptures, `Qxf3` and `gxf3`. Across all 90 positions in both games, Beginner went from throwing away three or more pawns on one move in six to never doing so at all.
 
 <p class="credit">Piece artwork: Colin M.L. Burnett's set, as drawn by react-chessboard in the app.</p>

@@ -2,13 +2,14 @@
 layout: post
 title: "Replaying a village raid"
 description: >-
-  Crown & Clan is a village-raiding game in the browser. Its battle
-  simulation runs without a screen, so the same raid can be replayed, tested
-  and run in Node, as the figures here do.
+  How Crown & Clan keeps its TypeScript battle simulation decoupled from Phaser,
+  deterministic across browsers, and replayable from a 10 KB log of taps and
+  step sizes.
 date: 2026-10-09 13:00:00 -0400
 excerpt: >-
-  A village-raiding game in the browser whose battle simulation runs without
-  a screen. Raids from its own engine, replayed as figures.
+  A browser strategy game whose battle simulation never touches the screen—how
+  target selection, A* wall weights, headless campaign sweeps, and bit-exact
+  replays work under the hood.
 links:
   - title: Live game
     url: https://coc.teozeng.dev
@@ -20,7 +21,7 @@ scripts:
   - /assets/js/web-coc.js
 ---
 
-Crown & Clan is a village-raiding game in the mould of Clash of Clans, written in TypeScript and Phaser with no server. It is a fan project ("Clash of Clans assets and trademarks belong to Supercell," its README says), so the figures draw plain shapes. Every battle in them was run by the game's own engine, in Node, on the twelve villages the project designed itself.
+**Crown & Clan** is a village-building and raiding game in the mould of Clash of Clans, written in TypeScript and Phaser with no server behind it. Because it is an independent fan project ("Clash of Clans assets and trademarks belong to Supercell," its README notes), the figures here draw plain geometric shapes instead of sprites. Every battle in them was simulated by the game's own engine in Node across the twelve campaign villages the project designed itself.
 
 ## A simulation with no screen
 
@@ -57,13 +58,17 @@ Crown & Clan is a village-raiding game in the mould of Clash of Clans, written i
 <figcaption>The simulation never imports Phaser, so the same code runs a battle on screen, in a replay, in a test or in Node.</figcaption>
 </figure>
 
+One architectural rule governs the entire 66,000-line codebase: `GameModel` may never import Phaser, a scene class, or a single byte of rendering data. Fifty-three files in the repository touch Phaser, and none of them is reachable from the simulation. During a live battle, the Phaser scene steps `GameModel` twenty times a second (`step(0.05)`) and interpolates unit positions between ticks so movement looks smooth at any display refresh rate without the model knowing frames exist. Because the simulation is pure TypeScript, the exact same class runs live raids in the browser, verifies deterministic replays in CI, and generated every figure on this page from a Node script.
+
 ## Where you attack from
 
 <figure class="fig wide" id="coc-raid" style="--reserve: 560px" data-src="{{ '/assets/data/web-coc-demo.json' | relative_url }}">
 <figcaption>One army, twelve landing points around Ember Keep, each raid run by the game's engine. Troops can't land in the shaded zone.</figcaption>
 </figure>
 
-Troops walk to the nearest building they like (Giants: defenses), so the landing point decides what they meet first. <a class="act" href="#coc-raid" data-point="3">From the northeast</a> the army is wiped out at 37%. <a class="act" href="#coc-raid" data-point="5">From lower down the same side</a>, it takes three stars in 42 seconds.
+Once deployed outside the shaded exclusion zone, every unit follows a greedy target rule: Barbarians and Archers march toward the nearest building of any kind, while Giants ignore resource huts and head straight for the nearest defense. That makes your landing point decisive, because it determines which defenses your Giants engage first and how long your damage dealers survive behind them.
+
+Deploy the exact same 42-troop army (6 Giants, 4 Wall Breakers, 16 Barbarians, 16 Archers) from twelve points around Ember Keep and the outcomes split completely. <a class="act" href="#coc-raid" data-point="3">From the northeast</a>, the army strings out into the village's defenses one at a time and dies at 37% destruction with zero stars. <a class="act" href="#coc-raid" data-point="5">From lower down the same side</a>, four of the six Giants survive into the core and the raid clears the village for all three stars in 42 seconds:
 
 ```ts
 b.stars = Number(b.destruction >= 50)
@@ -77,7 +82,9 @@ b.stars = Number(b.destruction >= 50)
 <figcaption>Routes from 64 points around the village, from the game's own <code>findPath</code>. Red: walls a route breaks through.</figcaption>
 </figure>
 
-Pathfinding is A* on the tile grid, where a step costs 1 and a step into a wall costs 7. <a class="act" href="#coc-paths" data-troop="giant">Giants</a> want the defenses inside the walls, so 20 of the 64 routes go through one. <a class="act" href="#coc-paths" data-troop="barbarian">Barbarians</a> never need to.
+Every ground unit finds its way across the 48×48 tile grid with four-directional A*. Buildings are solid obstacles, while walls are passable at a price: stepping onto open grass costs `1`, and stepping through a wall tile costs `7`. A troop will detour up to six extra tiles around a wall before deciding to stop and batter through it, recomputing its path whenever a building or wall segment falls.
+
+Because <a class="act" href="#coc-paths" data-troop="giant">Giants</a> only target defenses—and Ember Keep's defenses sit inside stone compartments—20 of the 64 perimeter starting points send them straight through a wall. <a class="act" href="#coc-paths" data-troop="barbarian">Barbarians</a> settle for the closest building of any kind, which from the perimeter is always an outside building, so their initial paths never break a wall at all.
 
 ## One army, twelve villages
 
@@ -85,7 +92,7 @@ Pathfinding is A* on the tile grid, where a step costs 1 and a step into a wall 
 <figcaption>Destruction on each of the campaign's twelve villages, for three armies deployed from the west.</figcaption>
 </figure>
 
-<a class="act" href="#coc-sweep" data-village="8">Air</a> clears the first eight villages as easily as the ground army, then falls off once the villages have two Air Defenses.
+Because `GameModel` runs without a screen, balancing the twelve-stage single-player campaign means sweeping test armies across every village in Node. Deployed from the west, the small starter army fades after the fourth village, while the medium ground force holds three stars through village eight. <a class="act" href="#coc-sweep" data-village="8">Air</a> (Balloons and Dragons) flies over every wall to clear the first eight villages just as easily as the ground army, then falls off sharply on the Expert stages as soon as villages gain a second Air Defense.
 
 ## Every step, recorded
 
@@ -93,4 +100,6 @@ Pathfinding is A* on the tile grid, where a step costs 1 and a step into a wall 
 <figcaption>The same raid with the same taps, stepped every 0.05 s and every 0.1 s. Lines trace each troop.</figcaption>
 </figure>
 
-A replay is the setup and every tap, simulated again, which only works if simulating again gives the same battle. So combat uses no random number generator, distances are computed by hand because browsers' `Math.hypot` results "disagree by a few bits", and the recording keeps every step size, since a different step size is a different battle, as the two boards show.
+Crown & Clan does not record a battle as video or as a stream of unit positions. A replay saves only the initial setup and your timestamped taps, then simulates the battle again from scratch—45 actions and 317 step sizes for the 16-second raid above, under 10 KB in all.
+
+That only works if simulating the raid a second time produces the exact same battle to the bit. Combat uses no ambient random number generator, hashing a fixed battle seed with a counter whenever a rule needs chance. Distances are computed with explicit arithmetic because browser implementations of `Math.hypot` can disagree by a few least-significant bits—enough for a projectile in Safari to arrive one tick later than in Chrome and fork the rest of the raid. And because a different tick rate produces a different battle—as the two boards above show <a class="act" href="#coc-det" data-time="8">halfway through the raid</a>—the recording logs every step size alongside every tap.

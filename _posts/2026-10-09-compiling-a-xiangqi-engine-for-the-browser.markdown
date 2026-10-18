@@ -2,14 +2,14 @@
 layout: post
 title: "Compiling a xiangqi engine for the browser"
 description: >-
-  web-xiangqi compiles Pikafish to WebAssembly and serves its 53 MB network
-  from a static host. The rules, the notation and the repetition law, as
-  boards you can play on.
+  How web-xiangqi compiles Pikafish to WebAssembly, streams its 53.7 MB neural
+  network from a static host, and implements xiangqi's blocking rules, notation,
+  halfmove clock, and repetition laws in the browser.
 date: 2026-10-09 12:00:00 -0400
 excerpt: >-
-  Xiangqi analysis with Pikafish compiled from source and running in the
-  browser tab. The rules, the notation and the repetition law, as boards you
-  can play on.
+  Compiling Pikafish from C++ to WebAssembly and serving its 53.7 MB neural
+  network from a static host—with interactive boards for xiangqi's rules,
+  traditional notation, 60-move clock, and perpetual-chase laws.
 links:
   - title: Live app
     url: https://sir-teo.github.io/web-xiangqi/
@@ -22,7 +22,7 @@ scripts:
   - /assets/js/web-xiangqi.js
 ---
 
-Pikafish is the strong open engine for xiangqi, Chinese chess, and a fork of Stockfish. web-xiangqi compiles it to WebAssembly and builds an analysis app around it. The boards below run the app's rules and notation code in the page. The engine output comes from the Pikafish build the app ships, run offline.
+Pikafish is the strongest open-source engine for xiangqi (Chinese chess)—a C++ fork of Stockfish built for a nine-by-ten grid divided by a river, palatial fortresses, and tactical rules that behave nothing like Western chess. **web-xiangqi** compiles Pikafish to WebAssembly, serves its 53.7 MB neural network from a static host, and wraps an analysis and game-review studio around it. Every interactive board below runs the app's own rule and notation code directly in the page, paired with evaluations from the Pikafish build the app ships.
 
 ## The rules
 
@@ -30,7 +30,9 @@ Pikafish is the strong open engine for xiangqi, Chinese chess, and a fork of Sto
 <figcaption>web-xiangqi's own move validation for the piece picked up. Dots are legal; crosses are moves a rule refuses, and the piece in the way is ringed.</figcaption>
 </figure>
 
-Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-preset="horse">a horse's leg can be blocked</a>, <a class="act" href="#xq-rules" data-preset="elephant">an elephant's eye too</a>, <a class="act" href="#xq-rules" data-preset="cannon">a cannon captures over exactly one screen</a>, and <a class="act" href="#xq-rules" data-preset="general">the generals may never face each other</a>. The app's move generator matches Pikafish's own counts exactly: 44 moves from the start, 1,920 two-move sequences, 79,666 three-move ones.
+Even if you play Western chess every day, four xiangqi rules will catch you off guard: <a class="act" href="#xq-rules" data-preset="horse">a horse's leg can be blocked</a> on the orthogonal step before its diagonal turn; <a class="act" href="#xq-rules" data-preset="elephant">an elephant's eye too</a> at the midpoint of its two-point diagonal jump (and elephants may never cross the river); <a class="act" href="#xq-rules" data-preset="cannon">a cannon captures over exactly one screen</a> while sliding like a rook when moving to an empty point; and <a class="act" href="#xq-rules" data-preset="general">the generals may never face each other</a> along an open file with no piece between them.
+
+Before the UI ever sends a position to the engine, its own TypeScript move generator has to agree with Pikafish on every legal move. A `perft` test suite pins the two together to the leaf: 44 moves from the starting board, 1,920 two-move sequences, and 79,666 three-move sequences.
 
 ## Writing a move down
 
@@ -45,7 +47,9 @@ Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-pre
 <figcaption>The most common first move, in Chinese and in WXF letters. 進 (+) is forward and 退 (−) back; moving straight forward or back, the last number counts steps, otherwise it names the file.</figcaption>
 </figure>
 
-<a class="act" href="#xq-rules" data-preset="start" data-play="h2e2">Play it on the board above</a>, or <a class="act" href="#xq-rules" data-pieces="letters">switch the pieces to letters</a>. To read a move someone typed, the app writes every legal move out in every notation and keeps the one that matches.
+Xiangqi notation reads like a four-character sentence rather than an algebraic square, with files numbered 1 to 9 from each player's own right-hand side. In the classic central-cannon opening `炮二平五` (`C2=5` in World Xiangqi Federation letters), Red takes the cannon (`炮`) on file two (`二`) and slides it horizontally (`平`) to the fifth file (`五`). When a piece advances (`進`, `+`) or retreats (`退`, `−`), the final character changes role depending on the piece: for pieces that travel straight along a file, it counts the steps taken; for diagonal pieces like horses, elephants, and advisors, it names the file they land on.
+
+You can <a class="act" href="#xq-rules" data-preset="start" data-play="h2e2">play `炮二平五` on the board above</a>, or <a class="act" href="#xq-rules" data-pieces="letters">switch the pieces to letters</a> if you are still learning the characters (Red and Black even use different characters for their own counterparts, such as `仕` and `士` for advisors). To parse a move a user types—whether in Chinese, WXF letters, or UCI coordinates—the app simply renders every legal move in the current position across all three notations and keeps the one that matches.
 
 ## Compiling Pikafish
 
@@ -93,7 +97,7 @@ Four rules a chess player won't expect: <a class="act" href="#xq-rules" data-pre
 <figcaption>One patched source tree, four cores chosen at load time by what the browser supports, a network that is almost all of the download, and what the threads buy.</figcaption>
 </figure>
 
-Most of the 340-line patch is plumbing. The part that matters turns a program that reads standard input into a library with one entry point:
+Pikafish is written as a command-line program that blocks on `stdin` waiting for UCI strings. A browser worker has no `stdin` to block on, so the heart of the 340-line patch turns `main()` into initialization and exposes a single C function that dispatches one command at a time:
 
 ```cpp
 extern "C" void command(const char* cmd) {
@@ -101,7 +105,9 @@ extern "C" void command(const char* cmd) {
 }
 ```
 
-Emscripten is pinned because 6.0.2 broke threads without saying so. The network is cached by the app's own service worker, since browsers won't keep a 53 MB response in the HTTP cache, and the same worker adds the two isolation headers that GitHub Pages can't send and the threaded core needs.
+The rest of the patch stubs out native threads for the single-threaded builds and removes NUMA node binding, producing four compact WASM binaries (~700 KB each) that the loader chooses between at startup. The compiler itself had to be pinned as tightly as the C++ source: Emscripten `6.0.2` quietly dropped a flag that told pthread workers where the engine's script lived, turning every spawned thread into `new Worker(undefined)` so the engine answered `uci` and then hung forever before `readyok`.
+
+Beside the 700 KB core sits `pikafish.nnue`, a 53.7 MB weight file that accounts for 97.6% of a first visit's download (and is already Zstandard-compressed, so gzipping it on the server actually makes it 8.8 KB larger). Because browsers refuse to store a 53 MB response in the standard HTTP cache, the app's service worker stores the network in Cache Storage itself—and attaches the two cross-origin isolation headers that GitHub Pages cannot send, taking an eight-thread search from 414,000 nodes a second to 3.7 million.
 
 ## The halfmove clock
 
@@ -109,7 +115,9 @@ Emscripten is pinned because 6.0.2 broke threads without saying so. The network 
 <figcaption>One endgame, searched by Pikafish at depth 14 for every value of the FEN's halfmove clock. Blue is a forced mate.</figcaption>
 </figure>
 
-Pikafish calls a game drawn after 120 plies without a capture, and reads the count from the FEN. Mate in three needs five plies, so the mate is still there <a class="act" href="#xq-clock" data-position="0" data-clock="115">at a clock of 115</a> and gone <a class="act" href="#xq-clock" data-position="0" data-clock="116">at 116</a>. The app used to write 0 into every FEN, and showed mates in positions the engine would have called drawn.
+Every FEN string ends with a halfmove clock counting plies since the last capture. Where chess draws after 50 moves (100 plies), xiangqi enforces a 60-move rule (120 plies), and Pikafish reads that counter directly from the FEN when searching.
+
+In the horse-and-advisor endgame above, forcing mate in three requires five plies. That means the forced mate is still there <a class="act" href="#xq-clock" data-position="0" data-clock="115">at a clock of 115</a> (`115 + 5 = 120`, delivering mate on the final legal ply) and vanishes into a `0.00` draw <a class="act" href="#xq-clock" data-position="0" data-clock="116">at 116</a>. Early versions of web-xiangqi wrote a hardcoded `0` into the clock field of every FEN and ignored the clock on pasted positions—which caused endgames pasted near the 60-move limit to promise forced mates in positions the engine itself would have declared drawn.
 
 ## Repetition
 
@@ -117,7 +125,9 @@ Pikafish calls a game drawn after 120 plies without a capture, and reads the cou
 <figcaption>Two repeating lines, judged after each move by web-xiangqi's own check and by Pikafish's rule judge.</figcaption>
 </figure>
 
-In xiangqi, the side that checks or chases on every move of a repetition loses. The app's own check catches <a class="act" href="#xq-repetition" data-line="check" data-move="5">perpetual check</a>. It does not try to catch <a class="act" href="#xq-repetition" data-line="chase" data-move="11">perpetual chase</a>, which needs to know what is attacked and what is protected. Pikafish judges both, through a command the build exposes but only a test calls so far.
+Repetition is where xiangqi breaks hardest from Western chess. Repeating a board position three times is not an automatic draw; the outcome depends on *who is forcing the loop*. A player who checks on every move of a cycle loses unless they deviate, and so does a player who perpetually chases an unprotected piece.
+
+The app's own TypeScript detector catches <a class="act" href="#xq-repetition" data-line="check" data-move="5">perpetual check</a> as soon as the cycle forms, since every recorded move already carries a check flag. It deliberately does not guess at <a class="act" href="#xq-repetition" data-line="chase" data-move="11">perpetual chase</a>: deciding whether a move legally "chases" requires knowing which piece became newly attacked, whether it is defended, and a tangle of exceptions for pinned pieces, generals, and soldiers. As the source comments put it, guessing at that would be worse than saying nothing—so the UI flags an unverified loop as a draw *unless a chase is involved*, while the WASM patch exposes Pikafish's internal `rulejudge` command, which adjudicates both lines above.
 
 ## Reviewing a game
 
@@ -125,4 +135,6 @@ In xiangqi, the side that checks or chases on every move of a repetition loses. 
 <figcaption>A game between the app's Easy and Medium levels, reviewed by Pikafish at depth 16 with the app's review code, opened on the move that decided it.</figcaption>
 </figure>
 
-The game is between two of the app's own levels rather than a famous one, for a reason. The app once shipped ten "classic games" credited to grandmasters, and they were made up. The review is what gave them away, at 20 to 28% accuracy where random moves score 7%.
+The review pipeline scores every position at depth 16, maps centipawns onto a win-probability curve, and grades each move by the milder of its centipawn and winning-chance losses. In the game above, play stays roughly level through a pair of mutual stumbles around <a class="act" href="#xq-review" data-move="64">move 32</a> until Red steps its general off the back rank with <a class="act" href="#xq-review" data-move="89">45.帥五進一</a>, dropping from 43% winning chances to 17% and walking into mate eleven plies later.
+
+That showcase game was played between two of the app's own AI levels (`Easy` and `Medium`) rather than lifted from a book, and for good reason. web-xiangqi once shipped ten "classic grandmaster games" complete with player names, tournament titles, and dates. None of them were real: seven shared the exact same eight-move opening block, and two contained illegal moves that had been loading silently truncated. What gave the fabrication away was pointing the app's own review engine at them—the supposed grandmasters scored 20% to 28% accuracy with seven to ten blunders apiece, barely ahead of the 7% scored by random legal moves.
