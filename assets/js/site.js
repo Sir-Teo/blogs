@@ -80,6 +80,42 @@
     }
   }
 
+  // ---- Home index micro-figures --------------------------------------------
+  var home = document.querySelector('.home');
+  if (home) {
+    var figToggle = home.querySelector('[data-toggle-figs]');
+    if (figToggle) {
+      var pinned = false;
+      var syncFigs = function (on) {
+        home.classList.toggle('figs-active', on);
+        figToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+      };
+      figToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        pinned = !pinned;
+        syncFigs(pinned);
+      });
+      figToggle.addEventListener('pointerenter', function () {
+        if (!pinned) home.classList.add('figs-active');
+      });
+      figToggle.addEventListener('pointerleave', function () {
+        if (!pinned) home.classList.remove('figs-active');
+      });
+    }
+    home.querySelectorAll('.post-index li').forEach(function (li) {
+      li.addEventListener('pointermove', function (e) {
+        var r = li.getBoundingClientRect();
+        var t = Math.max(-1, Math.min(1, ((e.clientX - r.left) / (r.width || 1) - 0.5) * 2));
+        li.style.setProperty('--scrub', (t * 6).toFixed(2) + 'px');
+        li.style.setProperty('--scrub-deg', (t * 10).toFixed(1) + 'deg');
+      });
+      li.addEventListener('pointerleave', function () {
+        li.style.removeProperty('--scrub');
+        li.style.removeProperty('--scrub-deg');
+      });
+    });
+  }
+
   // ---- Copy buttons ---------------------------------------------------------
   if (navigator.clipboard) {
     document.querySelectorAll('div.highlight').forEach(function (block) {

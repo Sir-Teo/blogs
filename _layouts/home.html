@@ -5,16 +5,37 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 %}
-  <ol class="post-index" reversed>
+  <ol class="post-index" id="posts" reversed>
     {%- for post in site.posts %}
+    {%- assign words = post.content | strip_html | number_of_words -%}
+    {%- assign minutes = words | plus: 115 | divided_by: 230 | at_least: 1 -%}
+    {%- assign figs = post.content | split: '<figure class="fig' | size | minus: 1 -%}
     <li>
-      <a href="{{ post.url | relative_url }}">
-        <span class="post-index-title">{{ post.title | escape }}</span>
-        <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
-      </a>
-      {%- if post.excerpt %}
-      <p>{{ post.excerpt | strip_html | normalize_whitespace }}</p>
-      {%- endif %}
+      {%- include post-thumb.html post=post -%}
+      <div class="post-index-body">
+        <div class="post-index-head">
+          <a class="post-index-link" href="{{ post.url | relative_url }}">
+            <span class="post-index-title">{{ post.title | escape }}</span>
+          </a>
+          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+        </div>
+        {%- if post.excerpt %}
+        <p class="post-index-excerpt">{{ post.excerpt | strip_html | normalize_whitespace }}</p>
+        {%- endif %}
+        <p class="meta post-index-meta">
+          {%- if figs > 0 %}
+          <span class="post-index-figs">{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
+          {%- endif %}
+          <span>{{ minutes }} min read</span>
+          {%- if post.links %}
+          <span class="meta-links">
+            {%- for link in post.links %}
+            <a href="{{ link.url }}">{{ link.title }}<span aria-hidden="true"> ↗</span></a>
+            {%- endfor %}
+          </span>
+          {%- endif %}
+        </p>
+      </div>
     </li>
     {%- endfor %}
   </ol>

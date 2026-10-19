@@ -1,0 +1,369 @@
+{%- assign slug = include.post.slug | default: '' -%}
+<div class="post-thumb-wrap" aria-hidden="true">
+  {%- case slug -%}
+
+  {%- when 'drawing-six-thousand-ideas-in-one-dependency-graph' -%}
+  <!-- 88-shelf barycentre DAG atlas with multi-field OKLCH spectrum & transitive cones -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- 5 shelf discipline rows -->
+    <g class="thumb-grid">
+      <line x1="8" y1="13" x2="96" y2="13"/>
+      <line x1="8" y1="24" x2="96" y2="24"/>
+      <line x1="8" y1="35" x2="96" y2="35"/>
+      <line x1="8" y1="46" x2="96" y2="46"/>
+      <line x1="8" y1="57" x2="96" y2="57"/>
+    </g>
+    <!-- Background DAG edges -->
+    <g class="thumb-wire">
+      <path d="M14 13 C22 13, 22 24, 30 24 M14 46 C22 46, 22 57, 30 57 M30 13 C37 13, 37 24, 44 24 M44 46 C53 46, 53 57, 62 57 M62 13 L78 13 M78 46 L90 57"/>
+    </g>
+    <!-- Multi-field nodes across shelves -->
+    <g>
+      <!-- Row 1: Analysis (Blue) -->
+      <circle class="c-blue" cx="14" cy="13" r="1.8"/><circle class="c-blue" cx="22" cy="13" r="1.8"/><circle class="c-blue" cx="30" cy="13" r="1.8"/><circle class="c-blue" cx="48" cy="13" r="1.8"/><circle class="c-blue" cx="78" cy="13" r="1.8"/><circle class="c-blue" cx="90" cy="13" r="1.8"/>
+      <!-- Row 2: Algebra/Geometry (Purple) -->
+      <circle class="c-purple" cx="20" cy="24" r="1.8"/><circle class="c-purple" cx="38" cy="24" r="1.8"/><circle class="c-purple" cx="52" cy="24" r="1.8"/><circle class="c-purple" cx="72" cy="24" r="1.8"/>
+      <!-- Row 3: Physics/Mechanics (Cyan) -->
+      <circle class="c-cyan" cx="14" cy="35" r="1.8"/><circle class="c-cyan" cx="22" cy="35" r="1.8"/><circle class="c-cyan" cx="54" cy="35" r="1.8"/><circle class="c-cyan" cx="70" cy="35" r="1.8"/><circle class="c-cyan" cx="82" cy="35" r="1.8"/>
+      <!-- Row 4: Probability/Stats (Amber) -->
+      <circle class="c-amber" cx="14" cy="46" r="1.8"/><circle class="c-amber" cx="30" cy="46" r="1.8"/><circle class="c-amber" cx="44" cy="46" r="1.8"/><circle class="c-amber" cx="54" cy="46" r="1.8"/><circle class="c-amber" cx="78" cy="46" r="1.8"/>
+      <!-- Row 5: Algorithms/CS (Emerald) -->
+      <circle class="c-emerald" cx="18" cy="57" r="1.8"/><circle class="c-emerald" cx="30" cy="57" r="1.8"/><circle class="c-emerald" cx="46" cy="57" r="1.8"/><circle class="c-emerald" cx="62" cy="57" r="1.8"/><circle class="c-emerald" cx="74" cy="57" r="1.8"/><circle class="c-emerald" cx="90" cy="57" r="1.8"/>
+    </g>
+    <!-- Transitive ancestor & descendant cone from pivot node (44, 35) -->
+    <g class="thumb-accent">
+      <path class="soft-cyan" d="M12 24 L44 35 L12 46 Z"/>
+      <path class="soft-blue" d="M44 35 L92 11 L92 59 Z"/>
+      <!-- Upstream ancestor links (Cyan) -->
+      <path class="s-cyan" stroke-width="1.3" fill="none" stroke-linecap="round" d="M12 24 C22 24, 22 35, 30 35 L44 35 M18 46 C26 46, 34 35, 44 35"/>
+      <!-- Downstream descendant links (Blue) -->
+      <path class="s-blue" stroke-width="1.35" fill="none" stroke-linecap="round" d="M44 35 C54 35, 54 13, 64 13 L84 24 M44 35 C54 35, 54 24, 64 24 L90 24 M44 35 L64 35 L90 35 M44 35 C54 35, 54 46, 64 46 L86 46 M64 46 C74 46, 74 57, 84 57"/>
+      <!-- Ancestor highlight nodes -->
+      <circle class="c-cyan" cx="12" cy="24" r="2.3"/>
+      <circle class="c-amber" cx="18" cy="46" r="2.3"/>
+      <circle class="c-cyan" cx="30" cy="35" r="2.3"/>
+      <!-- Pivot node (Sapphire Blue) -->
+      <circle class="thumb-halo soft-blue" cx="44" cy="35" r="6.5"/>
+      <circle class="c-blue" cx="44" cy="35" r="3.2"/>
+      <circle fill="#fff" cx="44" cy="35" r="1.2"/>
+      <!-- Descendant targets in multi-field hues -->
+      <circle class="c-blue" cx="64" cy="13" r="2.2"/>
+      <circle class="c-purple" cx="64" cy="24" r="2.2"/>
+      <circle class="c-cyan" cx="64" cy="35" r="2.2"/>
+      <circle class="c-amber" cx="64" cy="46" r="2.2"/>
+      <circle class="c-purple" cx="84" cy="24" r="2.1"/>
+      <circle class="c-blue" cx="90" cy="35" r="2.1"/>
+      <circle class="c-amber" cx="86" cy="46" r="2.1"/>
+      <circle class="c-emerald" cx="84" cy="57" r="2.1"/>
+    </g>
+  </svg>
+
+  {%- when 'rendering-twenty-two-hours-of-math-from-code' -%}
+  <!-- cos(x) = x cobweb fixed-point spiral + Cauchy discs + colorful EN/ZH bookmark tracks -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- Upper stage axes -->
+    <g class="thumb-wire">
+      <line x1="11" y1="39" x2="54" y2="39"/>
+      <line x1="13" y1="8" x2="13" y2="39"/>
+      <line x1="59" y1="9" x2="59" y2="39"/>
+    </g>
+    <!-- y = x diagonal (Emerald) & y = cos(x) wave (Cyan) -->
+    <line class="s-emerald" stroke-width="1" stroke-dasharray="2 2" x1="14" y1="38" x2="50" y2="9"/>
+    <path class="s-cyan" stroke-width="1.3" fill="none" stroke-linecap="round" d="M14 11 C25 11, 37 19, 51 38"/>
+    <!-- Right stage: nested Cauchy discs (Purple & Amber) -->
+    <circle class="s-purple" stroke-width="1" stroke-dasharray="2 2" fill="none" cx="78" cy="24" r="13"/>
+    <circle class="s-blue" stroke-width="1" fill="none" cx="79.5" cy="23" r="8.2"/>
+    <circle class="soft-amber" cx="81" cy="22" r="4.2"/>
+    <circle class="s-amber" stroke-width="1.2" fill="none" cx="81" cy="22" r="4.2"/>
+    <circle class="c-red" cx="81" cy="22" r="1.5"/>
+    <!-- Bottom EN / ZH voiceover timeline tracks (Blue play, Amber wait; Purple play, Emerald wait) -->
+    <g>
+      <!-- EN track -->
+      <rect class="c-blue" x="11" y="47" width="14" height="3.5" rx="1"/>
+      <rect class="c-amber" x="27" y="47" width="4" height="3.5" rx="0.8"/>
+      <rect class="c-blue" x="33" y="47" width="15" height="3.5" rx="1"/>
+      <rect class="c-blue" x="53" y="47" width="22" height="3.5" rx="1"/>
+      <rect class="c-amber" x="77" y="47" width="4" height="3.5" rx="0.8"/>
+      <rect class="c-blue" x="83" y="47" width="10" height="3.5" rx="1"/>
+      <!-- ZH track -->
+      <rect class="c-purple" x="11" y="54" width="14" height="3.5" rx="1"/>
+      <rect class="c-emerald" x="27" y="54" width="6" height="3.5" rx="0.8"/>
+      <rect class="c-purple" x="35" y="54" width="15" height="3.5" rx="1"/>
+      <rect class="c-purple" x="55" y="54" width="22" height="3.5" rx="1"/>
+      <rect class="c-emerald" x="79" y="54" width="4" height="3.5" rx="0.8"/>
+      <rect class="c-purple" x="85" y="54" width="8" height="3.5" rx="1"/>
+    </g>
+    <!-- Cobweb staircase in Coral + Fixed Point dot in Red -->
+    <g class="thumb-accent">
+      <path class="s-coral" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M18 38 V13.2 H44 V29.5 H26.5 V17.2 H37.5 V24.5 H31.5 V20.8"/>
+      <circle class="thumb-halo soft-red" cx="33.5" cy="22" r="4.5"/>
+      <circle class="c-red" cx="33.5" cy="22" r="2.2"/>
+      <!-- Scrubbable bookmark playhead -->
+      <g class="thumb-scrub">
+        <rect class="soft-coral" x="52" y="45.5" width="25" height="13.5" rx="2"/>
+        <line class="s-coral" stroke-width="1.2" x1="53" y1="43" x2="53" y2="61"/>
+        <polygon class="c-coral" points="50.8,42.5 55.2,42.5 53,45.5"/>
+      </g>
+    </g>
+  </svg>
+
+  {%- when 'putting-a-trading-desk-behind-a-dashboard' -%}
+  <!-- TradingAgents LangGraph: Green Bull vs Red Bear debate + Risk triad + Emerald BUY verdict -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- Analyst fan-in (Domain colors) -->
+    <g class="thumb-wire">
+      <path d="M13 12 L29 19 M13 21 L29 19 M13 31 L29 33 M13 40 L29 33"/>
+      <path d="M51 26 L67 15 M51 26 L67 26 M51 26 L67 37"/>
+      <path d="M67 15 L82 26 M67 26 L82 26 M67 37 L82 26"/>
+    </g>
+    <!-- 4 Specialized Analysts -->
+    <circle class="c-cyan" cx="13" cy="12" r="2.2"/>
+    <circle class="c-purple" cx="13" cy="21" r="2.2"/>
+    <circle class="c-amber" cx="13" cy="31" r="2.2"/>
+    <circle class="c-blue" cx="13" cy="40" r="2.2"/>
+    <!-- Trader node (Blue) -->
+    <rect class="c-blue" x="48" y="23" width="6" height="6" rx="1.5"/>
+    <!-- Risk Committee triad: Aggressive (Red), Neutral (Amber), Conservative (Green) -->
+    <circle class="c-red" cx="67" cy="15" r="2.4"/>
+    <circle class="c-amber" cx="67" cy="26" r="2.4"/>
+    <circle class="c-emerald" cx="67" cy="37" r="2.4"/>
+    <!-- 138-tool ceiling bar: Core (Blue), Page (Cyan), Intent (Amber) vs Red ceiling -->
+    <g class="thumb-bars">
+      <rect class="c-blue" x="11" y="51" width="22" height="5" rx="1"/>
+      <rect class="c-cyan" x="35" y="51" width="26" height="5" rx="1"/>
+      <rect class="c-amber" x="63" y="51" width="23" height="5" rx="1"/>
+    </g>
+    <line class="s-red" stroke-width="1.3" x1="89" y1="48" x2="89" y2="59"/>
+    <!-- Active Bull vs Bear debate cycle (Green <-> Red) and BUY verdict -->
+    <g class="thumb-accent">
+      <!-- Bull node & aura (Green) -->
+      <circle class="soft-emerald" cx="31" cy="18" r="5.5"/>
+      <circle class="c-emerald" cx="31" cy="18" r="2.6"/>
+      <!-- Bear node & aura (Red) -->
+      <circle class="soft-red" cx="31" cy="34" r="5.5"/>
+      <circle class="c-red" cx="31" cy="34" r="2.6"/>
+      <!-- Rebuttal arcs -->
+      <path class="s-emerald" stroke-width="1.3" fill="none" stroke-linecap="round" d="M33 18 C39 18, 40 34, 33 34"/>
+      <path class="s-red" stroke-width="1.3" fill="none" stroke-linecap="round" d="M29 34 C23 34, 24 18, 29 18"/>
+      <!-- Decision pipeline vector to verdict -->
+      <path class="s-emerald" stroke-width="1.3" fill="none" stroke-linecap="round" d="M37 26 L48 26 M54 26 L65 26 M69 26 L81 26"/>
+      <!-- Final BUY verdict badge (Emerald Green) -->
+      <circle class="thumb-halo soft-emerald" cx="87" cy="26" r="6"/>
+      <rect class="c-emerald" x="81" y="21.5" width="12" height="9" rx="2.5"/>
+      <circle fill="#fff" cx="87" cy="26" r="1.6"/>
+    </g>
+  </svg>
+
+  {%- when 'porting-san-andreas-to-a-browser-tab' -%}
+  <!-- Grand Theft Auto streaming world: highway, cyan resident window, warning-amber hold cliff, and red vehicle -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- World chunk grid -->
+    <g class="thumb-grid">
+      <line x1="26" y1="6" x2="26" y2="62"/><line x1="52" y1="6" x2="52" y2="62"/><line x1="78" y1="6" x2="78" y2="62"/>
+      <line x1="8" y1="22" x2="96" y2="22"/><line x1="8" y1="46" x2="96" y2="46"/>
+    </g>
+    <!-- Asphalt highway with golden dashed centerline -->
+    <line stroke="#404044" stroke-width="5" stroke-linecap="round" x1="12" y1="56" x2="92" y2="12"/>
+    <line class="s-amber" stroke-width="1" stroke-dasharray="3 3" x1="12" y1="56" x2="92" y2="12"/>
+    <!-- Resident 180-unit streaming circle (Cyan) -->
+    <circle class="s-cyan" stroke-width="1.2" fill="none" cx="39" cy="41" r="19"/>
+    <!-- 85% streaming hold cliff ring (Warning Amber) -->
+    <circle class="s-amber" stroke-width="1" stroke-dasharray="2 2" fill="none" cx="39" cy="41" r="15.5"/>
+    <!-- Look-ahead prefetch window (Sunset Purple / Coral) -->
+    <circle class="soft-purple" cx="63" cy="28" r="19"/>
+    <circle class="s-coral" stroke-width="1" stroke-dasharray="3 2.5" fill="none" cx="63" cy="28" r="19"/>
+    <!-- Camera frustum & vehicle -->
+    <g class="thumb-accent">
+      <g class="thumb-frustum">
+        <path class="soft-cyan" d="M43 39 L74 14 L82 33 Z"/>
+        <line class="s-cyan" stroke-width="1.3" x1="43" y1="39" x2="63" y2="28"/>
+        <!-- Look-ahead trigger dot (+30%) -->
+        <circle class="thumb-halo soft-cyan" cx="63" cy="28" r="5"/>
+        <circle class="c-cyan" cx="63" cy="28" r="2.2"/>
+      </g>
+      <!-- Red vehicle on the highway -->
+      <g transform="translate(43 39) rotate(-29)">
+        <rect class="c-red" x="-4.5" y="-2.5" width="9" height="5" rx="1.3"/>
+        <circle fill="#fff" cx="3" cy="-1.5" r="0.8"/>
+        <circle fill="#fff" cx="3" cy="1.5" r="0.8"/>
+      </g>
+    </g>
+  </svg>
+
+  {%- when 'replaying-a-village-raid' -%}
+  <!-- Ember Keep: Gold exclusion zone, Purple/Amber buildings, Red Town Hall, Blue Giant A* wall breach -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- Gold exclusion boundary -->
+    <rect class="s-amber" stroke-width="1" stroke-dasharray="3 2" fill="none" x="28" y="8" width="66" height="52" rx="4"/>
+    <!-- Stone wall compartments (Slate) -->
+    <path stroke="#78716c" stroke-width="1.5" fill="none" d="M42 15 H84 V53 H42 V39 M42 29 V15 M62 15 V53 M42 34 H84"/>
+    <!-- Village buildings: Elixir (Purple) and Gold (Amber) -->
+    <rect class="c-purple" x="48" y="20" width="8" height="8" rx="1.5"/>
+    <rect class="c-amber" x="48" y="40" width="8" height="8" rx="1.5"/>
+    <rect class="c-purple" x="70" y="20" width="8" height="8" rx="1.5"/>
+    <!-- Central Town Hall (Royal Red) -->
+    <rect class="soft-red" x="66" y="36" width="14" height="14" rx="2"/>
+    <rect class="c-red" x="68" y="38" width="10" height="10" rx="1.5"/>
+    <!-- Barbarian detour around outer perimeter (Gold dashed) -->
+    <path class="s-amber" stroke-width="1.2" stroke-dasharray="2.5 2" fill="none" d="M13 20 H35 V11 H52 V20"/>
+    <circle class="c-amber" cx="13" cy="20" r="2.2"/>
+    <!-- Giant A* path punching straight through wall tile (Electric Blue) -->
+    <g class="thumb-accent">
+      <path class="s-blue" stroke-width="1.4" fill="none" stroke-linecap="round" d="M13 34 H42 L52 44 H68"/>
+      <circle class="c-blue" cx="13" cy="34" r="2.6"/>
+      <!-- Breached wall tile (Explosive Coral/Red) -->
+      <rect class="soft-coral" x="38" y="30" width="8" height="8" rx="1.5"/>
+      <circle class="thumb-halo soft-coral" cx="42" cy="34" r="5.5"/>
+      <circle class="c-coral" cx="42" cy="34" r="2.2"/>
+      <circle class="c-blue" cx="73" cy="43" r="2.6"/>
+      <!-- 3 Victory Stars in Gold -->
+      <circle class="c-amber" cx="80" cy="14" r="1.4"/>
+      <circle class="c-amber" cx="84" cy="14" r="1.4"/>
+      <circle class="c-amber" cx="88" cy="14" r="1.4"/>
+    </g>
+  </svg>
+
+  {%- when 'compiling-a-xiangqi-engine-for-the-browser' -%}
+  <!-- Traditional Xiangqi: Warm wood board, Red piece, Cinnabar palace, Jade river & Emerald legal jump -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg board-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- Chu River band at top (Jade tint) -->
+    <rect class="soft-cyan" x="18" y="6" width="68" height="4" rx="1"/>
+    <!-- 4x3 Xiangqi grid with palace diagonals -->
+    <g class="board-line">
+      <rect fill="none" stroke-width="1" x="18" y="10" width="68" height="48"/>
+      <line stroke-width="1" x1="40.6" y1="10" x2="40.6" y2="58"/>
+      <line stroke-width="1" x1="63.3" y1="10" x2="63.3" y2="58"/>
+      <line stroke-width="1" x1="18" y1="26" x2="86" y2="26"/>
+      <line stroke-width="1" x1="18" y1="42" x2="86" y2="42"/>
+      <!-- Palace diagonals -->
+      <line stroke-width="1" x1="18" y1="10" x2="63.3" y2="42"/>
+      <line stroke-width="1" x1="63.3" y1="10" x2="18" y2="42"/>
+    </g>
+    <!-- Blocking piece at horse's leg (Dark Ink) -->
+    <circle fill="#262628" stroke="#52525b" stroke-width="1" cx="40.6" cy="26" r="4.8"/>
+    <!-- Refused jump crosses (Crimson Red) -->
+    <g class="s-red" stroke-width="1.3" stroke-linecap="round">
+      <path d="M16 8 L20 12 M20 8 L16 12"/>
+      <path d="M61.3 8 L65.3 12 M65.3 8 L61.3 12"/>
+    </g>
+    <!-- Legal unblocked Horse jump (Jade / Emerald Green) -->
+    <g class="thumb-accent">
+      <path class="s-emerald" stroke-width="1.4" fill="none" stroke-linecap="round" d="M40.6 42 H63.3 L86 26 M63.3 42 L86 58"/>
+      <!-- Legal destination rings -->
+      <circle class="thumb-halo soft-emerald" cx="86" cy="26" r="5.8"/>
+      <circle class="s-emerald" stroke-width="1.3" fill="none" cx="86" cy="26" r="3.2"/>
+      <circle class="c-emerald" cx="86" cy="26" r="1.6"/>
+      <circle class="s-emerald" stroke-width="1.3" fill="none" cx="86" cy="58" r="2.8"/>
+      <circle class="c-emerald" cx="86" cy="58" r="1.4"/>
+      <!-- Red Horse piece disk -->
+      <circle class="soft-red" cx="40.6" cy="42" r="6.2"/>
+      <circle class="s-red" stroke-width="1.5" fill="#fef2f2" cx="40.6" cy="42" r="5.2"/>
+      <circle class="c-red" cx="40.6" cy="42" r="2.4"/>
+    </g>
+  </svg>
+
+  {%- when 'grading-chess-moves-in-a-browser-tab' -%}
+  <!-- Lichess review: Green win-advantage, Red blunder cliff (-66%), and multi-color move grade histogram -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- 50% equilibrium midline -->
+    <line class="thumb-wire-dash" x1="10" y1="27" x2="94" y2="27"/>
+    <!-- Green winning area & Red losing area -->
+    <path class="soft-emerald" d="M10 27 L20 26 L30 22 L40 16 L51 14 L63 12 L63 27 Z"/>
+    <path class="soft-red" d="M63 27 L63 41 L74 39 L84 42 L94 43 L94 27 Z"/>
+    <!-- Win% curve: transitions from Emerald Green to Crimson Red -->
+    <path class="s-emerald" stroke-width="1.3" fill="none" stroke-linecap="round" d="M10 30 L20 26 L30 22 L40 16 L51 14 L63 12"/>
+    <path class="s-red" stroke-width="1.3" fill="none" stroke-linecap="round" d="M63 41 L74 39 L84 42 L94 43"/>
+    <!-- Accuracy histogram along bottom (Emerald Best, Cyan Good, Amber Inaccuracy, Red Blunder) -->
+    <g>
+      <rect class="c-emerald" x="12" y="51" width="4" height="9" rx="0.8"/>
+      <rect class="c-cyan" x="19" y="50" width="4" height="10" rx="0.8"/>
+      <rect class="c-emerald" x="26" y="51" width="4" height="9" rx="0.8"/>
+      <rect class="c-emerald" x="33" y="49" width="4" height="11" rx="0.8"/>
+      <rect class="c-amber" x="40" y="52" width="4" height="8" rx="0.8"/>
+      <rect class="c-emerald" x="47" y="49" width="4" height="11" rx="0.8"/>
+      <rect class="c-cyan" x="54" y="50" width="4" height="10" rx="0.8"/>
+      <!-- The Blunder bar collapses down in Crimson Red -->
+      <rect class="c-red" x="61" y="56" width="4" height="4" rx="0.8"/>
+      <rect class="c-emerald" x="68" y="51" width="4" height="9" rx="0.8"/>
+      <rect class="c-cyan" x="75" y="50" width="4" height="10" rx="0.8"/>
+      <rect class="c-emerald" x="82" y="51" width="4" height="9" rx="0.8"/>
+      <rect class="c-emerald" x="89" y="50" width="4" height="10" rx="0.8"/>
+    </g>
+    <!-- 19...Kf8 Blunder Cliff (-66%) in Red -->
+    <g class="thumb-accent">
+      <line class="s-red" stroke-width="1.5" stroke-linecap="round" x1="63" y1="12" x2="63" y2="41"/>
+      <circle class="c-emerald" cx="63" cy="12" r="2.2"/>
+      <circle class="thumb-halo soft-red" cx="63" cy="41" r="5.8"/>
+      <circle class="s-red" stroke-width="1.4" fill="#fff" cx="63" cy="41" r="2.8"/>
+      <circle class="c-red" cx="63" cy="41" r="1.4"/>
+      <!-- Blunder pill badge "??" in Red -->
+      <rect class="soft-red" x="69" y="22" width="13" height="8" rx="2"/>
+      <rect class="c-red" x="70.5" y="23.5" width="10" height="5" rx="1"/>
+    </g>
+  </svg>
+
+  {%- when 'putting-katago-in-a-browser-tab' -%}
+  <!-- KaTrain Go board: Beechwood, Black/White stones, Blue/Coral territory swing, Emerald PUCT candidate -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg board-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <!-- 5x4 Go corner intersection grid -->
+    <g class="board-line">
+      <line stroke-width="1" x1="18" y1="11" x2="86" y2="11"/>
+      <line stroke-width="1" x1="18" y1="25" x2="86" y2="25"/>
+      <line stroke-width="1" x1="18" y1="39" x2="86" y2="39"/>
+      <line stroke-width="1" x1="18" y1="53" x2="86" y2="53"/>
+      <line stroke-width="1" x1="18" y1="11" x2="18" y2="57"/>
+      <line stroke-width="1" x1="35" y1="11" x2="35" y2="57"/>
+      <line stroke-width="1" x1="52" y1="11" x2="52" y2="57"/>
+      <line stroke-width="1" x1="69" y1="11" x2="69" y2="57"/>
+      <line stroke-width="1" x1="86" y1="11" x2="86" y2="57"/>
+    </g>
+    <!-- Territory ownership swing map (KaTrain): Black territory (Cyan/Blue) & White territory (Coral) -->
+    <g>
+      <rect class="c-blue" x="16" y="9" width="4" height="4" rx="0.6"/>
+      <rect class="c-blue" x="33" y="9" width="4" height="4" rx="0.6"/>
+      <rect class="c-blue" x="16" y="23" width="4" height="4" rx="0.6"/>
+      <!-- White territory swing in coral -->
+      <rect class="c-coral" x="67" y="9" width="4" height="4" rx="0.6"/>
+      <rect class="c-coral" x="84" y="9" width="4" height="4" rx="0.6"/>
+      <rect class="c-coral" x="84" y="23" width="4" height="4" rx="0.6"/>
+      <rect class="c-coral" x="84" y="51" width="4" height="4" rx="0.6"/>
+    </g>
+    <!-- Tactical stones: Black & White -->
+    <circle class="thumb-stone-b" cx="35" cy="25" r="5.5"/>
+    <circle class="thumb-stone-b" cx="52" cy="25" r="5.5"/>
+    <circle class="thumb-stone-b" cx="35" cy="39" r="5.5"/>
+    <circle class="thumb-stone-w" cx="52" cy="39" r="5.5"/>
+    <circle class="thumb-stone-w" cx="69" cy="39" r="5.5"/>
+    <circle class="thumb-stone-w" cx="52" cy="53" r="5.5"/>
+    <!-- PUCT candidates: F6 (Purple ring) & H4 winner (Emerald Green ring) -->
+    <g class="thumb-accent">
+      <!-- Secondary candidate F6 (Purple) -->
+      <circle class="s-purple" stroke-width="1.3" stroke-dasharray="2 1.5" fill="none" cx="35" cy="53" r="4.2"/>
+      <circle class="c-purple" cx="35" cy="53" r="1.4"/>
+      <!-- Primary PUCT winner H4 (Emerald Green) -->
+      <circle class="thumb-halo soft-emerald" cx="69" cy="25" r="8"/>
+      <circle class="s-emerald" stroke-width="1.5" fill="none" cx="69" cy="25" r="5.4"/>
+      <circle class="c-emerald" cx="69" cy="25" r="2.2"/>
+      <circle fill="#fff" cx="69" cy="25" r="1"/>
+    </g>
+  </svg>
+
+  {%- else -%}
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <line class="thumb-wire" x1="14" y1="48" x2="90" y2="48"/>
+    <g class="thumb-accent">
+      <path class="s-blue" stroke-width="1.3" fill="none" d="M16 44 Q 52 14, 88 28"/>
+      <circle class="c-blue" cx="52" cy="26" r="2.8"/>
+    </g>
+  </svg>
+  {%- endcase -%}
+</div>
