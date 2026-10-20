@@ -74,14 +74,9 @@
   border-bottom: 1px solid var(--line);
   margin-bottom: 12px;
 }
-@media (min-width: 720px) {
-  .fig-controls {
-    flex-wrap: nowrap;
-  }
-}
 .fig-controls .tabs {
   gap: 4px 14px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 .fig-controls .tabs button {
   font-size: 13px;
@@ -92,7 +87,7 @@
   font-size: 12px;
   color: var(--fg-3);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 /* ----------------------------------------------------- architecture svg */
@@ -351,11 +346,6 @@
   gap: 4px;
   margin-bottom: 10px;
 }
-@media (min-width: 720px) {
-  .tv-presets {
-    flex-wrap: nowrap;
-  }
-}
 .tv-presets .tv-pill {
   padding: 2.5px 6px;
   font-size: 10.5px;
@@ -428,6 +418,7 @@
   left: 10px;
   right: 10px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
@@ -436,6 +427,7 @@
 .tv-map-hud > * { pointer-events: auto; }
 .tv-map-badge {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 3.5px 9px;
@@ -450,6 +442,7 @@
 .tv-map-badge b { color: var(--fg); font-weight: 600; }
 .tv-map-tools {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 .tv-map-tools .btn {
@@ -462,8 +455,10 @@
 .tv-map-legend {
   position: absolute;
   left: 10px;
+  right: 10px;
   bottom: 8px;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 3px 9px;
@@ -716,14 +711,6 @@
 }
 
 /* ------------------------------------------- Figure 3: 13-Field Workbench */
-@media (min-width: 720px) {
-  .post-body .fig-controls {
-    flex-wrap: nowrap;
-  }
-  .tv-presets, .tv-field-bar, .tv-bridge-pills {
-    flex-wrap: nowrap;
-  }
-}
 .tv-field-bar {
   display: flex;
   flex-wrap: wrap;
@@ -962,6 +949,15 @@
   background: var(--c-panel);
   margin: 8px 0;
 }
+.tv-slider-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 12.5px;
+}
+.tv-slider-row input { flex: 1 1 80px; min-width: 0; max-width: 100%; }
+.tv-slider-row > span:last-child { margin-left: auto; }
 .tv-prim-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

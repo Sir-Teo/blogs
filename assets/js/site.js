@@ -6,6 +6,31 @@
 
   var root = document.documentElement;
 
+  // ---- Search shortcut ----------------------------------------------------
+  var searchLink = document.querySelector('.search-toggle');
+  if (searchLink) {
+    searchLink.hidden = false;
+    function focusSearch(event) {
+      var input = document.getElementById('post-search');
+      if (input) {
+        event.preventDefault();
+        input.focus();
+      }
+    }
+    searchLink.addEventListener('click', function (event) {
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) focusSearch(event);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.key !== '/') return;
+      if (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
+      focusSearch(event);
+      if (!event.defaultPrevented) {
+        event.preventDefault();
+        window.location.href = searchLink.href;
+      }
+    });
+  }
+
   // ---- Theme --------------------------------------------------------------
   function storedTheme() {
     try { return localStorage.getItem('theme'); } catch (e) { return null; }

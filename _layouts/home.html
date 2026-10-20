@@ -5,6 +5,17 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 %}
+  <form class="post-search" role="search" data-index-url="{{ '/search.json' | relative_url }}" hidden>
+    <label class="visually-hidden" for="post-search">Search posts</label>
+    <div class="post-search-field">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
+      <input id="post-search" type="search" name="q" placeholder="Search posts…" autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false" aria-controls="posts" aria-describedby="search-status">
+      <button class="search-clear" type="button" hidden>Clear</button>
+      <kbd class="search-shortcut" aria-hidden="true">/</kbd>
+    </div>
+  </form>
+  <p class="search-status" id="search-status" role="status" aria-live="polite" aria-atomic="true"></p>
+  <p class="search-empty" hidden>Try another keyword, or clear the search to see all posts.</p>
   <ol class="post-index" id="posts" reversed>
     {%- for post in site.posts %}
     {%- assign words = post.content | strip_html | number_of_words -%}
@@ -41,3 +52,4 @@ layout: default
   </ol>
   {%- endif %}
 </div>
+<script defer src="{{ '/assets/js/search.js' | relative_url }}"></script>

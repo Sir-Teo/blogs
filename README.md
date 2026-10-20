@@ -48,3 +48,17 @@ scripts:
 ```
 
 Data a figure needs goes in `assets/data/`.
+
+### Search
+
+The home page filters posts by title, summary, and full article text. Use the
+header's search icon from any page, or press `/` outside a form field. Search
+ignores case and accents, accepts punctuation between keywords, and matches
+every keyword in a query, including post tags and categories. Matching words
+are highlighted; matches in the article body show a short passage for context.
+Clear the field or press Escape to show all posts again. Queries are saved in
+`?q=` so results can be bookmarked or shared.
+
+Jekyll generates `search.json` from published posts at build time; the browser
+loads it only when someone searches. If it cannot load, title and summary
+search still works. No search service, API key, or extra dependency is needed.

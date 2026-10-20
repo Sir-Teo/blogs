@@ -1018,7 +1018,7 @@
         min: 0,
         max: chain.length - 1,
         value: activeChainPos,
-        style: 'flex:1',
+        'aria-label': 'Dependency chain step',
         oninput: function (e) {
           activeChainPos = +e.target.value;
           renderChainPane();
@@ -1071,7 +1071,7 @@
 
       chainPane.appendChild(h('div', { class: 'tv-chain-panel' }, [
         skySvg,
-        h('div', { style: 'display:flex;align-items:center;gap:12px' }, [
+        h('div', { class: 'tv-slider-row' }, [
           h('span', { style: 'font-size:12.5px;color:var(--fg-2);white-space:nowrap', text: 'Scrub 77-step chain:' }),
           scrubSlider,
           h('span', { style: 'font-family:var(--mono);font-size:11.5px;color:var(--fg-2);white-space:nowrap', text: 'd = ' + activeChainPos + ' / ' + maxD }),
@@ -1795,7 +1795,7 @@
         var cv = h('canvas', { class: 'tv-audit-canvas', width: 420, height: 205 });
         caseBox.appendChild(cv);
 
-        var sliderRow = h('div', { style: 'display:flex;align-items:center;gap:10px;font-size:12.5px' }, [
+        var sliderRow = h('div', { class: 'tv-slider-row' }, [
           h('span', { style: 'color:var(--fg-2);white-space:nowrap', html: rich('Detectors $N_d$:') }),
           h('input', {
             type: 'range',
@@ -1803,7 +1803,7 @@
             max: 64,
             step: 2,
             value: ndVal,
-            style: 'flex:1',
+            'aria-label': 'Detector count',
             oninput: function (e) { ndVal = +e.target.value; drawRadon(); },
           }),
           h('span', { id: 'tv-nd-lbl', style: 'font-family:var(--mono);font-size:11.5px;white-space:nowrap;text-align:right' }),
@@ -1958,7 +1958,7 @@
         var cv2 = h('canvas', { class: 'tv-audit-canvas', width: 420, height: 205 });
         caseBox.appendChild(cv2);
 
-        caseBox.appendChild(h('div', { style: 'display:flex;align-items:center;gap:10px;font-size:12.5px' }, [
+        caseBox.appendChild(h('div', { class: 'tv-slider-row' }, [
           h('span', { style: 'color:var(--fg-2);white-space:nowrap', html: rich('Selection $s$:') }),
           h('input', {
             type: 'range',
@@ -1966,7 +1966,7 @@
             max: 0.90,
             step: 0.05,
             value: selS,
-            style: 'flex:1',
+            'aria-label': 'Selection coefficient',
             oninput: function (e) { selS = +e.target.value; drawPopgen(); },
           }),
           h('span', { id: 'tv-s-lbl', style: 'font-family:var(--mono);font-size:11.5px;white-space:nowrap;text-align:right' }),

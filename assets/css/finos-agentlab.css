@@ -220,7 +220,7 @@
 .jobs .ztl.dn { fill: var(--fg-2); font-weight: 600; }
 .jobs .zt.mid { stroke: var(--line-2); }
 .jobs .m { transition: opacity 0.12s; }
-.counts { font-size: 13px; color: var(--fg-3); white-space: pre; font-variant-numeric: tabular-nums; }
+.counts { font-size: 13px; color: var(--fg-3); white-space: pre-wrap; font-variant-numeric: tabular-nums; }
 .counts b { color: var(--fg); font-weight: 600; font-size: 15px; }
 .counts b.bad { color: var(--bad); }
 .counts b.skipc { color: var(--skip); }
