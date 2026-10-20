@@ -49,6 +49,11 @@ scripts:
 
 Data a figure needs goes in `assets/data/`.
 
+Destination icons use the local SVG sprite in `assets/icons.svg`, rendered by
+`_includes/link-icon.html` for navigation and post links. GitHub, YouTube,
+Bilibili, websites, and RSS each have a small icon that follows the current text colour.
+`site.js` also adds these icons to external links in article and page prose.
+
 ### Search
 
 The home page filters posts by title, summary, and full article text. Use the

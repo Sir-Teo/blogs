@@ -1,0 +1,12 @@
+{%- assign link_icon_host = include.url | split: '://' | last | split: '/' | first | downcase -%}
+{%- assign link_icon_name = 'globe' -%}
+{%- if include.name -%}
+  {%- assign link_icon_name = include.name -%}
+{%- elsif link_icon_host == 'github.com' or link_icon_host == 'www.github.com' -%}
+  {%- assign link_icon_name = 'github' -%}
+{%- elsif link_icon_host == 'youtube.com' or link_icon_host == 'www.youtube.com' or link_icon_host == 'youtu.be' -%}
+  {%- assign link_icon_name = 'youtube' -%}
+{%- elsif link_icon_host == 'bilibili.com' or link_icon_host contains '.bilibili.com' -%}
+  {%- assign link_icon_name = 'bilibili' -%}
+{%- endif -%}
+<svg class="link-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><use href="{{ '/assets/icons.svg' | relative_url }}#{{ link_icon_name | escape }}"/></svg>

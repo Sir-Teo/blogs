@@ -111,6 +111,21 @@ body {
 
 a { color: inherit; }
 
+.link-icon {
+  display: inline-block;
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  margin-inline-end: 0.35em;
+  vertical-align: -0.13em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 img, svg { max-width: 100%; }
@@ -155,6 +170,7 @@ img, svg { max-width: 100%; }
 .site-nav { display: flex; flex-shrink: 0; align-items: center; gap: 14px; margin-left: auto; }
 .site-nav a { color: var(--fg-2); text-decoration: none; }
 .site-nav a:hover, .site-nav a[aria-current] { color: var(--fg); }
+.site-nav > .nav-github { display: inline-flex; align-items: center; }
 
 .theme-toggle, .search-toggle {
   display: grid;
@@ -188,6 +204,7 @@ main { padding-top: 32px; padding-bottom: 96px; }
   color: var(--fg-3);
 }
 .site-footer a { color: var(--fg-3); text-decoration: none; }
+.site-footer a { white-space: nowrap; }
 .site-footer a:hover, .site-footer a[aria-current] { color: var(--fg); }
 
 /* ------------------------------------------------------------------ home */
@@ -423,6 +440,7 @@ main { padding-top: 32px; padding-bottom: 96px; }
 .meta { margin: 0; font-size: 14px; color: var(--fg-3); }
 .meta > * + *::before, .meta-links > a + a::before { content: "·"; margin: 0 8px; color: var(--fg-3); }
 .meta a { color: var(--fg-2); text-decoration: none; }
+.meta-links a { display: inline-block; white-space: nowrap; }
 .meta a:hover { color: var(--fg); }
 
 .post-content { counter-reset: figure; hanging-punctuation: first last; overflow-wrap: anywhere; }
@@ -693,7 +711,14 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 0; bo
 @media (max-width: 380px) {
   .site-header { gap: 8px 12px; }
   .site-nav { gap: 6px; }
+  .site-nav > .nav-github { justify-content: center; min-width: 30px; }
+  .nav-github .link-label { display: none; }
+  .nav-github .link-icon { margin-inline-end: 0; }
   .post-index li { grid-template-columns: 52px minmax(0, 1fr); gap: 12px; }
+}
+
+@media (max-width: 380px) and (pointer: coarse) {
+  .site-nav > .nav-github { min-width: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

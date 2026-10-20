@@ -41,7 +41,7 @@ layout: default
           {%- if post.links %}
           <span class="meta-links">
             {%- for link in post.links %}
-            <a href="{{ link.url }}">{{ link.title }}<span aria-hidden="true"> ↗</span></a>
+            <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}</a>
             {%- endfor %}
           </span>
           {%- endif %}

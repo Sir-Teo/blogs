@@ -14,7 +14,7 @@ excerpt: >-
   packages into 4K masters.
 links:
   - title: Channel
-    url: https://space.bilibili.com/299736746
+    url: https://www.youtube.com/@teozeng3999
   - title: Source
     url: https://github.com/Sir-Teo/explainer-videos
 styles:

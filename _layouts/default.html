@@ -31,7 +31,7 @@
     <a class="site-name" href="{{ '/' | relative_url }}">{{ site.title | escape }}</a>
     <nav class="site-nav" aria-label="Site">
       <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
-      <a href="https://github.com/{{ site.github_username }}">GitHub</a>
+      <a class="nav-github" href="https://github.com/{{ site.github_username }}" aria-label="GitHub" title="GitHub">{%- include link-icon.html name='github' -%}<span class="link-label">GitHub</span></a>
       <a class="search-toggle" href="{{ '/' | relative_url }}#post-search" aria-label="Search posts" title="Search posts (/)" hidden>
         <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
       </a>
@@ -47,8 +47,8 @@
 
   <footer class="site-footer">
     <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
-    <a href="https://github.com/{{ site.github_username }}">GitHub</a>
-    <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+    <a href="https://github.com/{{ site.github_username }}">{%- include link-icon.html name='github' -%}GitHub</a>
+    <a href="{{ '/feed.xml' | relative_url }}">{%- include link-icon.html name='rss' -%}RSS</a>
   </footer>
 </body>
 </html>

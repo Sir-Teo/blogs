@@ -7,6 +7,7 @@
   'use strict';
 
   var NS = 'http://www.w3.org/2000/svg';
+  var LINK_ICONS_URL = new URL('../icons.svg', document.currentScript.src).href;
   var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ICONS = { play: 'M5 3.5v9l7-4.5z', pause: 'M5 3.5v9M11 3.5v9' };
 
@@ -161,7 +162,17 @@
     ]);
 
     var titleEl = h('span', { class: 'atlas-title' });
-    var watchEl = h('a', { class: 'atlas-watch', target: '_blank', rel: 'noopener' });
+    var watchEl = h('a', {
+      class: 'atlas-watch', target: '_blank', rel: 'noopener', hreflang: 'en',
+      title: 'Watch the English version on YouTube'
+    }, [
+      'YouTube (EN)', h('span', { 'aria-hidden': 'true', text: ' ↗' })
+    ]);
+    var watchIcon = svg('svg', {
+      class: 'link-icon', viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false'
+    });
+    svg('use', { href: LINK_ICONS_URL + '#youtube' }, watchIcon);
+    watchEl.insertBefore(watchIcon, watchEl.firstChild);
     var kpiEl = h('div', { class: 'atlas-kpis' });
     var sparkSvg = svg('svg', { class: 'atlas-spark', viewBox: '0 0 360 88', role: 'img', 'aria-label': 'Active pixel coverage across the film' });
     var chipsEl = h('div', { class: 'atlas-chips' });
@@ -308,7 +319,7 @@
       titleEl.textContent = f.title;
       if (f.url) {
         watchEl.href = f.url;
-        watchEl.textContent = 'Bilibili ↗';
+        watchEl.setAttribute('aria-label', 'Watch ' + f.title + ' in English on YouTube');
         watchEl.style.display = '';
       } else {
         watchEl.style.display = 'none';

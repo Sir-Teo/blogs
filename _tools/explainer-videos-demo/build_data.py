@@ -174,7 +174,7 @@ def parse_style_comments() -> dict[str, tuple[str, str, str]]:
 
 
 def process_film(idx_spec):
-    idx, (vid, short_title, series, group), bili_map, style_info = idx_spec
+    idx, (vid, short_title, series, group), youtube_map, style_info = idx_spec
     pkg = video_package(vid)
     vdir = video_dir(vid)
     manifest = importlib.import_module(f"{pkg}.manifest")
@@ -308,7 +308,7 @@ def process_film(idx_spec):
         "zh_duration": zh_dur,
         "scenes": len(manifest.SCENES),
         "cues": len(cues),
-        "url": bili_map.get(vid),
+        "url": youtube_map.get(vid),
         "mean_cov": round(float(fracs.mean() * 100), 2),
         "p90_cov": round(float(np.percentile(fracs, 90) * 100), 2),
         "sparse_sec": round(sparse_sec, 1),
@@ -763,13 +763,21 @@ def main():
     out_dir = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path("assets/data").resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    bili_state = json.loads((REPO / "renders/bilibili/publication-state.json").read_text())
-    bili_map = {k: v.get("url") for k, v in bili_state.get("videos", {}).items()} if isinstance(bili_state.get("videos"), dict) else {}
+    youtube_state = json.loads((REPO / "renders/youtube/publication-state.json").read_text())
+    youtube_map = {}
+    for film_id, video in youtube_state.get("videos", {}).items():
+        if video.get("status") != "published":
+            continue
+        url = video.get("youtube_url") or video.get("url")
+        if not url and video.get("video_id"):
+            url = "https://www.youtube.com/watch?v=" + video["video_id"]
+        if url:
+            youtube_map[film_id] = url
 
     style_info = parse_style_comments()
 
     print("Scanning 24 films in parallel...")
-    tasks = [(i, spec, bili_map, style_info) for i, spec in enumerate(FILMS)]
+    tasks = [(i, spec, youtube_map, style_info) for i, spec in enumerate(FILMS)]
     with ThreadPoolExecutor(6) as pool:
         results = list(pool.map(process_film, tasks))
     results.sort(key=lambda r: r[0])

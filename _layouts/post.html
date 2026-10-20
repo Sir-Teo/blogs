@@ -12,7 +12,7 @@ layout: default
       {%- if page.links %}
       <span class="meta-links">
         {%- for link in page.links %}
-        <a href="{{ link.url }}">{{ link.title }}<span aria-hidden="true"> ↗</span></a>
+        <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}<span aria-hidden="true"> ↗</span></a>
         {%- endfor %}
       </span>
       {%- endif %}

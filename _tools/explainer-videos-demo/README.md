@@ -28,3 +28,10 @@ which drive the figures in
 
 Run `./run.sh` with an `explainer-videos` checkout beside this repo (or
 `EXPLAINER_VIDEOS=/path`).
+
+Video watch links come from `renders/youtube/publication-state.json` in that
+checkout. The generator accepts published records with `youtube_url`, `url`,
+or `video_id`; films without a published YouTube entry have no watch link.
+The 13 linked uploads are English masters (`language: en` in
+`renders/youtube/metadata.json`); the article labels their watch links
+"YouTube (EN)".

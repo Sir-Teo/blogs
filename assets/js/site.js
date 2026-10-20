@@ -54,6 +54,26 @@
     });
   }
 
+  // ---- Destination icons for links in prose --------------------------------
+  var linkIcons = new URL('../icons.svg', document.currentScript.src).href;
+  document.querySelectorAll('.post-content a[href]').forEach(function (link) {
+    var url = new URL(link.href);
+    if (!/^https?:$/.test(url.protocol) || url.origin === window.location.origin || link.querySelector('svg, img')) return;
+    var name = 'globe';
+    if (url.hostname === 'github.com' || url.hostname === 'www.github.com') name = 'github';
+    else if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com' || url.hostname === 'youtu.be') name = 'youtube';
+    else if (url.hostname === 'bilibili.com' || url.hostname.endsWith('.bilibili.com')) name = 'bilibili';
+    var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'link-icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+    var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', linkIcons + '#' + name);
+    icon.appendChild(use);
+    link.insertBefore(icon, link.firstChild);
+  });
+
   var article = document.querySelector('.post .post-content');
   if (article) {
     // ---- Heading anchors ---------------------------------------------------
