@@ -1,0 +1,576 @@
+{
+  "cutoff": "2025-26 completed season",
+  "retrieved": "2026-10-25",
+  "files": [
+    {
+      "file": "shotdetail_2003.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2003.tar.xz",
+      "sha256": "558be852d48c95ec6d3ff1b6b9e172b3447cc3e56fa946caa171bfed6832f9b0",
+      "bytes": 2273324
+    },
+    {
+      "file": "shotdetail_po_2003.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2003.tar.xz",
+      "sha256": "a4d454a15361579de6210b2a35998de10ef2728da4ce85c9db9583c5cbf69bd6",
+      "bytes": 153928
+    },
+    {
+      "file": "player_box_2004.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2004.parquet",
+      "sha256": "dd37c4d0fa22e3057e296cb0059bc9edbdea558ab1c7f400249d0de86fc42537",
+      "bytes": 600396
+    },
+    {
+      "file": "shotdetail_2004.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2004.tar.xz",
+      "sha256": "4159f7e2308f7924757241d125ddfd8784ac8b17626acf08de5d1bb7960aa776",
+      "bytes": 2365508
+    },
+    {
+      "file": "shotdetail_po_2004.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2004.tar.xz",
+      "sha256": "4b62555d2317e5eba817e5a59579f2fdb1a7a67b08de3ba4d8761686be899fd8",
+      "bytes": 163236
+    },
+    {
+      "file": "player_box_2005.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2005.parquet",
+      "sha256": "f75cf1e55ca5aa64a3fc626e6dd8560cdd5b30c59ddc449d04a47ec71e753546",
+      "bytes": 626542
+    },
+    {
+      "file": "shotdetail_2005.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2005.tar.xz",
+      "sha256": "b6b10669e731b8f97f9596d5f07afbf1b11c76e3997d5f65d260c2f3e7bacc3f",
+      "bytes": 2325284
+    },
+    {
+      "file": "shotdetail_po_2005.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2005.tar.xz",
+      "sha256": "41f72620ef3be30df63a839955b8c80d7258ec559ef4b47b0dfd8fdd7604855a",
+      "bytes": 167980
+    },
+    {
+      "file": "player_box_2006.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2006.parquet",
+      "sha256": "d48fa4d1d321ac144ec32f2ff83bcf2b65055ae3bbcaa0b1d7c4864e0d37a2ae",
+      "bytes": 704999
+    },
+    {
+      "file": "shotdetail_2006.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2006.tar.xz",
+      "sha256": "7c238aee908a59bb707b34da321fafcb63d677fc10349997ba7c1fb7ded96ecf",
+      "bytes": 2346208
+    },
+    {
+      "file": "shotdetail_po_2006.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2006.tar.xz",
+      "sha256": "67c6c9b506289157564665c382a4e01207a8c4d73df7fa07d106750103988772",
+      "bytes": 150780
+    },
+    {
+      "file": "player_box_2007.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2007.parquet",
+      "sha256": "eb039d22d2f5d8fdaab86079e5793a01f5837886dba764b7b71562eb0c8b4526",
+      "bytes": 705886
+    },
+    {
+      "file": "shotdetail_2007.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2007.tar.xz",
+      "sha256": "067489fce1075f51cbce32f7b59a2f5e2c406a95d8f46f830a0a492677d0ceea",
+      "bytes": 2406988
+    },
+    {
+      "file": "shotdetail_po_2007.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2007.tar.xz",
+      "sha256": "364decea7800b75b7f5ebad7cd1cb996835ed08f4759f05e9613a6f0952ff27e",
+      "bytes": 165564
+    },
+    {
+      "file": "player_box_2008.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2008.parquet",
+      "sha256": "e6bb0c1b3c86cc4a5d06187c7a680db98c281587c9171bad9e0768ea33cbadfc",
+      "bytes": 723087
+    },
+    {
+      "file": "shotdetail_2008.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2008.tar.xz",
+      "sha256": "4cb881e5393893bce7c672c6f2d2839a6f19de478b6ce27fcf8cf75718ffbe3a",
+      "bytes": 2398396
+    },
+    {
+      "file": "shotdetail_po_2008.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2008.tar.xz",
+      "sha256": "82a8411664c2a5d160f7bada314a03986dc0716d88d766e0fc01de492a838e47",
+      "bytes": 163024
+    },
+    {
+      "file": "player_box_2009.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2009.parquet",
+      "sha256": "c5b5ba836c1dad922df4a8a69ad147c32a4966dfe8a5f2ef36900f84eb422d74",
+      "bytes": 727965
+    },
+    {
+      "file": "shotdetail_2009.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2009.tar.xz",
+      "sha256": "4f8613a0a4842acc6363a9f64360738e212ec2ca1f8f9423412e8f4e69cd134a",
+      "bytes": 2426968
+    },
+    {
+      "file": "shotdetail_po_2009.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2009.tar.xz",
+      "sha256": "ba7d05942040bbba056dc37add61ba9a3bb5cf625c1694ccb058108595a0e9ca",
+      "bytes": 158552
+    },
+    {
+      "file": "player_box_2010.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2010.parquet",
+      "sha256": "7348037e2eecf56e404a9e9cab1e57ff7e323f0f880012efde08f032fa089b28",
+      "bytes": 724995
+    },
+    {
+      "file": "shotdetail_2010.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2010.tar.xz",
+      "sha256": "e8a42d4fede746bb30abcb9df99e489af12f90499475554fdd821c3bd9fe6f2c",
+      "bytes": 2529752
+    },
+    {
+      "file": "shotdetail_po_2010.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2010.tar.xz",
+      "sha256": "0f553e2c0923003803b9717431531ec0315037a60477a2aada971745559a6ae5",
+      "bytes": 161544
+    },
+    {
+      "file": "player_box_2011.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2011.parquet",
+      "sha256": "e39dbca5de9de0147b72fdf46e11d2df4f54c834a1da05334d268825a5750214",
+      "bytes": 713756
+    },
+    {
+      "file": "shotdetail_2011.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2011.tar.xz",
+      "sha256": "15ba3f10dd8ac286a557fc8df6116a4a2fd6ca3b66c1d1b353b650e2dbe69f1b",
+      "bytes": 2043684
+    },
+    {
+      "file": "shotdetail_po_2011.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2011.tar.xz",
+      "sha256": "889480934095ba64a306a6032ef6ab3c6d4e33b1a388757239e016b78b6a61c1",
+      "bytes": 170760
+    },
+    {
+      "file": "player_box_2012.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2012.parquet",
+      "sha256": "bd1409a0379717c88580e262ea89be4ddda3fcf985de6366f6eae1daff1bd1f5",
+      "bytes": 608340
+    },
+    {
+      "file": "shotdetail_2012.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2012.tar.xz",
+      "sha256": "c626b0c04e6dc425fce11514a7a86e60dc1261565a1fa8b289f9bb31ff62c5a4",
+      "bytes": 2552452
+    },
+    {
+      "file": "shotdetail_po_2012.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2012.tar.xz",
+      "sha256": "cbe6de451cc739a65f3ba4344606dc72c61738d66c98dacceb0c4f2243ae523f",
+      "bytes": 174108
+    },
+    {
+      "file": "player_box_2013.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2013.parquet",
+      "sha256": "411477c53159f1234e7655ae1f6e40c4f3a8c39077443095f1f423630e84bd80",
+      "bytes": 711104
+    },
+    {
+      "file": "shotdetail_2013.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2013.tar.xz",
+      "sha256": "de5098ccc7cd3f95c128f77fb29e7c3fcfb1987b368e93c6e121a03fbecb2de0",
+      "bytes": 2584176
+    },
+    {
+      "file": "shotdetail_po_2013.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2013.tar.xz",
+      "sha256": "f09e28497ba816acb7ede3f2ce4e5aff2385298e57df60921e067c6a83bad2c5",
+      "bytes": 183592
+    },
+    {
+      "file": "player_box_2014.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2014.parquet",
+      "sha256": "7c91f80eb2ecc67a5ac2ea55aa3b65bf0d1509c6d9420b5929c9f63fdfffb559",
+      "bytes": 712064
+    },
+    {
+      "file": "shotdetail_2014.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2014.tar.xz",
+      "sha256": "e2bf753050854e1eb99f6d5c5d690cdcfed4adae216726d330ef6adb3cd21513",
+      "bytes": 2588860
+    },
+    {
+      "file": "shotdetail_po_2014.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2014.tar.xz",
+      "sha256": "31f550c654d8ebf84c07ff6ebd7c3a9b1a229c725f6358ea247565e79e0c2931",
+      "bytes": 175796
+    },
+    {
+      "file": "player_box_2015.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2015.parquet",
+      "sha256": "1138c91bf6c1a47065add90725337b23a30aafdfff9c3d8f898d8e73d8b88238",
+      "bytes": 711239
+    },
+    {
+      "file": "shotdetail_2015.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2015.tar.xz",
+      "sha256": "ac48fad67cabf79f8a5a726aa55ea4a8c793a85eaa3835d38b46f2d0e37495a3",
+      "bytes": 2609520
+    },
+    {
+      "file": "shotdetail_po_2015.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2015.tar.xz",
+      "sha256": "013c10bdb44f668c8cda755079a967d25aa5714532b77dc70401e5f4bf14e333",
+      "bytes": 184616
+    },
+    {
+      "file": "player_box_2016.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2016.parquet",
+      "sha256": "89dcf2e4a86fd71b11e2b60b1a6cef91ea6c3080c500d571b4295cf396b37336",
+      "bytes": 717997
+    },
+    {
+      "file": "shotdetail_2016.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2016.tar.xz",
+      "sha256": "0681285a0bf08a1ef84b24895d2a4bb709f2d192ba9134e3600567c593dacd96",
+      "bytes": 2643128
+    },
+    {
+      "file": "shotdetail_po_2016.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2016.tar.xz",
+      "sha256": "36606843e458f2e4bf631cdd877b57592cf27b7b395598bac5dcacda1d1e974d",
+      "bytes": 170460
+    },
+    {
+      "file": "player_box_2017.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2017.parquet",
+      "sha256": "c11d6a2d8dc9946ed4f0f2f9584c5e8e20b4fd4cc8c2ebcc3809a163b6605388",
+      "bytes": 721623
+    },
+    {
+      "file": "shotdetail_2017.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2017.tar.xz",
+      "sha256": "a62d25aa9c9190477f350f06a9a2d808c7908a6720786970319a3b28af184e81",
+      "bytes": 2719384
+    },
+    {
+      "file": "shotdetail_po_2017.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2017.tar.xz",
+      "sha256": "1a0ede5238ae0d165980e7b90d01998a34f93f3f94dfa3abb5e63135c9307a00",
+      "bytes": 181436
+    },
+    {
+      "file": "player_box_2018.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2018.parquet",
+      "sha256": "0345e02855da65ed7fa9536fe195ef592356c5d74e8c2745721b79fd9dc261e4",
+      "bytes": 724896
+    },
+    {
+      "file": "shotdetail_2018.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2018.tar.xz",
+      "sha256": "c658890976559b69dff44ed08352baf64b935514506e726d21f34950ad5bfe9d",
+      "bytes": 2814056
+    },
+    {
+      "file": "shotdetail_po_2018.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2018.tar.xz",
+      "sha256": "78e544cafb228c8d198fd6c55f16617ac746c7a343f14bb6df47a233028aaace",
+      "bytes": 187400
+    },
+    {
+      "file": "player_box_2019.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2019.parquet",
+      "sha256": "dbdf7f55fc5b3929c48f56ee2e962c0e3b7b503a7cf1be916e8efbf444dd4dbe",
+      "bytes": 721558
+    },
+    {
+      "file": "shotdetail_2019.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2019.tar.xz",
+      "sha256": "0c6002cbc8bc379ecc0a2e0f57defb2e9804be8240aa0234242002ec5dd124fe",
+      "bytes": 2417916
+    },
+    {
+      "file": "shotdetail_po_2019.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2019.tar.xz",
+      "sha256": "9d2a6772c09012033101e3e70d6584cc3d97894b156bbb3c5979dfa66a045411",
+      "bytes": 185492
+    },
+    {
+      "file": "player_box_2020.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2020.parquet",
+      "sha256": "9d9cb6be4517107d48745270102557b719f052b1dcc3cc90e3b8a3594e6b1eaa",
+      "bytes": 635116
+    },
+    {
+      "file": "shotdetail_2020.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2020.tar.xz",
+      "sha256": "02916ac0a4a0c8dcb1e115ed08ddb49b360305f98f4882c8933a2998b747487d",
+      "bytes": 2456200
+    },
+    {
+      "file": "shotdetail_po_2020.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2020.tar.xz",
+      "sha256": "d57f0075849a208ae2dc10e88016e0c7196c348d525929063dc07f2908dc4aa6",
+      "bytes": 194744
+    },
+    {
+      "file": "player_box_2021.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2021.parquet",
+      "sha256": "50133d2a044dd9736e05b2c779e3faa3f0a03ed5f18219cf9f44962427c421c8",
+      "bytes": 546479
+    },
+    {
+      "file": "shotdetail_2021.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2021.tar.xz",
+      "sha256": "5b56b6833d179fdef9c76223064c7923717b1add83570becf494a3f1d0a785f2",
+      "bytes": 2791576
+    },
+    {
+      "file": "shotdetail_po_2021.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2021.tar.xz",
+      "sha256": "ca4b2fbecd3f7de3a9a7c80798cb21146fd78e4da03eabcc85de743197015fc4",
+      "bytes": 192084
+    },
+    {
+      "file": "player_box_2022.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2022.parquet",
+      "sha256": "474d15255f2a908f2c0ac0f7104b504c3cf2815b02dd0b0097c69cb634fe4395",
+      "bytes": 605985
+    },
+    {
+      "file": "shotdetail_2022.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2022.tar.xz",
+      "sha256": "62533f4e444ef0fc3354cdf6bbc04e249eb14ba9f444e6cd247c3e95d235e46d",
+      "bytes": 2792344
+    },
+    {
+      "file": "shotdetail_po_2022.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2022.tar.xz",
+      "sha256": "9e3137fd28b590d8c7a446c286500fc01d786e483b51fcc85f461d5a89cdbe37",
+      "bytes": 193132
+    },
+    {
+      "file": "player_box_2023.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2023.parquet",
+      "sha256": "968d835cd04b10533c5b5af8c0e41bf0154a73782e9446c76f765109223e8679",
+      "bytes": 595949
+    },
+    {
+      "file": "shotdetail_2023.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2023.tar.xz",
+      "sha256": "303e71f967c199568b345cd73a75e595f1f99532cca3e6ce59afb286b63f840d",
+      "bytes": 2812692
+    },
+    {
+      "file": "shotdetail_po_2023.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2023.tar.xz",
+      "sha256": "36d6a1794c2003ae7ca4a27978956fd0385aa2619d4e35f2b32637554191fdb4",
+      "bytes": 183112
+    },
+    {
+      "file": "player_box_2024.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2024.parquet",
+      "sha256": "1e500a538ec45ddbcb58d9789b5494f8db4f25658eafd01d90f2d09600921665",
+      "bytes": 610610
+    },
+    {
+      "file": "shotdetail_2024.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2024.tar.xz",
+      "sha256": "950100f9c84fe750ae2ac8eaeb82d24cdfb9f60a9ed04ceaa66f64789d7c216e",
+      "bytes": 2832144
+    },
+    {
+      "file": "shotdetail_po_2024.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2024.tar.xz",
+      "sha256": "2a972625db433504486d837c38c917146da269939e6d984b8024f148d3d79507",
+      "bytes": 191548
+    },
+    {
+      "file": "player_box_2025.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2025.parquet",
+      "sha256": "e89f7fbc1124092c715b722e6d72d9dd1b9d28776ca6888b508fd2831cd705e2",
+      "bytes": 610289
+    },
+    {
+      "file": "shotdetail_2025.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_2025.tar.xz",
+      "sha256": "dcb6c29edda8463132ab62f63118b5cee80d751bcbee9ad98fa38ebe12e6d33c",
+      "bytes": 2825192
+    },
+    {
+      "file": "shotdetail_po_2025.tar.xz",
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/e829d4678be1e075f99e5d41a1c5f97089be446b/datasets/shotdetail_po_2025.tar.xz",
+      "sha256": "3c7cf568af492ff3fa7c348d8de82ac8cff74bd37f1040c0daedc073ed5ede34",
+      "bytes": 191764
+    },
+    {
+      "file": "player_box_2026.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/player_box_2026.parquet",
+      "sha256": "29a29dc9efd055a93e069a0382ac830d98a13274bee655beba69d95cff099713",
+      "bytes": 606444
+    },
+    {
+      "file": "player_boxscores_2004.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2004.parquet",
+      "sha256": "f4e10109053c63d3d3c2c736fb7fef7c6ada11d392916ffd4b098ac3868e6dcf",
+      "bytes": 553073
+    },
+    {
+      "file": "player_boxscores_2005.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2005.parquet",
+      "sha256": "0bd48172b9f4009af5fbb7cfae4986a682239ae2ab387e4329c488a9e33658cc",
+      "bytes": 568715
+    },
+    {
+      "file": "player_boxscores_2006.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2006.parquet",
+      "sha256": "eb37ef689726059824d381f5dafeb7fbcd8d7044477e958f0a958f9f35afb7ec",
+      "bytes": 578734
+    },
+    {
+      "file": "player_boxscores_2007.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2007.parquet",
+      "sha256": "e3d9265c4205d8fc2eb8fff432654ad708fc776f27863e2a534b1e2a3db352ba",
+      "bytes": 570546
+    },
+    {
+      "file": "player_boxscores_2008.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2008.parquet",
+      "sha256": "a30da4afb55dee895c2997b3a2861382c762a5da4b35f09f5e2078904cf56645",
+      "bytes": 570844
+    },
+    {
+      "file": "player_boxscores_2009.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2009.parquet",
+      "sha256": "0c1ff32fafaa0ffc8681f8cb0c07caf6608842dc4b38b8e7ceda0043d5d27e71",
+      "bytes": 571687
+    },
+    {
+      "file": "player_boxscores_2010.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2010.parquet",
+      "sha256": "c08d22d8a4644bd394535546256c562dd7df24719e1d8511cffea07fc24f08ed",
+      "bytes": 569129
+    },
+    {
+      "file": "player_boxscores_2011.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2011.parquet",
+      "sha256": "f006efaf98e31af70b950648831a510c80c888ec59724d83a335867970250fb6",
+      "bytes": 565119
+    },
+    {
+      "file": "player_boxscores_2012.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2012.parquet",
+      "sha256": "6cd51f4e8e981cb9a1c335d3a6234c25cb97f5a579017057b8e19e5fbf51c661",
+      "bytes": 500505
+    },
+    {
+      "file": "player_boxscores_2013.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2013.parquet",
+      "sha256": "5ca7580b85019074dde0f6a89d4fea1a9cbeeb6aa9be90a8bd3c485f1a4548b8",
+      "bytes": 599829
+    },
+    {
+      "file": "player_boxscores_2014.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2014.parquet",
+      "sha256": "3b269a8cbce06f7e536772fda5dc067d6abe6d92df6ba265d3989b68b22222d9",
+      "bytes": 606394
+    },
+    {
+      "file": "player_boxscores_2015.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2015.parquet",
+      "sha256": "09bd13cdaf02c91a0111c5c1935ece159a9ae9b82c9bcf43f34b6f6758e4d169",
+      "bytes": 608175
+    },
+    {
+      "file": "player_boxscores_2016.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2016.parquet",
+      "sha256": "99e13b7635b9c7ab90ab595072a40e2cdaf7e31e2de821106d4ec32733f510a5",
+      "bytes": 612119
+    },
+    {
+      "file": "player_boxscores_2017.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2017.parquet",
+      "sha256": "ba55fc78b74f4feeb611c1403d66f0a670890f2898686943fc48944a7adc3f25",
+      "bytes": 611928
+    },
+    {
+      "file": "player_boxscores_2018.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2018.parquet",
+      "sha256": "bd773a04d95dc6f633617776e2cbe8ec33786a92704b70435eb9637cc4fb352b",
+      "bytes": 601048
+    },
+    {
+      "file": "player_boxscores_2019.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2019.parquet",
+      "sha256": "7640f574fdef67d7887163f1d9cae04bfcac2019cf1989116d67f144e5aee040",
+      "bytes": 603277
+    },
+    {
+      "file": "player_boxscores_2020.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2020.parquet",
+      "sha256": "a6055ffa2a832a4ad885672279cb13cba136c62d9e0fa4c8bc7af9822278eb2a",
+      "bytes": 535538
+    },
+    {
+      "file": "player_boxscores_2021.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2021.parquet",
+      "sha256": "af73432fa9006628b44f1cd8bf542fdf7e444d68e7f9ea16affd615c0b1db97b",
+      "bytes": 575871
+    },
+    {
+      "file": "player_boxscores_2022.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2022.parquet",
+      "sha256": "bda38f2f66cb88b326cb4651e8a62e1926cbc297cd56c25eeab51617653da793",
+      "bytes": 628183
+    },
+    {
+      "file": "player_boxscores_2023.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2023.parquet",
+      "sha256": "59f698fb5130b276037e805183501b3a54732dd14583bedfb2eec42d0705bb0f",
+      "bytes": 623767
+    },
+    {
+      "file": "player_boxscores_2024.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2024.parquet",
+      "sha256": "fd77145e9a05b0564a7cc008f9fe9d3850be93cbc55ababf33c4bbd05a1a2338",
+      "bytes": 632350
+    },
+    {
+      "file": "player_boxscores_2025.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2025.parquet",
+      "sha256": "414480718d58be6eb88db2c642d3d6469ee3be6320eb3bec3631667c7ded966d",
+      "bytes": 640989
+    },
+    {
+      "file": "player_boxscores_2026.parquet",
+      "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_player_boxscores/player_boxscores_2026.parquet",
+      "sha256": "a0b280ebb0c955e501c0e6feab3f6d726bd9f1b7c2d13f5b5c0746049459132e",
+      "bytes": 644419
+    },
+    {
+      "file": "Player Totals.csv",
+      "url": "https://raw.githubusercontent.com/Taleb88/NBA-Statistics-1946-Present/669f29c0fb385b407002f1871f861d7eaafcde31/csv/Player%20Totals.csv",
+      "sha256": "2079069eb397361c939d9ed806db32d917a2a1148e3319b65f6f7c88f2d10475",
+      "bytes": 4550554
+    },
+    {
+      "file": "Advanced.csv",
+      "url": "https://raw.githubusercontent.com/Taleb88/NBA-Statistics-1946-Present/669f29c0fb385b407002f1871f861d7eaafcde31/csv/Advanced.csv",
+      "sha256": "296bccfffa618b60686e4743fc247507f73fa9478b530519b71c04803e13b737",
+      "bytes": 4619634
+    },
+    {
+      "file": "Team Totals.csv",
+      "url": "https://raw.githubusercontent.com/Taleb88/NBA-Statistics-1946-Present/669f29c0fb385b407002f1871f861d7eaafcde31/csv/Team%20Totals.csv",
+      "sha256": "9b0f230d33e03189212e5d590590965a4649426d0ff5d67d6c0e31d98a2c63e4",
+      "bytes": 273751
+    }
+  ]
+}
