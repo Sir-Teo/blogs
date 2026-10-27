@@ -23,7 +23,9 @@ Port 4106 is the local preview. BLOG_URL can override its URL.
 - build_data.py: anonymous current offers, historical context cells and fresh confirmation observations.
 - evaluate-anomalies.cjs: reproducible, constructed walk-forward stress test against a two-pass price fence.
 
-The product views are design concepts, not a deployed application. The review queue's link works as native navigation to the selected-flight figure. Scope labels are descriptions, not pretend controls. There are no live supplier/API/database calls or client simulation.
+The product views are design concepts with local what-if controls. The market comparison switches between the lowest available product and the same product group. Its position changes without altering the separate discount-price monitor. The investigation tests three fresh checks, one fresh check, a stale quote and a missing latest reply, using the same detector as the offline checks. The review link works as native navigation. There are no live supplier/API/database calls.
+
+`render-static.cjs` writes a compact `workspace.json` containing the snapshot, precomputed past-only forecasts and fixed-flight history. `fare-system-live.js` changes comparison state and re-runs evidence gates in the browser. It never re-fits a forecast using the quote being tested. Failed enhancement or disabled JavaScript leaves the complete static dashboard in place.
 
 ## Detector
 

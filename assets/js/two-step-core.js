@@ -26,7 +26,14 @@
   function remaining(mu,i){return dot(mu,i.map(x=>1-x));}
   function cumulative(mu,day){return dot(mu,exposure(day));}
   function shift(t){return dot(tilt(t),mid)-center;}
-  const api={mix,edges,mid,z,center,dot,sum,tilt,exposure,mean,conditional,fit,nll,remaining,cumulative,shift};
+  function snapshot(dailyCounts,truth,day){
+    if(dailyCounts.length!==edges[0]||dailyCounts.some(n=>!Number.isInteger(n)||n<0)||!Number.isInteger(day)||day<0||day>=edges[0])throw new RangeError('Use one count per day and an integer cutoff in the window.');
+    const i=exposure(day),counts=mix.map(()=>0),hiddenCounts=mix.map(()=>0);
+    dailyCounts.forEach((n,k)=>{const d=edges[0]-k,j=edges.findIndex((edge,c)=>c<mix.length&&d<=edge&&d>edges[c+1]);(d>day?counts:hiddenCounts)[j]+=n;});
+    const fitted=fit(counts,i),flat_v=sum(counts)>0?Math.log(sum(counts)/dot(mean(0,0),i)):0;
+    return {exposure:i,counts,hiddenCounts,truth,fit:fitted?[fitted.v,fitted.theta]:null,fitted:fitted?fitted.expected:mean(0,0),flat_v,flat:mean(flat_v,0),resolved:!!fitted};
+  }
+  const api={mix,edges,mid,z,center,dot,sum,tilt,exposure,mean,conditional,fit,nll,remaining,cumulative,shift,snapshot};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.TwoStep=api;
 })(typeof window!=='undefined'?window:globalThis);

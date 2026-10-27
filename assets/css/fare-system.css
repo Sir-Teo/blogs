@@ -309,6 +309,21 @@
 .fs-model-design { display:flex; flex-direction:column; gap:5px; margin-top:13px; color:var(--fg-2); font:11px/1.7 var(--sans); }
 .fs-model-design strong { color:var(--fg); font-weight:500; }
 .fs-model-design code { color:var(--fs-blue); }
+.fs-interaction { display:flex; flex-wrap:wrap; align-items:center; gap:9px 18px; padding:12px 0 14px; border-top:1px solid var(--line-2); font-family:var(--sans); }
+.fs-control-label { color:var(--fg-2); font-size:11px; }
+.fs-switch { display:flex; flex-wrap:wrap; gap:4px; }
+.fs-switch button { appearance:none; min-height:38px; padding:7px 11px; border:1px solid transparent; border-radius:5px; background:transparent; color:var(--fg-2); font:12px/1.5 var(--sans); cursor:pointer; }
+.fs-switch button[aria-pressed="true"] { color:var(--fs-blue); background:var(--fs-blue-soft); border-color:var(--line-2); }
+.fs-switch button:hover { color:var(--fg); border-color:var(--line-2); }
+.fs-switch button:focus-visible { outline:2px solid var(--fs-blue); outline-offset:3px; }
+.fs-interaction + .fs-technical { border-top:0; padding-top:0; }
+.dash-status[data-state="watch"],.dash-status[data-state="issue"] { color:var(--fs-amber); background:var(--fs-amber-soft); }
+.dash-status::before { content:''; display:inline-block; width:5px; height:5px; border-radius:50%; background:currentColor; margin-right:5px; vertical-align:middle; }
+.dash-decision-note { display:grid; grid-template-columns:145px minmax(0,1fr); gap:7px 17px; padding:12px 0; border-bottom:1px solid var(--line); font:11px/1.7 var(--sans); color:var(--fg-2); }
+.dash-decision-note b { color:var(--fs-teal); font-weight:550; }
+.dash-decision-note[data-state="watch"] b,.dash-decision-note[data-state="data_issue"] b { color:var(--fs-amber); }
+.dash-chart-foot { font-size:11px; }
+@media(pointer:coarse) { .fs-switch button { min-height:44px; } }
 @container(max-width:700px) {
  .dash-market-grid,.dash-detail-grid { grid-template-columns:1fr; }
  .fs-dashboard .dash-chart-wide { display:none; }
@@ -334,6 +349,12 @@
  .dash-quote-log > div { grid-template-columns:1fr; }
  .dash-quote-log b,.dash-quote-log small { grid-column:1; }
  .dash-scope { gap:5px 12px; }
+ .fs-interaction { display:block; }
+ .fs-control-label { display:block; margin-bottom:5px; }
+ .fs-switch { gap:3px; }
+ .fs-switch button { padding:7px 9px; }
+ .dash-summary small { font-size:10px; }
+ .dash-decision-note { grid-template-columns:1fr; gap:3px; }
 }
 .fs-validation-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:14px; }
 .fs-validation-table caption { text-align:left; margin-bottom:9px; color:var(--fg-2); font-size:12px; }

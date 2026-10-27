@@ -23,10 +23,19 @@ const hiddenCounts=truth.map((mean,c)=>drawCount(mean*(1-exposure[c])));
 const fitted=C.fit(counts,exposure);
 if(!fitted)throw Error('The constructed sample must support a finite fit.');
 const flat_v=Math.log(C.sum(counts)/C.dot(C.mean(0,0),exposure));
+// Assign the already sampled counts to fixed days. Moving Now reveals more of
+// this same realization; it never redraws counts or fits to the hidden tail.
+const dailyCounts=Array(78).fill(0);
+for(let j=0;j<C.mix.length;j++){
+  const days=Array.from({length:C.edges[j]-C.edges[j+1]},(_,k)=>C.edges[j]-k);
+  for(const [n,eligible] of [[counts[j],days.filter(d=>d>cutoff)],[hiddenCounts[j],days.filter(d=>d<=cutoff)]])
+    for(let k=0;k<n;k++)dailyCounts[78-eligible[Math.floor(uniform()*eligible.length)]]++;
+}
 const fixture={
   experiment:{kind:'synthetic',generator:'_tools/two-step-demo/build_experiment.cjs',seed,volumeLog,timing,cutoff},
   baseline:{total:C.sum(C.mean(0,0)),mix:C.mix,midpoints:C.mid,edges:C.edges},
-  sample:{exposure,counts,hiddenCounts,truth,fit:[fitted.v,fitted.theta],fitted:fitted.expected,flat_v,flat:C.mean(flat_v,0)}
+  sample:{exposure,counts,hiddenCounts,truth,fit:[fitted.v,fitted.theta],fitted:fitted.expected,flat_v,flat:C.mean(flat_v,0),resolved:true},
+  dailyCounts
 };
 const output=path.resolve(__dirname,'../../assets/data/two-step/experiment.json');
 fs.writeFileSync(output,JSON.stringify(fixture,null,2)+'\n');

@@ -31,14 +31,15 @@ async function geometry(p){
  try{
   const p=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:2}),errors=[],density=[];
   p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
-  await p.goto(url);await p.evaluate(()=>document.fonts.ready);
+  await p.goto(url);await p.waitForSelector('#fs-product[data-interactive="ready"]');await p.evaluate(()=>document.fonts.ready);
   assert.equal(await p.locator('figure.fs').count(),4);
   assert.equal(await p.locator('.fs-dashboard').count(),2);
   assert((await p.locator('#fs-compare .dash-summary').textContent()).includes('22/40'));
   assert((await p.locator('#fs-product .dash-summary').textContent()).includes('$235'));
   assert((await p.locator('#fs-product .dash-summary').textContent()).includes('$15 lower'));
   assert(!(await p.locator('#fs-product').textContent()).includes('two-pass'));
-  assert.equal(await p.locator('figure.fs button,figure.fs input,figure.fs select,figure.fs details,.fs-frame,.fs-heading,.fs-metrics,.fs-trail-mount,.fs-extra-controls').count(),0);
+  assert.equal(await p.locator('#fs-compare button').count(),2);assert.equal(await p.locator('#fs-product button').count(),4);
+  assert.equal(await p.locator('figure.fs input,figure.fs select,figure.fs details,.fs-frame,.fs-heading,.fs-metrics,.fs-trail-mount,.fs-extra-controls').count(),0);
   const copy=await p.locator('article').textContent();
   assert(!/PriceEye|ATPCO|AutoScheduler|Common Output|DCO v2|Competitive Position|Pricing Analyst Alerts|Price Outlook|Price Evolution|Assembled Data Feed/.test(copy));
   assert(copy.includes('MIN(total_usd_minor)'));assert(copy.includes('GET /history?route=A-B&departure=2026-11-17'));
@@ -57,9 +58,28 @@ async function geometry(p){
   }
   await p.locator('.dash-event').focus();await p.keyboard.press('Enter');
   assert(p.url().endsWith('#fs-product'));
+  for(const w of [1440,390,320]){
+   await p.setViewportSize({width:w,height:1000});
+   for(const policy of ['matched','any']){
+    await p.locator(`button[data-policy="${policy}"]`).click();await geometry(p);
+    assert((await p.locator('#fs-compare .dash-summary').textContent()).includes(policy==='matched'?'0/40':'22/40'));
+    assert((await p.locator('#fs-compare .dash-chart-foot').textContent()).includes(policy==='matched'?'$30 below':'$20 above'));
+   }
+   for(const mode of ['single','stale','missing','fresh']){
+    await p.locator(`button[data-evidence="${mode}"]`).click();await geometry(p);
+    const status=await p.locator('#fs-product .dash-status').textContent();
+    assert(status.includes(mode==='fresh'?'Confirmed':mode==='single'?'Waiting':'Data issue'));
+    assert.equal(await p.locator(`button[data-evidence="${mode}"]`).getAttribute('aria-pressed'),'true');
+    if(['stale','missing'].includes(mode))assert((await p.locator('#fs-product .dash-summary').textContent()).includes('Not scored'));
+   }
+  }
+  await p.locator('button[data-evidence="single"]').focus();await p.keyboard.press('Space');
+  assert((await p.locator('#fs-product .dash-status').textContent()).includes('Waiting'));
+  await p.locator('button[data-evidence="fresh"]').click();
   const nojs=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:900}});
   await nojs.goto(url);await nojs.evaluate(()=>document.fonts.ready);await geometry(nojs);
-  assert.equal(await nojs.locator('figure.fs').count(),4);assert((await nojs.locator('#fs-product').textContent()).includes('39/40'));
+  assert.equal(await nojs.locator('figure.fs').count(),4);assert((await nojs.locator('#fs-product').textContent()).includes('Confirmed price cut'));assert.equal(await nojs.locator('.fs-switch').count(),0);
+  const failed=await browser.newPage();await failed.route('**/assets/data/fare-system/workspace.json*',r=>r.abort());await failed.goto(url);assert.equal(await failed.locator('.fs-dashboard').count(),2);assert.equal(await failed.locator('.fs-switch').count(),0);
   await p.setViewportSize({width:1440,height:1000});await p.evaluate(()=>document.documentElement.dataset.theme='light');
   await p.locator('#fs-compare').screenshot({path:path.join(out,'pricing-build-technical.png')});
   await p.locator('#fs-compare').screenshot({path:path.join(out,'pricing-dashboard.png')});

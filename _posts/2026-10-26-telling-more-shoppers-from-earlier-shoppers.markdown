@@ -11,11 +11,11 @@ excerpt: >-
   forecast seems reasonable—until the lead starts to fade. A visual experiment
   in separating how much interest arrives from when it arrives.
 styles:
-  - /assets/css/two-step.css
+  - /assets/css/two-step.css?v=20261027.2
 scripts:
-  - /assets/js/volume-timing-fit.js
-  - /assets/js/two-step-core.js
-  - /assets/js/two-step.js
+  - /assets/js/volume-timing-fit.js?v=20261027.2
+  - /assets/js/two-step-core.js?v=20261027.2
+  - /assets/js/two-step.js?v=20261027.2
 ---
 
 In one of my research projects at ATPCO, I explored a question: when ticket searches for a flight arrive faster than usual, how many are still to come before takeoff?
@@ -28,8 +28,8 @@ We draw a usual search pattern and call it the **baseline**. For a real flight, 
 
 Then we change the pattern and <a class="act" href="#ts-input" data-view="today">hide the searches after today</a>. The beginning looks busy; the ending is still unknown.
 
-<figure class="fig wide ts" id="ts-input" data-stage="inputs" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
-<figcaption>In Observed, dots are recorded searches and gray bars are the baseline counts expected by now. Future intervals are shaded. Both axes use percentages: of the baseline total and of the full time window.</figcaption>
+<figure class="fig wide ts" id="ts-input" data-stage="inputs" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
+<figcaption>Move Now to reveal more of the same history; the forecasts below update together. Dots are recorded searches, gray bars the baseline. Future intervals stay hidden. Both axes use percentages of the baseline total and full time window.</figcaption>
 </figure>
 
 ## Scaling the rest
@@ -42,7 +42,7 @@ $$
 
 The amber curve below is the gray baseline multiplied by $$\hat s$$, including the part we haven't seen.
 
-<figure class="fig wide ts" id="ts-naive" data-stage="flat" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
+<figure class="fig wide ts" id="ts-naive" data-stage="flat" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
 <figcaption>The dotted gaps show too few searches early and too many later. Dots from unfinished intervals are scaled up for comparison with a complete interval. The amber curve then overpredicts what remains.</figcaption>
 </figure>
 
@@ -62,7 +62,7 @@ Negative $$\theta$$ favors earlier intervals. Dividing by the sum keeps the shar
 
 With <a class="act" href="#ts-knobs" data-preset="earlier">earlier searches alone</a>, the curve gets ahead but reaches the same endpoint. Then allow <a class="act" href="#ts-knobs" data-preset="both">earlier searches and a larger total</a>. Both effects can be present in the same busy start.
 
-<figure class="fig wide ts ts-hero" id="ts-knobs" data-stage="design" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
+<figure class="fig wide ts ts-hero" id="ts-knobs" data-stage="design" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
 <figcaption>The endpoint M is the full total; the dot at Now is what has arrived so far. Moving searches earlier raises the dot while M stays fixed. Increasing the total raises both.</figcaption>
 </figure>
 
@@ -89,7 +89,7 @@ $$
 
 The two sides of the second line are the **Fitted** and **Recorded** averages. The markers below show when they agree.
 
-<figure class="fig wide ts" id="ts-fit" data-stage="timing" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
+<figure class="fig wide ts" id="ts-fit" data-stage="timing" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
 <figcaption>Blue bars show q; black dots show Y/N. The two markers underneath summarize their average arrival times. Only observed intervals enter the fit.</figcaption>
 </figure>
 
@@ -104,7 +104,7 @@ $$
 \end{aligned}
 $$
 
-<figure class="fig wide ts" id="ts-future" data-stage="forecast" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
+<figure class="fig wide ts" id="ts-future" data-stage="forecast" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
 <figcaption>The blue R bar is the remaining count from the formula. Reveal the curve used to generate the hidden searches to check it. Here, allowing earlier searches brings the forecast closer to what remains.</figcaption>
 </figure>
 
@@ -114,7 +114,7 @@ The original multiplier was waiting for searches that had, in effect, already ha
 
 Move today farther back. With only one observed interval, changing the total or changing the timing can explain the same count. There isn't enough of a pattern to separate them.
 
-<figure class="fig wide ts" id="ts-information" data-stage="identification" data-src="{{ '/assets/data/two-step/experiment.json' | relative_url }}">
+<figure class="fig wide ts" id="ts-information" data-stage="identification" data-src="{{ '/assets/data/two-step/experiment.json?v=20261027.2' | relative_url }}">
 <figcaption>The blue band shows different totals and timings that explain the same snapshot. Move the clock forward and the possibilities narrow. The cross is the setting used to generate the searches.</figcaption>
 </figure>
 

@@ -27,4 +27,17 @@ fit.expected.forEach((m,c)=>close(m,sample.fitted[c]));
 const truthRemaining=C.remaining(sample.truth,sample.exposure);
 assert(Math.abs(fit.remaining-truthRemaining)<Math.abs(C.remaining(sample.flat,sample.exposure)-truthRemaining),'The displayed experiment demonstrates the scale-only failure');
 assert(sample.counts.every(Number.isInteger)&&sample.hiddenCounts.every(Number.isInteger));
+const original=C.snapshot(data.dailyCounts,sample.truth,data.experiment.cutoff);
+assert.deepEqual(original.counts,sample.counts);assert.deepEqual(original.hiddenCounts,sample.hiddenCounts);
+const total=C.sum(data.dailyCounts);
+let previous=Infinity;
+for(let day=3;day<=75;day++){
+ const snapshot=C.snapshot(data.dailyCounts,sample.truth,day),seen=C.sum(snapshot.counts);
+ assert.equal(seen+C.sum(snapshot.hiddenCounts),total);assert(seen<=previous);previous=seen;
+ const changedTail=data.dailyCounts.map((n,k)=>78-k<=day?n+1000:n);
+ const isolated=C.snapshot(changedTail,sample.truth,day);
+ assert.deepEqual(snapshot.counts,isolated.counts);assert.deepEqual(snapshot.fit,isolated.fit);
+ assert(snapshot.fitted.every(Number.isFinite));
+}
+assert.equal(C.snapshot(data.dailyCounts,sample.truth,65).resolved,false);
 console.log('Synthetic experiments passed: unchanged shape, volume alone, timing alone, combined changes, multiple cutoffs, hidden counts, and unresolved narrow windows.');

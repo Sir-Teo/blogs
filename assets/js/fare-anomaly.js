@@ -1,3 +1,4 @@
+(function(){
 /* Context-matched forecasts with past-only error calibration and review gates. */
 'use strict';
 const DEFAULTS=Object.freeze({peers:8,calibrationDays:56,minCalibration:40,quantile:.95,materialMinor:1000,materialFraction:.03,minCoverage:.95,maxAgeMinutes:15,confirmationWindowMinutes:45,minSeparationMinutes:10,confirmations:2});
@@ -50,4 +51,8 @@ function assess(prediction,checks,{now,scope,...options}={}){
  return {status:confirmed?'review':latestCandidate?'watch':'normal',confirmed,breaches,
   freshChecks:evaluated.length,residual:latestResidual,materialThreshold,checks:evaluated,reason:confirmed?'Same-direction material deviation in fresh shops at least ten minutes apart.':latestCandidate?'Waiting for same-direction, time-separated fresh confirmation.':'Within the expected behavior or below the materiality limit.'};
 }
-module.exports={DEFAULTS,median,predictPast,forecast,assess};
+const api={DEFAULTS,median,predictPast,forecast,assess};
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
+else window.FareAnomaly=api;
+
+})();

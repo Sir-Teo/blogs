@@ -50,7 +50,8 @@ async function range(page,id,value){await page.locator('#'+id).evaluate((e,v)=>{
   assert(!/1,020|1,337|769|317|18\.82|0\.0286|0\.7626/.test(prose.join(' ')),'Narrative and derivations use symbols rather than fixed example results');
   assert.equal(await page.locator('.ts-tag,.ts-subcontrols').count(),0);
   assert.equal(await page.locator('#ts-knobs .ts-stat').count(),2);
-  for(const id of ['knobs','information'])assert.equal(await page.locator(`#ts-${id} [data-choice]`).count(),0);
+  assert.equal(await page.locator('#ts-knobs [data-choice]').count(),3);
+  assert.equal(await page.locator('#ts-information [data-choice]').count(),0);
 
   for(const [theme,w] of [['light',1440],['dark',1440],['light',390],['dark',390],['light',320]]){
     await page.setViewportSize({width:w,height:1000});
@@ -108,6 +109,20 @@ async function range(page,id,value){await page.locator('#'+id).evaluate((e,v)=>{
   assert.equal(await page.locator('#ts-input [data-choice="today"]').getAttribute('aria-pressed'),'true');
   await page.locator('a.act[data-preset="earlier"]').click();
   assert.equal(await page.locator('#ts-volume').inputValue(),'100');
+  const before=await page.evaluate(()=>DemandStory.snapshot);
+  for(const progress of [4,17,49,72,96]){
+    await range(page,'ts-observe-day',progress);await checkBounds(page);
+    assert.equal(await page.locator('#ts-forecast-day').inputValue(),await page.locator('#ts-observe-day').inputValue());
+    const shared=await page.locator('figure.ts:not(#ts-information)').evaluateAll(figs=>figs.map(f=>f.dataset.observationDay));
+    assert.equal(new Set(shared).size,1,'The same observation cutoff flows through the build');
+    if(progress===17)assert.equal(await page.locator('#ts-fit').getAttribute('data-fit'),'unresolved');
+    if(progress===72)assert.equal(await page.locator('#ts-fit').getAttribute('data-fit'),'resolved');
+  }
+  await range(page,'ts-forecast-day',72);
+  assert.deepEqual((await page.evaluate(()=>DemandStory.snapshot)).counts,before.counts,'Moving back reveals the same counts, not a new draw');
+  await page.locator('#ts-observe-day').focus();await page.keyboard.press('ArrowLeft');
+  assert.equal(await page.locator('#ts-forecast-day').inputValue(),await page.locator('#ts-observe-day').inputValue());
+  await range(page,'ts-observe-day',72);
   assert.deepEqual(errors,[]);
   // Save selected alternate states for visual review.
   await page.setViewportSize({width:1440,height:1000});
@@ -128,7 +143,7 @@ async function range(page,id,value){await page.locator('#'+id).evaluate((e,v)=>{
   await phone.locator('#ts-future').screenshot({animations:"disabled",path:path.join(screenshots,'retina-touch-forecast.png')});
   await phone.locator('#ts-information').screenshot({animations:"disabled",path:path.join(screenshots,'retina-touch-likelihood.png')});
   const failed=await browser.newPage();
-  await failed.route('**/assets/data/two-step/experiment.json',route=>route.abort());
+  await failed.route('**/assets/data/two-step/experiment.json*',route=>route.abort());
   await failed.goto(url);await failed.waitForSelector('#ts-information .ts-error');
   assert.equal(await failed.locator('.ts-error').count(),6);
   // Verify that no-script readers still get the entire narrative and captions.

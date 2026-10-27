@@ -11,7 +11,11 @@ excerpt: >-
   How I’d collect offers, model comparable prices, detect changes
   and make the evidence easy to query.
 styles:
-  - /assets/css/fare-system.css
+  - /assets/css/fare-system.css?v=20261027.2
+scripts:
+  - /assets/js/fare-anomaly.js?v=20261027.2
+  - /assets/js/fare-system-dashboard.js?v=20261027.2
+  - /assets/js/fare-system-live.js?v=20261027.2
 ---
 
 Working on airline pricing taught me that the difficult part starts before the chart: two prices can refer to different products, be observed at different times, or include different taxes. I’d build the product around making those differences inspectable.
@@ -50,9 +54,9 @@ I’d group by route, departure, stops, cabin and trip type, including stay leng
 
 The comparison rule matters: use the lowest product, match the same group, or use a cheaper alternative when it beats our fare. Store the selected product and rule with the result. Below, changing the rule changes a **$20 disadvantage into a $30 advantage**.
 
-<figure class="fig wide fs" id="fs-compare">
+<figure class="fig wide fs" id="fs-compare" data-workspace="{{ '/assets/data/fare-system/workspace.json?v=20261027.2' | relative_url }}">
 {% include fare-system/signals.html %}
-<figcaption>A market dashboard: current position, a scoped review queue and departure-level coverage.</figcaption>
+<figcaption>Switch the comparison rule: the same flight changes position. Reviews track the discount product against its own history.</figcaption>
 </figure>
 
 I’d detect unexpected movement against a **context-aware forecast**: the same market, product, weekday and days before departure. The prototype takes the median of eight matching historical weekdays and calibrates a range from fifty-six past walk-forward forecast errors. Today never helps set its own threshold.
@@ -67,7 +71,7 @@ I’d build two read paths: route prices across departure dates from partitioned
 
 <figure class="fig wide fs" id="fs-product">
 {% include fare-system/investigate.html %}
-<figcaption>Selected-flight review: observed versus expected prices, fresh source checks and partial fare-rule evidence.</figcaption>
+<figcaption>Try one fresh check, a stale quote or a missing source. The price gap alone cannot confirm an alert.</figcaption>
 </figure>
 
 For diagnosis, join shopping results to published fares and evaluate supported restrictions. Our $210 fare clears a fourteen-day advance-purchase check. Other restrictions, a comparable tax basis and seats available in that booking class—the fare’s inventory bucket—still need checking before anyone can treat $210 as sellable.

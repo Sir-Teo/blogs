@@ -29,6 +29,11 @@
   }
   function tabs(name,items,current){return `<div class="tabs" role="group" aria-label="${name}">${items.map(([id,label])=>`<button type="button" data-choice="${id}" aria-pressed="${id===current}">${label}</button>`).join('')}</div>`;}
   function slider(id,label,min,max,step,value){return `<label class="ts-slider" for="${id}"><span>${label}</span><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><output for="${id}"></output></label>`;}
+  function clock(id,data){return `<div class="ts-clock">${slider(id,'Move Now',4,96,1,Math.round((1-data.day/78)*100))}<span>All forecasts update together</span></div>`;}
+  function syncClock(el,id,data){const input=$('#'+id,el),value=Math.round((1-data.day/78)*100);input.value=value;$('output[for="'+id+'"]',el).textContent=value+'% elapsed';input.setAttribute('aria-valuetext',value+' percent elapsed; '+data.day+' days before takeoff');}
+  function bindClock(el,id,data){$('#'+id,el).addEventListener('input',e=>data.setClock(Number(e.target.value)));}
+  function listenClock(fig,draw){fig.addEventListener('ts:clock',draw);}
+  function futureShade(x,pw,i){return x+C.sum(i)/8*pw;}
   function legend(items){return `<div class="ts-legend">${items.map(([cls,label])=>`<span class="${cls}"><i aria-hidden="true"></i>${label}</span>`).join('')}</div>`;}
   function selectTab(el,value){all('[data-choice]',el).forEach(b=>b.setAttribute('aria-pressed',b.dataset.choice===value));}
   function observe(el,draw){let old=0;new ResizeObserver(entries=>{const w=Math.round(entries[0].contentRect.width);if(w>0&&w!==old){old=w;draw(w);}}).observe(el);}
@@ -61,14 +66,14 @@
 
   function inputs(fig,data){
     let mode='today';
-    const i=data.sample.exposure,y=data.sample.counts;
-    const el=shell(fig,'The reference pattern and searches so far','',tabs('Input view',[['baseline','Baseline'],['today','Observed']],'today'));
+    const el=shell(fig,'The reference pattern and searches so far','',tabs('Input view',[['baseline','Baseline'],['today','Observed']],'today')+clock('ts-observe-day',data));
     const view=$('.ts-view',el),note=$('.ts-note',el);
     function draw(){
+      const i=data.sample.exposure,y=data.sample.counts;syncClock(el,'ts-observe-day',data);
       const today=mode==='today',w=width(view),x=42,pw=w-57,top=40,ph=205,max=300;
       const cx=j=>x+(j+.5)/8*pw,yy=n=>top+ph-n/max*ph;
       let s=text(x,14,today?'Searches so far (% of baseline total)':'Searches (% of baseline total)','small');
-      if(today)s+=exposureRail(x,26,pw,i)+rect(x+pw*4.5/8,top,pw*3.5/8,ph,'var(--subtle)');
+      if(today)s+=exposureRail(x,26,pw,i)+rect(futureShade(x,pw,i),top,x+pw-futureShade(x,pw,i),ph,'var(--subtle)');
       s+=yAxis(x,top,pw,ph,max,[0,100,200,300]);
       C.mix.forEach((p,j)=>{
         const value=1000*p*(today?i[j]:1),bw=pw/8*.46;
@@ -76,7 +81,7 @@
         if(today&&i[j]>0)s+=circle(cx(j),yy(y[j]),3.5,'point')+text(cx(j),yy(y[j])-10,amount(y[j]),'strong small','middle');
         if(!today)s+=text(cx(j),yy(value)-9,amount(value),'small','middle');
       });
-      if(today)s+=text(x+pw*.82,top+17,'Unobserved','small','middle');
+      if(today&&C.sum(i)<6)s+=text((futureShade(x,pw,i)+x+pw)/2,top+17,'Unobserved','small','middle');
       s+=periodAxis(x,top+ph+20,pw);
       view.innerHTML=legend(today?[['bar','Expected so far'],['dots','Recorded searches']]:[['bar','Baseline']])+svg(w,top+ph+54,today?'Expected searches in the elapsed part of each interval, compared with recorded searches. Future intervals are hidden.':'A reference search pattern, before changing the total or when searches arrive.',s);
       note.textContent=today?'Searches arrive faster at the start. The shaded future is still hidden.':'This is the pattern we would expect if nothing unusual happened.';
@@ -84,42 +89,42 @@
     function choose(value){mode=value;selectTab(el,mode);draw();}
     all('[data-choice]',el).forEach(b=>b.addEventListener('click',()=>choose(b.dataset.choice)));
     fig.tsAction=a=>{if(a.view)choose(a.view);};
-    observe(view,draw);draw();
+    bindClock(el,'ts-observe-day',data);listenClock(fig,draw);observe(view,draw);draw();
   }
 
   function naive(fig,data){
-    const sample=data.sample,i=sample.exposure;
     const el=shell(fig,'A single multiplier lifts the whole curve','');
     const view=$('.ts-view',el),note=$('.ts-note',el);
     function draw(){
-      const w=width(view),x=42,pw=w-60,top=41,ph=205,max=350,yy=n=>top+ph-n/max*ph,cx=j=>x+(j+.5)/8*pw;
-      let s=text(x,14,'Searches (% of baseline total)','small')+exposureRail(x,26,pw,i)+rect(x+pw*4.5/8,top,pw*3.5/8,ph,'var(--subtle)');
-      s+=yAxis(x,top,pw,ph,max,[0,100,200,300]);
+      const sample=data.sample,i=sample.exposure;
+      const w=width(view),x=42,pw=w-60,top=41,ph=205,max=Math.ceil(Math.max(330,...sample.flat,...sample.counts.map((v,j)=>i[j]?v/i[j]:0))/100)*100,yy=n=>top+ph-n/max*ph,cx=j=>x+(j+.5)/8*pw;
+      let s=text(x,14,'Searches (% of baseline total)','small')+exposureRail(x,26,pw,i)+rect(futureShade(x,pw,i),top,x+pw-futureShade(x,pw,i),ph,'var(--subtle)');
+      s+=yAxis(x,top,pw,ph,max,[0,max/2,max]);
       const tail=sample.flat.map((value,j)=>[cx(j),yy(value)]).slice(i.findIndex(v=>v<1));
       s+=`<path d="${path(tail)}L${tail.at(-1)[0]},${top+ph}L${tail[0][0]},${top+ph}Z" fill="var(--ts-amber)" opacity=".075"/>`;
       C.mix.forEach((p,j)=>{const value=p*1000,bw=pw/8*.4;s+=rect(cx(j)-bw/2,yy(value),bw,top+ph-yy(value),'var(--ts-fill)');});
       s+=`<path d="${path(sample.flat.map((value,j)=>[cx(j),yy(value)]))}" class="flat"/>`;
-      for(const j of [0,3])s+=line(cx(j),yy(sample.flat[j]),cx(j),yy(sample.counts[j]/i[j]),'gap');
+      for(const j of [0,3])if(i[j]>0)s+=line(cx(j),yy(sample.flat[j]),cx(j),yy(sample.counts[j]/i[j]),'gap');
       sample.counts.forEach((value,j)=>{if(i[j]>0)s+=circle(cx(j),yy(value/i[j]),3.5,'point');});
-      s+=text(x+pw*.82,top+15,'Future','small','middle')+periodAxis(x,top+ph+20,pw);
-      const left=w<450?100:124,bw=w-left-49;
+      if(C.sum(i)<6)s+=text((futureShade(x,pw,i)+x+pw)/2,top+15,'Future','small','middle');s+=periodAxis(x,top+ph+20,pw);
+      const left=w<450?100:124,bw=w-left-58;
       let bars='';
       [['Baseline',C.remaining(C.mean(0,0),i),'var(--ts-base)'],['Single multiplier',C.remaining(sample.flat,i),'var(--ts-amber)']].forEach(([label,value,color],j)=>{
-        const y=19+j*32;bars+=text(0,y+5,label)+rect(left,y-7,value/800*bw,14,color)+text(left+value/800*bw+8,y+5,amount(value,1),'strong');
+        const y=19+j*32;bars+=text(0,y+5,label)+rect(left,y-7,value/Math.max(800,...[C.remaining(C.mean(0,0),i),C.remaining(sample.flat,i)])*bw,14,color)+text(left+value/Math.max(800,...[C.remaining(C.mean(0,0),i),C.remaining(sample.flat,i)])*bw+8,y+5,amount(value,1),'strong');
       });
       view.innerHTML=legend([['bar','Baseline'],['amber','One multiplier'],['dots','Observed, adjusted']])+svg(w,top+ph+54,'The first forecast scales every interval equally. Recorded searches arrive earlier than this curve predicts.',s)+`<div class="ts-result"><div class="ts-head"><span class="ts-title">Predicted searches still to come</span></div>${svg(w,70,'Searches still expected, as a share of the reference total, under the baseline and single-multiplier forecast.',bars)}</div>`;
       note.textContent='The multiplier gives every future interval the same increase, even when the early lead is fading.';
     }
-    observe(view,draw);draw();
+    listenClock(fig,draw);observe(view,draw);draw();
   }
 
   function knobs(fig,data){
     let v=data.sample.flat_v,theta=0,preset='volume';
     const el=shell(fig,'The total and the timing','EXPECTED COUNTS',
-      `<div class="ts-controls">${slider('ts-volume','Total searches',60,180,1,Math.round(Math.exp(v)*100))}${slider('ts-timing','Timing shift',-.045,.045,.001,0)}</div>`);
+      tabs('Change the search pattern',[['volume','More total'],['earlier','Earlier'],['both','Both']],'volume')+`<div class="ts-controls">${slider('ts-volume','Total searches',60,180,1,Math.round(Math.exp(v)*100))}${slider('ts-timing','Timing shift',-.045,.045,.001,0)}</div>`);
     const view=$('.ts-view',el),note=$('.ts-note',el),vi=$('#ts-volume',el),ti=$('#ts-timing',el);
     function draw(){
-      const w=width(view),mu=C.mean(v,theta),i=C.exposure(22),base=C.mean(0,0);
+      const w=width(view),mu=C.mean(v,theta),i=C.exposure(data.day),base=C.mean(0,0);
       const seen=C.dot(mu,i),remaining=C.remaining(mu,i),baseSeen=C.dot(base,i),baseRemaining=C.remaining(base,i);
       $('output[for="ts-volume"]',el).textContent=pct(Math.exp(v)-1);
       $('output[for="ts-timing"]',el).textContent=signed(C.shift(theta)/C.edges[0]*100)+'%';
@@ -128,14 +133,14 @@
       const x=45,y=30,pw=w-62,ph=w<500?225:265,h=y+ph+57,xx=d=>x+(78-d)/78*pw;
       const max=2000,yy=n=>y+ph-n/max*ph;
       const points=[78,...C.edges.slice(1)],model=points.map(d=>[xx(d),yy(C.cumulative(mu,d))]),baseline=points.map(d=>[xx(d),yy(C.cumulative(base,d))]);
-      const before=[78,...C.edges.slice(1).filter(d=>d>22),22].map(d=>[xx(d),yy(C.cumulative(mu,d))]);
-      const after=[22,...C.edges.slice(1).filter(d=>d<22)].map(d=>[xx(d),yy(C.cumulative(mu,d))]);
-      let s=rect(xx(22),y,pw-(xx(22)-x),ph,'var(--subtle)')+text(x,y-13,'Searches so far (% of baseline total)','small');
+      const before=[78,...C.edges.slice(1).filter(d=>d>data.day),data.day].map(d=>[xx(d),yy(C.cumulative(mu,d))]);
+      const after=[data.day,...C.edges.slice(1).filter(d=>d<data.day)].map(d=>[xx(d),yy(C.cumulative(mu,d))]);
+      let s=rect(xx(data.day),y,pw-(xx(data.day)-x),ph,'var(--subtle)')+text(x,y-13,'Searches so far (% of baseline total)','small');
       s+=yAxis(x,y,pw,ph,max,[0,500,1000,1500,2000]);
       s+=`<path d="${path(model)}L${xx(0)},${yy(0)}L${x},${yy(0)}Z" fill="var(--ts-blue)" opacity=".075"/>`;
       s+=`<path d="${path(baseline)}" class="baseline"/><path d="${path(before)}" class="model"/><path d="${path(after)}" class="model" stroke-dasharray="5 5"/>`;
-      s+=line(xx(22),y,xx(22),y+ph,'today')+circle(xx(22),yy(seen),4,'','var(--ts-blue)');
-      s+=text(xx(22)-8,y+18,'Now','strong','end')+text((xx(22)+xx(0))/2,y+ph-13,'Still to come','direct small','middle');
+      s+=line(xx(data.day),y,xx(data.day),y+ph,'today')+circle(xx(data.day),yy(seen),4,'','var(--ts-blue)');
+      s+=text(xx(data.day)-8,y+18,'Now','strong','end');if(data.day>=16)s+=text((xx(data.day)+xx(0))/2,y+ph-13,'Still to come','direct small','middle');
       if(Math.abs(C.sum(mu)-1000)<1){
         s+=text(xx(0)-7,yy(C.sum(mu))-12,'M · same total','direct strong','end');
       }else{
@@ -159,20 +164,22 @@
     ti.addEventListener('input',()=>{theta=Number(ti.value);selectTab(el,'');draw();});
     function choose(p){preset=p;v=p==='earlier'?0:data.experiment.volumeLog;theta=p==='volume'?0:data.experiment.timing;vi.value=Math.exp(v)*100;ti.value=theta;selectTab(el,preset);draw();}
     all('[data-choice]',el).forEach(b=>b.addEventListener('click',()=>choose(b.dataset.choice)));
-    fig.tsAction=a=>{if(a.preset)choose(a.preset);};observe(view,draw);draw();
+    fig.tsAction=a=>{if(a.preset)choose(a.preset);};listenClock(fig,draw);observe(view,draw);draw();
   }
 
   function estimator(fig,data){
-    const sample=data.sample,i=sample.exposure,y=sample.counts,n=C.sum(y),fit=C.fit(y,i);
     const el=shell(fig,'Matching the observed arrival times','');
     const view=$('.ts-view',el),note=$('.ts-note',el);
     function draw(){
-      const w=width(view),x=42,pw=w-57,top=40,ph=205,max=.4;
+      const sample=data.sample,i=sample.exposure,y=sample.counts,n=C.sum(y),fit=C.fit(y,i);
+      if(!fit){view.innerHTML='<div class="ts-abstain"><strong>One interval. Two explanations.</strong><p>A larger total and earlier searches can fit the same count. Move Now forward to observe another interval.</p></div>';note.textContent='Keeping the baseline until timing can be estimated.';fig.dataset.fit='unresolved';return;}
+      fig.dataset.fit='resolved';
+      const w=width(view),x=42,pw=w-57,top=40,ph=205,max=Math.max(.4,...y.map(v=>v/n),...C.conditional(fit.theta,i))+.03;
       const baseline=C.conditional(0,i),fitted=C.conditional(fit.theta,i),cx=j=>x+(j+.5)/8*pw,yy=v=>top+ph-v/max*ph;
-      let s=text(x,14,'Share of recorded searches','small')+exposureRail(x,26,pw,i)+rect(x+pw*4.5/8,top,pw*3.5/8,ph,'var(--subtle)');
+      let s=text(x,14,'Share of recorded searches','small')+exposureRail(x,26,pw,i)+rect(futureShade(x,pw,i),top,x+pw-futureShade(x,pw,i),ph,'var(--subtle)');
       s+=yAxis(x,top,pw,ph,max,[0,.1,.2,.3,.4],v=>num(v*100)+'%');
       baseline.forEach((value,j)=>{const bw=pw/8*.28;s+=rect(cx(j)-bw-1,yy(value),bw,top+ph-yy(value),'var(--ts-fill)')+rect(cx(j)+1,yy(fitted[j]),bw,top+ph-yy(fitted[j]),'var(--ts-blue)');if(i[j]>0)s+=circle(cx(j)+1+bw/2,yy(y[j]/n),3.5,'point');});
-      s+=text(x+pw*.82,top+17,'Unobserved','small','middle')+periodAxis(x,top+ph+20,pw);
+      if(C.sum(i)<6)s+=text((futureShade(x,pw,i)+x+pw)/2,top+17,'Unobserved','small','middle');s+=periodAxis(x,top+ph+20,pw);
       const observedMean=1-C.dot(y,C.mid)/n/C.edges[0],fittedMean=1-C.dot(fitted,C.mid)/C.edges[0];
       const railX=82,railW=w-96,averageX=railX+railW*fittedMean;
       let average=line(averageX,10,averageX,58,'gap');
@@ -184,23 +191,23 @@
       view.innerHTML=legend([['bar','Baseline shape'],['blue bar','Fitted timing'],['dots','Observed shares']])+svg(w,top+ph+54,'Fit when searches arrive by comparing their shares across observed intervals, without estimating the total for the whole window yet.',s)+`<div class="ts-mean-summary">${svg(w,87,'The recorded and fitted average arrival times line up.',average)}</div>`;
       note.textContent='';
     }
-    observe(view,draw);draw();
+    listenClock(fig,draw);observe(view,draw);draw();
   }
 
   function forecast(fig,data){
-    const sample=data.sample,i=sample.exposure;let revealed=false,period=5;
-    const fittedShare=C.dot(sample.fitted,i)/C.sum(sample.fitted);
+    let revealed=false,period=5;
     const el=shell(fig,'Forecasting the remaining searches','',
-      '<button type="button" class="btn ts-reveal" aria-pressed="false" aria-controls="ts-future-result">Reveal hidden future</button>');
+      clock('ts-forecast-day',data)+'<button type="button" class="btn ts-reveal" aria-pressed="false" aria-controls="ts-future-result">Reveal hidden future</button>');
     const view=$('.ts-view',el),note=$('.ts-note',el),reveal=$('.ts-reveal',el);
     function draw(){
-      const w=width(view),x=42,pw=w-60,y=43,ph=230,max=350,yy=v=>y+ph-v/max*ph;
+      const sample=data.sample,i=sample.exposure,fittedShare=C.dot(sample.fitted,i)/C.sum(sample.fitted);syncClock(el,'ts-forecast-day',data);
+      const w=width(view),x=42,pw=w-60,y=43,ph=230,max=Math.ceil(Math.max(330,...sample.fitted,...sample.flat,...sample.counts.map((v,j)=>i[j]?v/i[j]:0))/100)*100,yy=v=>y+ph-v/max*ph;
       fig.dataset.future=revealed?'revealed':'hidden';
       reveal.setAttribute('aria-pressed',String(revealed));
       reveal.textContent=revealed?'Hide future again':'Reveal hidden future';
-      let s=rect(x+pw*4.5/8,y,pw*3.5/8,ph,'var(--subtle)')+text(x,14,'Searches (% of baseline total)','small')+exposureRail(x,27,pw,i);
+      let s=rect(futureShade(x,pw,i),y,x+pw-futureShade(x,pw,i),ph,'var(--subtle)')+text(x,14,'Searches (% of baseline total)','small')+exposureRail(x,27,pw,i);
       s+=rect(x+period*pw/8,y,pw/8,ph,'var(--ts-blue)','opacity=".055" data-period-cursor="true"');
-      s+=yAxis(x,y,pw,ph,max,[0,100,200,300]);
+      s+=yAxis(x,y,pw,ph,max,[0,max/2,max]);
       const center=j=>x+pw*(j+.5)/8,bw=pw/8*.26;
       C.mix.forEach((p,j)=>{
         const base=1000*p,fitted=sample.fitted[j];
@@ -214,29 +221,30 @@
         s+=`<path d="${path(future)}" class="truth" data-known-future="true"/>`;
       }
       sample.counts.forEach((v,j)=>{if(i[j]>0)s+=circle(center(j),yy(v/i[j]),3.5,'point');});
-      s+=line(x+pw*4.5/8,y,x+pw*4.5/8,y+ph,'today')+text(x+pw*4.5/8+7,y+15,'Future','small');
+      s+=line(futureShade(x,pw,i),y,futureShade(x,pw,i),y+ph,'today');if(C.sum(i)<6)s+=text(futureShade(x,pw,i)+7,y+15,'Future','small');
       s+=periodAxis(x,y+ph+20,pw)+periodHits(x,y,pw,ph);
-      const rows=[['Baseline',C.remaining(C.mean(0,0),i),'var(--ts-base)'],['Scale only',C.remaining(sample.flat,i),'var(--ts-amber)'],['Fitted · R',C.remaining(sample.fitted,i),'var(--ts-blue)']];
+      const rows=[['Baseline',C.remaining(C.mean(0,0),i),'var(--ts-base)'],['Scale only',C.remaining(sample.flat,i),'var(--ts-amber)'],[sample.resolved?'Fitted · R':'Baseline held',C.remaining(sample.fitted,i),'var(--ts-blue)']];
       if(revealed)rows.push(['Known future',C.remaining(sample.truth,i),'var(--fg)']);
-      const left=w<450?98:122,barW=w-left-52;
+      const left=w<450?98:122,barW=w-left-62,barMax=Math.max(800,...rows.map(r=>r[1]));
       let bars='';rows.forEach(([label,n,color],j)=>{
         const rowY=22+j*32;
-        const body=text(0,rowY+5,label,label.startsWith('Fitted')?'strong':'')+rect(left,rowY-7,n/800*barW,14,color,'rx="1"')+text(left+n/800*barW+8,rowY+5,amount(n,1),'strong');
+        const body=text(0,rowY+5,label,label.startsWith('Fitted')?'strong':'')+rect(left,rowY-7,n/barMax*barW,14,color,'rx="1"')+text(left+n/barMax*barW+8,rowY+5,amount(n,1),'strong');
         bars+=label==='Known future'?`<g data-known-remainder="true">${body}</g>`:body;
       });
-      const items=[['bar','Baseline'],['blue bar','Fitted'],['amber','Scale only'],['dots','Observed, adjusted']];
+      const items=[['bar','Baseline'],['blue bar',sample.resolved?'Fitted':'Baseline held'],['amber','Scale only'],['dots','Observed, adjusted']];
       if(revealed)items.push(['truth','Known future']);
       view.innerHTML=legend(items)+svg(w,y+ph+56,revealed?'The known future is revealed as a dashed curve, after making the forecast.':'Predicted searches in each interval. The known future is hidden while the forecast is made.',s)+periodInspector('ts-forecast-period',period)+`<div class="ts-result" id="ts-future-result"><div class="ts-head"><span class="ts-title">${revealed?'Now check what remained':'Predicted searches still to come'}</span></div>${svg(w,rows.length*32+14,'Compare predicted future searches as shares of baseline total searches.',bars)}</div>`;
       bindInspector(view,'ts-forecast-period',period,x,pw,j=>{
         period=j;
         return inspectorValue(amount(C.mix[j]*1000,1),'Baseline')+inspectorValue(amount(sample.fitted[j],1),'Fitted','blue')+inspectorValue(amount(sample.flat[j],1),'Scale only','amber');
       });
-      const story=revealed?'Allowing searches to arrive earlier brings the remaining forecast closer to the known future.':'This is the share expected by Now. The blue R bar is the part still to come.';
-      note.innerHTML='Fitted '+mathInline(String.raw`F\approx${num(fittedShare*100)}\%`,'Fraction expected by Now')+' · '+story;
+      const truthR=C.remaining(sample.truth,i),fittedError=Math.abs(C.remaining(sample.fitted,i)-truthR),flatError=Math.abs(C.remaining(sample.flat,i)-truthR);
+      const story=!sample.resolved?'Observe a second interval before estimating timing. The blue bar keeps the baseline.':revealed?(fittedError<flatError?'The timing fit is closer to the known future at this cutoff.':'The scale-only forecast is closer here. Short, noisy histories can mislead the timing fit.'):'The blue R bar is the forecast still to come. Reveal the hidden future to check it.';
+      note.innerHTML=(sample.resolved?'Fitted ':'Unresolved · baseline held. ')+mathInline(String.raw`F\approx${num(fittedShare*100)}\%`,'Fraction expected by Now')+' · '+story;
     }
     reveal.addEventListener('click',()=>{revealed=!revealed;draw();});
     fig.tsAction=a=>{if(a.reveal){revealed=a.reveal==='true';draw();}};
-    observe(view,draw);draw();
+    bindClock(el,'ts-forecast-day',data);listenClock(fig,()=>{revealed=false;draw();});observe(view,draw);draw();
   }
 
   // Remaining figures are mounted after the shared data has loaded below.
@@ -314,6 +322,9 @@
   const first=document.getElementById('ts-input');
   if(!first)return;
   fetch(first.dataset.src).then(r=>{if(!r.ok)throw Error('Figure data unavailable');return r.json();}).then(data=>{
+    data.day=data.experiment.cutoff;
+    data.setClock=progress=>{data.day=Math.round(78*(1-progress/100));data.sample=C.snapshot(data.dailyCounts,data.sample.truth,data.day);for(const [id] of figures){const fig=document.getElementById(id);if(fig){fig.dataset.observationDay=data.day;fig.dispatchEvent(new CustomEvent('ts:clock'));}}};
+    window.DemandStory={get snapshot(){return {day:data.day,counts:[...data.sample.counts],resolved:data.sample.resolved,remaining:C.remaining(data.sample.fitted,data.sample.exposure)};}};
     for(const [id,name] of figures){const fig=document.getElementById(id);if(!fig)continue;try{F.mounts[name](fig,data);}catch(error){console.error(id,error);failure(fig);}}
   }).catch(error=>{console.error(error);figures.forEach(([id])=>{const f=document.getElementById(id);if(f)failure(f);});});
   function failure(fig){const el=document.createElement('p');el.className='ts-error';el.innerHTML=`The interactive figure could not load. <a href="${first.dataset.src}">Open the figure data</a> or reload this page to try again.`;fig.insertBefore(el,$('figcaption',fig));fig.classList.add('ready');}

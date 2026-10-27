@@ -31,6 +31,14 @@ combined changes, identifiable cutoffs, and an unidentifiable narrow window.
 The numerical suite also checks likelihood profiling, derivatives, total
 conservation, and time-unit invariance.
 
+The fixed daily-count realization preserves the original observed and hidden
+interval totals. The two Move Now controls reveal this same history at a new
+cutoff, update all intermediate forecasts together and hide the future again.
+The fit only sees elapsed days. With one observed interval it abstains and
+keeps the baseline. The volume/timing figure adds three visible presets while
+remaining a separate controlled-pattern sandbox. Tests check every daily
+cutoff, count conservation and invariance to changes in the hidden tail.
+
 ## Browser verification
 
 Build and serve the site, then run:

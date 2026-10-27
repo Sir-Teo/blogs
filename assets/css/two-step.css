@@ -103,6 +103,14 @@
 .ts-zoom-controls { display: flex; justify-content: flex-end; margin: -2px 0 13px; }
 .ts-zoom-controls .tabs button { font-size: 12px; min-height: 28px; }
 .ts [hidden] { display: none !important; }
+.ts-clock { display:flex; flex-wrap:wrap; align-items:center; gap:5px 22px; margin:12px 0 20px; padding:11px 0; border-block:1px solid var(--line); }
+.ts-clock .ts-slider { flex:1 1 320px; grid-template-columns:auto minmax(70px,1fr) 92px; }
+.ts-clock > span { color:var(--fg-3); font:11px/1.5 var(--sans); }
+.ts-clock input { accent-color:var(--ts-blue); cursor:ew-resize; }
+.ts-abstain { display:flex; flex-direction:column; justify-content:center; min-height:260px; border-block:1px solid var(--line); padding:25px 22px; background:var(--subtle); }
+.ts-abstain strong { font:500 22px/1.4 var(--sans); color:var(--fg); letter-spacing:-.025em; }
+.post-content .ts-abstain p { max-width:420px; margin:12px 0 0; font:14px/1.7 var(--sans); color:var(--fg-2); }
+.ts .tabs button { min-height:40px; }
 @media (max-width:600px) {
   .ts-head { flex-direction: column; gap: 3px; }
   .ts-tag { font-size: 10px; }
@@ -118,6 +126,8 @@
   .ts-inspector-values strong { font-size: 16px; }
   .ts-subcontrols { gap: 8px; }
   .ts-zoom-controls { justify-content: flex-start; }
+  .ts-clock { gap:6px; }
+  .ts-clock .ts-slider { gap:9px; }
 }
 @media print {
   .ts-controls, .ts-steps, .ts-subcontrols, .ts-zoom-controls, .ts-inspector-head { display: none; }

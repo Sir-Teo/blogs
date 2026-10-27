@@ -4,6 +4,10 @@ const d=require(path.join(root,'assets/data/fare-system/demo.json'));
 const out=path.join(root,'_includes/fare-system');
 for(const file of fs.readdirSync(out))if(file.endsWith('.html')&&!core.scenes.includes(file.slice(0,-5))&&file!=='validation.html')fs.unlinkSync(path.join(out,file));
 for(const scene of core.scenes)fs.writeFileSync(path.join(out,scene+'.html'),'<!-- Generated from one shared fictional dataset. -->\n'+core.render(scene,d)+'\n');
+const dashboard=require(path.join(root,'assets/js/fare-system-dashboard.js')),m=core.model(d);
+const model=JSON.parse(JSON.stringify({...m,flightHistory:dashboard.flightHistory(d,m)},(key,value)=>['peers','calibrationDays','checks','rows','policies','history'].includes(key)?undefined:value));
+const data={cells:d.cells,flight:d.flight,anomaly:{snapshot:d.anomaly.snapshot,scope:d.anomaly.scope,checks:d.anomaly.checks}};
+fs.writeFileSync(path.join(root,'assets/data/fare-system/workspace.json'),JSON.stringify({data,model})+'\n');
 const evaluation=require(path.join(root,'assets/data/fare-system/anomaly-evaluation.json'));
 const metric=evaluation.metrics;
 const table='<table class="fs-validation-table"><caption>Constructed holdout · same price target and review gates</caption><thead><tr><th>Detector</th><th>Sustained moves found</th><th>False reviews on normal cell-days</th></tr></thead><tbody>'+
