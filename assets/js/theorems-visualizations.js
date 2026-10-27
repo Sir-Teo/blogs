@@ -81,7 +81,7 @@
     if (document.getElementById('tv-katex-script')) return;
     var s = document.createElement('script');
     s.id = 'tv-katex-script';
-    s.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js';
+    s.src = new URL('../vendor/katex/katex.min.js', document.querySelector('script[src*="theorems-visualizations.js"]').src).href;
     s.defer = true;
     s.onload = function () {
       var list = katexCallbacks.splice(0);

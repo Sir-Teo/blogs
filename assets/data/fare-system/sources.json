@@ -1,0 +1,25 @@
+{
+  "kind": "Calculation notes for a proposed airline pricing analysis design",
+  "design_choices": [
+    "Generic names, schemas, queue/cache choices, storage keys and API paths describe the proposed build.",
+    "One offer row means one itinerary, one source and one observation time; comparison rows have a separate grain.",
+    "Source timestamps survive cache reuse. UTC observation time and customer reporting day remain separate.",
+    "Partition customer/date and cluster by route; customer delivery and internal analytics have separate readiness policies."
+  ],
+  "calculations": [
+    "Two duplicate watchlists for one customer: 160 assignments become 80 source queries, with 20 cache hits and 60 supplier calls.",
+    "Forty own-source replies contain one offer each; forty competitor replies contain two offers each: 120 rows.",
+    "Any-product and cheaper-alternative comparisons select 220 against our 240. Same-group selects 270.",
+    "Forecasts use the last eight matching weekdays for the same route/product/AP. A range is calibrated from 56 prior prequential absolute errors, never the current value.",
+    "Twenty-two of forty dates are cheaper elsewhere; that position count is not an anomaly count. Three selected dates have repeated material deviations from their contextual baseline.",
+    "Benchmark: own economy minus competitor discount must be strictly greater than USD 15. A USD 20 threshold excludes the selected date.",
+    "Missing one competitor reply removes two offers: 118 rows, 39 comparable dates, and unknown competitor price for the selected departure."
+  ],
+  "limits": [
+    "All entities, prices, counts, observations and histories are fictional.",
+    "Two sources summarize multiple provider-specific operations. Cache/timing/failure paths are simplified.",
+    "The figures do not execute the illustrated database queries, AWS services or API endpoints.",
+    "A context-matched price forecast and past-only residual band replace the two-pass frequency fence. Production ranking and notification delivery remain outside the numerical example.",
+    "Published fare USD 210 is an advance-purchase example. Other restrictions, tax basis and seat availability remain unverified."
+  ]
+}

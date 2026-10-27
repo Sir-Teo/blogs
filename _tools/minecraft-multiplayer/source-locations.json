@@ -1,0 +1,296 @@
+{
+  "handshake": {
+    "file": "server/network/ServerHandshakePacketListenerImpl.java",
+    "symbol": "handleIntention",
+    "start": 25,
+    "end": 52
+  },
+  "protocol-version": {
+    "file": "server/network/ServerHandshakePacketListenerImpl.java",
+    "symbol": "beginLogin",
+    "start": 54,
+    "end": 69
+  },
+  "hello": {
+    "file": "server/network/ServerLoginPacketListenerImpl.java",
+    "symbol": "handleHello",
+    "start": 113,
+    "end": 128
+  },
+  "login-verify": {
+    "file": "server/network/ServerLoginPacketListenerImpl.java",
+    "symbol": "verifyLoginAndFinishConnectionSetup",
+    "start": 135,
+    "end": 156
+  },
+  "configuration-switch": {
+    "file": "server/network/ServerLoginPacketListenerImpl.java",
+    "symbol": "handleLoginAcknowledgement",
+    "start": 228,
+    "end": 236
+  },
+  "configuration": {
+    "file": "server/network/ServerConfigurationPacketListenerImpl.java",
+    "symbol": "startConfiguration",
+    "start": 81,
+    "end": 99
+  },
+  "configuration-finish": {
+    "file": "server/network/ServerConfigurationPacketListenerImpl.java",
+    "symbol": "handleConfigurationFinished",
+    "start": 153,
+    "end": 176
+  },
+  "prepare-spawn": {
+    "file": "server/network/config/PrepareSpawnTask.java",
+    "symbol": "start",
+    "start": 47,
+    "end": 78
+  },
+  "spawn-ready": {
+    "file": "server/network/config/PrepareSpawnTask.java",
+    "symbol": "spawn",
+    "start": 182,
+    "end": 214
+  },
+  "player-join": {
+    "file": "server/players/PlayerList.java",
+    "symbol": "placeNewPlayer",
+    "start": 149,
+    "end": 225
+  },
+  "chunk-batch": {
+    "file": "server/network/PlayerChunkSender.java",
+    "symbol": "sendNextChunks",
+    "start": 50,
+    "end": 74
+  },
+  "chunk-order": {
+    "file": "server/network/PlayerChunkSender.java",
+    "symbol": "collectChunksToSend",
+    "start": 86,
+    "end": 112
+  },
+  "chunk-feedback": {
+    "file": "server/network/PlayerChunkSender.java",
+    "symbol": "onChunkBatchReceivedByClient",
+    "start": 114,
+    "end": 126
+  },
+  "client-world": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleLogin",
+    "start": 511,
+    "end": 583
+  },
+  "client-chunk": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleLevelChunkWithLight",
+    "start": 848,
+    "end": 861
+  },
+  "client-entity": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleAddEntity",
+    "start": 585,
+    "end": 607
+  },
+  "client-create-player": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "createEntityFromPacket",
+    "start": 609,
+    "end": 622
+  },
+  "server-action": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "handlePlayerAction",
+    "start": 1345,
+    "end": 1403
+  },
+  "server-use-on": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "handleUseItemOn",
+    "start": 1415,
+    "end": 1482
+  },
+  "server-break": {
+    "file": "server/level/ServerPlayerGameMode.java",
+    "symbol": "handleBlockBreakAction",
+    "start": 164,
+    "end": 264
+  },
+  "server-ack": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "ackBlockChangesUpTo",
+    "start": 1546,
+    "end": 1552
+  },
+  "server-tick": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "tick",
+    "start": 313,
+    "end": 332
+  },
+  "client-predict": {
+    "file": "client/multiplayer/MultiPlayerGameMode.java",
+    "symbol": "startPrediction",
+    "start": 290,
+    "end": 296
+  },
+  "client-break": {
+    "file": "client/multiplayer/MultiPlayerGameMode.java",
+    "symbol": "continueDestroyBlock",
+    "start": 234,
+    "end": 288
+  },
+  "client-block-update": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleBlockUpdate",
+    "start": 924,
+    "end": 927
+  },
+  "client-ack": {
+    "file": "client/multiplayer/ClientLevel.java",
+    "symbol": "handleBlockChangedAck",
+    "start": 192,
+    "end": 198
+  },
+  "client-verified-state": {
+    "file": "client/multiplayer/ClientLevel.java",
+    "symbol": "setServerVerifiedBlockState",
+    "start": 211,
+    "end": 215
+  },
+  "client-reconcile": {
+    "file": "client/multiplayer/ClientLevel.java",
+    "symbol": "syncBlockState",
+    "start": 217,
+    "end": 226
+  },
+  "prediction-retain": {
+    "file": "client/multiplayer/prediction/BlockStatePredictionHandler.java",
+    "symbol": "retainKnownServerState",
+    "start": 18,
+    "end": 26
+  },
+  "prediction-end": {
+    "file": "client/multiplayer/prediction/BlockStatePredictionHandler.java",
+    "symbol": "endPredictionsUpTo",
+    "start": 39,
+    "end": 51
+  },
+  "local-position": {
+    "file": "client/player/LocalPlayer.java",
+    "symbol": "sendPosition",
+    "start": 292,
+    "end": 330
+  },
+  "server-position": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "handleMovePlayer",
+    "start": 1086,
+    "end": 1124
+  },
+  "server-position-check": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "handlePlayerPositionChange",
+    "start": 1126,
+    "end": 1251
+  },
+  "entity-pairing": {
+    "file": "server/level/ServerEntity.java",
+    "symbol": "sendPairingData",
+    "start": 301,
+    "end": 346
+  },
+  "entity-changes": {
+    "file": "server/level/ServerEntity.java",
+    "symbol": "sendChanges",
+    "start": 100,
+    "end": 217
+  },
+  "entity-move-packet": {
+    "file": "server/level/ServerEntity.java",
+    "symbol": "createMovePacket",
+    "start": 219,
+    "end": 240
+  },
+  "client-entity-position": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleEntityPositionSync",
+    "start": 656,
+    "end": 681
+  },
+  "client-entity-delta": {
+    "file": "client/multiplayer/ClientPacketListener.java",
+    "symbol": "handleMoveEntity",
+    "start": 730,
+    "end": 757
+  },
+  "linear-interpolation": {
+    "file": "world/entity/LinearInterpolationHandler.java",
+    "symbol": "doInterpolate",
+    "start": 39,
+    "end": 47
+  },
+  "disconnect": {
+    "file": "server/network/ServerGamePacketListenerImpl.java",
+    "symbol": "removePlayerFromWorld",
+    "start": 1533,
+    "end": 1544
+  },
+  "player-remove": {
+    "file": "server/players/PlayerList.java",
+    "symbol": "remove",
+    "start": 299,
+    "end": 332
+  },
+  "player-save": {
+    "file": "world/level/storage/PlayerDataStorage.java",
+    "symbol": "save",
+    "start": 34,
+    "end": 62
+  },
+  "player-load": {
+    "file": "world/level/storage/PlayerDataStorage.java",
+    "symbol": "load",
+    "start": 91,
+    "end": 101
+  },
+  "player-inventory-write": {
+    "file": "world/entity/player/Player.java",
+    "symbol": "addAdditionalSaveData",
+    "start": 621,
+    "end": 636
+  },
+  "player-inventory-read": {
+    "file": "world/entity/player/Player.java",
+    "symbol": "readAdditionalSaveData",
+    "start": 599,
+    "end": 619
+  },
+  "player-position-save": {
+    "file": "world/entity/Entity.java",
+    "symbol": "saveWithoutId",
+    "start": 2137,
+    "end": 2213
+  },
+  "world-save": {
+    "file": "server/MinecraftServer.java",
+    "symbol": "saveEverything",
+    "start": 613,
+    "end": 623
+  },
+  "world-chunks-save": {
+    "file": "server/MinecraftServer.java",
+    "symbol": "saveAllChunks",
+    "start": 589,
+    "end": 611
+  },
+  "packet-tick-order": {
+    "file": "server/MinecraftServer.java",
+    "symbol": "processPacketsAndTick",
+    "start": 1009,
+    "end": 1019
+  }
+}

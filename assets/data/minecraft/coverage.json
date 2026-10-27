@@ -1,0 +1,440 @@
+{
+  "version": "26.3",
+  "groups": [
+    {
+      "title": "Package and memory",
+      "findings": [
+        {
+          "title": "Artifact identity and contents",
+          "detail": "The official 26.3 archives were hash-verified. This atlas measures the client ZIP directory; code analysis uses its shared/server classes too.",
+          "figures": [
+            "mc-package"
+          ],
+          "source": "Official version metadata; ZIP directory; provenance.json"
+        },
+        {
+          "title": "World, chunk, and section coordinates",
+          "detail": "The vanilla Overworld is 384 blocks high, starting at \u221264; chunk columns are 16\u00d716 and sections are 16\u00b3.",
+          "figures": [
+            "mc-world",
+            "mc-coordinate"
+          ],
+          "source": "dimension_type/overworld.json; Strategy"
+        },
+        {
+          "title": "Floor division and spatial order",
+          "detail": "Negative coordinates floor into sections; block states flatten x first, then z, then y. Density buffers use another order.",
+          "figures": [
+            "mc-coordinate",
+            "mc-samplers"
+          ],
+          "source": "Strategy; DensityVolume"
+        },
+        {
+          "title": "States, palettes, and resizing",
+          "detail": "Orientation and waterlogging can distinguish states. Inserting a new state can resize and reencode all section indices.",
+          "figures": [
+            "mc-palette"
+          ],
+          "source": "PalettedContainer; Strategy"
+        },
+        {
+          "title": "Zero bits and padded words",
+          "detail": "One state needs no index array. Local block palettes use 4\u20138 bits, and entries never straddle 64-bit words.",
+          "figures": [
+            "mc-palette"
+          ],
+          "source": "ZeroBitStorage; SimpleBitStorage"
+        },
+        {
+          "title": "RAM differs from serialized storage",
+          "detail": "Above 256 states RAM uses global IDs; pack can rebuild a compact local palette. A biome container has 64 samples with smaller local widths.",
+          "figures": [
+            "mc-palette"
+          ],
+          "source": "Configuration; PalettedContainer.pack; Strategy"
+        },
+        {
+          "title": "Summaries and implicit values",
+          "detail": "Section counters skip empty or non-random-ticking sections. Uniform light layers can remain implicit; a nonuniform layer has 2,048 payload bytes.",
+          "figures": [
+            "mc-scheduler",
+            "mc-light"
+          ],
+          "source": "LevelChunkSection; DataLayer"
+        }
+      ]
+    },
+    {
+      "title": "Generation, functions, and materials",
+      "findings": [
+        {
+          "title": "Actual generation stages",
+          "detail": "26.3 combines terrain fill, surface work, and carvers under TERRAIN; its pyramid has no separate NOISE, SURFACE, or CARVERS statuses.",
+          "figures": [
+            "mc-generation"
+          ],
+          "source": "ChunkPyramid; NoiseBasedChunkGenerator.buildTerrain"
+        },
+        {
+          "title": "Neighbor prerequisites and write radius",
+          "detail": "TERRAIN needs BIOMES radius one and STRUCTURE_STARTS radius eight. FEATURES needs neighboring terrain and can write through radius one.",
+          "figures": [
+            "mc-generation"
+          ],
+          "source": "ChunkPyramid; ChunkStep"
+        },
+        {
+          "title": "Squares and accumulated dependencies",
+          "detail": "Scheduling uses chessboard-distance squares. Direct prerequisites are not the complete recursively scheduled footprint.",
+          "figures": [
+            "mc-generation"
+          ],
+          "source": "ChunkGenerationTask.scheduleLayer; StaticCache2D"
+        },
+        {
+          "title": "Seed-dependent randomness",
+          "detail": "RandomState selects the non-legacy XOROSHIRO path for the packaged Overworld, forks positional randomness, and caches named noise/random factories.",
+          "figures": [
+            "mc-samplers"
+          ],
+          "source": "RandomState; noise_settings/overworld.json"
+        },
+        {
+          "title": "Graph compilation and context",
+          "detail": "References, caches, and uniform axes are rewritten before sampler creation. NoiseChunk binds structures, blending, aquifer, and pooled buffers.",
+          "figures": [
+            "mc-samplers"
+          ],
+          "source": "DensityFunctionCompiler; NoiseChunk"
+        },
+        {
+          "title": "Density composition order",
+          "detail": "Squeeze follows interpolation. Noodle caves join outside that branch; beardifier is added after the minimum.",
+          "figures": [
+            "mc-samplers",
+            "mc-density"
+          ],
+          "source": "density_function/overworld/final_density.json"
+        },
+        {
+          "title": "Interpolation dimensions and weights",
+          "detail": "The resource specifies 4\u00d78\u00d74 cells. Trilinear weights sum to one; the aligned full-column lattice has 1,225 points.",
+          "figures": [
+            "mc-interpolation"
+          ],
+          "source": "InterpolatedFunction; final_density.json"
+        },
+        {
+          "title": "Squeeze and floating-point limits",
+          "detail": "Squeeze clamps c to [\u22121,1], then computes c/2\u2212c\u00b3/24. Java float buffer order differs from browser double-precision mathematics.",
+          "figures": [
+            "mc-interpolation"
+          ],
+          "source": "UnaryFunction.SqueezeSampler; InterpolatedFunction"
+        },
+        {
+          "title": "Buffered terrain filling",
+          "detail": "Final density fills a y-contiguous float volume; block filling queries substance, writes sections, updates heightmaps, then surfaces and carves.",
+          "figures": [
+            "mc-samplers",
+            "mc-aquifer"
+          ],
+          "source": "DensityVolume; NoiseBasedChunkGenerator.doFill/buildTerrain"
+        },
+        {
+          "title": "Negative density is not automatically air",
+          "detail": "Positive density requests default solid. Non-positive density may become fluid; local aquifers additionally evaluate centers and pressure barriers.",
+          "figures": [
+            "mc-aquifer"
+          ],
+          "source": "Aquifer.computeSubstance; createDisabled"
+        },
+        {
+          "title": "Six-axis biome fitness",
+          "detail": "Climate quantizes six components by 10,000. Fitness sums squared distances to parameter intervals and a squared offset; real entries are searched by an R-tree.",
+          "figures": [
+            "mc-biomes"
+          ],
+          "source": "Climate.ParameterPoint.fitness; Climate.ParameterList"
+        }
+      ]
+    },
+    {
+      "title": "Activity, clocks, and block behavior",
+      "findings": [
+        {
+          "title": "Loading and simulation differ",
+          "detail": "Separate trackers and player tickets govern loading and simulation; block- and entity-ticking eligibility are separate.",
+          "figures": [
+            "mc-activity"
+          ],
+          "source": "DistanceManager; ServerLevel"
+        },
+        {
+          "title": "Default deadlines and overload",
+          "detail": "The default target is 20 ticks/s; the target can change. The deadline loop has overload handling, freezing/stepping/sprint paths, and queued packet work.",
+          "figures": [
+            "mc-ticks"
+          ],
+          "source": "TickRateManager; MinecraftServer.runServer"
+        },
+        {
+          "title": "Frames interpolate simulation states",
+          "detail": "The figure separates a constant-cost tick model from rendering and one-tick-delayed toy interpolation; these are not measured engine traces.",
+          "figures": [
+            "mc-ticks"
+          ],
+          "source": "MinecraftServer; figure model boundary"
+        },
+        {
+          "title": "Due scheduled work and ordering",
+          "detail": "Scheduled entries carry trigger time, priority, and sub-tick order. Chunk eligibility and collection/merge comparators affect processing.",
+          "figures": [
+            "mc-scheduler"
+          ],
+          "source": "LevelTicks; ScheduledTick"
+        },
+        {
+          "title": "Deduplication and separate budgets",
+          "detail": "Pending scheduled identity is position plus type. Ordinary block and fluid queues each have a 65,536-entry processing cap.",
+          "figures": [
+            "mc-scheduler"
+          ],
+          "source": "LevelChunkTicks; ScheduledTick.UNIQUE_TICK_HASH; ServerLevel"
+        },
+        {
+          "title": "Random trials, not guaranteed appointments",
+          "detail": "Eligible sections receive random position trials; selected blocks/fluids run only if they request random ticks. Repeated trials may revisit a location.",
+          "figures": [
+            "mc-scheduler"
+          ],
+          "source": "ServerLevel; LevelChunkSection"
+        },
+        {
+          "title": "Wire strength and neighbor notifications",
+          "detail": "The default evaluator combines block signal with attenuated incoming wire strength; state changes notify neighbors. Wires have no one-cell-per-tick rule.",
+          "figures": [
+            "mc-redstone"
+          ],
+          "source": "DefaultRedstoneWireEvaluator; RedstoneWireEvaluator"
+        },
+        {
+          "title": "Repeater delay is scheduled",
+          "detail": "An unlocked repeater setting one through four supplies a delay of two through eight game ticks for the inspected scheduled path.",
+          "figures": [
+            "mc-redstone"
+          ],
+          "source": "RepeaterBlock.getDelay; DiodeBlock.checkTickOnNeighbor"
+        }
+      ]
+    },
+    {
+      "title": "Selection and movement",
+      "findings": [
+        {
+          "title": "Ordered ray traversal",
+          "detail": "BlockGetter steps through next axis crossings; the real implementation also handles endpoint epsilon and tie branches.",
+          "figures": [
+            "mc-world",
+            "mc-ray"
+          ],
+          "source": "BlockGetter.traverseBlocks"
+        },
+        {
+          "title": "Shapes and fluid hits",
+          "detail": "Each candidate cell tests block and fluid shapes and selects the nearer hit; an interaction shape can affect hit direction.",
+          "figures": [
+            "mc-ray",
+            "mc-collision"
+          ],
+          "source": "BlockGetter.clip; clipWithInteractionOverride; ClipContext"
+        },
+        {
+          "title": "AABB motion clipping",
+          "detail": "Entity queries candidate voxel shapes and clips one axis at a time, shifting bounds between axes. Vertical motion comes first.",
+          "figures": [
+            "mc-world",
+            "mc-collision"
+          ],
+          "source": "Entity.collideWithShapes; Direction.axisStepOrder"
+        },
+        {
+          "title": "Horizontal order and stepping",
+          "detail": "The larger horizontal displacement is resolved next. Grounded blocked movement can consider step-up candidates; the figure is a 2D subset.",
+          "figures": [
+            "mc-collision"
+          ],
+          "source": "Entity.collide; Direction.axisStepOrder"
+        }
+      ]
+    },
+    {
+      "title": "Light, shading, and frames",
+      "findings": [
+        {
+          "title": "Separate light channels and storage",
+          "detail": "Block and sky light have separate engines. Raw brightness combines them with sky dampening; section values occupy four-bit nibbles.",
+          "figures": [
+            "mc-light",
+            "mc-skylight"
+          ],
+          "source": "LevelLightEngine; DataLayer"
+        },
+        {
+          "title": "Bounded light improvement",
+          "detail": "Block-light propagation visits up to six directions, rejects non-improving candidates, attenuates by at least one, and tests face-shape occlusion.",
+          "figures": [
+            "mc-light"
+          ],
+          "source": "BlockLightEngine.propagateIncrease; LightEngine.getOpacity"
+        },
+        {
+          "title": "Invalidate, then relight",
+          "detail": "Removal clears dependent values, preserves/reintroduces surviving sources, and drains the decrease queue before the increase queue.",
+          "figures": [
+            "mc-light"
+          ],
+          "source": "BlockLightEngine.propagateDecrease; LightEngine.runLightUpdates"
+        },
+        {
+          "title": "Direct skylight column sources",
+          "detail": "Unobstructed direct-sky positions can remain fifteen. The engine tracks lowest column source boundaries and repairs them when a roof changes.",
+          "figures": [
+            "mc-skylight"
+          ],
+          "source": "SkyLightEngine; ChunkSkyLightSources"
+        },
+        {
+          "title": "Corner shading differs from light",
+          "detail": "The model lighter samples neighboring brightness and occlusion, averages full-face corners, and uses geometry-dependent weighting for partial faces.",
+          "figures": [
+            "mc-occlusion"
+          ],
+          "source": "BlockModelLighter; ModelBlockRenderer"
+        },
+        {
+          "title": "Model quads and directional rejection",
+          "detail": "The compiler handles baked model parts; directional quads can be culled, while uncull-associated quads are emitted independently. This is not generic greedy merging.",
+          "figures": [
+            "mc-mesh"
+          ],
+          "source": "ModelBlockRenderer; Block.shouldRenderFace"
+        },
+        {
+          "title": "Section visibility, fluids, and materials",
+          "detail": "Compilation visits a 16\u00b3 section, collects block entities, marks opaque visibility, tessellates fluids separately, and builds meshes per material layer.",
+          "figures": [
+            "mc-mesh",
+            "mc-render-queue"
+          ],
+          "source": "SectionCompiler; VisGraph"
+        },
+        {
+          "title": "Compilation, upload, and cancellation",
+          "detail": "Pooled builder packs, cancellable compile tasks, CPU meshes, staged GPU allocations, and upload scheduling are distinct operations.",
+          "figures": [
+            "mc-render-queue"
+          ],
+          "source": "SectionRenderDispatcher"
+        },
+        {
+          "title": "Camera-dependent translucent ordering",
+          "detail": "Translucent quads are sorted; a separate resort task can update their order after camera movement without generating terrain or changing blocks.",
+          "figures": [
+            "mc-transparency",
+            "mc-render-queue"
+          ],
+          "source": "SectionCompiler; SectionRenderDispatcher.ResortTransparencyTask"
+        },
+        {
+          "title": "Graphics abstraction boundary",
+          "detail": "The inspected renderer imports RenderPearl. Static inspection here does not identify a live GPU backend or justify an OpenGL-only claim.",
+          "figures": [
+            "mc-render-queue"
+          ],
+          "source": "SectionCompiler; SectionRenderDispatcher imports"
+        }
+      ]
+    },
+    {
+      "title": "Edits, authority, and persistence",
+      "findings": [
+        {
+          "title": "Local mining progress and prediction",
+          "detail": "Ordinary mining accumulates progress per tick. Stone hardness 1.5 and iron speed 6 produce an eight-tick grounded break; its ordinary drop is cobblestone. Target changes/abort clear progress; completion applies a five-tick delay. Prediction scopes retain state and assign sequences.",
+          "figures": [
+            "mc-world",
+            "mc-network"
+          ],
+          "source": "MultiPlayerGameMode; BlockBehaviour; Player; ToolMaterial; Tool; Blocks; pickaxe/iron tags; stone loot table"
+        },
+        {
+          "title": "Server validation and delayed destruction",
+          "detail": "The server checks range, height, protection, rules, mode, and progress. The inspected stop branch can accept at progress\u22650.7 or continue delayed work.",
+          "figures": [
+            "mc-network"
+          ],
+          "source": "ServerPlayerGameMode.handleBlockBreakAction"
+        },
+        {
+          "title": "Mutation fan-out and fluid replacement",
+          "detail": "State writes affect palette, heightmaps, hooks, block entities, light, neighbors, points of interest, clients, and unsaved state. Removal can leave fluid.",
+          "figures": [
+            "mc-edit"
+          ],
+          "source": "Level.setBlock/removeBlock; LevelChunk.setBlockState"
+        },
+        {
+          "title": "State packets differ from acknowledgments",
+          "detail": "Updates carry authoritative state; cumulative sequence acknowledgments report processed actions, not successful destruction. Batching and timing are not measured.",
+          "figures": [
+            "mc-network"
+          ],
+          "source": "ClientboundBlockUpdatePacket; ClientboundSectionBlocksUpdatePacket; ClientboundBlockChangedAckPacket"
+        },
+        {
+          "title": "Retained states and reconciliation",
+          "detail": "Incoming server state can update a retained prediction record. Acknowledgment resolves records and synchronizes state; restored collision may reposition the player.",
+          "figures": [
+            "mc-network"
+          ],
+          "source": "ClientLevel; prediction/BlockStatePredictionHandler"
+        },
+        {
+          "title": "Unsaved chunks and autosave",
+          "detail": "Edits dirty chunks. Ordinary autosave aims at about 300 seconds via tick intervals; default 20 Hz gives 6,000 ticks, with a 100-tick minimum and sprint handling.",
+          "figures": [
+            "mc-edit",
+            "mc-region"
+          ],
+          "source": "MinecraftServer autosave interval; LevelChunk"
+        },
+        {
+          "title": "Region directory and record addressing",
+          "detail": "32\u00d732 chunks share a region; two 4 KiB tables store 1,024 locations and timestamps. A location packs a 24-bit address and 8-bit allocation count.",
+          "figures": [
+            "mc-region"
+          ],
+          "source": "RegionFile; ChunkPos"
+        },
+        {
+          "title": "Compression and external records",
+          "detail": "Records have a 4-byte length and version byte. Default DEFLATE is configurable; \u2265256-sector allocations use external .mcc records.",
+          "figures": [
+            "mc-region"
+          ],
+          "source": "RegionFileVersion; RegionFile"
+        },
+        {
+          "title": "Write lifecycle",
+          "detail": "The region writer allocates and writes new storage, updates metadata and any external operation, then releases the old allocation.",
+          "figures": [
+            "mc-region"
+          ],
+          "source": "RegionFile.write"
+        }
+      ]
+    }
+  ]
+}

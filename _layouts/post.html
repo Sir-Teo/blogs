@@ -3,9 +3,15 @@ layout: default
 ---
 {%- assign words = content | strip_html | number_of_words -%}
 {%- assign minutes = words | plus: 115 | divided_by: 230 -%}
-<article class="post">
+<article class="post{% if page.article_class %} {{ page.article_class | escape }}{% endif %}">
   <header class="post-head">
+    {%- if page.kicker %}
+    <p class="post-kicker">{{ page.kicker | escape }}</p>
+    {%- endif %}
     <h1>{{ page.title | escape }}</h1>
+    {%- if page.deck %}
+    <p class="post-deck">{{ page.deck | escape }}</p>
+    {%- endif %}
     <p class="meta">
       <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
       <span>{{ minutes | at_least: 1 }} min read</span>
@@ -23,6 +29,7 @@ layout: default
     {{ content }}
   </div>
 
+  {%- unless page.neutral %}
   {%- if page.previous or page.next %}
   <nav class="post-nav" aria-label="More posts">
     {%- if page.previous %}
@@ -33,4 +40,5 @@ layout: default
     {%- endif %}
   </nav>
   {%- endif %}
+  {%- endunless %}
 </article>

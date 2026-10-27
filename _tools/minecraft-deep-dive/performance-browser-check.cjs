@@ -1,0 +1,31 @@
+'use strict';
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const assert=require('node:assert/strict');
+const url=process.env.MINECRAFT_BLOG_URL||'http://127.0.0.1:4173/blogs/2026/10/26/taking-minecraft-apart-one-block-at-a-time.html';
+(async()=>{const browser=await chromium.launch({headless:true});try{
+ const page=await browser.newPage({viewport:{width:1280,height:1000},reducedMotion:'reduce'}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+ await page.addInitScript(()=>{
+  window.__graphics={contexts:0,draws:0,firstGridMs:null,longTasks:[]};
+  const original=HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext=function(type,...args){const result=original.call(this,type,...args);if(result&&type.includes('webgl')){__graphics.contexts++;const draw=result.drawArrays.bind(result);result.drawArrays=function(...args){__graphics.draws++;return draw(...args);};}return result;};
+  new MutationObserver(records=>{for(const r of records)if(r.target.id==='mc-grid'&&__graphics.firstGridMs===null)__graphics.firstGridMs=performance.now();}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-painted-version']});
+  new PerformanceObserver(list=>list.getEntries().forEach(e=>__graphics.longTasks.push(Math.round(e.duration)))).observe({type:'longtask',buffered:true});
+ });
+ await page.goto(url,{waitUntil:'load'});
+ await page.waitForFunction(()=>document.querySelector('#mc-grid').dataset.paintedVersion!==undefined);
+ const initial=await page.evaluate(()=>({...__graphics}));assert.equal(initial.contexts,0,'The empty grid must not wait for four GPU engines');assert.ok(initial.firstGridMs>0);
+ assert.equal(await page.locator('figure[data-painted-version]').count(),1,'Offscreen figures do not paint during startup');
+ await page.evaluate(()=>MinecraftBuild.advance(8));
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ assert.equal(await page.evaluate(()=>__graphics.contexts),0,'Skipping stages while at the top does not upload offscreen meshes');
+ const fig=page.locator('#mc-world'),view=fig.locator('.mp-view');await view.scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelector('#mc-world').dataset.rendererReady==='true');
+ assert.equal(await page.evaluate(()=>__graphics.contexts),1,'Only the visible finished scene starts a renderer');
+ await view.focus();await page.keyboard.press('Enter');await page.keyboard.down('KeyF');await page.waitForFunction(()=>MinecraftGameplay.world.get(8,7,7)===0);await page.keyboard.up('KeyF');await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>__graphics.contexts),1,'An edit does not start the other renderers');
+ await page.evaluate(()=>scrollTo(0,0));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.evaluate(()=>{__graphics.draws=0;MinecraftGameplay.writeCell([8,7,7],7);});
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ assert.equal(await page.evaluate(()=>__graphics.draws),0,'A hidden scene does not render or upload after a shared-world edit');assert.deepEqual(errors,[]);
+ console.log('PASS: 4× CPU slowdown; no GPU startup, one initial figure paint, one renderer for the visible playable scene, and no offscreen GPU work.');console.log(JSON.stringify({initial},null,2));
+}finally{await browser.close();}})().catch(error=>{console.error(error);process.exitCode=1;});

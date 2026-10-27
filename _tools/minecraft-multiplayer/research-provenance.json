@@ -1,0 +1,503 @@
+{
+  "version": "26.3",
+  "client_sha256": "4508d006323f24fa02876310c192d739af56516eb259000ac50f0909a68c9a2d",
+  "vineflower_sha256": "1dfcfe974395734fa467ce620661c7623d05ba83670de0529b1fbd63ff548b9d",
+  "selected_sha256": "eead9d487a7bdfa2677d42605527ca1db42fdd8b49dfd989ca23ff3eb94fd720",
+  "classes": [
+    {
+      "path": "net/minecraft/client/multiplayer/ClientLevel$ClientLevelData.class",
+      "sha256": "1d89dfc26256000003bc7dd8fb7fc6c8b52d8964810d40bef3c43b3057381be8",
+      "bytes": 2894
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientLevel$EntityCallbacks.class",
+      "sha256": "1b52107bc98a8a801b0be74a8c7059f9498ec0b643f321e291fd8104bbeb489a",
+      "bytes": 3867
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientLevel.class",
+      "sha256": "7d69f81d39e64a679b51f745211619204073167d59b149d9de683e10eb2d97ba",
+      "bytes": 72619
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientPacketListener$1.class",
+      "sha256": "dc305843297ce16113e6d4271b6be7fcb5405ea23fcb776f315d5f35c2dcc8db",
+      "bytes": 4893
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientPacketListener$2.class",
+      "sha256": "e82e6c9687da666203f96cd8119c1cc7092ac57424b5cc6149d663fadf8d42c9",
+      "bytes": 1496
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientPacketListener$3.class",
+      "sha256": "284e0318d73bcb2314eb64a6c5d167a7a9c4a5595536c269c9a8522071e9ab36",
+      "bytes": 1358
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientPacketListener$CommandCheckResult.class",
+      "sha256": "f7663aaf54f3ecaf0c6a2ce020d30f71a474fed8faac15002ba8f8ac64b5afde",
+      "bytes": 1666
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/ClientPacketListener.class",
+      "sha256": "fe20af17f8cc4db9465501d9265a74830f8c628b5dd7810834fcd7eba20c9e3b",
+      "bytes": 174200
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/MultiPlayerGameMode.class",
+      "sha256": "3b877a600b59fce98b3cb8f4dc70814d6323a479d088e7362fdb22205629eadc",
+      "bytes": 33145
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/prediction/BlockStatePredictionHandler$ServerVerifiedState.class",
+      "sha256": "a42ca42762149655417a361602a91bee847a5fb67cc71ae9ecac79693264d59c",
+      "bytes": 1311
+    },
+    {
+      "path": "net/minecraft/client/multiplayer/prediction/BlockStatePredictionHandler.class",
+      "sha256": "eb167a47d4e427cbc3fbb1e7bc3d06fb8338a926b777489a38d6e335903218b4",
+      "bytes": 6389
+    },
+    {
+      "path": "net/minecraft/client/player/LocalPlayer.class",
+      "sha256": "d5390f22219039f78f5f59a9961685c11d3cf36f12a645866008135862b59435",
+      "bytes": 56651
+    },
+    {
+      "path": "net/minecraft/client/player/RemotePlayer.class",
+      "sha256": "da492b09c454c979dbb95b8e312518829fe2e865cb431f751296a935a0555c3e",
+      "bytes": 3444
+    },
+    {
+      "path": "net/minecraft/network/Connection$1.class",
+      "sha256": "9ad913a28473a7790334654b3550718cb64058e150ad5adf97190856b7068a45",
+      "bytes": 2349
+    },
+    {
+      "path": "net/minecraft/network/Connection$2.class",
+      "sha256": "32895d140d37029e3b56fcd4ef1932fd10fbff17abf5c5cff9500476ffe7d56e",
+      "bytes": 1145
+    },
+    {
+      "path": "net/minecraft/network/Connection$3.class",
+      "sha256": "072d0224280cc5d5a299bfee48b607aaa13d62adc1cc08e291e183d73b65082b",
+      "bytes": 1411
+    },
+    {
+      "path": "net/minecraft/network/Connection.class",
+      "sha256": "37d3b157233523f45c970939b578652c200a802768e4335aa6170694bd843062",
+      "bytes": 33640
+    },
+    {
+      "path": "net/minecraft/network/ConnectionProtocol.class",
+      "sha256": "1631162e454b61e79a07710553de15480c268a08e55c8675e6c645706f23729d",
+      "bytes": 1652
+    },
+    {
+      "path": "net/minecraft/network/protocol/configuration/ClientboundFinishConfigurationPacket.class",
+      "sha256": "6e73d4f57c1e043eefb0e182f214fdc5ba9a666cabb4b7c48154b4900384d2e1",
+      "bytes": 2245
+    },
+    {
+      "path": "net/minecraft/network/protocol/configuration/ServerboundFinishConfigurationPacket.class",
+      "sha256": "3c5a90e92ef26bf352c487bfb2b2c1e19e834fc04c4313d13b21d4a41cb00b82",
+      "bytes": 2245
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundAddEntityPacket.class",
+      "sha256": "8f73fc92cb96d539ca4f9a2cce370d82aa022ba3a2a6743a17a7e222af893899",
+      "bytes": 7570
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundBlockChangedAckPacket.class",
+      "sha256": "f4263326eb540f8c8cad5a65acd56d937bf7febac9bcdcf70e296cbacfcab12b",
+      "bytes": 4393
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundBlockUpdatePacket.class",
+      "sha256": "7ec49960d33707d42122d4fea6510031bc2fc1bbcce4f6c6aa1198ce59a89f73",
+      "bytes": 4387
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundEntityPositionSyncPacket.class",
+      "sha256": "87001da96173b40503a4ce6443168135dd08c3532a964267284509d5dd7a42d4",
+      "bytes": 6648
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket.class",
+      "sha256": "3c93ea0d98461233b4aaef405cdbc60531de7637d70c849cf339d3ddbcc374e2",
+      "bytes": 6909
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundLoginPacket.class",
+      "sha256": "5cd8c3b912801e17508fa02672b7c58e3de0df6abd2926abceda680e0e914364",
+      "bytes": 8970
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundMoveEntityPacket$Pos.class",
+      "sha256": "bfce90b76bed2f7e12ee85d1ffc928422e7e7579686c2e42ce504cfcb60fab07",
+      "bytes": 3826
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundMoveEntityPacket$PosRot.class",
+      "sha256": "744b1954a9cd701266c7b8de5ade878ff6277c1af61acdc3afd2addb6b39bcb3",
+      "bytes": 4040
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundMoveEntityPacket$Rot.class",
+      "sha256": "c47b48332335901e1f52070fd526b60b1879065defc24f2a811e61480b5d048d",
+      "bytes": 3661
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundMoveEntityPacket.class",
+      "sha256": "dbd0775b6e49e34c963548bb453fb504ae8f9e9f9cdca800b5ee46905aea396f",
+      "bytes": 4114
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ClientboundPlayerPositionPacket.class",
+      "sha256": "3757ea2263b82d4693ae5e9996c8e3beaa4b0d6d2e29591814f2173676011042",
+      "bytes": 5884
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundMovePlayerPacket$Pos.class",
+      "sha256": "8a8d1898d7f61c82c52d3bc6829b0021b8087ebb0c0e28596bee75a5a3da8843",
+      "bytes": 3910
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundMovePlayerPacket$PosRot.class",
+      "sha256": "443281f78d23e45a7cf6ae5b593845fbac2566485e932671fbfdf82c48cb4eff",
+      "bytes": 4203
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundMovePlayerPacket$Rot.class",
+      "sha256": "8c2c9abc89d151b11f2fb37c373adea85fd509de8feec9b2eff71e6137b015e6",
+      "bytes": 3584
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundMovePlayerPacket$StatusOnly.class",
+      "sha256": "eaab546051673d971aa7087321f95849fd4dcfa9efecf4053d1d9f0db606ebfd",
+      "bytes": 3406
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundMovePlayerPacket.class",
+      "sha256": "08be9939d4603da864fd0e9e7cfd2430d82c345b2ae9136d591522cc0bfa436d",
+      "bytes": 3627
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundPlayerActionPacket$Action.class",
+      "sha256": "fdbe29f454fb63de49ab9c019015ddbd2f714f711f2e78d528cdeed5e7b44ab0",
+      "bytes": 2003
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundPlayerActionPacket.class",
+      "sha256": "baab958cc0ab513da49aa0684c8ae9c85b7acfab680f3946fa0b271f1370bcef",
+      "bytes": 5262
+    },
+    {
+      "path": "net/minecraft/network/protocol/game/ServerboundUseItemOnPacket.class",
+      "sha256": "bfd6d948de834f00de9f4a3bff991fdbf92d4aa7ae709ea4c565e91550906c0d",
+      "bytes": 5096
+    },
+    {
+      "path": "net/minecraft/network/protocol/handshake/ClientIntentionPacket.class",
+      "sha256": "515b995aec2aeda7751df4942400dc4bd497312ae1c0ab3ecabfb4e3be69f0c1",
+      "bytes": 5608
+    },
+    {
+      "path": "net/minecraft/network/protocol/login/ClientboundHelloPacket.class",
+      "sha256": "3516a093c45e76ae2af0df181f0620591bb67e780c3e19563e0eac545aedef60",
+      "bytes": 4388
+    },
+    {
+      "path": "net/minecraft/network/protocol/login/ServerboundHelloPacket.class",
+      "sha256": "b23e0ddec9dd1359b50858f146a1336d4d4fab6b883f9e0f9d6088e7e616b73f",
+      "bytes": 4701
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$1.class",
+      "sha256": "4ae475cf865b42145b188c9adae5b5365b5ec20a6f8bc72db1a85af23d4430a4",
+      "bytes": 2693
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$2.class",
+      "sha256": "41cbe7c3c52cd6b638dbbb0c3126d6ff8319ee06a7357d7be602f3036cbb150d",
+      "bytes": 1952
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$MultiplayerScope.class",
+      "sha256": "4c1f2fd3d428958e3d9a24e92509c43cd4e9c7bdb3af8175b6be0a054ddbf676",
+      "bytes": 2464
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$ReloadableResources.class",
+      "sha256": "4d065ef03036b22eb1a83ffca4eb6657fbe89343ee795550049a724d4fcb997b",
+      "bytes": 2280
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$ServerResourcePackInfo.class",
+      "sha256": "4a61360872a5798fa07af89a1db87b8a3ea30705cc07d537efe7272efcc66089",
+      "bytes": 2484
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$TimeProfiler$1.class",
+      "sha256": "7a4bf0fd79b0b6a700af46fcdb88568675ef635a8d9a351c70e78c7e24fc8440",
+      "bytes": 2009
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer$TimeProfiler.class",
+      "sha256": "6a9db09288bb377746e589813a0b7b573b3920789bd07e290976ea21d43c0401",
+      "bytes": 916
+    },
+    {
+      "path": "net/minecraft/server/MinecraftServer.class",
+      "sha256": "527d416a4317b9e76d8bbe260afb3af08bdbeb632b4978b47d08ee31ec954402",
+      "bytes": 111584
+    },
+    {
+      "path": "net/minecraft/server/level/ServerEntity$Synchronizer.class",
+      "sha256": "dd7aabfe73788e018d6b9821533452fe95ae7d802151d245d0da86a1f1b32768",
+      "bytes": 892
+    },
+    {
+      "path": "net/minecraft/server/level/ServerEntity.class",
+      "sha256": "8477a5b23f2342b7cc37385b43e0290655e639a4e25d9079c195c5d808489e9f",
+      "bytes": 19205
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$1$1.class",
+      "sha256": "9b5510bee33807c4cabfeeb6df11c8aaea293cbf5e4d6125ef7fec3f921a1815",
+      "bytes": 3757
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$1.class",
+      "sha256": "5edfaf9fe792674c458edd4188371c4ac90bb26b17af040d4848dab91955b4e0",
+      "bytes": 5027
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$2.class",
+      "sha256": "850b616b38ac7ba847a57093301b51d8569d812ca86b0d60731b29f3b18183c3",
+      "bytes": 2146
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$3.class",
+      "sha256": "e806041a4995bf9c39b905818c78b82bedc92218109b0522c33299c08d9dea8a",
+      "bytes": 1667
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$RespawnConfig.class",
+      "sha256": "cf52f97535747f734b861a0d75ed79e16c1a7d8d195dac482551657c58346ebd",
+      "bytes": 5600
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$RespawnPosAngle.class",
+      "sha256": "e3315915c788cdc4d291d9f723fbf36f7e141696e6d8ca2f6f8d149e6722a8a7",
+      "bytes": 2861
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer$SavedPosition.class",
+      "sha256": "c99aa3af7bcad0e96a50f82379432fe1e8fd1177071c6f2d18135feef60a11db",
+      "bytes": 5383
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayer.class",
+      "sha256": "ab14a0f62bf6be68f7502ea7f11336f9ab665a4e978a562d6625520fabe592ed",
+      "bytes": 112647
+    },
+    {
+      "path": "net/minecraft/server/level/ServerPlayerGameMode.class",
+      "sha256": "30257525cf77a595882da5f78d8bfc65521944f86199660735921e4f40499859",
+      "bytes": 22901
+    },
+    {
+      "path": "net/minecraft/server/network/CommonListenerCookie.class",
+      "sha256": "bda15769fc173178e99275df076e01a72545e3f9da6b5d3b7d6f60ebcaf5b11c",
+      "bytes": 2459
+    },
+    {
+      "path": "net/minecraft/server/network/PlayerChunkSender.class",
+      "sha256": "e0234c1c964e62bf6af1eaba79a190d518da9f44ee7cf60cec5f26f2cbfba750",
+      "bytes": 8749
+    },
+    {
+      "path": "net/minecraft/server/network/ServerConfigurationPacketListenerImpl.class",
+      "sha256": "adb174ae52cf1fe4528d0bd7fb24b7b476b91fa2e3e1894968bf924211b03aab",
+      "bytes": 16077
+    },
+    {
+      "path": "net/minecraft/server/network/ServerGamePacketListenerImpl$1.class",
+      "sha256": "dc734d3da18e679f0ea5201935c08befc4b898872cebc60e38fe55541c699164",
+      "bytes": 3449
+    },
+    {
+      "path": "net/minecraft/server/network/ServerGamePacketListenerImpl.class",
+      "sha256": "b963daf1a78106f08397f54c3fdefeda512a65b8f058031394c99b0e84a4ca8c",
+      "bytes": 131306
+    },
+    {
+      "path": "net/minecraft/server/network/ServerHandshakePacketListenerImpl$1.class",
+      "sha256": "29f3042837a2d768575f811bb0af5adb433d3f306809fa04890141b96cb323b3",
+      "bytes": 954
+    },
+    {
+      "path": "net/minecraft/server/network/ServerHandshakePacketListenerImpl.class",
+      "sha256": "857da51d6bf22db5e0e7cb5445fa676b988e4878698a5b1c085b81c911b16aab",
+      "bytes": 5113
+    },
+    {
+      "path": "net/minecraft/server/network/ServerLoginPacketListenerImpl$1.class",
+      "sha256": "750710d50fcef933bc8c722b4111551a7d302db8000cc97e80f27ed3a71a7a66",
+      "bytes": 4415
+    },
+    {
+      "path": "net/minecraft/server/network/ServerLoginPacketListenerImpl$State.class",
+      "sha256": "ce798f578739029ef9414ecb93fc053cce1b8ce4e59a5df9d5cf45196b5007e8",
+      "bytes": 1848
+    },
+    {
+      "path": "net/minecraft/server/network/ServerLoginPacketListenerImpl.class",
+      "sha256": "af40cc6429691aadf479dae6383d1efaf5958c2e5c75e477bf4439552ea2b410",
+      "bytes": 14192
+    },
+    {
+      "path": "net/minecraft/server/network/config/JoinWorldTask.class",
+      "sha256": "bacbaa4a8646357ee6a34ba0beec105d03de1cbaa9b232157fab3d18634cbb64",
+      "bytes": 1489
+    },
+    {
+      "path": "net/minecraft/server/network/config/PrepareSpawnTask$Preparing.class",
+      "sha256": "a3a68febec1160383a042df1563bccc2ea16e33866c82924bc3ca95c46065536",
+      "bytes": 5137
+    },
+    {
+      "path": "net/minecraft/server/network/config/PrepareSpawnTask$Ready.class",
+      "sha256": "7d88012905e526d301250e24a9015b940bfa8ac3c2f0ece98450362bb7111c83",
+      "bytes": 6880
+    },
+    {
+      "path": "net/minecraft/server/network/config/PrepareSpawnTask$State.class",
+      "sha256": "0945e944b31d416f7f4525663ba34a23b6014de45ce0aa454ec15f66c78e9e47",
+      "bytes": 473
+    },
+    {
+      "path": "net/minecraft/server/network/config/PrepareSpawnTask.class",
+      "sha256": "a3b2739e36e11101df0fd0ea4038abd3ac54745fa8db962bed9c8c4814dedfd7",
+      "bytes": 10523
+    },
+    {
+      "path": "net/minecraft/server/players/PlayerList$1.class",
+      "sha256": "62c4cf0becd5c512776be029fc7e459b4e896c4d836c14ad9eb6b0bd9e761d17",
+      "bytes": 2998
+    },
+    {
+      "path": "net/minecraft/server/players/PlayerList$2.class",
+      "sha256": "610611b19bf2ad1a88bd827d26270994fd35784d07bd85b7760e607ff103852f",
+      "bytes": 964
+    },
+    {
+      "path": "net/minecraft/server/players/PlayerList.class",
+      "sha256": "1146ad7e15b3ea2e31d905a0e43ccbd86b31e4e512acb06e8cf4bfb73257d2b7",
+      "bytes": 50203
+    },
+    {
+      "path": "net/minecraft/world/entity/AbstractInterpolationHandler.class",
+      "sha256": "2fff33f96850ae1793e04df0b7356f884365737042f0bbf477381cec98039d81",
+      "bytes": 4456
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$1.class",
+      "sha256": "0f3f205e15bd67a94080854c5e1d062866157603522af64033f01292ee747041",
+      "bytes": 1621
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$EntityPathElement.class",
+      "sha256": "23784237a64a7497205d5e77250ba5de3c935b35eff05d24b0dceef88a86222c",
+      "bytes": 1858
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$Flags.class",
+      "sha256": "eb2af23d623c86ae8b8cefb85b8b140b13bbd9922ca5716467e50b6756eeaf3d",
+      "bytes": 495
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$MoveFunction.class",
+      "sha256": "50183aa6e62aa91ed4ff2973c44c8123b335bb9c705b1ef47e961dfcf5fbbf99",
+      "bytes": 435
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$Movement.class",
+      "sha256": "7d66f1d32adb7686ed503bf3fa2f565d264b416f268e778c81b862ed93a97cb8",
+      "bytes": 2814
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$MovementEmission.class",
+      "sha256": "decac8c037a50c990cb52151d3eedc2b19e875f5457c278b65cfa736ca95f829",
+      "bytes": 1891
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity$RemovalReason.class",
+      "sha256": "7fc5f21f781573c7c5778940c0b7104bebff8b7a789b67b9c7c869c9829ce248",
+      "bytes": 1849
+    },
+    {
+      "path": "net/minecraft/world/entity/Entity.class",
+      "sha256": "7ac5f6a929abbf4fa00f0a87ad530669f7d96c8ee2bb86a5076ab1fab352fb3c",
+      "bytes": 171990
+    },
+    {
+      "path": "net/minecraft/world/entity/InterpolationHandler$NoOpInterpolationHandler.class",
+      "sha256": "1c5ac6b4fa23ca74a3fe14498dac46e095d5edeec039b95a828fa93f0f7097d0",
+      "bytes": 1437
+    },
+    {
+      "path": "net/minecraft/world/entity/InterpolationHandler.class",
+      "sha256": "5f8ac2855ccf7679238d4a40e9435a67f07381302af28d4275890260e3866a7e",
+      "bytes": 1259
+    },
+    {
+      "path": "net/minecraft/world/entity/LinearInterpolationHandler$InterpolationData.class",
+      "sha256": "b9f07bd0d2f08e843dfdc9f403d4c90a83a7c20ddee7af06471fbbfd5bd21cad",
+      "bytes": 643
+    },
+    {
+      "path": "net/minecraft/world/entity/LinearInterpolationHandler.class",
+      "sha256": "d3f433e12af56ca1314a21ee5ecda0c06a37cbace17bc5008aab01177bf147f7",
+      "bytes": 3339
+    },
+    {
+      "path": "net/minecraft/world/entity/player/Player$1.class",
+      "sha256": "4006e740ac9f6e224e6914337de691fca27a52a48058db8c734ec120b3dc5409",
+      "bytes": 1339
+    },
+    {
+      "path": "net/minecraft/world/entity/player/Player$2.class",
+      "sha256": "5fe046cf7041d418a575f8d3b2c51d020778b700ae8630178aa4b5656e6f6742",
+      "bytes": 1732
+    },
+    {
+      "path": "net/minecraft/world/entity/player/Player$BedSleepingProblem.class",
+      "sha256": "0c43f09ec72ce7ff931da7beb958f79781f167adcaf57461675d3f9b41272510",
+      "bytes": 2345
+    },
+    {
+      "path": "net/minecraft/world/entity/player/Player.class",
+      "sha256": "28ad0c7756a5cbdfde6c22772f585da9177d6f9eb418ea5ff2dd85657d81dfb2",
+      "bytes": 84386
+    },
+    {
+      "path": "net/minecraft/world/level/storage/PlayerDataStorage.class",
+      "sha256": "1adf0ec2a504ef5587860fc1c074dd7c8281a11e6e5e9b1656ef53bffe6b8724",
+      "bytes": 9229
+    }
+  ],
+  "command": [
+    "/opt/homebrew/opt/openjdk/bin/java",
+    "-jar",
+    "/tmp/minecraft-deep-dive-reproduction/vineflower-1.12.0.jar",
+    "-log=ERROR",
+    "/tmp/minecraft-multiplayer-research/verified/selected-multiplayer.jar",
+    "/tmp/minecraft-multiplayer-research/verified/decompiled"
+  ],
+  "exit_code": 0,
+  "execution_boundary": "Only the decompiler ran; Minecraft game code was not executed."
+}

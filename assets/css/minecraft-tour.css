@@ -1,0 +1,46 @@
+/* Visual tour glue: the site's figures, controls and one-column prose. */
+.mc-methods, .mc-model-details { margin:16px 0 26px; border-top:1px solid var(--line); font-size:13px; color:var(--fg-2); }
+.mc-methods > summary, .mc-model-details > summary { padding:10px 0; cursor:pointer; color:var(--fg-3); font-size:12px; }
+.mc-methods[open] > summary, .mc-model-details[open] > summary { color:var(--fg); }
+.mc-methods p { font-size:13px; line-height:1.7; }
+.mc-model-details { margin:10px 0 0; }
+.mc-model-details p { margin:6px 0 10px; font-size:12px; line-height:1.6; }
+.mc-tour { min-width:0; }
+.mc-tour-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.mc-tour-head > span { color:var(--fg-3); font:11px var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+.mc-tour-controls { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; margin-bottom:18px; }
+.mc-tour .btn, .mc-tour .tabs button { min-height:40px; }
+.mc-tour .mc-tour-svg { display:block; width:100%; height:auto; overflow:visible; }
+.mc-tour .mc-tour-svg text { fill:var(--fg-2); font:12px var(--sans); }
+.mc-tour .mc-tour-svg .mc-tour-axis { fill:var(--fg-3); font:10px var(--mono); }
+.mc-tour .mc-tour-svg .mc-tour-main { fill:var(--fg); }
+.mc-tour .mc-tour-path { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:8px 0 16px; font:12px/1.6 var(--mono); }
+.mc-tour-path button { padding:3px 0; border:0; border-bottom:1px solid var(--line); color:var(--fg-2); background:none; font:inherit; cursor:pointer; }
+.mc-tour-path span { color:var(--fg-3); }
+.mc-tour .mc-package-rect { cursor:pointer; stroke:var(--bg); stroke-width:3; transition:opacity .12s; }
+.mc-tour .mc-package-rect:hover, .mc-tour .mc-package-rect:focus-visible { stroke:var(--fg); stroke-width:2; outline:none; }
+.mc-tour .mc-package-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px 28px; margin:16px 0; }
+.mc-package-list button { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; text-align:left; align-items:center; padding:7px 0; border:0; border-bottom:1px solid var(--line); background:none; cursor:pointer; color:var(--fg-2); font:12px var(--mono); }
+.mc-package-list button span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mc-package-list button:hover { color:var(--fg); }
+.mc-tour-facts { display:flex; flex-wrap:wrap; gap:12px 32px; border-top:1px solid var(--line); padding-top:14px; margin-top:16px; }
+.mc-tour-facts span { display:block; color:var(--fg-3); font-size:11px; }
+.mc-tour-facts strong { display:block; font:500 20px/1.5 var(--mono); color:var(--fg); }
+.mc-tour-status { color:var(--fg-2); font-size:13px; line-height:1.6; min-height:1.6em; margin:12px 0; }
+.mc-coverage { border-top:1px solid var(--line); margin:24px 0; }
+.mc-coverage > p { font-size:13px; color:var(--fg-3); }
+.mc-coverage details { border-bottom:1px solid var(--line); }
+.mc-coverage summary { cursor:pointer; padding:12px 0; color:var(--fg-2); font-size:14px; }
+.mc-coverage summary span { margin-left:12px; color:var(--fg-3); font:11px var(--mono); }
+.mc-coverage ul { margin:0 0 15px; padding:0; list-style:none; }
+.mc-coverage li { padding:8px 0; font-size:12px; line-height:1.6; }
+.mc-coverage li strong { display:block; color:var(--fg); font-size:13px; font-weight:500; }
+.mc-coverage li small { color:var(--fg-3); font:10px/1.5 var(--mono); overflow-wrap:anywhere; }
+.mc-coverage li a { margin-right:14px; }
+@media(max-width:600px) {
+  .mc-tour .mc-package-list { grid-template-columns:minmax(0,1fr); gap:0; }
+  .mc-tour-facts { gap:12px 20px; }
+  .mc-tour-facts strong { font-size:16px; }
+  .mc-tour-head { gap:10px; }
+  .mc-tour .mc-tour-svg text { font-size:13px; }
+}

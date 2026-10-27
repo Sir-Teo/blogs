@@ -1,0 +1,104 @@
+/* Article typography and page colors come from the shared site theme. */
+:root:has(.post-minecraft) {
+  --mc-panel: var(--subtle);
+  --mc-amber: var(--th-amber);
+}
+
+.post-minecraft .post-kicker {
+  margin: 0 0 12px;
+  color: var(--fg-3);
+  font: 13px/1.5 var(--sans);
+}
+
+/* The scene header is also the figure's visual boundary; no outer cards. */
+.post-minecraft .ms-figure-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 5px 14px;
+  margin-bottom: 12px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line-2);
+  line-height: 1.5;
+}
+.post-minecraft .ms-figure-index { color: var(--fg-3); font: 10px/1.5 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.post-minecraft .ms-figure-head strong { min-width: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
+.post-minecraft .ms-figure-meta { color: var(--fg-2); font: 11px/1.5 var(--sans); text-align: right; }
+.post-minecraft .ms-stage { background: var(--mc-panel); border-radius: 4px; overflow: hidden; }
+.post-minecraft .ms-save-status { flex: 1 1 220px; margin: 0; color: var(--fg-3); font: 11px/1.6 var(--sans); }
+/* The playable view keeps its small inventory and a quiet instrument bar. */
+.post-minecraft .mp-frame { aspect-ratio: 16 / 9; border-radius: 4px; }
+.post-minecraft .mp-overview { background: var(--mc-panel); }
+.post-minecraft .mp-overview:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.post-minecraft figure[data-active="true"] .mp-frame { outline: 1px solid var(--line-2); outline-offset: 3px; }
+.post-minecraft :is(.mp-play, .mp-exit) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  top: 16px;
+  right: 16px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-color: #ffffff40;
+  border-radius: 6px;
+  background: #0e0e0fcc;
+  color: #ececec;
+  font-size: 12px;
+  letter-spacing: .01em;
+}
+.post-minecraft :is(.mp-play, .mp-exit):hover { background: #0e0e0fe6; }
+.post-minecraft .mp-play::before { content: ""; width: 0; height: 0; border-block: 4px solid transparent; border-left: 6px solid currentColor; }
+.post-minecraft .mp-exit::before { content: ""; width: 7px; height: 7px; background: currentColor; }
+.post-minecraft .mp-target {
+  top: 17px;
+  left: 16px;
+  padding: 4px 7px;
+  border-left: 2px solid var(--accent);
+  background: #0e0e0f99;
+  font-size: 11px;
+  line-height: 1.5;
+  border-radius: 0 3px 3px 0;
+  color: #ececec;
+}
+.post-minecraft .mp-hotbar { bottom: 15px; gap: 3px; padding: 3px; background: #0e0e0fcc; border-color: #ffffff40; border-radius: 6px; }
+.post-minecraft .mp-hotbar button { width: 45px; height: 44px; padding: 6px 8px; border-color: transparent; background: #ffffff0d; color: #ececec; }
+.post-minecraft .mp-hotbar button[aria-pressed="true"] { border-color: var(--accent); box-shadow: none; background: var(--accent-soft); }
+.post-minecraft .mp-hotbar button:hover { background: #ffffff22; }
+.post-minecraft .mp-key { color: #a3a3a3; }
+.post-minecraft .mp-stick { background: #0e0e0f66; }
+.post-minecraft .mp-stick span { background: #ececec35; }
+.post-minecraft .mp-touch-actions button { background: #0e0e0fcc; border-radius: 6px; }
+.post-minecraft .mp-hotbar svg { width: 26px; height: 26px; }
+.post-minecraft .mp-controls { gap: 4px 22px; margin-top: 8px; padding-block: 4px 8px; border-bottom: 1px solid var(--line); }
+.post-minecraft .mp-controls button { min-height: 38px; font-size: 13px; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 5px; border-bottom-color: transparent; }
+.post-minecraft .mp-controls button:hover { border-bottom-color: transparent; text-decoration-color: var(--fg-3); }
+.post-minecraft .mp-controls button[aria-pressed="true"] { color: var(--fg); text-decoration-color: currentColor; }
+.post-minecraft .mp-controls .mp-reset { color: var(--fg-3); }
+.post-minecraft .mp-help { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 12px 0 0; font-size: 12px; line-height: 1.7; color: var(--fg-2); }
+.post-minecraft .mp-help > span { white-space: nowrap; }
+.post-minecraft .mp-help kbd { color: var(--fg); font: 11px/1.5 var(--mono); margin-right: 3px; }
+.post-minecraft .mp-status { font-size: 12px; }
+
+@media (max-width: 600px) {
+  .post-minecraft .ms-figure-head { grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; }
+  .post-minecraft .ms-figure-head strong { font-size: 12px; }
+  .post-minecraft .ms-figure-meta { grid-column: 2; text-align: left; }
+  .post-minecraft .mp-frame { aspect-ratio: 4 / 4.5; }
+  .post-minecraft :is(.mp-play, .mp-exit) { top: 12px; right: 12px; min-height: 36px; padding: 7px 10px; font-size: 11px; }
+  .post-minecraft .mp-target { top: 12px; left: 12px; padding: 4px 6px; font-size: 10px; max-width: calc(100% - 152px); }
+  .post-minecraft .mp-controls { gap: 4px 16px; }
+  .post-minecraft .mp-controls button { font-size: 12px; min-height: 40px; }
+  .post-minecraft .mp-help { gap: 3px 14px; font-size: 11px; }
+  .post-minecraft .mp-help kbd { font-size: 10px; }
+  .post-minecraft .ms-controls { gap: 5px 18px; }
+}
+
+@media (pointer: coarse) {
+  .post-minecraft .mp-controls button { min-height: 44px; }
+  .post-minecraft .mp-hotbar button { width: 48px; height: 46px; }
+}
+
+@media print {
+  .post-minecraft :is(.ms-controls, .mp-controls, .mp-play, .mp-exit, .mp-help, .mp-hotbar) { display: none; }
+  .post-minecraft figure { break-inside: avoid; }
+}

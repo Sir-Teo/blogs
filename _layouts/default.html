@@ -13,10 +13,22 @@
     })();
   </script>
   <meta name="color-scheme" content="light dark">
+  {%- if page.neutral %}
+  <title>{{ page.title | escape }}</title>
+  <meta name="description" content="{{ page.description | strip_newlines | escape }}">
+  {%- else %}
   {%- seo -%}
   {%- feed_meta %}
+  {%- endif %}
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Ecircle%7Bfill:%23111%7D@media(prefers-color-scheme:dark)%7Bcircle%7Bfill:%23eee%7D%7D%3C/style%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+  {%- if page.layout == 'post' or page.math %}
+  <link rel="stylesheet" href="{{ '/assets/vendor/katex/katex.min.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/math.css' | relative_url }}">
+  <script defer id="site-math-core" src="{{ '/assets/vendor/katex/katex.min.js' | relative_url }}"></script>
+  <script defer src="{{ '/assets/vendor/katex/auto-render.min.js' | relative_url }}"></script>
+  <script defer src="{{ '/assets/js/math.js' | relative_url }}"></script>
+  {%- endif %}
   {%- for href in page.styles %}
   <link rel="stylesheet" href="{{ href | relative_url }}">
   {%- endfor %}
@@ -28,10 +40,12 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="site-name" href="{{ '/' | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-name" href="{{ '/' | relative_url }}">{% if page.neutral %}Research notes{% else %}{{ site.title | escape }}{% endif %}</a>
     <nav class="site-nav" aria-label="Site">
+      {%- unless page.neutral %}
       <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
       <a class="nav-github" href="https://github.com/{{ site.github_username }}" aria-label="GitHub" title="GitHub">{%- include link-icon.html name='github' -%}<span class="link-label">GitHub</span></a>
+      {%- endunless %}
       <a class="search-toggle" href="{{ '/' | relative_url }}#post-search" aria-label="Search posts" title="Search posts (/)" hidden>
         <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
       </a>
@@ -46,9 +60,13 @@
   </main>
 
   <footer class="site-footer">
+    {%- if page.neutral %}
+    <a href="{{ '/' | relative_url }}">All notes</a>
+    {%- else %}
     <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
     <a href="https://github.com/{{ site.github_username }}">{%- include link-icon.html name='github' -%}GitHub</a>
     <a href="{{ '/feed.xml' | relative_url }}">{%- include link-icon.html name='rss' -%}RSS</a>
+    {%- endif %}
   </footer>
 </body>
 </html>

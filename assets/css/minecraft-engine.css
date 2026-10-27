@@ -1,0 +1,97 @@
+/* Original system diagrams, using the notebook's type and control system. */
+.mc-engine { --mce-warm:#c28c40; --mce-warm-soft:#e8ce9f; }
+:root[data-theme="dark"] .mc-engine { --mce-warm:#e4b56e; --mce-warm-soft:#6c5130; }
+.mc-engine [hidden] { display:none !important; }
+.mce-head { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:15px; }
+.mce-kicker { color:var(--fg-3); font:11px/1.5 var(--mono); letter-spacing:.07em; text-transform:uppercase; }
+.mce-controls { display:flex; flex-wrap:wrap; gap:8px 24px; align-items:center; margin:10px 0 18px; }
+.mce-controls > .mce-slider { flex:1 1 190px; }
+.mc-engine .btn,.mc-engine .tabs button { min-height:44px; }
+.mce-slider { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; font-size:13px; line-height:1.5; color:var(--fg-2); margin:8px 0; }
+.mce-slider input { grid-column:1/-1; width:100%; min-height:30px; }
+.mce-slider output { color:var(--fg); font:12px/1.5 var(--mono); }
+.mce-plot { display:block; width:100%; height:auto; overflow:visible; }
+.mce-collision-plot { overflow:hidden; }
+.mce-plot text { fill:var(--fg-2); font:12px var(--sans); }
+.mce-plot .mce-small { fill:var(--fg-3); font:11px var(--sans); }
+.mce-plot .mce-kicker-svg { fill:var(--fg-3); font:10px var(--mono); }
+.mce-split { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.9fr); gap:32px; align-items:center; }
+.mce-note { margin:14px 0 0; color:var(--fg-3); font-size:12px; line-height:1.6; }
+.mce-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; border-top:1px solid var(--line); padding-top:13px; margin:18px 0 0; }
+.mce-facts dt { color:var(--fg-3); font-size:11px; margin-bottom:5px; }
+.mce-facts dd { margin:0; color:var(--fg); font:500 18px/1.5 var(--mono); }
+.mce-activity-key .mce-facts { gap:10px; }
+.mce-activity-key .mce-facts dd { font-size:16px; }
+.mce-legend-row { display:flex; align-items:flex-start; gap:10px; margin:16px 0; }
+.mce-legend-row i { flex:none; width:11px; height:11px; margin-top:5px; }
+.mce-legend-row strong { display:block; font-size:13px; font-weight:500; }
+.mce-legend-row span { display:block; color:var(--fg-3); font-size:12px; margin-top:3px; line-height:1.55; }
+.mce-chunk.mce-absent { fill:var(--subtle); }
+.mce-chunk.mce-loaded,.mce-legend-row .mce-loaded { fill:var(--line-2); background:var(--line-2); }
+.mce-chunk.mce-block,.mce-legend-row .mce-block { fill:var(--accent); fill-opacity:.25; background:var(--accent-soft); }
+.mce-chunk.mce-entity,.mce-legend-row .mce-entity { fill:var(--accent); fill-opacity:.6; background:var(--accent); }
+.mce-entity-marker { fill:var(--fg-3); }
+.mce-entity-marker.moving { fill:var(--bg); }
+.mce-player { fill:var(--mce-warm); stroke:var(--bg); stroke-width:1.5; }
+.mce-player-cross { stroke:var(--bg); stroke-width:1.2; }
+.mce-sample-cell { fill:var(--subtle); stroke:var(--line-2); stroke-width:.5; }
+.mce-sample-cell.done { fill:var(--accent); fill-opacity:.3; }
+.mce-sample-cell.inert { fill:var(--line); }
+.mce-trial-outline { fill:none; stroke:var(--accent); stroke-width:2; }
+.mce-pending-dot { fill:var(--mce-warm); }
+.mce-due-dot { fill:var(--accent); }
+.mce-plot .mce-on-dot { fill:var(--bg); font:10px var(--mono); }
+.mce-plot .mce-sample-number { fill:var(--fg-2); font:13px var(--mono); }
+.mc-engine .mce-table { margin:0; width:100%; font-size:12px; }
+.mc-engine .mce-table th { font-weight:400; color:var(--fg-3); }
+.mc-engine .mce-table td,.mc-engine .mce-table th { padding:8px 5px; text-align:left; }
+.mce-table .mce-executed { color:var(--accent); }
+.mce-statement { margin:14px 0; min-height:3em; font-size:13px; color:var(--fg-2); }
+.mce-random-key { color:var(--fg-2); font-size:13px; margin-bottom:16px; }
+.mce-hit-row { display:flex; align-items:center; gap:10px; margin:10px 0; font:11px var(--mono); }
+.mce-hit-row span { width:90px; color:var(--fg-3); }
+.mce-hit-row i { height:7px; background:var(--accent); max-width:100px; }
+.mce-hit-row b { font-weight:400; color:var(--fg-2); }
+.mce-budgets { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:22px; }
+.mce-budgets > div { display:grid; grid-template-columns:1fr auto; gap:8px; }
+.mce-budgets span { color:var(--fg-3); font:10px var(--mono); }
+.mce-budgets strong { color:var(--fg-2); font:11px var(--mono); font-weight:400; }
+.mce-budgets i { grid-column:1/-1; height:4px; background:var(--line-2); }
+.mce-grid { stroke:var(--line); stroke-width:1; }
+.mce-obstacle { fill:var(--fg-3); fill-opacity:.55; stroke:var(--bg); stroke-width:1; }
+.mce-start-box { fill:none; stroke:var(--line-2); stroke-width:1.5; }
+.mce-intended-box { fill:none; stroke:var(--mce-warm); stroke-dasharray:4 4; stroke-width:1.5; }
+.mce-intended-path { stroke:var(--mce-warm); stroke-dasharray:3 4; opacity:.55; }
+.mce-resolved-path { stroke:var(--accent); stroke-width:2; fill:none; }
+.mce-resolved-box { fill:var(--accent); fill-opacity:.17; stroke:var(--accent); stroke-width:1.5; }
+.mce-wire { stroke:var(--line-2); stroke-width:3; }
+.mce-wire.powered { stroke:var(--mce-warm); }
+.mce-dust { fill:var(--line-2); }
+.mce-dust.powered { fill:var(--mce-warm); }
+.mce-cut-gap { fill:var(--bg); }
+.mce-cut-mark { stroke:var(--fg-3); stroke-width:1.4; }
+.mce-source { fill:var(--line-2); }
+.mce-source.powered { fill:var(--mce-warm); }
+.mce-plot .mce-source-label { fill:var(--bg); font:11px var(--mono); }
+.mce-plot .mce-power-number { fill:var(--fg-2); font:11px var(--mono); }
+.mce-repeater { fill:var(--subtle); stroke:var(--line-2); }
+.mce-repeater-arrow { fill:var(--fg-3); }
+.mce-repeater-arrow.powered { fill:var(--mce-warm); }
+.mce-lamp { fill:var(--subtle); stroke:var(--line-2); }
+.mce-lamp.powered { fill:var(--mce-warm-soft); stroke:var(--mce-warm); }
+.mce-tick-cell { fill:var(--subtle); stroke:var(--line); stroke-width:1; }
+.mce-tick-cell.high { fill:var(--accent); fill-opacity:.55; }
+.mce-cursor { stroke:var(--mce-warm); stroke-width:1.5; stroke-dasharray:3 3; }
+.mce-due-line { stroke:var(--accent); stroke-width:2; }
+@media(max-width:600px){
+  .mce-split { grid-template-columns:minmax(0,1fr); gap:8px; }
+  .mce-split > .mce-plot { max-width:420px; margin:auto; }
+  .mce-controls { gap:8px 16px; }
+  .mce-controls > .mce-slider { flex-basis:100%; }
+  .mce-facts { gap:10px; }
+  .mce-facts dd { font-size:14px; }
+  .mce-legend-row { margin:10px 0; }
+  .mce-budgets { gap:16px; }
+  .mce-budgets > div { grid-template-columns:1fr; }
+  .mce-budgets strong { font-size:11px; }
+}

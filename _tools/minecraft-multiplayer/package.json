@@ -1,0 +1,18 @@
+{
+  "name": "minecraft-multiplayer",
+  "version": "1.0.0",
+  "description": "Authoritative WebSocket server for the Minecraft multiplayer teaching article",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test server.test.cjs integration.test.cjs client.test.cjs"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.22.0"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,50 @@
+/* Rendering experiments: shared notebook typography, original teaching geometry. */
+.mc-render { --mr-blue:#497faa; --mr-amber:#c99048; --mr-green:#6e9981; }
+:root[data-theme="dark"] .mc-render { --mr-blue:#86b4dc; --mr-amber:#e7b670; --mr-green:#8dbca0; }
+.mc-render .mr-head { display:flex; gap:18px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.mc-render .mr-head .btn { flex:none; white-space:nowrap; }
+.mc-render .mr-controls .btn { white-space:nowrap; }
+.mc-render .mr-kicker { font:11px/1.5 var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--fg-3); }
+.mc-render .mr-controls { display:flex; flex-wrap:wrap; gap:12px 25px; align-items:center; margin:14px 0; }
+.mc-render .mr-controls .btn,.mc-render .mr-head .btn,.mc-render .tabs button { min-height:40px; }
+.mc-render .mr-slider { display:flex; align-items:center; gap:12px; flex:1 1 230px; color:var(--fg-2); font-size:13px; }
+.mc-render .mr-slider input { flex:1; min-width:70px; width:100%; }
+.mc-render .mr-slider output { min-width:43px; text-align:right; font:12px var(--mono); color:var(--fg); }
+.mc-render .mr-check { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--fg-2); min-height:40px; }
+.mc-render canvas { display:block; width:100%; }
+.mc-render .mr-canvas-wrap { position:relative; width:100%; overflow:hidden; }
+.mc-render .mr-stats { display:flex; flex-wrap:wrap; gap:12px 32px; border-top:1px solid var(--line); padding-top:13px; margin-top:12px; }
+.mc-render .mr-stats > div { min-width:100px; }
+.mc-render .mr-stats span { display:block; color:var(--fg-3); font-size:11px; }
+.mc-render .mr-stats strong { color:var(--fg); font:500 17px/1.8 var(--mono); }
+.mc-render .mr-note { color:var(--fg-3); font-size:12px; line-height:1.6; margin:13px 0 0; }
+.mc-render .mr-status { color:var(--fg-2); font-size:13px; min-height:2.8em; margin:12px 0 0; }
+.mc-render .mr-samples { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:18px 0; }
+.mc-render .mr-sample { color:var(--fg-3); font:11px/1.6 var(--mono); border-bottom:2px solid var(--line); padding-bottom:7px; position:relative; }
+.mc-render .mr-sample b { display:block; color:var(--fg); font:500 16px/1.7 var(--mono); }
+.mc-render .mr-sample i { position:absolute; bottom:-2px; left:0; height:2px; background:var(--mr-blue); }
+.mc-render .mr-pipeline { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin:20px 0 16px; }
+.mc-render .mr-phase { position:relative; color:var(--fg-3); font-size:11px; line-height:1.5; padding:11px 0 0; border-top:2px solid var(--line); }
+.mc-render .mr-phase::before { content:''; position:absolute; left:0; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--line-2); }
+.mc-render .mr-phase.current { color:var(--fg); border-color:var(--accent); }
+.mc-render .mr-phase.current::before { background:var(--accent); }
+.mc-render .mr-phase.done { border-color:var(--fg-3); color:var(--fg-2); }
+.mc-render .mr-phase b { display:block; color:inherit; font:11px var(--mono); margin-bottom:5px; }
+.mc-render .mr-memory { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--fg-3); margin:14px 0; flex-wrap:wrap; }
+.mc-render .mr-buffer { width:35px; height:16px; border:1px solid var(--line-2); background:var(--subtle); }
+.mc-render .mr-buffer.busy { background:var(--accent-soft); border-color:var(--accent); }
+.mc-render .mr-order { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:13px 0; color:var(--fg-3); font:12px var(--mono); }
+.mc-render .mr-order b { font-weight:500; padding:5px 9px; border-bottom:2px solid var(--swatch); color:var(--fg-2); }
+.mc-render .mr-equation { font:12px/1.8 var(--mono); color:var(--fg-2); margin:12px 0; overflow-wrap:anywhere; }
+@media(max-width:550px) {
+  .mc-render .mr-slider { flex-basis:100%; }
+  .mc-render .mr-controls { gap:10px 18px; }
+  .mc-render .mr-head { gap:12px; }
+  .mc-render .mr-head .btn { min-height:44px; }
+  .mc-render .mr-samples { gap:9px; }
+  .mc-render .mr-sample { font-size:10px; }
+  .mc-render .mr-sample b { font-size:14px; }
+  .mc-render .mr-pipeline { grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px 12px; }
+  .mc-render .mr-stats { gap:12px 18px; }
+  .mc-render .mr-stats strong { font-size:14px; }
+}

@@ -1,0 +1,49 @@
+{
+  "generator": "_tools/two-step-demo/build_data.py",
+  "synthetic": [
+    "sample: seed 1",
+    "70 departures: seed 2",
+    "promo: seed 7"
+  ],
+  "adaptations": [
+    "Analytic gradient and rescaled timing parameter for pooled optimization.",
+    "Additional penalty settings are illustrations using the same fixed sample.",
+    "Interactive likelihood slices use noise-free expected counts to isolate identification.",
+    "The public single-departure estimator uses scalar normalization, adaptive bracketing, and bisection."
+  ],
+  "archived": "Archived total-shopping error table",
+  "sources": [
+    {
+      "id": "source-01",
+      "sha256": "91eb13d061f0b70862d43bf1e91526872901b849016723e185e144f5b4c2ced3"
+    },
+    {
+      "id": "source-02",
+      "sha256": "f3a89f2deb609c6edead18b29822f641eb70a506620bf817a40abb54773b5925"
+    },
+    {
+      "id": "source-03",
+      "sha256": "ab700cb1be55aac7fe136a13d4d46227120395ff964391968c0100d11d2dc391"
+    },
+    {
+      "id": "source-04",
+      "sha256": "4b7870972de80e13a719fa182e32aa8d5e2977ebcb3c89f0e033250dbd129586"
+    },
+    {
+      "id": "source-05",
+      "sha256": "b1d6132a567ecab77c0d134069abb111bd15bca9c423a5363d2feb133489ec42"
+    },
+    {
+      "id": "source-06",
+      "sha256": "e38683d4dc050451988f668a2e70e0a9d9aea21b2d8df438ae5ce863507e9ee7"
+    },
+    {
+      "id": "source-07",
+      "sha256": "a4a72fd950a8d64882392b2788c38b5223d00de6aa5ce83bf4544b4cfbca14c9"
+    },
+    {
+      "id": "source-08",
+      "sha256": "3cc66ae6f3dd51b3702c87b610c88fd7c6f7fe83a301e9d0fa13c37a6df8cc49"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+/* One progressive build, with the picture and its useful measurements in view. */
+.post-minecraft .mb { min-width: 0; container-type: inline-size; }
+.post-minecraft .mb-canvas-wrap { height: 420px; background: var(--mc-panel); border-radius: 4px; overflow: hidden; }
+.post-minecraft .mb-canvas-wrap canvas { display: block; width: 100%; cursor: grab; touch-action: pan-y; }
+.post-minecraft .mb-canvas-wrap canvas:active { cursor: grabbing; }
+.post-minecraft .mb-canvas-wrap canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.post-minecraft .mb-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; min-height: 56px; padding-block: 8px; }
+.post-minecraft .mb-action { flex: none; min-height: 38px; padding: 7px 0; border: 0; border-bottom: 1px solid transparent; border-radius: 0; color: var(--fg-2); background: none; font: 13px/1.5 var(--sans); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 5px; cursor: pointer; }
+.post-minecraft .mb-action:hover { color: var(--fg); text-decoration-color: var(--fg-3); }
+.post-minecraft .mb-action.mb-primary { color: var(--accent); font-weight: 550; }
+.post-minecraft .mb-action:disabled { color: var(--fg-3); border-color: transparent; text-decoration: none; cursor: default; font-weight: 400; }
+.post-minecraft .mb-status { flex: 1 1 220px; order: 1; color: var(--fg-2); font: 12px/1.6 var(--sans); }
+.post-minecraft .mb-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding-block: 16px 3px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.post-minecraft .mb-metrics > div { display: grid; align-content: start; gap: 5px; min-width: 0; padding-right: 16px; }
+.post-minecraft .mb-metrics > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+.post-minecraft .mb-metrics > div:last-child { padding-right: 0; }
+.post-minecraft .mb-metrics strong { color: var(--fg); font: 500 19px/1.35 var(--mono); letter-spacing: -.04em; }
+.post-minecraft .mb-metrics span { color: var(--fg-2); font: 11px/1.5 var(--sans); }
+.post-minecraft #mc-palette .mb-metrics > div:first-child strong { color: var(--mc-amber); }
+.post-minecraft .mp { container-type: inline-size; }
+.post-minecraft .mp .mb-metrics { margin-top: 16px; }
+.post-minecraft .mb-final-save { margin-top: 12px; border-top: 1px solid var(--line); padding-bottom: 2px; }
+.post-minecraft .mb-final-save + .mb-metrics { margin-top: 8px; }
+.post-minecraft figure[data-build-ready="false"] .mp-frame { background: var(--mc-panel); }
+.post-minecraft figure[data-build-ready="false"] .mp-play { border-color: var(--line-2); color: var(--fg); background: var(--bg); backdrop-filter: none; }
+.post-minecraft figure[data-build-ready="false"] .mp-play::before { border-left-color: var(--accent); }
+.post-minecraft figure[data-build-ready="false"] .mp-controls:has(> :not([hidden])) { display: flex; }
+.post-minecraft figure[data-build-ready="false"] .mp-controls { display: none; }
+.post-minecraft figure[data-build-ready="false"] .mp-help { display: none; }
+.post-minecraft .mb-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.post-minecraft .mb [hidden] { display: none !important; }
+@media (max-width: 600px) {
+  .post-minecraft .mb-controls { gap: 3px 18px; min-height: 55px; padding-block: 7px; }
+  .post-minecraft .mb-action { font-size: 12px; min-height: 40px; }
+  .post-minecraft .mb-status { flex-basis: 100%; font-size: 11px; }
+  .post-minecraft .mb-metrics { padding-top: 14px; }
+  .post-minecraft .mb-metrics > div { padding-right: 10px; }
+  .post-minecraft .mb-metrics > div + div { padding-left: 10px; }
+  .post-minecraft .mb-metrics strong { font-size: clamp(12px, 4cqi, 16px); letter-spacing: -.035em; }
+}
+@media (pointer: coarse) {
+  .post-minecraft .mb-action { min-height: 44px; }
+}
+@media print {
+  .post-minecraft .mb-controls { display: none; }
+}
+
+@container (max-width: 599px) {
+  .post-minecraft .mb-canvas-wrap { height: 330px; }
+}

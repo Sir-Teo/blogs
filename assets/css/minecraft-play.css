@@ -1,0 +1,43 @@
+/* The game lives inside a figure; the surrounding article keeps its own voice. */
+.mp { min-width:0; }
+.mp-frame { position:relative; overflow:hidden; width:100%; aspect-ratio:16/10; background:#15171b; border-radius:3px; isolation:isolate; }
+.mp-frame canvas { display:block; width:100%; height:100%; }
+.mp-frame canvas[hidden],.mp [hidden] { display:none!important; }
+.mp-view { touch-action:pan-y; outline:0; cursor:crosshair; }
+.mp-playing .mp-view { touch-action:none; }
+.mp-view:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+.mp-overview { background:var(--bg); cursor:grab; touch-action:pan-y; }
+.mp-overview:active { cursor:grabbing; }
+.mp-play,.mp-exit { position:absolute; top:17px; right:17px; z-index:3; border:1px solid #ffffff40; background:#17201b99; color:#fff; border-radius:3px; padding:8px 13px; font:12px/1.4 var(--sans); cursor:pointer; backdrop-filter:blur(8px); }
+.mp-play:hover,.mp-exit:hover { background:#17201bd9; }
+.mp-target { position:absolute; top:20px; left:18px; max-width:60%; color:#e4e6df; text-shadow:0 1px 3px #000; font:11px/1.5 var(--mono); pointer-events:none; }
+.mp-hotbar { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); display:flex; gap:4px; padding:4px; border:1px solid #b9b6a056; background:#161b19b8; border-radius:3px; z-index:3; }
+.mp-hotbar button { position:relative; width:51px; height:49px; padding:7px 10px; border:1px solid #ffffff21; border-radius:1px; background:#9b9e8c16; color:#f3f1e8; cursor:pointer; }
+.mp-hotbar button[aria-pressed=true] { border-color:#e9c384; background:#cda96b28; box-shadow:inset 0 0 0 1px #e9c38480; }
+.mp-hotbar button:hover { background:#ffffff22; }
+.mp-hotbar svg { width:29px; height:29px; image-rendering:pixelated; shape-rendering:crispEdges; }
+.mp-key { position:absolute; top:2px; left:4px; font:9px/1 var(--mono); color:#b5b7ac; }
+.mp-count { position:absolute; bottom:3px; right:4px; font:10px/1 var(--mono); color:#fff; text-shadow:1px 1px #000; }
+.mp-controls { display:flex; align-items:center; flex-wrap:wrap; gap:12px 22px; margin-top:13px; }
+.mp-controls button { border:0; border-bottom:1px solid var(--line-2); border-radius:0; background:none; padding:6px 0; color:var(--fg-2); font:12px/1.4 var(--sans); cursor:pointer; }
+.mp-controls button:hover { color:var(--fg); border-color:var(--fg-3); }
+.mp-controls .mp-reset { margin-left:auto; color:var(--fg-3); }
+.mp-help { color:var(--fg-3); font:11px/1.6 var(--sans); margin:12px 0 0; }
+.mp-status { min-height:1.7em; margin:5px 0 0; color:var(--fg-2); font:12px/1.7 var(--sans); }
+.mp-touch { position:absolute; inset:auto 0 90px; height:90px; pointer-events:none; z-index:4; }
+.mp-stick { position:absolute; width:88px; height:88px; left:19px; bottom:0; border:1px solid #ffffff50; border-radius:50%; background:#171e1b55; pointer-events:auto; touch-action:none; }
+.mp-stick span { position:absolute; width:34px; height:34px; top:26px; left:26px; border:1px solid #ffffff60; border-radius:50%; background:#e5e7df35; }
+.mp-touch-actions { position:absolute; right:15px; bottom:1px; display:grid; grid-template-columns:repeat(2,48px); gap:7px; pointer-events:auto; }
+.mp-touch-actions button { min-width:48px; min-height:39px; border:1px solid #ffffff55; border-radius:3px; color:#fff; background:#171e1b99; font:11px var(--sans); padding:7px; touch-action:none; user-select:none; }
+.mp-touch-actions button:last-child { grid-column:2; }
+@media(max-width:600px) {
+  .mp-frame { aspect-ratio:4/5; }
+  .mp-play,.mp-exit { top:12px; right:12px; padding:7px 10px; }
+  .mp-target { top:15px; left:12px; max-width:53%; font-size:10px; }
+  .mp-hotbar { bottom:14px; }
+  .mp-hotbar button { width:47px; height:46px; }
+  .mp-controls { gap:10px 16px; }
+  .mp-controls button { font-size:11px; }
+  .mp-help { font-size:10px; }
+  .mp-status { font-size:11px; }
+}

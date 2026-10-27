@@ -49,6 +49,36 @@ scripts:
 
 Data a figure needs goes in `assets/data/`.
 
+### Mathematics
+
+Every post uses the same locally bundled KaTeX runtime, fonts, and
+`assets/css/math.css`. The mathematical atlas uses that runtime too; it does
+not load a second version from a CDN. See the official
+[auto-render](https://katex.org/docs/autorender) and
+[rendering options](https://katex.org/docs/options) documentation.
+
+Write inline math with paired double dollars in a paragraph:
+
+```text
+The fitted total is $$\widehat M = N/F(\hat\theta)$$.
+```
+
+For a display equation, put `$$` on separate lines with blank lines around
+the block. Use `aligned` for long derivations so they read well on a phone.
+Do not simulate equations with Unicode hats or nested HTML superscripts.
+Use `\operatorname{Var}`, `\log`, `\mathrm{...}` and ordinary TeX subscripts
+consistently. Plain currency is left untouched: single dollar signs are
+not treated as math delimiters.
+
+For dynamic HTML or text inside an HTML link, use
+`<span class="math-inline" data-tex="...">readable fallback</span>` or
+`<div class="math-display" data-tex="...">readable fallback</div>`.
+`BlogMath.render(element)` is available for explicit rendering; inserted
+math is also detected automatically. Code blocks and SVG chart labels
+are left alone. Rendered math includes a MathML representation for assistive
+technology, inherits the current theme, and scrolls within its own block
+when a long expression cannot fit.
+
 Destination icons use the local SVG sprite in `assets/icons.svg`, rendered by
 `_includes/link-icon.html` for navigation and post links. GitHub, YouTube,
 Bilibili, websites, and RSS each have a small icon that follows the current text colour.

@@ -1,0 +1,101 @@
+{
+  "kind": "Constructed synthetic stress test; not airline production validation",
+  "seeds": [
+    3,
+    11,
+    29,
+    47,
+    73,
+    101
+  ],
+  "apContexts": [
+    7,
+    21,
+    45
+  ],
+  "holdoutDays": [
+    140,
+    223
+  ],
+  "calibrationDays": [
+    84,
+    139
+  ],
+  "protocol": "Walk-forward peer forecasts use only earlier days. Error calibration is frozen before the holdout. Both detectors share quality, dollar-materiality and fresh-observation confirmation gates.",
+  "scenarios": [
+    "weekly normal discount",
+    "three sustained price-cut episodes",
+    "one-shop spike",
+    "selected-source outage",
+    "coverage below 95%"
+  ],
+  "metrics": {
+    "context": {
+      "tp": 160,
+      "fp": 0,
+      "fn": 2,
+      "tn": 1314,
+      "precision": 1,
+      "recall": 0.9876543209876543,
+      "falseReviewsPer100Normal": 0
+    },
+    "twoPass": {
+      "tp": 136,
+      "fp": 144,
+      "fn": 26,
+      "tn": 1170,
+      "precision": 0.4857142857142857,
+      "recall": 0.8395061728395061,
+      "falseReviewsPer100Normal": 10.95890410958904
+    }
+  },
+  "dataIssuesBlocked": 36,
+  "oneShopSpikesHeld": 18,
+  "normalBandCoverage": {
+    "covered": 3874,
+    "total": 3942,
+    "fraction": 0.9827498731608321
+  },
+  "limits": "Small designed test suite, with known seasonal structure and large injected shifts. This does not establish general superiority, real-data accuracy or a distribution-free temporal coverage guarantee.",
+  "examples": [
+    {
+      "day": 145,
+      "weekday": 6,
+      "truth": false,
+      "expected": 23475,
+      "range": [
+        22975,
+        23975
+      ],
+      "observed": 22950,
+      "contextStatus": "normal",
+      "twoPassStatus": "normal"
+    },
+    {
+      "day": 154,
+      "weekday": 1,
+      "truth": true,
+      "expected": 23600,
+      "range": [
+        23100,
+        24100
+      ],
+      "observed": 22200,
+      "contextStatus": "review",
+      "twoPassStatus": "review"
+    },
+    {
+      "day": 175,
+      "weekday": 1,
+      "truth": false,
+      "expected": 23475,
+      "range": [
+        22975,
+        23975
+      ],
+      "observed": 23850,
+      "contextStatus": "normal",
+      "twoPassStatus": "normal"
+    }
+  ]
+}
