@@ -9,7 +9,7 @@ layout: default
     <label class="visually-hidden" for="post-search">Search posts</label>
     <div class="post-search-field">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
-      <input id="post-search" type="search" name="q" placeholder="Search posts…" autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false" aria-controls="posts" aria-describedby="search-status">
+      <input id="post-search" type="search" name="q" placeholder="Search {{ site.posts.size }} posts…" autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false" aria-controls="posts" aria-describedby="search-status">
       <button class="search-clear" type="button" hidden>Clear</button>
       <kbd class="search-shortcut" aria-hidden="true">/</kbd>
     </div>
@@ -24,16 +24,16 @@ layout: default
     <li>
       {%- include post-thumb.html post=post -%}
       <div class="post-index-body">
-        <div class="post-index-head">
+        <h2 class="post-index-head">
           <a class="post-index-link" href="{{ post.url | relative_url }}">
             <span class="post-index-title">{{ post.title | escape }}</span>
           </a>
-          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
-        </div>
+        </h2>
         {%- if post.excerpt %}
         <p class="post-index-excerpt">{{ post.excerpt | strip_html | normalize_whitespace }}</p>
         {%- endif %}
         <p class="meta post-index-meta">
+          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
           {%- if figs > 0 %}
           <span class="post-index-figs">{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
           {%- endif %}

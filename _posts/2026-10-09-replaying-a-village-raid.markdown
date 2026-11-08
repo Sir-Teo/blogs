@@ -30,27 +30,27 @@ scripts:
 <defs>
 <marker id="coc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head-strong" d="M0,1 L9,5 L0,9 z"/></marker>
 </defs>
-<rect class="box" x="24" y="30" width="170" height="52" rx="6"/>
-<text class="t" x="109" y="48">Your taps</text>
-<text class="st" x="109" y="65">deploy, spell, end</text>
-<rect class="box" x="24" y="104" width="170" height="52" rx="6"/>
-<text class="t" x="109" y="122">A recording</text>
-<text class="st" x="109" y="139">the same actions, replayed</text>
-<rect class="box em" x="252" y="56" width="176" height="76" rx="6"/>
+<rect class="box" x="16" y="30" width="168" height="52" rx="6"/>
+<text class="t" x="100" y="48">Your taps</text>
+<text class="st" x="100" y="65">deploy, spell, end</text>
+<rect class="box" x="16" y="104" width="168" height="52" rx="6"/>
+<text class="t" x="100" y="122">A recording</text>
+<text class="st" x="100" y="139">the same actions, replayed</text>
+<rect class="box em" x="234" y="56" width="212" height="76" rx="6"/>
 <text class="t" x="340" y="80">GameModel</text>
 <text class="st" x="340" y="98">pure TypeScript, no Phaser</text>
 <text class="st" x="340" y="114">step(0.05), twenty times a second</text>
-<rect class="box" x="486" y="30" width="170" height="52" rx="6"/>
-<text class="t" x="571" y="48">Phaser scene</text>
-<text class="st" x="571" y="65">draws between two steps</text>
-<rect class="box" x="486" y="104" width="170" height="52" rx="6"/>
-<text class="t" x="571" y="122">HUD</text>
-<text class="st" x="571" y="139">plain DOM, reads the model</text>
-<path class="edge-strong" d="M194 56 H222 V84 H250" marker-end="url(#coc-arrow)"/>
-<path class="edge-strong" d="M194 130 H222 V104 H250" marker-end="url(#coc-arrow)"/>
-<path class="edge-strong" d="M430 84 H458 V56 H484" marker-end="url(#coc-arrow)"/>
-<path class="edge-strong" d="M430 104 H458 V130 H484" marker-end="url(#coc-arrow)"/>
-<rect class="box" x="24" y="190" width="632" height="52" rx="6"/>
+<rect class="box" x="496" y="30" width="168" height="52" rx="6"/>
+<text class="t" x="580" y="48">Phaser scene</text>
+<text class="st" x="580" y="65">draws between two steps</text>
+<rect class="box" x="496" y="104" width="168" height="52" rx="6"/>
+<text class="t" x="580" y="122">HUD</text>
+<text class="st" x="580" y="139">plain DOM, reads the model</text>
+<path class="edge-strong" d="M184 56 H209 V84 H232" marker-end="url(#coc-arrow)"/>
+<path class="edge-strong" d="M184 130 H209 V104 H232" marker-end="url(#coc-arrow)"/>
+<path class="edge-strong" d="M448 84 H471 V56 H494" marker-end="url(#coc-arrow)"/>
+<path class="edge-strong" d="M448 104 H471 V130 H494" marker-end="url(#coc-arrow)"/>
+<rect class="box" x="16" y="190" width="648" height="52" rx="6"/>
 <text class="t" x="340" y="208">Saves</text>
 <text class="st" x="340" y="225">IndexedDB with a localStorage backup · each raid kept as its setup, every step size and every action</text>
 <path class="edge" d="M340 134 V188" marker-end="url(#coc-arrow)"/>

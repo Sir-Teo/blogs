@@ -17,8 +17,9 @@ directory is ignored.
 
 ## Design
 
-One column, system fonts, greys plus one accent that only appears inside
-figures. The design lives in three places:
+One column, editorial serif prose paired with crisp system UI fonts, warm greys
+plus one accent reserved for data, interactive affordances, and figures. The
+design lives in three places:
 
 - `_layouts/` (`default`, `home`, `post`, `page`) and `_includes/post-thumb.html`:
   page structure and the inline SVG schematic thumbnails on the index. Post

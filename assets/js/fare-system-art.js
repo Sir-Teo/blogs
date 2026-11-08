@@ -48,7 +48,7 @@ function offers(x,y,w,mobile){
  return g;
 }
 function intake(d,m){
- return pair(w=>frame('intake',w,w===800?260:454,id=>{
+ return pair(w=>frame('intake',w,w===800?260:472,id=>{
   let g='';
   if(w===800){
    g+=bend(142,69,188,121,id)+bend(142,147,188,121,id);
@@ -62,11 +62,11 @@ function intake(d,m){
    g+=t(192,221,'Merge ownership, not evidence.','small muted');
   }else{
    g+=p('M87 72V95H86V121','wire',id)+p('M275 72V95H86','wire');
-   g+=bend(158,174,203,151,id,'wire cache-wire')+bend(158,213,203,239,id,'wire strong');
-   g+=p('M354 151V328H180V336','wire cache-wire',id)+p('M277 265V289','wire strong',id)+p('M277 325V334H180V336','wire strong',id);
+   g+=bend(158,174,196,151,id,'wire cache-wire')+bend(158,213,196,239,id,'wire strong');
+   g+=p('M336 151H349V343H116V356','wire cache-wire',id)+p('M266 265V289','wire strong',id)+p('M266 325V336H98V356','wire strong',id);
    g+=node(6,20,162,52,'Watchlist 1','40 dates × 2 sources')+node(192,20,162,52,'Watchlist 2','same public searches');
-   g+=planGrid(16,121)+node(203,125,151,52,'20 cache hits','keep source timestamp','cache-node')+node(203,213,151,52,'60 source fetches','rate + inflight cap','trace-node');
-   g+=node(203,289,151,36,'Parse + validate','','parser-node')+offers(6,365,351,true);
+   g+=planGrid(16,121)+node(196,125,140,52,'20 cache hits','keep source timestamp','cache-node')+node(196,213,140,52,'60 source fetches','rate + inflight cap','trace-node');
+   g+=node(196,289,140,36,'Parse + validate','','parser-node')+offers(6,383,351,true);
    g+=t(16,286,'One shared plan','small muted')+t(16,303,'80 physical queries','small blue');
   }
   return g;

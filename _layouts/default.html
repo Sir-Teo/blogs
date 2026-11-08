@@ -20,7 +20,8 @@
   {%- seo -%}
   {%- feed_meta %}
   {%- endif %}
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Ecircle%7Bfill:%23111%7D@media(prefers-color-scheme:dark)%7Bcircle%7Bfill:%23eee%7D%7D%3C/style%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E">
+  <link rel="icon" href="{% if page.neutral %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Ecircle%7Bfill:%23171716%7D@media(prefers-color-scheme:dark)%7Bcircle%7Bfill:%23ededeb%7D%7D%3C/style%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E{% else %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Erect%7Bfill:%23171716%7Dpath%7Bfill:%23fcfbf9%7D@media(prefers-color-scheme:dark)%7Brect%7Bfill:%23ededeb%7Dpath%7Bfill:%23111112%7D%7D%3C/style%3E%3Crect x='1' y='1' width='14' height='14' rx='3.5'/%3E%3Cpath d='M4.2 4.6h7.6v1.45H8.85V12H7.15V6.05H4.2z'/%3E%3C/svg%3E{% endif %}">
+  <link rel="preload" as="font" type="font/woff2" href="{{ '/assets/fonts/newsreader-latin.woff2' | relative_url }}" crossorigin>
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
   {%- if page.layout == 'post' or page.math %}
   <link rel="stylesheet" href="{{ '/assets/vendor/katex/katex.min.css' | relative_url }}">
