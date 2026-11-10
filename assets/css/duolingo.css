@@ -1,0 +1,227 @@
+/* Figures for the Duolingo post. Uses main.css tokens plus one accent blue for
+   study activity and one warm amber for demotions, wagers, and streak repairs. */
+
+.duo {
+  --duo-blue: var(--accent);
+  --duo-soft: var(--accent-soft);
+  --duo-amber: var(--th-amber);
+  --duo-amber-soft: var(--th-amber-soft);
+  --duo-fill: color-mix(in srgb, var(--fg-3) 26%, var(--bg));
+  --duo-bar: color-mix(in srgb, var(--accent) 42%, var(--bg));
+  --duo-empty: color-mix(in srgb, var(--line) 78%, var(--bg));
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="dark"] .duo {
+  --duo-fill: color-mix(in srgb, var(--fg-3) 30%, var(--bg));
+  --duo-bar: color-mix(in srgb, var(--accent) 48%, var(--bg));
+  --duo-empty: color-mix(in srgb, var(--line) 82%, var(--bg));
+}
+
+.duo [hidden] { display: none !important; }
+
+/* ----------------------------------------------------------- figure chrome */
+.duo .fig-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding-bottom: 9px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.duo .fig-controls .tabs { gap: 4px 16px; }
+.duo .fig-controls .tabs button {
+  font-size: 13px;
+  min-height: 28px;
+  white-space: nowrap;
+}
+.duo .fig-num {
+  margin-left: auto;
+  font: 12.5px/1.4 var(--sans);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.duo .fig-num b { color: var(--fg); font-weight: 600; }
+.duo .fig-num .blue { color: var(--duo-blue); font-weight: 600; }
+.duo .fig-num .amber { color: var(--duo-amber); font-weight: 600; }
+
+.duo-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+}
+.duo-pills button {
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--fg-3);
+  font: 12px/1.45 var(--sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.duo-pills button:hover { color: var(--fg-2); }
+.duo-pills button[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: var(--line-2);
+  background: var(--subtle);
+}
+
+.duo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 15px;
+  margin: 0 0 10px;
+  font: 12px/1.45 var(--sans);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.duo-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.duo-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--duo-fill);
+  flex: none;
+}
+.duo-legend .blue i { background: var(--duo-blue); }
+.duo-legend .mid i { background: var(--duo-bar); }
+.duo-legend .amber i { background: var(--duo-amber); }
+.duo-legend .hollow i {
+  background: var(--bg);
+  border: 1.5px solid var(--fg-3);
+  border-radius: 50%;
+}
+.duo-legend .round i { border-radius: 50%; }
+.duo-legend .soft i {
+  background: var(--duo-soft);
+  box-shadow: inset 0 0 0 1px var(--duo-blue);
+}
+.duo-legend .line i {
+  width: 14px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px solid var(--duo-blue);
+  background: none;
+}
+.duo-legend .dash i {
+  width: 14px;
+  height: 0;
+  border-radius: 0;
+  border-top: 1.5px dashed var(--fg-3);
+  background: none;
+}
+.duo-legend .ramp i {
+  width: 56px;
+  height: 7px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--duo-empty), var(--duo-blue));
+}
+
+/* ---------------------------------------------------------- SVG typography */
+.duo-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+.duo-view:focus-visible {
+  outline: 1px solid var(--duo-blue);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.duo-chart text {
+  fill: var(--fg-3);
+  font: 11px var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.duo-chart text.ink { fill: var(--fg-2); }
+.duo-chart text.strong { fill: var(--fg); font-weight: 600; }
+.duo-chart text.mono { font: 10.5px var(--mono); fill: var(--fg-3); }
+.duo-chart text.big { font-size: 13.5px; }
+.duo-chart text.blue { fill: var(--duo-blue); font-weight: 600; }
+.duo-chart text.amber { fill: var(--duo-amber); font-weight: 600; }
+.duo-chart text.halo {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.duo-chart .grid { stroke: var(--line); stroke-width: 1; }
+.duo-chart .axis { stroke: var(--line-2); stroke-width: 1; }
+.duo-chart .bench { stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.65; }
+.duo-chart .bar { fill: var(--duo-fill); transition: fill 0.12s; }
+.duo-chart .bar.mid { fill: var(--duo-bar); }
+.duo-chart .bar.on { fill: var(--duo-blue); }
+.duo-chart .bar.amber { fill: var(--duo-amber); }
+.duo-chart .area { fill: var(--duo-soft); pointer-events: none; }
+.duo-chart .step { fill: none; stroke: var(--fg-3); stroke-width: 1.35; stroke-linejoin: round; stroke-linecap: round; }
+.duo-chart .step.blue { stroke: var(--duo-blue); stroke-width: 1.85; }
+.duo-chart .thread { fill: none; stroke: var(--duo-blue); stroke-width: 1.15; stroke-opacity: 0.28; }
+.duo-chart .gap-band { fill: var(--subtle); }
+.duo-chart .brush-band { fill: var(--duo-soft); stroke: var(--duo-blue); stroke-width: 1; stroke-opacity: 0.45; }
+.duo-chart .cursor { stroke: var(--fg-2); stroke-width: 1; stroke-dasharray: 2.5 2.5; pointer-events: none; }
+.duo-chart .cell { fill: var(--duo-empty); }
+.duo-chart .cell.sel { stroke: var(--fg); stroke-width: 1.5; }
+.duo-chart .dot { fill: var(--bg); stroke: var(--fg-3); stroke-width: 1.35; }
+.duo-chart .dot.mid { fill: var(--duo-bar); stroke: var(--duo-blue); stroke-width: 1.2; }
+.duo-chart .dot.blue { fill: var(--duo-blue); stroke: var(--duo-blue); }
+.duo-chart .dot.amber { fill: var(--duo-amber); stroke: var(--duo-amber); }
+.duo-chart .dot.hollow { fill: var(--bg); stroke-width: 1.6; }
+.duo-chart .span { fill: var(--duo-soft); stroke: var(--duo-blue); stroke-width: 1; }
+.duo-chart .span.family { fill: var(--duo-amber-soft); stroke: var(--duo-amber); }
+.duo-chart .span.trial { fill: var(--subtle); stroke: var(--fg-3); stroke-dasharray: 2 2; }
+.duo-chart .wedge { fill: var(--duo-fill); transition: fill 0.12s; }
+.duo-chart .wedge.on { fill: var(--duo-blue); }
+.duo-chart .ring { fill: none; stroke: var(--line); }
+.duo-chart .ring-arc { fill: none; stroke: var(--duo-blue); stroke-width: 1.5; stroke-opacity: 0.55; }
+.duo-chart .leader { fill: none; stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 2 2; pointer-events: none; }
+.duo-chart .hit { fill: transparent; cursor: crosshair; }
+.duo-chart [data-i], .duo-chart [data-tier], .duo-chart [data-day] { cursor: pointer; }
+
+/* --------------------------------------------------------------- readout */
+.duo-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: baseline;
+  min-height: 1.7em;
+  margin: 10px 0 0 !important;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font: 12.5px/1.55 var(--sans);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.duo-readout strong { color: var(--fg); font-weight: 600; }
+.duo-readout .ink { color: var(--fg-2); }
+.duo-readout .blue { color: var(--duo-blue); font-weight: 500; }
+.duo-readout .amber { color: var(--duo-amber); font-weight: 500; }
+.duo-error { padding: 18px; border: 1px solid var(--line-2); color: var(--fg-2); font: 14px/1.6 var(--sans); }
+
+.duo-methods summary { cursor: pointer; font: 500 15px/1.5 var(--sans); color: var(--fg-2); }
+.duo-methods[open] summary { color: var(--fg); margin-bottom: 0.8em; }
+.duo-methods { font-size: 15.5px; line-height: 1.65; color: var(--fg-2); border-top: 1px solid var(--line); padding-top: 1em; margin-top: 3em; }
+
+@media (max-width: 600px) {
+  .duo .fig-num { width: 100%; margin-left: 0; }
+  .duo-legend { font-size: 11px; gap: 4px 12px; }
+}
+@media (pointer: coarse) {
+  .duo .fig-controls .tabs button,
+  .duo-pills button { min-height: 38px; }
+}
+@media print {
+  .duo .fig-controls { display: none; }
+  .duo-body { break-inside: avoid; }
+}

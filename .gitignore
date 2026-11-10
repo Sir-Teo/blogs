@@ -9,3 +9,6 @@ _site/
 .claude/
 __pycache__/
 *.pyc
+
+# Private Duolingo export; only aggregates are published.
+_tools/duolingo-demo/cache/
