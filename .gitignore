@@ -12,3 +12,6 @@ __pycache__/
 
 # Private Duolingo export; only aggregates are published.
 _tools/duolingo-demo/cache/
+
+# Private OpenAI export; only aggregates are published.
+_tools/openai-demo/cache/

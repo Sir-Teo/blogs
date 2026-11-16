@@ -2,6 +2,39 @@
 <div class="post-thumb-wrap" aria-hidden="true">
   {%- case slug -%}
 
+  {%- when 'reading-my-own-openai-export' -%}
+  <!-- OpenAI export: 46-month prompt bars + rising reasoning-share curve paired with branching turn tree -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <g class="thumb-grid"><path d="M10 15H56 M10 34H56 M10 55H56"/></g>
+    <g class="thumb-bars">
+      <rect x="11" y="49" width="3" height="6" rx="0.5"/>
+      <rect x="16" y="41" width="3" height="14" rx="0.5"/>
+      <rect x="21" y="34" width="3" height="21" rx="0.5"/>
+      <rect x="26" y="22" width="3" height="33" rx="0.5"/>
+      <rect x="31" y="18" width="3" height="37" rx="0.5"/>
+      <rect x="36" y="33" width="3" height="22" rx="0.5"/>
+      <rect x="41" y="43" width="3" height="12" rx="0.5"/>
+      <rect x="46" y="31" width="3" height="24" rx="0.5"/>
+      <rect x="51" y="26" width="3" height="29" rx="0.5"/>
+    </g>
+    <g class="thumb-wire">
+      <path d="M64 34 H73 M73 34 C78 34, 78 20, 83 20 H92 M73 34 C78 34, 78 48, 83 48 H92"/>
+      <circle class="thumb-nodes" cx="64" cy="34" r="2"/>
+      <circle class="thumb-nodes" cx="92" cy="48" r="2"/>
+    </g>
+    <g class="thumb-accent">
+      <rect class="thumb-node-act" x="31" y="18" width="3" height="37" rx="0.6"/>
+      <path class="thumb-soft" d="M11 55 H26 V46 H31 V32 H39 V40 H44 V16 H55 V55 Z"/>
+      <path class="thumb-flow" d="M11 55 H26 V46 H31 V32 H39 V40 H44 V16 H55"/>
+      <path class="thumb-flow" d="M73 34 C78 34, 78 20, 83 20 H92"/>
+      <circle class="thumb-node-ring" cx="73" cy="34" r="2.3"/>
+      <circle class="thumb-node-ring" cx="83" cy="20" r="2"/>
+      <circle class="thumb-halo" cx="92" cy="20" r="5.5"/>
+      <circle class="thumb-node-act" cx="92" cy="20" r="2.5"/>
+    </g>
+  </svg>
+
   {%- when 'reading-my-own-duolingo-export' -%}
   <!-- Duolingo export: 2024 XP sprint + league step climb paired with late-night radial clock -->
   <svg class="post-thumb" viewBox="0 0 104 68">
