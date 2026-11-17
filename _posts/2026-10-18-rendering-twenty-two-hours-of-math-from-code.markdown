@@ -6,12 +6,12 @@ description: >-
   and markets films from Python—synchronizing Manim geometry to word-level TTS
   bookmarks in English and Chinese, enforcing a 222-token semantic color
   palette, and scanning every frame for dead air.
+image: /assets/social/rendering-twenty-two-hours-of-math-from-code.png
 date: 2026-10-18 08:00:00 -0400
 excerpt: >-
-  Twenty-four feature-length math, physics, and ML films built without a
-  timeline editor—how word-level voiceover bookmarks, a 222-token semantic
-  palette, a 513-rule IPA lexicon, and a pixel-coverage scanner turn Python
-  packages into 4K masters.
+  Twenty-four feature-length math, physics, and ML films with no video editor
+  involved. The narrator's voice sets the timing, so translating a film needs
+  no re-editing, and a pixel scanner watches all twenty-two hours for dead air.
 links:
   - title: Channel
     url: https://www.youtube.com/@teozeng3999
@@ -23,7 +23,9 @@ scripts:
   - /assets/js/explainer-videos.js
 ---
 
-**explainer-videos** builds feature-length mathematics, physics, machine learning, and markets films entirely from Python with [Manim Community](https://www.manim.community/) and local neural text-to-speech. No video files or timeline projects live in git: every frame, equation, simulation, and subtitle track compiles from source.
+**explainer-videos** is how I make long-form films about mathematics, physics, machine learning, and markets: 24 so far, 16.4 hours in English plus 5.6 hours of Chinese versions. Thirteen of them are on [my YouTube channel](https://www.youtube.com/@teozeng3999), from [the Navier–Stokes equations](https://youtu.be/ULc5slvLoew) to [how large language models work](https://youtu.be/o0ENWGEVJm0).
+
+There's no video editor in the process. Every frame, equation, simulation, narration line, and subtitle is generated from Python with [Manim Community](https://www.manim.community/) and local neural text-to-speech, and no video files are kept in git. A film is source code, and making one is a build.
 
 ## A film is a package
 
@@ -60,7 +62,7 @@ scripts:
 <figcaption>Each video lives in <code>videos/&lt;series&gt;/&lt;name&gt;/</code> and compiles from numerical checkpoints, scene scripts, and cached neural speech into a chaptered master.</figcaption>
 </figure>
 
-Rendering a sixty-minute film in parallel exposes two bottlenecks in stock Manim: concurrent scene processes race on shared LaTeX files, and frame-by-frame numeric readouts fill `SVG_HASH_TO_MOB_MAP` past 6 GB of RAM. `tools/build.py` gives every scene worker its own TeX directory, orders jobs longest-first so a short scene never waits behind a long tail, and replaces Manim's unbounded SVG dictionary with a 400-entry LRU cache.
+Each film is a folder: a `compute.py` that runs the numerical simulations ahead of time, one Python file per scene, and the narration. Rendering a sixty-minute film in parallel ran into two limits in stock Manim. Scene processes running at once raced on shared LaTeX files, and frame-by-frame numeric readouts grew Manim's internal SVG dictionary past 6 GB of memory. `tools/build.py` gives every scene worker its own TeX directory, starts the longest scenes first so a short one never ends up waiting at the back of the queue, and replaces that dictionary with a cache capped at 400 entries.
 
 ## Twenty-four films, frame by frame
 
@@ -68,7 +70,7 @@ Rendering a sixty-minute film in parallel exposes two bottlenecks in stock Manim
 <figcaption>All 24 completed films in the repository (16.4 hours in English, plus 5.6 hours of Chinese masters for <em>Analysis, Built</em>). Every horizontal ribbon is the film's vertical color profile over time; <span class="only-hover">click or drag</span><span class="only-touch">tap or drag</span> across any ribbon to inspect its rendered frames, subtitle track, and active-pixel density.</figcaption>
 </figure>
 
-Each barcode strip compresses a full render into 300 vertical slices against the `#0E1117` background, making a film's structure visible before pressing play. You can spot <a class="act" href="#ev-atlas" data-film="navier_stokes" data-sample="4">the Kármán vortex street</a> in *Navier–Stokes* where blue velocity gives way to orange vorticity, <a class="act" href="#ev-atlas" data-film="riemann" data-sample="1">the rainbow phase portrait of ζ(s)</a> in *The Riemann Hypothesis*, <a class="act" href="#ev-atlas" data-film="llm" data-sample="4">the orange attention matrices and purple MLP blocks</a> in *How LLMs Work*, and <a class="act" href="#ev-atlas" data-film="analysis7" data-sample="0">the domain-colored complex discs</a> opening *Analysis, Built* Part 7.
+Each strip above squeezes a whole film into 300 thin slices of color, so you can see its structure before pressing play. Look for <a class="act" href="#ev-atlas" data-film="navier_stokes" data-sample="4">the Kármán vortex street</a> in *Navier–Stokes*, where blue velocity gives way to orange vorticity; <a class="act" href="#ev-atlas" data-film="riemann" data-sample="1">the rainbow phase portrait of ζ(s)</a> in [*The Riemann Hypothesis*](https://youtu.be/1vG6NoYvbN4); or <a class="act" href="#ev-atlas" data-film="llm" data-sample="4">the orange attention matrices and purple MLP blocks</a> in *How LLMs Work*.
 
 ## The voice is the clock
 
@@ -76,7 +78,7 @@ Each barcode strip compresses a full render into 300 vertical slices against the
 <figcaption><code>Contraction</code> (<code>videos/analysis/analysis4/s05_contraction.py</code>) rendered in English (144.8 s) and Chinese (151.3 s) from the same scene class. The 57 <code>self.play()</code> segments run for the exact same 58.6 s in both languages; the 25 <code>vo.wait_until()</code> holds stretch or contract around each language's word timestamps.</figcaption>
 </figure>
 
-Scenes never hard-code pause durations. Instead, narration strings carry inline `<bookmark mark='...'/>` tags that `VoiceoverScene` strips before synthesis and maps to the exact start timestamp of the following word:
+Scenes never hard-code a pause. Instead, the narration carries inline `<bookmark mark='...'/>` tags. `VoiceoverScene` strips them out before synthesizing the speech and records the moment the next word starts:
 
 ```py
 with self.voiceover(
@@ -90,15 +92,17 @@ with self.voiceover(
     self.play(Create(web), run_time=4.0, rate_func=linear)
 ```
 
-Because `self.play()` durations are fixed while `vo.wait_until()` absorbs the difference in speech cadence, translating a film requires zero timeline editing. Switching from <a class="act" href="#ev-score" data-beat="1" data-lang="en">the English cobweb</a> to <a class="act" href="#ev-score" data-beat="1" data-lang="zh">the Chinese render</a>, jumping to <a class="act" href="#ev-score" data-beat="2" data-lang="en">the shrinking Cauchy discs in Rudin 9.23</a>, or zooming ×127 into <a class="act" href="#ev-score" data-beat="3" data-lang="en">the √2 ∉ ℚ hole</a> runs the exact same 82 Manim segments in lockstep with each voice.
+Animations (`self.play()`) always take the same time. The waits (`vo.wait_until()`) absorb the difference in how fast each language speaks. That's why translating a film takes no editing at all: the Chinese version is the same scene code with a different voice. Compare <a class="act" href="#ev-score" data-beat="1" data-lang="en">the English cobweb</a> with <a class="act" href="#ev-score" data-beat="1" data-lang="zh">the Chinese render</a>: the drawing is identical and only the gaps between animations change.
 
-## One color per concept, one IPA rule per term
+## One color per concept, one rule per word
 
 <figure class="fig wide" id="ev-palette" style="--reserve: 520px" data-src="{{ '/assets/data/explainer-videos-demo.json' | relative_url }}">
 <figcaption>The 222 semantic color tokens in <code>explainer/style.py</code> (referenced 11,085 times across 705 scene files) and the 513 regex-to-IPA pronunciation rules in <code>explainer/tts.py</code> (firing 2,808 times across the narration corpus).</figcaption>
 </figure>
 
-Across all 705 scene files, mobjects never pass raw hex strings; they import semantic roles from `explainer/style.py`—<a class="act" href="#ev-palette" data-mode="palette" data-group="Analysis, Built">tolerance bands in gold (`C.EPS`) and holes in coral (`C.HOLE`)</a> across *Analysis, Built*, or <a class="act" href="#ev-palette" data-mode="palette" data-group="Language Models & RL">queries, keys, values, and attention</a> across the ML films. On the audio side, <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="Poisson">a 513-rule pronunciation lexicon</a> injects inline IPA into Kokoro's G2P front-end so `Poisson` is never read as *"poison"*, <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="dy">the differential `dy`</a> never becomes *"die"*, and <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="F = m a">`F = m a`</a> stays two letters instead of *"Emma"*.
+No scene uses a raw hex color. Every one imports a named role from `explainer/style.py`, so a concept keeps one color across a whole series: <a class="act" href="#ev-palette" data-mode="palette" data-group="Analysis, Built">tolerance bands in gold (`C.EPS`) and holes in coral (`C.HOLE`)</a> throughout *Analysis, Built*, or <a class="act" href="#ev-palette" data-mode="palette" data-group="Language Models & RL">queries, keys, values, and attention</a> throughout the machine learning films.
+
+Pronunciation works the same way. A lexicon of 513 rules feeds phonetic spellings to the Kokoro voice so that <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="Poisson">`Poisson`</a> is never read as "poison", the differential <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="dy">`dy`</a> never becomes "die", and <a class="act" href="#ev-palette" data-mode="lexicon" data-rule="F = m a">`F = m a`</a> stays two letters instead of "Emma".
 
 ## Hunting dead air
 
@@ -106,4 +110,8 @@ Across all 705 scene files, mobjects never pass raw hex strings; they import sem
 <figcaption><code>tools/dead_air.py</code> downscales every frame to <code>320×180</code> and flags runs lasting at least 1.5 s where fewer than 0.30% of pixels differ from <code>#0E1117</code>—catching scenes where a <code>vo.wait_until()</code> hold sat before the drawing call instead of after it.</figcaption>
 </figure>
 
-Watching twenty hours of 4K renders at real-time speed to check whether an equation appeared on time does not scale. `tools/dead_air.py` streams a render through `ffmpeg` at `320×180` and measures the fraction of pixels brighter than the `#0E1117` background, flagging any stretch of 1.5 seconds or longer below `0.30%` (a lone header or bare axes). Running it across the series caught places where a `vo.wait_until()` call sat *before* `self.play()`—leaving <a class="act" href="#ev-qa" data-case="balance">12.4 seconds of bare title before the router load replay</a>, <a class="act" href="#ev-qa" data-case="width">14.5 seconds before the μP scaling card</a>, or <a class="act" href="#ev-qa" data-case="steering">8.0 seconds before the chain-of-thought faithfulness schematic</a>—and cut sparse stretches across the eleven series films by 91%.
+Checking twenty-two hours of 4K footage by watching it doesn't scale. `tools/dead_air.py` streams each render through `ffmpeg` at 320×180 and measures how much of every frame differs from the dark background. Any stretch of 1.5 seconds or more where under 0.30% of the pixels are lit (a lone title, bare axes) gets flagged.
+
+The usual cause was one line in the wrong place: a `vo.wait_until()` placed *before* the `self.play()` it was meant to follow, so the drawing waited for a bookmark several sentences later while the screen sat nearly empty. The scanner found <a class="act" href="#ev-qa" data-case="balance">12.4 seconds of bare title before a router-load replay</a>, <a class="act" href="#ev-qa" data-case="width">14.5 seconds before a scaling card</a>, and <a class="act" href="#ev-qa" data-case="steering">8.0 seconds before a chain-of-thought schematic</a>. Across the eleven films in the two series, *Analysis, Built* and *AI, Built*, fixing what it found cut sparse stretches by 91%.
+
+Each tool here replaces something I'd otherwise do by watching. The voice sets the timing, so there's no timeline to adjust. Colors and pronunciations are code, so each is decided once. And the scanner watches every frame, so I only have to watch the ones it flags.

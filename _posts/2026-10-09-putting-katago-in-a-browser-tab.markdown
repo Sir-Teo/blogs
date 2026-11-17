@@ -1,15 +1,17 @@
 ---
 layout: post
 title: "Putting KataGo in a browser tab"
+series: engines
 description: >-
   How web-katrain runs KataGo's neural network and Monte Carlo tree search
   inside a browser tab, verified against the native C++ engine and explored
   through interactive figures built from its own code.
+image: /assets/social/putting-katago-in-a-browser-tab.png
 date: 2026-10-09 10:00:00 -0400
 excerpt: >-
-  Running KataGo's neural network and tree search inside a browser tab with no
-  server behind it—how the worker boundary, backend fallbacks, golden tests,
-  PUCT search, and territory swing map fit together.
+  KataGo's network and tree search, running in a browser tab with nothing to
+  install. The hard part is knowing the port is right, because a bug in a
+  neural-network port doesn't crash. It just plays slightly worse Go.
 links:
   - title: Live app
     url: https://sir-teo.github.io/web-katrain/
@@ -21,7 +23,9 @@ scripts:
   - /assets/js/web-katrain.js
 ---
 
-Reviewing a game of Go with an engine usually starts with system administration: downloading KataGo, matching an OpenCL or CUDA binary to your GPU, and wiring a desktop client like KaTrain or Lizzie to a local process. **web-katrain** puts that entire loop—neural network inference, Monte Carlo tree search, and KaTrain-style game review—inside a single browser tab, with no server behind it. Every number in the interactive figures below comes straight out of its engine code, evaluated with the weights the app bundles.
+Reviewing a game of Go with an engine usually starts with system administration: download KataGo, match an OpenCL or CUDA build to your GPU, then wire a desktop client like KaTrain or Lizzie to a local process. **web-katrain** puts that whole loop (the neural network, the Monte Carlo tree search, and KaTrain-style game review) inside one browser tab, with no server behind it.
+
+Running a network in a tab is the easier half. The bugs to fear in a port like this never crash the page. A transposed input plane or a flipped sign on komi just makes the engine play slightly worse Go, while every number on screen still looks plausible. So most of this post is about how the port stays honest. Every number in the figures comes from the app's engine code, run with the weights it bundles.
 
 ## Main thread and worker
 
@@ -72,9 +76,9 @@ Reviewing a game of Go with an engine usually starts with system administration:
 <figcaption>Everything slow lives in the worker. Components only talk to the store, and only the store knows an engine exists.</figcaption>
 </figure>
 
-The most important architectural line in the codebase separates the UI from the engine. A 200-visit search can take a couple of seconds; if tensor allocations or tree walks happened on the main thread, stones would stutter under your cursor. Instead, the main thread owns only what you see and touch—the React views and a single Zustand store holding the game tree—while a dedicated Web Worker owns model parsing, feature encoding, neural network inference, and tree search.
+A 200-visit search can take a couple of seconds. If tensor allocations or tree walks ran on the main thread, stones would stutter under your cursor. So the main thread owns only what you see and touch: the React views and one Zustand store holding the game tree. A dedicated Web Worker owns everything slow: parsing the model, encoding the board, running the network, and searching.
 
-Keeping that boundary clean comes down to the analysis queue in the middle. When you scrub rapidly through a game, you do not want forty stale board positions piling up in the worker. The queue orders every request by priority—the position currently on screen comes first, then the AI opponent's next reply, and finally any background full-game review. As soon as you step to a new move, in-flight requests for the old position are cancelled, and completed evaluations are cached directly on their `GameNode` in the tree so revisiting a branch is instant.
+What keeps that boundary clean is the analysis queue between them. Scrub quickly through a game and you don't want forty stale positions piling up in the worker. The queue orders requests by priority: the position on screen first, then the AI opponent's next reply, then any background review. Step to a new move and requests for the old one are cancelled. Finished evaluations are cached on their `GameNode`, so going back to a branch is instant.
 
 ## Which backend
 
@@ -82,9 +86,9 @@ Keeping that boundary clean comes down to the analysis queue in the middle. When
 <figcaption>The backend web-katrain would pick in this browser, from the same feature tests the app runs.</figcaption>
 </figure>
 
-A browser cannot execute KataGo's native binary directly, so web-katrain reads KataGo's raw `.bin` weight files (format versions 8 through 16), reconstructs the residual network out of TensorFlow.js operations, and feeds it the exact same inputs: 22 spatial planes over the board (stones, liberties, ko bans, ladders, and the last five moves) plus 19 global scalars for komi and rules.
+A browser can't run KataGo's native binary, so web-katrain reads KataGo's raw `.bin` weight files (format versions 8 through 16), rebuilds the residual network from TensorFlow.js operations, and feeds it the same inputs KataGo uses: 22 planes over the board (stones, liberties, ko bans, ladders, the last five moves) plus 19 global values such as komi and the rules.
 
-At startup, the app probes your browser to pick the fastest execution path: WebGPU first, then WebAssembly, and finally plain JavaScript on the CPU. Every fallback exists because browsers fail in quiet, specific ways. Multithreaded WASM requires `SharedArrayBuffer`, which browsers only expose when a host sends cross-origin isolation headers—headers that GitHub Pages cannot attach on its own, forcing WASM onto a single thread there. WebGPU needs no special headers and handles most modern desktops, but its shader warm-up can still fail on quirky drivers, and browser storage throws in private windows. Each failure degrades to a slower path rather than breaking the app.
+At startup the app probes the browser and takes the fastest path it can: WebGPU, then WebAssembly, then plain JavaScript. Each fallback exists because browsers fail in quiet, specific ways. Multithreaded WebAssembly needs `SharedArrayBuffer`, which browsers only expose when the host sends two cross-origin isolation headers. GitHub Pages can't send them, so WebAssembly runs on one thread there. WebGPU needs no special headers and covers most recent desktops, but its shader warm-up can fail on unusual drivers, and browser storage throws in private windows. Every one of those failures drops to a slower path instead of breaking the app.
 
 ## Checking against KataGo
 
@@ -92,11 +96,11 @@ At startup, the app probes your browser to pick the fastest execution path: WebG
 <figcaption>KataGo's golden test position (5×5, White to play, komi 7.5), read by the KataGo binary and by web-katrain with the same network. The board opens on the difference between the two.</figcaption>
 </figure>
 
-The bugs to fear in a neural-network port never crash the page. A transposed feature plane, a flipped sign on komi, or an off-by-one liberty count simply makes the engine play slightly worse Go while every number on screen still looks plausible.
+KataGo ships a golden test: a 5×5 position, together with what the native C++ binary outputs for it using `g170-b6c96`, the compact 3.6 MB network web-katrain also bundles. Push that position through web-katrain's parser, feature encoder, TensorFlow.js graph, and post-processing, and the reading comes out almost identical. <a class="act" href="#wk-golden" data-layer="ownership" data-source="gap">Only four ownership values</a> differ, each by one thousandth, and <a class="act" href="#wk-golden" data-layer="policy" data-source="gap">the policy priors</a> match to the last printed digit.
 
-To catch silent drift, web-katrain tests itself against KataGo's own golden fixture, which records what the native C++ binary outputs on a 5×5 position using `g170-b6c96`, the compact 3.6 MB network bundled with the app. Pushing that exact position through web-katrain's binary parser, feature encoder, TensorFlow.js graph, and post-processing produces an almost identical reading: across the board, <a class="act" href="#wk-golden" data-layer="ownership" data-source="gap">only four ownership values</a> differ, each by a single permille (`0.001`), while <a class="act" href="#wk-golden" data-layer="policy" data-source="gap">the policy priors</a> match to the printed digit.
+One fixture pins down one board. A second set of tests checks rules that must hold on *any* position. Swapping Black and White while negating komi must produce a bit-identical input. Raising komi must lower Black's lead. And under area scoring, the ownership map summed over the board must agree with the score the value head reports.
 
-Because a single fixture only pins down one board, a companion test suite checks invariants that must hold on *any* position: swapping Black and White stones while negating komi must yield a bit-identical input tensor; raising komi must monotonically lower Black's lead; and under area scoring, summing the ownership map across all intersections must reconcile with the value head's reported score lead. Even board symmetry needed care: KataGo normally evaluates random rotations and reflections to decorrelate errors deep in the search tree, but at the root node that randomness caused the territory overlay to flicker by up to a quarter point from run to run, so root evaluations now lock to a canonical orientation.
+Even symmetry needed care. KataGo normally evaluates a random rotation or reflection of each position, so that errors deep in the tree don't all lean the same way. At the root, that randomness made the territory overlay flicker by up to a quarter point between runs, so root evaluations now use one fixed orientation.
 
 ## Where the next playout goes
 
@@ -109,9 +113,11 @@ const explore = (scaling * prior) / (1.0 + childWeight);
 const score = explore + sign * childUtility; // the best score gets the playout
 ```
 
-A single network evaluation gives only a first impression: a *policy* prior (where a strong player would look first) and a *value* estimate (who appears to be ahead). Search turns that intuition into calculation by spending *playouts*, walking down the tree one evaluation at a time. At every node, KataGo's PUCT formula adds an exploration bonus—scaled by the network's prior and divided by the weight already spent on that child—to the move's observed utility.
+One network evaluation is a first impression: a *policy* (where a strong player would look first) and a *value* (who seems to be ahead). Search turns that impression into calculation by spending *playouts*, walking down the tree one evaluation at a time. At each node, KataGo's PUCT rule scores every child as its observed utility plus an exploration bonus: the network's prior, scaled by a constant and divided by how much search that child has already had. The highest score gets the next playout.
 
-You can watch that balance shift after move 20 of the self-play game below. <a class="act" href="#wk-puct" data-c="1" data-playouts="100">At the default constant</a>, the network's initial favourite, F6, gets the first playout, comes back worse than its prior promised, and quickly cedes the search to H4, which takes 89 of the first 100 playouts. <a class="act" href="#wk-puct" data-c="0.1" data-playouts="100">With less exploration</a>, the search locks onto the early leader even harder; <a class="act" href="#wk-puct" data-c="4" data-playouts="100">with more</a>, the prior keeps pulling visits back toward F6, which climbs to 26. Around this core rule, the port brings over the rest of KataGo's search details: first-play urgency for unvisited moves, lower-confidence-bound move selection, root symmetry deduplication, subtree value-bias correction, and uncertainty-weighted visits.
+Try it on the position after move 20 of the game further down. <a class="act" href="#wk-puct" data-c="1" data-playouts="100">At the default constant</a>, the network's favourite, F6, gets the first playout, comes back worse than its prior promised, and loses the search to H4, which takes 89 of the first 100 playouts. <a class="act" href="#wk-puct" data-c="0.1" data-playouts="100">With less exploration</a>, the search locks onto the early leader even harder. <a class="act" href="#wk-puct" data-c="4" data-playouts="100">With more</a>, the prior keeps pulling visits back to F6, which climbs to 26.
+
+Around this rule, the port carries over the rest of KataGo's search: first-play urgency for unvisited moves, lower-confidence-bound move selection, symmetry deduplication at the root, subtree value-bias correction, and uncertainty-weighted visits.
 
 ## Reviewing a game
 
@@ -119,8 +125,8 @@ You can watch that balance shift after move 20 of the self-play game below. <a c
 <figcaption>A 9×9 game the bundled network played against itself, every position searched at 200 visits. It opens on move 37 with the swing overlay: ownership after the move minus ownership before, for changes of a quarter point or more.</figcaption>
 </figure>
 
-Once every position in a game has been searched, each move is graded by the points of score lead it gave up, following KaTrain's six classes from <span class="swatch" style="--c: rgb(114, 33, 107)"></span>blunder (12 or more points lost) down to <span class="swatch" style="--c: rgb(30, 150, 0)"></span>best (under 0.5). To give the review above genuine mistakes to catch, the self-play generator occasionally planted a lower-ranked candidate instead of the search's top choice; the figure labels those slips on the graph.
+Once every position has been searched, each move is graded by the points of score lead it gave up, using KaTrain's six classes from <span class="swatch" style="--c: rgb(114, 33, 107)"></span>blunder (12 or more points lost) down to <span class="swatch" style="--c: rgb(30, 150, 0)"></span>best (under 0.5). To give the review real mistakes to find, the self-play generator sometimes played a lower-ranked candidate instead of the search's choice. The figure labels those planted slips on the graph.
 
-A candidate table can tell you *that* a move lost fourteen points, but not *where* on the board those points went. That is what the swing overlay solves. Because the network predicts ownership for every intersection, subtracting the ownership map before a move from the map after it highlights the exact territory that changed hands. On <a class="act" href="#wk-review" data-move="37" data-overlay="swing">Move 37</a>, Black's planted slip at J3 drops 14 points: the swing map immediately shows 15 points in the top right passing to White while 12 points on the left solidify for Black.
+A candidate table can tell you *that* a move lost fourteen points, but not *where* on the board they went. The swing overlay answers that. The network predicts ownership for every intersection, so subtracting the map before a move from the map after it shows which territory changed hands. On <a class="act" href="#wk-review" data-move="37" data-overlay="swing">move 37</a>, Black's planted slip at J3 costs 14 points: the overlay shows 15 points in the top right passing to White while 12 points on the left firm up for Black.
 
-Two small constraints make that overlay readable. Subtracting two whole-board estimates leaves a faint haze of tiny deltas across three-quarters of the board, so only intersections that shifted by at least a quarter point (`0.25`) are painted. And the overlay deliberately prints no point total of its own: ownership and score lead come from different heads of the network, and on this small bundled net their changes disagree by 8 to 25 points. The score readout tells you *how much* a move cost; the swing map shows you *where*.
+Two choices keep the overlay readable. Subtracting two whole-board estimates leaves a faint haze of tiny changes over three-quarters of the board, so only intersections that moved by at least a quarter point are painted. And the overlay prints no point total of its own. Ownership and score come from different heads of the network, and on this small net their changes disagree by 8 to 25 points. The score readout tells you *how much* a move cost; the swing map shows you *where*.

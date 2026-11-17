@@ -78,7 +78,7 @@ The live $$F$$ readout changes with timing. Raising the total alone leaves this 
 
 To choose a timing curve, compare shares of searches seen so far. Write the recorded count in interval $$c$$ as $$Y_c$$, so each black dot below is $$Y_c/N$$.
 
-For the blue bars, multiply each full-interval share $$p_c$$ by the fraction of that interval already elapsed, $$I_c$$, then divide by the arrived fraction $$F$$. Call this visible share $$q_c$$. We adjust $$\theta$$ until the fitted and recorded average arrival times agree:
+For the blue bars, multiply each full-interval share $$p_c$$ by the fraction of that interval already elapsed, $$I_c$$, then divide by the arrived fraction $$F$$. Call this visible share $$q_c$$. We adjust $$\theta$$ until the fitted and recorded average arrival times agree. Matching one average like this is a method-of-moments fit: one equation for one unknown.
 
 $$
 \begin{aligned}
@@ -118,4 +118,6 @@ Move today farther back. With only one observed interval, changing the total or 
 <figcaption>The blue band shows different totals and timings that explain the same snapshot. Move the clock forward and the possibilities narrow. The cross is the setting used to generate the searches.</figcaption>
 </figure>
 
-We keep the baseline forecast when the two effects can't be separated. A brief burst of searches is another test for this smooth shape. Predicting ticket sales would require a further check: how often those searches turn into purchases.
+Until a second interval arrives, the forecast keeps the baseline timing, which gives the same answer as the first multiplier. More data doesn't guarantee the timing fit wins, either: on short, noisy histories it can be misled, and the plain multiplier sometimes lands closer.
+
+Two checks remain. A brief burst of searches, after a fare sale for example, is a good test case, because $$\theta$$ can only tilt the baseline smoothly toward earlier or later. And predicting ticket sales would need one more step: how often those searches turn into purchases.

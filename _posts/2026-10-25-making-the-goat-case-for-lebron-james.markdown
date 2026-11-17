@@ -5,6 +5,7 @@ description: >-
   Twenty-three seasons of box scores and 37,667 mapped shots from a lifelong
   LeBron fan—tracing how a teenage phenom rebuilt his jumper, turned himself
   into a point guard at thirty-five, and outlasted everyone who came before him.
+image: /assets/social/making-the-goat-case-for-lebron-james.png
 date: 2026-10-25 12:00:00 -0400
 excerpt: >-
   From a lifelong LeBron fan: 1,924 box scores and 37,667 mapped shots across
@@ -17,7 +18,7 @@ scripts:
   - /assets/js/lebron.js
 ---
 
-I have been a LeBron James fan for life—or at least since elementary school, when I was stuck following <a class="act" href="#lbj-playoffs" data-year="2013" data-scope="finals" data-game="6">Game 6 of the 2013 Finals</a> on a text-only play-by-play stream. I didn't even have video, just lines of text refreshing on the screen as Miami fell behind late in the fourth quarter, LeBron piled up a 32-point, 10-rebound, 11-assist triple-double to keep them breathing, Chris Bosh tracked down the rebound, and Ray Allen backed into the right corner to force overtime. I became a fan for good that day, went back through old footage and box scores to learn the first Cleveland stint and the 2011 Dallas collapse I was too young to watch live, and have been checking his box scores every morning for the thirteen years since. After half a lifetime of having the same GOAT argument in classrooms and group chats, I wanted to put the whole career in one place where you can scrub through it yourself.
+I have been a LeBron James fan for life—or at least since elementary school, when I was stuck following Game 6 of the 2013 Finals on a text-only play-by-play stream. I didn't even have video, just lines of text refreshing on the screen as Miami fell behind late in the fourth quarter, LeBron piled up a 32-point, 10-rebound, 11-assist triple-double to keep them breathing, Chris Bosh tracked down the rebound, and Ray Allen backed into the right corner to force overtime. I became a fan for good that day, went back through old footage and box scores to learn the first Cleveland stint and the 2011 Dallas collapse I was too young to watch live, and have been checking his box scores every morning for the thirteen years since. After half a lifetime of having the same GOAT argument in classrooms and group chats, I wanted to put the whole career in one place where you can scrub through it yourself.
 
 Every figure below runs directly in the browser on 1,924 regular-season and playoff box scores and 37,667 mapped field-goal attempts through 2025–26, compiled offline from public NBA archives with no chart library or live API behind it. The season bar just below steps all of the regular-season views together from his rookie year in 2003–04 to year twenty-three.
 
@@ -57,15 +58,17 @@ Box-score debates still talk about LeBron like a wing scorer who happens to pass
 
 Just as strange is how stubbornly the floor held underneath him. He averaged at least 20 points in all 23 seasons and beat league-average true shooting in 22 of them, even as the NBA's own efficiency climbed from 51.6% in his rookie year to 58.1% in 2025–26. A full quarter of his career points (10,897 across 424 games) came after he turned thirty-five. Line him up by age against the longest-lasting legends in the archive: at <a class="act" href="#lbj-career" data-age="39" data-player="Michael Jordan">thirty-nine</a>, Jordan's final Wizards season stood at 20.0 points and 3.8 assists while LeBron put up 25.7 and 8.3; at <a class="act" href="#lbj-career" data-age="40" data-player="Kareem Abdul-Jabbar">forty</a>, LeBron gave the Lakers 24.4 points and 8.2 assists across 70 games where Kareem averaged 14.6 and 1.7; and at <a class="act" href="#lbj-career" data-age="41" data-player="Kareem Abdul-Jabbar">forty-one</a>, he was still good for 20.9 and 7.2 over 60 nights.
 
-## Alone in the upper-right corner
+## The only one in both corners
 
 <figure class="fig wide lbj" id="lbj-two-jobs" data-src="{{ '/assets/data/lebron/overview.json' | relative_url }}">
-<figcaption>Regular-season NBA/BAA career totals through 2025–26 for 94 all-time leaders—the union of the top 40 in points, assists, and rebounds. Shaded corners mark 40,000 points paired with 10,000 assists or rebounds. Pre-1950–51 rebounds were not recorded.</figcaption>
+<figcaption>Regular-season NBA/BAA career totals through 2025–26 for 94 all-time leaders—the union of the top 40 in points, assists, and rebounds. Shaded corners mark 30,000 points paired with 10,000 assists or rebounds. Pre-1950–51 rebounds were not recorded.</figcaption>
 </figure>
 
-Put twenty-three years of doing three jobs at once onto a career scatter plot and that upper-right corner turns into a party of one. Out of the 94 players who rank top forty all-time in points, assists, or rebounds, nobody else sits inside the shaded 40,000-and-10,000 box on *either* chart—and LeBron sits comfortably inside both at 43,440 points, 12,016 assists, and 12,095 rebounds.
+Twenty-three years of doing more than one job shows up best on a career scatter plot. Each panel shades a corner: 30,000 career points plus 10,000 assists on the left, 30,000 points plus 10,000 rebounds on the right. Those are bars other players have cleared. Only eight players in history have scored 30,000 points at all.
 
-On the left panel, only <a class="act" href="#lbj-two-jobs" data-player="John Stockton">John Stockton</a>, <a class="act" href="#lbj-two-jobs" data-player="Chris Paul">Chris Paul</a>, and <a class="act" href="#lbj-two-jobs" data-player="Jason Kidd">Jason Kidd</a> have ever thrown more assists, putting LeBron 1,875 dimes ahead of <a class="act" href="#lbj-two-jobs" data-player="Magic Johnson">Magic Johnson</a> while scoring nearly two-and-a-half times as many points. On the right panel, a guy who spent half his career bringing the ball up the floor has cleared career bigs on the glass while outscoring <a class="act" href="#lbj-two-jobs" data-player="Wilt Chamberlain">Wilt Chamberlain</a> by twelve thousand.
+On the assists side, LeBron is alone. Among everyone who reached 30,000 points, the next-best passer is Kobe Bryant, at 6,306 assists; LeBron has 12,016. Only <a class="act" href="#lbj-two-jobs" data-player="John Stockton">John Stockton</a>, <a class="act" href="#lbj-two-jobs" data-player="Chris Paul">Chris Paul</a>, and <a class="act" href="#lbj-two-jobs" data-player="Jason Kidd">Jason Kidd</a> have ever thrown more, and he is 1,875 assists ahead of <a class="act" href="#lbj-two-jobs" data-player="Magic Johnson">Magic Johnson</a> while scoring nearly two and a half times as many points.
+
+The rebounds side has company, and all of it plays near the basket: <a class="act" href="#lbj-two-jobs" data-player="Kareem Abdul-Jabbar">Kareem Abdul-Jabbar</a>, <a class="act" href="#lbj-two-jobs" data-player="Karl Malone">Karl Malone</a>, <a class="act" href="#lbj-two-jobs" data-player="Wilt Chamberlain">Wilt Chamberlain</a>, and <a class="act" href="#lbj-two-jobs" data-player="Dirk Nowitzki">Dirk Nowitzki</a>. A player who spent half his career bringing the ball up the floor sits in the same corner as four of the great frontcourt scorers, and none of them is anywhere near the other corner. LeBron is the only player in both, at 43,440 points, 12,016 assists, and 12,095 rebounds.
 
 ## Seven nights in June
 

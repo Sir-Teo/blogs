@@ -5,6 +5,7 @@ description: >-
   From supplier queues to comparable fares, anomaly detection and an
   analyst’s investigation: the schemas, calculations and query paths
   I’d build for an airline pricing analysis product.
+image: /assets/social/turning-millions-of-fare-searches-into-a-pricing-alert.png
 date: 2026-10-26 21:00:00 -0400
 excerpt: >-
   One fictional flight, followed through a pricing data pipeline.
@@ -24,9 +25,9 @@ Here’s how I’d approach it from scratch. The design draws on what I learned,
 
 ## 1. Collect once, keep the evidence
 
-I’d store collection definitions in Postgres: route, departure range, cabin, trip type, country of sale, sources, freshness limit and delivery deadline. Expand them into dated queries, merge duplicates, and retain a separate query-to-collection ownership table. Two teams requesting the same public search should share the supplier call.
+I’d store collection definitions in Postgres: route, departure range, cabin, trip type, country of sale, sources, freshness limit and delivery deadline. The system expands each one into dated queries, merges duplicates, and keeps a separate table of which collections own each query. That way two teams asking for the same public search share one supplier call.
 
-Each provider gets a queue, a token-bucket rate limit and a concurrency cap. Workers fetch the reply; provider-specific parsers emit a common offer schema. I’d retain raw replies in object storage for parser replay, with normalized offers in a short-lived Redis cache. Reusing a cached result must preserve its original observation time.
+Each provider gets its own queue, a rate limit and a cap on parallel requests. Workers fetch the replies, and a parser for each provider turns them into one common offer format. I’d retain raw replies in object storage for parser replay, with normalized offers in a short-lived Redis cache. Reusing a cached result must preserve its original observation time.
 
 <figure class="fig wide fs" id="fs-collect">
 {% include fare-system/intake.html %}
@@ -39,7 +40,7 @@ A retry checks prior success and the deadline before choosing a substitute. Inva
 
 The central table would contain **one itinerary offer, from one source, at one observation time**. I’d keep monetary amounts as decimal values or integer minor units, along with currency, tax basis, product group, booking class and fare restrictions. A normalized product group maps different airline bundle names onto a comparison category; it does not prove identical benefits.
 
-A batch job joins offers to collection ownership, run metadata, exchange rates, city mappings and product mappings. Preserve the UTC observation timestamp separately from the customer’s local reporting date. Partition Parquet by customer and reporting date, cluster files by route, and compact small files. Avoid creating a partition for every search.
+A batch job joins offers to collection ownership, run metadata, exchange rates, city mappings and product mappings. It keeps the UTC observation time separate from the customer’s local reporting date. I’d partition the Parquet files by customer and reporting date, cluster them by route, and compact small files, rather than creating a partition for every search.
 
 <figure class="fig wide fs" id="fs-commit">
 {% include fare-system/storage.html %}
@@ -74,8 +75,8 @@ I’d build two read paths: route prices across departure dates from partitioned
 <figcaption>Try one fresh check, a stale quote or a missing source. The price gap alone cannot confirm an alert.</figcaption>
 </figure>
 
-For diagnosis, join shopping results to published fares and evaluate supported restrictions. Our $210 fare clears a fourteen-day advance-purchase check. Other restrictions, a comparable tax basis and seats available in that booking class—the fare’s inventory bucket—still need checking before anyone can treat $210 as sellable.
+To diagnose a move, I’d join shopping results to published fares and check the restrictions the data supports. Our $210 fare clears a fourteen-day advance-purchase check. Other restrictions, a comparable tax basis and seats available in that booking class—the fare’s inventory bucket—still need checking before anyone can treat $210 as sellable.
 
-I’d audit planned, received, accepted, packaged and delivered work separately. Compare expected work with actual results, keep failed jobs in a dead-letter queue, and distinguish supplier failures from genuine empty results. A missing competitor reply reduces coverage; it does not mean their price stayed unchanged.
+I’d audit planned, received, accepted, packaged and delivered work separately, comparing expected work with actual results. Failed jobs go to a holding queue where they can be inspected and retried, and supplier failures stay distinct from genuinely empty results. A missing competitor reply reduces coverage; it does not mean their price stayed unchanged.
 
 I’d ship collection, exports and history first. Detection comes once I can reproduce the comparison behind a warning. That gives an analyst a useful first product—and gives me a way to debug it.

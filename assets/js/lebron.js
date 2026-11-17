@@ -1337,24 +1337,25 @@
           label: `Career points vs ${STAT_NAMES[metric]} for 94 leaders.`
         });
 
-        // 40k + 10k shaded upper-right quadrant & 10k threshold line
+        // 30k + 10k shaded upper-right corner. 30,000 points is a bar other players
+        // have cleared, so the corner is not empty by construction. & 10k threshold line
         svg('line', {
-          x1: c.pad.left, x2: c.x(40000), y1: c.y(10000), y2: c.y(10000),
+          x1: c.pad.left, x2: c.x(30000), y1: c.y(10000), y2: c.y(10000),
           stroke: metric === 'ast' ? 'var(--lbj-teal)' : 'var(--lbj-rival)',
           'stroke-opacity': 0.35, 'stroke-dasharray': '3 3'
         }, c.root);
         svg('rect', {
-          x: c.x(40000), y: c.y(ymax),
-          width: c.x(46000) - c.x(40000), height: c.y(10000) - c.y(ymax),
+          x: c.x(30000), y: c.y(ymax),
+          width: c.x(46000) - c.x(30000), height: c.y(10000) - c.y(ymax),
           fill: 'var(--lbj-wash)', 'aria-hidden': 'true'
         }, c.root);
         svg('path', {
-          d: `M${c.x(40000)},${c.y(ymax)}V${c.y(10000)}H${c.x(46000)}`,
+          d: `M${c.x(30000)},${c.y(ymax)}V${c.y(10000)}H${c.x(46000)}`,
           fill: 'none', stroke: 'var(--accent)', 'stroke-opacity': 0.45, 'stroke-dasharray': '3 3'
         }, c.root);
         svg('text', {
-          x: (c.x(40000) + c.x(46000)) / 2, y: c.pad.top + 13,
-          'text-anchor': 'middle', text: '40k+10k',
+          x: (c.x(30000) + c.x(46000)) / 2, y: c.pad.top + 13,
+          'text-anchor': 'middle', text: '30k+10k',
           style: 'font:9.5px var(--mono);fill:var(--accent);opacity:0.75'
         }, c.root);
 
@@ -1386,7 +1387,7 @@
 
         const landmarks = metric === 'ast'
           ? [BRON, 'John Stockton', 'Chris Paul', 'Jason Kidd', 'Magic Johnson', 'Michael Jordan', 'Kareem Abdul-Jabbar']
-          : [BRON, 'Wilt Chamberlain', 'Bill Russell', 'Kareem Abdul-Jabbar', 'Karl Malone', 'Tim Duncan', 'Michael Jordan'];
+          : [BRON, 'Wilt Chamberlain', 'Bill Russell', 'Kareem Abdul-Jabbar', 'Karl Malone', 'Dirk Nowitzki', 'Tim Duncan', 'Michael Jordan'];
         const placed = [];
         [active, ...landmarks.filter(n => n !== active)].forEach(name => {
           const p = players.find(r => r.name === name);

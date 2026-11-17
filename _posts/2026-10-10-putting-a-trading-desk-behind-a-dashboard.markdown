@@ -5,11 +5,13 @@ description: >-
   How FinOS-AgentLab isolates a LangGraph trading desk and a vectorbt quant
   worker behind FastAPI, routes 138 copilot tools under strict token ceilings,
   caches prompt prefixes, and tests its agent loop offline.
+image: /assets/social/putting-a-trading-desk-behind-a-dashboard.png
 date: 2026-10-10 08:00:00 -0400
 excerpt: >-
-  Inside FinOS-AgentLab—how a self-hosted finance workspace isolates its
-  multi-agent trading desk, routes 138 tools without blowing the prompt budget,
-  orders system messages for prefix caching, and tests its loop without an API key.
+  A self-hosted finance workspace with a copilot on every page and a
+  multi-agent trading desk behind it. The interesting work is the plumbing:
+  keeping 138 tools inside a prompt budget, keeping the cache warm, and testing
+  the agent loop without a model.
 links:
   - title: Source
     url: https://github.com/Sir-Teo/FinOS-AgentLab
@@ -19,7 +21,9 @@ scripts:
   - /assets/js/finos-agentlab.js
 ---
 
-**FinOS-AgentLab** is a self-hosted financial research workspace that pairs a page-aware copilot on every screen with five specialist sub-agents and a multi-agent `TradingAgents` desk behind it. Every interactive figure below either runs the backend's own Python routing, prompt-assembly, and scheduler code offline, or replays the 22 desk transcripts and scripted evaluation passes recorded in the repository.
+**FinOS-AgentLab** is a self-hosted research workspace for markets: dashboards, watchlists, stock pages, a portfolio view, and a copilot on every page that knows which page you're on. Behind the copilot sit five specialist sub-agents and a "trading desk" built on TradingAgents, an open-source multi-agent framework in which analyst, bull, bear, and risk agents debate a stock until it reaches a buy, sell, or hold.
+
+This post is mostly about the plumbing around those agents: separate processes so their dependencies don't collide, a budget for how many tools each turn can carry, a prompt ordered so the provider's cache stays warm, a scheduler that survives a reboot, and tests that run without a model. Each figure either runs the backend's own Python routing, prompt-assembly, and scheduler code offline, or replays the 22 desk transcripts and scripted test runs recorded in the repository.
 
 ## Four processes
 
@@ -56,9 +60,12 @@ scripts:
 <figcaption>The desk and the quant engine run in their own virtual environments and talk to the backend one JSON line at a time.</figcaption>
 </figure>
 
-Splitting a self-hosted workspace across four processes and three Python virtual environments was a truce with dependency management. `TradingAgents` pulls in the LangChain and LangGraph stack, while the quantitative backtesting engine relies on `vectorbt` and `numba`—and both pin transitive packages that clash directly with the FastAPI backend's own dependencies.
+Four processes and three Python environments is a truce with dependency management. TradingAgents pulls in the LangChain and LangGraph stack. The backtesting engine relies on `vectorbt` and `numba`. Both pin packages that clash with the FastAPI backend's own.
 
-Rather than forcing three incompatible dependency trees into a single environment, the backend isolates both runtimes behind newline-delimited JSON (`JSONL`) pipes over standard input and output. Each desk run spawns a fresh `agents-runtime` subprocess and relays its `stdout` lines to the browser as server-sent events; because each LangGraph process claims a few hundred megabytes of memory, a semaphore caps concurrent runs at five and queues the rest. The `quant-runtime` takes the opposite lifecycle: importing `numba` and `vectorbt` is slow, so the backend starts one worker at boot, keeps it warm across requests, and respawns it automatically if a calculation stalls.
+So instead of forcing three incompatible dependency trees into one environment, the backend runs each runtime as a separate process and talks to it in JSON lines (`JSONL`, one JSON object per line) over standard input and output. The two runtimes live opposite lives:
+
+- **The desk is disposable.** Each run starts a fresh `agents-runtime` process and relays its output lines to the browser as server-sent events. A LangGraph process claims a few hundred megabytes, so a semaphore caps the desk at five runs at once and queues the rest.
+- **The quant worker stays warm.** Importing `numba` and `vectorbt` is slow, so the backend starts one worker at boot, keeps it across requests, and respawns it if a calculation stalls.
 
 ## The desk
 
@@ -66,9 +73,11 @@ Rather than forcing three incompatible dependency trees into a single environmen
 <figcaption>TradingAgents 0.6.0's graph as the runner builds it, and the 22 desk runs recorded in the project's static export, each event a block sized by its bytes.</figcaption>
 </figure>
 
-Convening the trading desk used to be a tool the chat copilot could invoke on its own, which meant a casual question could accidentally launch a multi-minute, twelve-node LangGraph debate. Now a desk run is always deliberate: typing `@TradingAgents NVDA` in chat starts the graph directly and streams every analyst report, bull-versus-bear rebuttal, and risk-committee turn into the thread without a model middleman deciding whether to.
+Convening the desk used to be a tool the chat copilot could call on its own judgment, which meant a casual question could set off a multi-minute, twelve-node debate. Now a desk run is always deliberate: typing `@TradingAgents NVDA` in chat starts the graph directly and streams every analyst report, bull and bear rebuttal, and risk-committee turn into the thread, with no model in the middle deciding whether to.
 
-Ten of the 22 recorded runs reached a final portfolio verdict (3 `BUY`, 5 `SELL`, 2 `HOLD`), and the runner's `parse_action` extracts the exact same call from all ten. Replaying those transcripts surfaced two bugs that only appear when real model routers and LangGraph state dictionaries meet. In <a class="act" href="#fa-firm" data-run="e35b83">one NVDA run</a> and <a class="act" href="#fa-firm" data-run="a730e0">one MU run</a>, a free upstream model router intercepted the Bull Researcher's turn and returned a bare content-safety classifier label (`safety: safe`) instead of a bull case; with nobody arguing for the stock, both desks marched straight to `SELL`. Since September, the runner checks every turn against a classifier pattern and redraws the reply up to three times before any downstream agent reads it:
+Ten of the 22 recorded runs reached a final verdict (3 `BUY`, 5 `SELL`, 2 `HOLD`). Replaying the transcripts turned up two bugs that only appear when real model providers meet LangGraph's state.
+
+The first was a missing bull. In <a class="act" href="#fa-firm" data-run="e35b83">one NVDA run</a> and <a class="act" href="#fa-firm" data-run="a730e0">one MU run</a>, a free upstream model router intercepted the Bull Researcher's turn and returned a content-safety label, `safety: safe`, instead of an argument. With nobody making the case for the stock, both desks marched to `SELL`. Since September, the runner checks every turn against a classifier pattern and asks again, up to three times, before any later agent reads it:
 
 ```py
 _CLASSIFIER_REPLY = re.compile(
@@ -76,7 +85,7 @@ _CLASSIFIER_REPLY = re.compile(
 )
 ```
 
-A quieter bug hid in the risk committee at the end of the graph. Every finished run in the snapshot streamed only the `Neutral` risk analyst's turn. All three risk voices had actually run, but the runner looked up `risky` and `safe` in the state dictionary where `TradingAgents 0.6.0` writes `aggressive` and `conservative`—silently dropping two of the three risk perspectives until a contract test pinned the state keys.
+The second was a missing risk committee. Every finished run in the recordings streamed only the `Neutral` risk analyst's turn. All three risk analysts had run, but the runner looked up `risky` and `safe` in the state where `TradingAgents 0.6.0` writes `aggressive` and `conservative`, so two of the three risk views were dropped without an error. A contract test now pins those state keys.
 
 ## What a turn carries
 
@@ -84,9 +93,9 @@ A quieter bug hid in the risk committee at the end of the graph. Every finished 
 <figcaption>Prompt and tool schemas routed for one question on each of the app's pages, each tool a block, measured with the backend's <code>tools_for_request</code> against the ceilings its tests pin.</figcaption>
 </figure>
 
-Because an LLM API call pays for every tool schema on every round, shipping the full registry of 138 tools on every turn would burn tens of thousands of prompt characters before the user asked a question. Instead, `tools_for_request` routes a slice of the catalogue per turn: the 21 core tools are always included, the current page adds its own domain group, and keywords in the user's question trip any matching intent groups.
+A model API call pays for every tool definition it carries, on every round of every turn. Sending all 138 tools each time would spend tens of thousands of characters before the user had asked anything. Instead, `tools_for_request` picks a slice per turn: 21 core tools always, the current page's own group, and any groups whose keywords appear in the question.
 
-To keep schema bloat from creeping back in, a test pins a strict character ceiling for a plain question on each route and requires a written note in the test file whenever a ceiling is raised. The `/dashboards` page already sits at 28,923 characters against a 28,950 ceiling before any question keywords fire, and asking <a class="act" href="#fa-pay" data-q="1">a question about the book</a> (`"how is my book doing?"`) pulls in enough portfolio and risk tools to push almost every page past its baseline cap.
+To stop that budget from creeping back up, a test pins a character ceiling for a plain question on each page, and raising a ceiling requires a written note in the test file. The dashboards page already sits at 28,923 characters against its 28,950 ceiling before any keywords fire. Asking <a class="act" href="#fa-pay" data-q="1">a question about the portfolio</a> ("how is my book doing?") pulls in enough portfolio and risk tools to push almost every page past its baseline.
 
 ## Ordered by how often it changes
 
@@ -94,9 +103,11 @@ To keep schema bloat from creeping back in, a test pins a strict character ceili
 <figcaption>Six turns of one conversation as the loop assembles them, measured with the backend's own prompt, command, policy and context builders, with turn sizes from its scripted scenarios.</figcaption>
 </figure>
 
-Routing fewer tools shrinks each request; ordering the prompt blocks keeps the provider's prefix cache warm across turns. On every turn, the loop sends up to five system messages arranged strictly by how often each one changes: the base system prompt (`4,998` chars), the listing of 150 slash commands (`15,962` chars), and the mode policy (`1,073` chars) sit at the very top, followed by the growing conversation history.
+Routing fewer tools shrinks each request. Ordering the prompt keeps it cheap across turns. Model providers cache the start of a prompt: if a request begins with exactly the same text as the last one, that shared prefix is cheaper and faster to process. Anything that changes invalidates the cache for everything after it.
 
-The page context block (`687` chars) carries a wall-clock timestamp that changes every minute, so it is placed last, immediately before the newest user question. <a class="act" href="#fa-rungs" data-order="old">It used to sit before the history</a>—which meant that every time the clock ticked over a minute, that single changing line invalidated the provider's prefix cache for the entire conversation history behind it.
+So the loop sends its system messages in order of how often they change. The base system prompt (about 5,000 characters), the list of 150 slash commands (about 16,000), and the mode policy (about 1,000) never change within a conversation, so they go first, followed by the growing history.
+
+The page-context block is small (687 characters), but it carries a timestamp that changes every minute, so it goes last, just before the newest question. <a class="act" href="#fa-rungs" data-order="old">It used to sit before the history</a>, which meant that each time the clock ticked over a minute, one changed line invalidated the cache for the entire conversation behind it.
 
 ## Building an agent
 
@@ -104,24 +115,26 @@ The page context block (`687` chars) carries a wall-clock timestamp that changes
 <figcaption>The copilot's 138 tools, one cell each, and what the loop's <code>plan_tools</code> hands the parent turn and each shipped specialist for the same question.</figcaption>
 </figure>
 
-When a question needs several rounds of data gathering, the copilot can delegate a sub-question to a specialist: a smaller child loop with its own instructions and a narrower slice of the tool catalogue, which runs the lookups in isolation and returns one synthesized paragraph. Five specialists ship with the app (`general`, `market`, `filings`, `web`, and `portfolio`), and a user can declare up to eight custom specialists in settings—each with a `@name` handle, up to 4,000 characters of instructions, a tool allowlist, a model choice, and a cap of eight rounds.
+When a question needs several rounds of lookups, the copilot can hand a sub-question to a specialist: a smaller loop with its own instructions and a narrower set of tools, which does the lookups on its own and returns one paragraph. Five specialists ship with the app (`general`, `market`, `filings`, `web`, and `portfolio`), and you can declare up to eight of your own in settings, each with a `@name`, up to 4,000 characters of instructions, a tool allowlist, a model, and at most eight rounds.
 
-What a custom declaration cannot override is fixed in the loop itself: every child runs in `ask` mode with mutating actions disabled, its tool list can only ever narrow the parent's read-only tools, and a specialist cannot delegate again. Because <a class="act" href="#fa-spec" data-agent="general">the general specialist</a> declares no tool filter of its own, `plan_tools` hands it the full read-only slice routed by the question—`research_subagent` included—and the loop refuses the call at depth one if it tries to recurse.
+Some limits no declaration can override, because they live in the loop itself. Every specialist runs in read-only `ask` mode. Its tools can only narrow the parent's read-only tools. And a specialist can't delegate again. <a class="act" href="#fa-spec" data-agent="general">The general specialist</a> declares no tool filter, so `plan_tools` hands it the full read-only slice for the question, delegation tool included, and the loop refuses the call if it tries to use it.
 
-## One fire per slot
+## One run per slot
 
 <figure class="fig wide" id="fa-jobs" style="--reserve: 680px" data-src="{{ '/assets/data/finos-agentlab-demo.json' | relative_url }}">
 <figcaption>A week of the ten system jobs on the backend's own scheduler, stepped a minute at a time, with one window of it drawn minute by minute.</figcaption>
 </figure>
 
-A single scheduler drives the backend's ten recurring system jobs—market snapshots, nightly syncs, thesis scans, and morning or evening briefs—stepping once a minute. Each job is keyed to a slot (a local calendar date or an hour bucket) and may succeed at most once per slot; during an <a class="act" href="#fa-jobs" data-scenario="outage">upstream outage</a>, a failing pass retries up to three times in that slot, one minute apart, before waiting for the next window.
+One scheduler drives the backend's ten recurring jobs (market snapshots, nightly syncs, thesis scans, and morning and evening briefs), checking once a minute. Each job is keyed to a slot, a calendar date or an hour, and may succeed at most once per slot. During an <a class="act" href="#fa-jobs" data-scenario="outage">upstream outage</a>, a failing job retries up to three times in its slot, a minute apart, then waits for the next one.
 
-Because a self-hosted box can reboot or sleep at any hour, a <a class="act" href="#fa-jobs" data-scenario="restart">restart</a> treats any pass left marked `running` in SQLite as failed and re-fires it immediately, while skipping any morning brief whose catch-up window has already closed rather than delivering a pre-market summary at noon.
+A self-hosted box can reboot or sleep at any hour. After a <a class="act" href="#fa-jobs" data-scenario="restart">restart</a>, any job still marked `running` in SQLite is treated as failed and runs again at once, but a morning brief whose window has closed is skipped instead of delivering a pre-market summary at noon.
 
-## Evals without a key
+## Tests without a key
 
 <figure class="fig wide" id="fa-evals" style="--reserve: 680px" data-src="{{ '/assets/data/finos-agentlab-demo.json' | relative_url }}">
 <figcaption>The core suite run scripted on this machine and replayed at its recorded pace: the real loop, catalogue and checks against a model that plays a fixed script, with no network.</figcaption>
 </figure>
 
-Half of the core evaluation suite (17 of 34 scenarios, 144 checks in all) runs in five seconds without an API key and with outbound network connections blocked, because what it guards is the loop rather than the model. A scripted fake model replays predetermined tool calls and failure modes against the real `CopilotLoop`, tool registry, and permission checks: verifying that <a class="act" href="#fa-evals" data-id="permission.attempt_is_refused">an action attempted in ask mode is stopped</a> before touching disk, that <a class="act" href="#fa-evals" data-id="leaked_call.retried_not_shipped">a tool call written as prose is handed back</a> for a retry rather than shown to the user, and that <a class="act" href="#fa-evals" data-id="horizon.early_lookup_survives">the sixteen-lookup turn</a> compacts older tool results out of its context window as it works and still answers using the very first lookup.
+Half of the core evaluation suite (17 of 34 scenarios, 144 checks) runs in five seconds with no API key and outbound network blocked, because what it tests is the loop, not the model. A scripted fake model plays back fixed tool calls and failures against the real `CopilotLoop`, tool registry, and permission checks. It confirms that <a class="act" href="#fa-evals" data-id="permission.attempt_is_refused">an action attempted in read-only mode is stopped</a> before it touches disk, that <a class="act" href="#fa-evals" data-id="leaked_call.retried_not_shipped">a tool call the model wrote out as prose</a> is sent back for a retry instead of shown to the user, and that <a class="act" href="#fa-evals" data-id="horizon.early_lookup_survives">a turn with sixteen lookups</a> compacts old results out of its context as it goes and still answers with the very first one.
+
+None of this makes the models smarter. It makes the system around them cheaper per turn, harder to set off by accident, and testable on a laptop with the network unplugged.

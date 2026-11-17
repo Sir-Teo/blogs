@@ -1,15 +1,18 @@
 ---
 layout: post
-title: "How Minecraft works"
+title: "From an empty grid to a playable world"
+series: minecraft
 article_class: post-minecraft
-kicker: "From an empty grid to a playable world"
+kicker: "How Minecraft works / Part 1"
 description: >-
   A look inside Minecraft Java Edition 26.3, from decompiled classes to a
   playable browser world with blocks, movement, lighting, and saved edits.
+image: /assets/social/taking-minecraft-apart-one-block-at-a-time.png
 date: 2026-10-26 09:00:00 -0400
 excerpt: >-
-  I’ve always wondered how Minecraft actually works. So we decompiled the
-  latest stable Java Edition JAR and dug through the systems behind the blocks.
+  I’ve always wondered how Minecraft actually works, so I decompiled the
+  latest Java Edition JAR, then rebuilt its core systems one at a time in a
+  small world you can play in this page.
 tags: [minecraft, graphics, game-development, world-generation]
 styles:
   - /assets/css/minecraft-play.css
@@ -26,9 +29,9 @@ scripts:
 
 I’ve always wondered how Minecraft actually works. A few swings of a pickaxe can open a doorway, change where you can walk, and let torchlight into the next room. I wanted to understand how the code connects those pieces.
 
-So we took the latest stable Java Edition JAR available when we started, **26.3**, decompiled the relevant classes, and dug through the systems behind block storage, terrain generation, simulation, rendering, and saves.
+So I took the latest stable Java Edition JAR available when I started, **26.3**, decompiled the relevant classes, and read through the systems behind block storage, terrain generation, simulation, rendering, and saves.
 
-This post works through what we found by rebuilding the core ideas in a small JavaScript world you can play in your browser. We’ll start with an empty grid and add one system at a time. It’s the same world throughout: a hole you dig in one view will still be there in the next. Follow the steps in order, or jump ahead and the example will build the pieces it needs.
+This post works through what I found by rebuilding the core ideas in a small JavaScript world you can play in your browser. At each step you’ll see what the game itself does, then a smaller version you can poke at. We’ll start with an empty grid and add one system at a time. It’s the same world throughout: a hole you dig in one view will still be there in the next. Follow the steps in order, or jump ahead and the example will build the pieces it needs.
 
 <figure class="fig wide" id="mc-grid" data-minecraft-build="true" data-build-stage="0" data-scene-label="An empty sixteen by sixteen ground grid, with no stored blocks. Drag or use arrow keys to rotate.">
 <div class="ms-figure-head"><span class="ms-figure-index">00 / 08</span><strong>Start with nothing</strong><span class="ms-figure-meta">Coordinates, then a world</span></div>
@@ -48,6 +51,8 @@ const index = (x, y, z) => (y * 16 + z) * 16 + x;
 blocks[index(8, 7, 7)] = STONE;
 ```
 
+Minecraft orders its cells the same way. Inside a section, the game’s own index (in `Strategy.java`) is `(y << 8) | (z << 4) | x`: x changes fastest, then z, then y.
+
 Write the first block below. Its address is **(8, 7, 7)**, which lands at index **1,912** in the array. Keep an eye on the amber marker. The world will grow around this block, and eventually we’ll mine it out of a cave wall.
 
 <figure class="fig wide" id="mc-palette" data-build-stage="1">
@@ -55,7 +60,7 @@ Write the first block below. Its address is **(8, 7, 7)**, which lands at index 
 <figcaption>Write a stone block, then clear it. You’re changing the cell that the pickaxe will reach later.</figcaption>
 </figure>
 
-Most of a stone-filled section repeats the same value. A palette saves space by listing the block states present and storing smaller indices into that list. We can add that later; the rest of the game only needs a way to read and change a block at a coordinate.
+Most of a stone-filled section repeats the same value, and Minecraft takes advantage of that with a *palette*: a short list of the block states present, plus a small index into that list for each cell. A section holding a single state needs zero bits per cell. Two to sixteen states use four-bit indices. Past 256 distinct states, the section falls back to the game’s global list of every block state. We can add a palette later; the rest of the game only needs a way to read and change a block at a coordinate.
 
 ## 2. Turn coordinates into terrain
 
@@ -70,7 +75,7 @@ Generate the landscape below. Our amber block is now part of the cave wall. This
 <figcaption>One corner is cut away so you can see the cave. The gray view shows which cells are filled; their materials are already stored in the array.</figcaption>
 </figure>
 
-Minecraft takes terrain generation much further, with biomes, more noise fields, and rules for placing features. Our generator makes the same small hillside each time. Once it has filled the array, its job is done. Mining changes those stored blocks without asking the generator to put them back.
+Minecraft takes terrain generation much further, with biomes, more noise fields, and rules for placing features. In 26.3 the recipe is data rather than code: `final_density.json` describes the Overworld as a tree of noise functions, and near its top sits a `min(...)` against the cave networks, much like ours. One difference: positive density means solid there too, but zero or below isn’t automatically air, because underground aquifers can fill it with water or lava. Our generator makes the same small hillside each time. Once it has filled the array, its job is done. Mining changes those stored blocks without asking the generator to put them back.
 
 ## 3. Turn blocks into a mesh
 
@@ -94,6 +99,8 @@ Build the mesh and look at the cave wall. The grid lines mark the faces we kept.
 
 WebGL uploads the mesh into a vertex buffer. Each vertex carries a position, texture coordinates (UVs), and a color used for shading. A view-projection matrix maps its position into clip space; the fragment shader samples a texture atlas and applies the shading. The surface patterns here are generated for this example.
 
+The game makes the same decision face by face: before drawing each side of a block, `ModelBlockRenderer` asks `Block.shouldRenderFace(state, neighborState, direction)`. It doesn’t merge neighboring faces into larger rectangles. Skipping hidden faces alone is a big saving: a solid 16 × 16 × 16 cube of stone has 24,576 block faces, but only 1,536 on its outside.
+
 We still keep the block array. If the mesh gets out of date after an edit, we can rebuild it from those blocks.
 
 ## 4. Put a player inside
@@ -115,7 +122,9 @@ The browser may draw frames at different rates on different devices. Movement us
 
 A pickaxe needs to know which block you’re pointing at. We cast a ray from the camera using grid traversal (DDA), stepping to the next x, y, or z cell boundary. The first block shape it hits within our **4.5-block reach** becomes the target. Breaking uses that cell; placing uses the empty cell beside the face you hit.
 
-Mining also takes time. Our action loop runs at **20 ticks per second**, separately from drawing frames. An accumulator turns elapsed time into fixed 50 ms steps. With the iron pickaxe, this stone takes eight ticks—0.4 seconds—to break while you’re standing on the ground. Release the button or aim at another block, and that attempt starts over.
+Mining also takes time. Our action loop runs at **20 ticks per second**, Minecraft’s default rate, separately from drawing frames. An accumulator turns elapsed time into fixed 50 ms steps. With the iron pickaxe, this stone takes eight ticks, 0.4 seconds, to break while you’re standing on the ground. Release the button or aim at another block, and that attempt starts over.
+
+That eight comes from the game’s own numbers. Each tick of mining adds the tool’s speed divided by the block’s hardness and by 30. Iron’s mining speed is 6 and stone’s hardness is 1.5, so each tick adds 6 ÷ 1.5 ÷ 30 ≈ 0.13 of the block, and it breaks on the eighth tick. Mine while you’re in the air and the game divides your speed by five, which is why “standing on the ground” matters.
 
 <figure class="fig wide" id="mc-ticks" data-build-stage="5" data-gameplay="cave">
 <div class="ms-figure-head"><span class="ms-figure-index">05 / 08</span><strong>Change the world, one block at a time</strong><span class="ms-figure-meta">Raycast + ticks + inventory</span></div>
@@ -130,7 +139,7 @@ If you go back to steps 1 and 3, you can see the changed cell and mesh. Here in 
 
 Put a torch in one chamber and leave the other side of the wall dark. Now opening our doorway should let some light through.
 
-The torch on the pedestal emits block light at level **14**. A queue-based flood fill spreads that value through the six face-adjacent air cells, losing one level at each step. We keep block light and skylight in separate `Uint8Array` buffers. A solid wall blocks the direct route, though light can travel around it if there’s another opening. Skylight has its own set of values: an open column can receive level 15 straight from the sky.
+The torch on the pedestal emits block light at level **14**. A queue-based flood fill spreads that value through the six face-adjacent air cells, losing one level at each step. We keep block light and skylight in separate `Uint8Array` buffers. Minecraft also keeps the two apart, at four bits per cell (levels 0 to 15), in 2,048-byte arrays per section, and its block-light engine spreads light the same way: each step away loses at least one level. A solid wall blocks the direct route, though light can travel around it if there’s another opening. Skylight has its own set of values: an open column can receive level 15 straight from the sky.
 
 Add lighting below. You’ll start in the second chamber. If you’ve already opened the wall, the torch can light a path to you. If you haven’t, mine through from this side and watch the room brighten. Press 3 to place a torch of your own.
 
@@ -154,7 +163,7 @@ Try saving, changing a few blocks, and restoring. Or reload the page and choose 
 <figcaption>Save your world here. Restore brings back its blocks, inventory, and viewpoints, including after a page reload. The save stays in this browser.</figcaption>
 </figure>
 
-Minecraft stores its much larger worlds in chunks and region files. We can keep this whole little world in one record. Either way, loading needs care: a damaged or incompatible save should leave the world you’re playing in alone.
+Minecraft stores its much larger worlds in region files. Each one holds 32 × 32 chunk columns, written in 4,096-byte sectors behind a table of where each chunk starts, and compressed with DEFLATE by default. We can keep this whole little world in one record. Either way, loading needs care: a damaged or incompatible save should leave the world you’re playing in alone.
 
 ## 8. Check an edit before accepting it
 

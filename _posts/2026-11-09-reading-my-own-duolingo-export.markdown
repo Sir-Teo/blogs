@@ -1,10 +1,12 @@
 ---
 layout: post
 title: "Reading my own Duolingo export"
+series: exports
 description: >-
   Six years of Duolingo data from a privacy export: 151 league weeks, 1,266
   store items, and 535 active days—how a 2024 sprint to Diamond turned into a
   quieter late-night habit that got there again for a fraction of the XP.
+image: /assets/social/reading-my-own-duolingo-export.png
 date: 2026-11-09 22:00:00 -0500
 excerpt: >-
   I downloaded everything Duolingo keeps about me. 151 league weeks, 1,266
@@ -88,7 +90,7 @@ I've opened eight courses, including English taught from Hindi and Cantonese tau
 <figcaption>Spanish path activities since September 9 connected across the six recurring unit steps, and the 73 tracked skills plotted by times tested and accuracy against the 87% overall average.</figcaption>
 </figure>
 
-The course file only keeps the last two months of detail, but it shows the structure of the path well. I'm in section 5, and each lesson moves through the <a class="act" href="#duo-now" data-view="path">same six steps</a>: a chest, a practice, a story, a DuoRadio episode, a video call with Lily, and a unit review. In two months I did 88 of them, about fifteen of each.
+The course file only keeps the last two months of detail, but it shows the structure of the path well. I'm in section 5, and each unit moves through the <a class="act" href="#duo-now" data-view="path">same six steps</a>: a chest, a practice, a story, a DuoRadio episode, a video call with Lily, and a unit review. In two months I did 88 of them, about fifteen of each.
 
 The export also includes a small model of me. It tracks <a class="act" href="#duo-now" data-view="skills">73 skills</a>, mostly sentence patterns with some words and grammar rules, each with counts of how often it was tested and how often I got it right. Across 432 tests I was right 87% of the time. That's high enough for Duolingo to keep moving me forward, and low enough that I haven't learned all of it yet.
 

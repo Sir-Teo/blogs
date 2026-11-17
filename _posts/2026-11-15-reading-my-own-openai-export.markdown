@@ -1,10 +1,12 @@
 ---
 layout: post
 title: "Reading my own OpenAI export"
+series: exports
 description: >-
   Forty-six months of ChatGPT and Codex logs from an 837 MB privacy export:
   12,429 conversations, 961 library files (2.04 GB), ~82.8 million tokens, and
   96.3 hours of recorded machine reasoning.
+image: /assets/social/reading-my-own-openai-export.png
 date: 2026-11-15 12:00:00 -0500
 excerpt: >-
   I downloaded everything OpenAI keeps about me. 12,429 conversations, 961
@@ -21,9 +23,9 @@ ChatGPT's settings menu has an export button that promises an email link. Mine n
 
 My first prompt is from February 16, 2023. Over the forty-six months since, I opened 12,429 conversations and sent 24,278 prompts across 5,311 work sessions and 1,114 active days.
 
-Put end to end, the logs trace three distinct phases. In 2023 I treated the model like a search box that could do math. From mid-2024 through mid-2025 it was a copy-paste workbench where I dumped raw code and argued with stack traces across forty tabs a day. By 2026 I was barely typing—speaking ten-word directives, uploading whole repositories and PDFs, and letting a reasoning model work for an hour before reading its answer.
+Put end to end, the logs trace three distinct phases. In 2023 I treated the model like a search box that could do math. From mid-2024 through mid-2025 it was a copy-paste workbench where I dumped raw code and argued with stack traces across forty tabs a day. By 2026 I was barely typing: ten-word directives, whole repositories and PDFs uploaded, and a reasoning model left to work for an hour before I read its answer.
 
-## The throughput inversion
+## Fewer prompts, more thinking
 
 <figure class="fig wide oai" id="oai-run" data-src="{{ '/assets/data/openai/overview.json' | relative_url }}" style="--reserve: 380px">
 <figcaption>Monthly prompts, conversations, recorded thinking hours, and estimated token volume across the three phases from February 2023 to November 2026. <span class="only-hover">Hover or drag across months</span><span class="only-touch">Tap or drag across months</span> to sum a span.</figcaption>
@@ -36,10 +38,10 @@ Switch to <a class="act" href="#oai-run" data-view="thinking" data-range="2026-0
 ## Nine islands of work
 
 <figure class="fig wide oai" id="oai-atlas" data-src="{{ '/assets/data/openai/overview.json' | relative_url }}" style="--reserve: 410px">
-<figcaption>All 12,429 conversations projected onto a 2D spectral TF-IDF topic map with empirical covariance ellipses and the 2023 → 2026 yearly centroid shift.</figcaption>
+<figcaption>All 12,429 conversations on one topic map, where chats that share vocabulary sit close together. Ellipses outline the nine clusters; the trail follows each year’s average position from 2023 to 2026.</figcaption>
 </figure>
 
-Projecting the corpus via spectral eigen-decomposition of its topic co-occurrence matrix separates the archive into nine clusters and tracks how the mean centroid shifted each year. In <a class="act" href="#oai-atlas" data-view="map" data-year="2023" data-cluster="2">2023</a>, a quarter of my chats sat in measure theory and probability proofs from my first semester in New York.
+Grouping conversations by the words they share splits the archive into nine clusters, and following where each year’s average conversation sits shows how my attention moved. (The method is in the notes at the end.) In <a class="act" href="#oai-atlas" data-view="map" data-year="2023" data-cluster="2">2023</a>, a quarter of my chats sat in measure theory and probability proofs from my first semester in New York.
 
 In <a class="act" href="#oai-atlas" data-view="map" data-year="2024" data-cluster="6">2024</a> and <a class="act" href="#oai-atlas" data-view="map" data-year="2025" data-cluster="0">2025</a>, the weight pulled toward job applications and deep-learning runs for my MRI segmentation thesis. Once I graduated, medical imaging vanished overnight and the <a class="act" href="#oai-atlas" data-view="map" data-year="2026" data-cluster="8">2026 centroid</a> shifted toward quant models, browser game ports, and everyday life, as shown on the <a class="act" href="#oai-atlas" data-view="stream" data-cluster="0">Quarterly topic stream</a>.
 
@@ -56,22 +58,22 @@ Reasoning models crossed half of my monthly replies in <a class="act" href="#oai
 ## Inside a 76-minute turn
 
 <figure class="fig wide oai" id="oai-thinking" data-src="{{ '/assets/data/openai/overview.json' | relative_url }}" style="--reserve: 400px">
-<figcaption>Node-by-node X-ray barcodes of six marathon reasoning runs, paired with log₁₀ duration quantiles across top models and effort tiers.</figcaption>
+<figcaption>Six of the longest reasoning turns, drawn node by node, and how long turns ran for each model and effort setting (log scale).</figcaption>
 </figure>
 
 In the export's tree structure, a single answer from a thinking model is a long chain of hidden nodes: internal thought blocks, mid-turn commentary updates, search calls, and a final reply. My <a class="act" href="#oai-thinking" data-view="xray" data-xray="0">longest single turn</a> ran for 76 minutes, while the <a class="act" href="#oai-thinking" data-view="xray" data-xray="1">densest turn</a> chained 187 assistant nodes in a row before printing its report.
 
 Sometimes the visible reply is barely a receipt. On a <a class="act" href="#oai-thinking" data-view="xray" data-xray="5">36-minute poker solver run</a>, the model wrote 7,741 words of private reasoning and answered in 25 words handing over the finished deck. You can compare how those durations scale across <a class="act" href="#oai-thinking" data-view="models" data-model="gpt-6-pro">models</a> and <a class="act" href="#oai-thinking" data-view="effort" data-effort="extended">effort tiers</a>.
 
-## Survival curves and branching trees
+## Most chats end after one answer
 
 <figure class="fig wide oai" id="oai-trees" data-src="{{ '/assets/data/openai/overview.json' | relative_url }}" style="--reserve: 380px">
-<figcaption>DAG tree topologies from five heavily branched threads, paired with the Kaplan–Meier conversation survival curve and turn-continuation probability.</figcaption>
+<figcaption>Five heavily branched conversations drawn as trees, and the share of conversations that reach each turn, with the chance of going on from each turn to the next.</figcaption>
 </figure>
 
-Sixty percent of my conversations end after a single question and answer, but the ones that survive Turn 3 keep going. On the <a class="act" href="#oai-trees" data-view="survival" data-k="1">Kaplan–Meier curve</a>, only 39.8% of chats reach a second turn; by <a class="act" href="#oai-trees" data-view="survival" data-k="6">Turn 6</a>, 69.0% continue to Turn 7.
+Sixty percent of my conversations end after a single question and answer, but the ones that make it past turn 3 tend to keep going. On the <a class="act" href="#oai-trees" data-view="survival" data-k="1">survival curve</a>, only 39.8% of chats reach a second turn; by <a class="act" href="#oai-trees" data-view="survival" data-k="6">Turn 6</a>, 69.0% continue to Turn 7.
 
-When an early turn goes sideways, I rarely argue with the model—I back up and rewrite my prompt. Seven in ten branches across my 1,641 forked chats are edits to my own message, producing everything from a <a class="act" href="#oai-trees" data-view="trees" data-tree="0">23-leaf algebra derivation</a> to a <a class="act" href="#oai-trees" data-view="trees" data-tree="1">21-spoke starburst</a> from a single root node.
+When an early turn goes sideways, I rarely argue with the model. I back up and rewrite my prompt. Seven in ten branches across my 1,641 forked chats are edits to my own message, producing everything from a <a class="act" href="#oai-trees" data-view="trees" data-tree="0">23-leaf algebra derivation</a> to a <a class="act" href="#oai-trees" data-view="trees" data-tree="1">21-spoke starburst</a> from a single root node.
 
 ## How our prose drifted
 
@@ -89,19 +91,19 @@ Flip to <a class="act" href="#oai-drift" data-side="user" data-metric="terse">My
 <figcaption>Four-year daily activity calendar and 24-hour prompt strip, the two-peak radial clock and weekday matrix versus Duolingo, and the 961 library files, web domains, and GitHub repos accessed.</figcaption>
 </figure>
 
-I opened ChatGPT on 81.5% of all days since early 2023, peaking at <a class="act" href="#oai-rhythm" data-view="calendar" data-year="2025" data-day="2025-02-25">122 prompts in a single day</a> and running an unbroken <a class="act" href="#oai-rhythm" data-view="calendar" data-year="2026" data-day="2026-11-13">252-day streak</a> in 2026. Unlike my late-night Duolingo habit, the <a class="act" href="#oai-rhythm" data-view="clock" data-hour="15">24-hour clock</a> peaks twice—at 3 pm during afternoon work and again at 11 pm.
+I opened ChatGPT on 81.5% of all days since early 2023, peaking at <a class="act" href="#oai-rhythm" data-view="calendar" data-year="2025" data-day="2025-02-25">122 prompts in a single day</a> and running an unbroken <a class="act" href="#oai-rhythm" data-view="calendar" data-year="2026" data-day="2026-11-13">252-day streak</a> in 2026. Unlike my [late-night Duolingo habit]({% post_url 2026-11-09-reading-my-own-duolingo-export %}), the <a class="act" href="#oai-rhythm" data-view="clock" data-hour="15">24-hour clock</a> peaks twice: at 3 pm during afternoon work, and again at 11 pm.
 
 The <a class="act" href="#oai-rhythm" data-view="world">961 files, search & repos</a> tab shows why my prompts got so short: in 2026 alone I uploaded or generated 958 workspace files totaling 2.04 GB (248 PDFs, 285 images, 64 Office workbooks and slide decks, 37 ZIP archives, and 25 videos), alongside 6,830 web search rounds, 1,690 GitHub repo attachments, and 82 Codex tasks.
 
-## The 69.9% context tax
+## Paying to re-read old turns
 
 <figure class="fig wide oai" id="oai-arbitrage" data-src="{{ '/assets/data/openai/overview.json' | relative_url }}" style="--reserve: 380px">
-<figcaption>Monthly subscription dollars billed ($784.47) versus estimated uncached API compute (~$1,100), paired with the quadratic multi-turn context re-transmission tax.</figcaption>
+<figcaption>Subscription charges by month ($784.47 in all) against an estimate of the same usage at API prices (about $1,100), and how much of each turn’s input is earlier turns sent again.</figcaption>
 </figure>
 
-In a multi-turn chat, every reply re-sends the prior conversation back into the context window. Reconstructing each turn's ancestor chain in <a class="act" href="#oai-arbitrage" data-view="context" data-k="6">Quadratic context tax</a> shows that roughly 34.0 million of my 48.6 million input tokens are old turns being re-read—making a ten-turn chat ingest 49 times as many cumulative input tokens as a single-turn question.
+In a multi-turn chat, every reply re-sends the prior conversation back into the context window. Reconstructing each turn's ancestor chain in <a class="act" href="#oai-arbitrage" data-view="context" data-k="6">Quadratic context tax</a> shows that roughly 34.0 million of my 48.6 million input tokens, about 70%, are old turns being read again. A ten-turn chat takes in 49 times as many input tokens in total as a single question does.
 
-Pricing all ~82.8 million estimated tokens at historical uncached API rates puts the archive at <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-10">roughly $1,100 in API compute</a> against the $784.47 I paid in subscriptions—helped along by a <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-06">free month of Pro in June 2026</a> and a week of heavy reasoning runs in <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-11">autumn 2026</a>.
+Pricing all ~82.8 million estimated tokens at historical uncached API rates puts the archive at <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-10">roughly $1,100 in API compute</a> against the $784.47 I paid in subscriptions, helped along by a <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-06">free month of Pro in June 2026</a> and a week of heavy reasoning runs in <a class="act" href="#oai-arbitrage" data-view="arbitrage" data-month="2026-11">autumn 2026</a>.
 
 Four years in, the export reads less like a chat log and more like a history of what I stopped doing by hand: first the boilerplate, then the debugging loop, and finally the typing itself.
 
