@@ -245,6 +245,7 @@
 .dash-summary dt { color:var(--fg-2); font:11px/1.6 var(--sans); }
 .dash-summary dd { color:var(--fg); margin:3px 0 2px; font:500 25px/1.4 var(--sans); letter-spacing:-.035em; }
 .dash-summary small { color:var(--fg-3); font:10px/1.6 var(--sans); }
+.dash-summary dd.dash-note { margin:0; font:inherit; letter-spacing:normal; }
 .dash-market-grid,.dash-detail-grid { display:grid; grid-template-columns:minmax(0,1.75fr) minmax(0,1fr); gap:18px; }
 .dash-panel { min-width:0; border-top:1px solid var(--line-2); padding-top:11px; }
 .dash-panel-title { display:flex; flex-direction:column; gap:3px; margin-bottom:10px; }

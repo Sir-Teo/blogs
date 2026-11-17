@@ -161,6 +161,17 @@
     });
   }
 
+  // ---- Scrollable code blocks ----------------------------------------------
+  // A block wider than the column scrolls sideways; give it a tab stop so it
+  // can be scrolled from the keyboard.
+  document.querySelectorAll('.post-content pre').forEach(function (pre) {
+    if (pre.scrollWidth > pre.clientWidth + 1 && !pre.hasAttribute('tabindex')) {
+      pre.tabIndex = 0;
+      pre.setAttribute('role', 'region');
+      pre.setAttribute('aria-label', 'Code');
+    }
+  });
+
   // ---- Copy buttons ---------------------------------------------------------
   if (navigator.clipboard) {
     document.querySelectorAll('div.highlight').forEach(function (block) {

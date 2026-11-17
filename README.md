@@ -98,3 +98,57 @@ Clear the field or press Escape to show all posts again. Queries are saved in
 Jekyll generates `search.json` from published posts at build time; the browser
 loads it only when someone searches. If it cannot load, title and summary
 search still works. No search service, API key, or extra dependency is needed.
+
+## Writing
+
+The house style, distilled from the technical blogs that do this best: Bartosz
+Ciechanowski and Red Blob Games for interactive explanation, Julia Evans and
+Sam Rose for plain language, Phil Eaton on what makes a technical blog worth
+trusting, Bret Victor and Nicky Case on explorable explanations, and Distill on
+interactive articles. `Reading my own Duolingo export` is the reference post.
+
+1. **Open with the problem, a question, or the surprising result.** Not a
+   definition, and never a legal disclaimer: those go in a closing
+   `<p class="credit">`.
+2. **Write as yourself.** "I" for what you built and decided, "you" for the
+   reader, "we" only when walking the reader through a build together.
+3. **Tell what broke.** Symptom, how you noticed, cause, fix, the number.
+   Talking about the problems with something you built is what earns trust.
+   Don't tease a story you won't finish.
+4. **One number per claim.** Pick the number that proves the point; put the rest
+   in captions or the methods box. Plain numbers are not code: no backticks.
+5. **Every figure gets a sentence that says what to try and what to look for.**
+   Interactivity should carry the argument, not decorate it. One or two
+   `class="act"` links per paragraph, each tied to a claim; if a sentence has
+   more links than verbs, split it.
+6. **Define a term the first time it appears, or cut it.** Methods vocabulary
+   (estimators, projections, test statistics) belongs in a `<details>` methods
+   box at the end.
+7. **Short sentences, few em-dashes, no intensifiers.** Cut "exact same",
+   "silently", "quietly", "directly", "straight out of". If a word isn't pulling
+   its weight, delete it.
+8. **End the post.** A closing paragraph on what it adds up to, what surprised
+   you, or what is still unsolved. No takeaway lists.
+9. **Link the neighbours.** Add `series: <key>` (see `_data/series.yml`) and
+   link related posts in the prose where a reader would want them.
+10. **Check every claim against data before publishing,** including the ones
+    that make the argument stronger. A threshold chosen so only one point can
+    clear it proves nothing.
+
+### Series
+
+A post joins a series with `series: <key>` in its front matter, using a key
+from `_data/series.yml`. The post header then shows the series name (unless the
+post sets its own `kicker`), and the end of the post lists every part, oldest
+first.
+
+### Social cards
+
+Each post has a 1200×630 preview image in `assets/social/`, used by link
+previews on social sites and chat apps. Regenerate them after adding a post or
+changing a title or thumbnail:
+
+```sh
+bundle exec jekyll build
+node _tools/social-cards/render.cjs
+```

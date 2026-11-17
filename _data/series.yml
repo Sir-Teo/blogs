@@ -1,0 +1,14 @@
+# Posts join a series with `series: <key>` in front matter. The post layout
+# lists every post in the series, oldest first, at the end of each one.
+engines:
+  title: Game engines in a browser tab
+  blurb: Strong game engines compiled or ported to run in a web page, with no server behind them.
+games:
+  title: Games rebuilt for the browser
+  blurb: Whole games running in a tab, and the simulations underneath them.
+minecraft:
+  title: How Minecraft works
+  blurb: Following Minecraft through its own code, then rebuilding each system in a browser.
+exports:
+  title: Reading my own data
+  blurb: What two apps kept about me, read back from their privacy exports.

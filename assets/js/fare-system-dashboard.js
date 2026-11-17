@@ -14,7 +14,7 @@ const responsive=fn=>fn(460,'dash-chart-wide')+fn(320,'dash-chart-small');
 const panel=(title,sub,content,cl='')=>`<section class="dash-panel ${cl}"><div class="dash-panel-title"><h3>${title}</h3><span>${sub}</span></div>${content}</section>`;
 function header(title,sub,tag,state='ok'){return `<div class="dash-header"><div><span class="dash-eyebrow">PRICING WORKSPACE · DESIGN PREVIEW</span><h3>${title}</h3><p>${sub}</p></div><span class="dash-status" data-state="${state}">${tag}</span></div>`;}
 function scope(m){return '<div class="dash-scope"><span><b>Market</b> A → B</span><span><b>Cabin</b> Economy</span><span><b>Trip</b> One way</span><span><b>Sale / currency</b> US / USD · tax included</span><span><b>Compare</b> '+(m.policy==='matched'?'Same product group':'Lowest available')+'</span></div>';}
-function metrics(items){return `<dl class="dash-summary">${items.map(([value,label,detail=''])=>`<div><dt>${label}</dt><dd>${value}</dd><small>${detail}</small></div>`).join('')}</dl>`;}
+function metrics(items){return `<dl class="dash-summary">${items.map(([value,label,detail=''])=>`<div><dt>${label}</dt><dd>${value}</dd><dd class="dash-note"><small>${detail}</small></dd></div>`).join('')}</dl>`;}
 function marketChart(d,m,w,cl){
  const x=37,y=13,pw=w-50,ph=136,xx=day=>x+(day-1)/39*pw,yy=v=>y+ph-(v-19000)/14000*ph,comp=r=>m.policy==='matched'?r.standard:r.basic,selected=comp(m.selected),above=selected>=m.selected.own;
  let g='';

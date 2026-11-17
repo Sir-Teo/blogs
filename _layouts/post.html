@@ -3,10 +3,14 @@ layout: default
 ---
 {%- assign words = content | strip_html | number_of_words -%}
 {%- assign minutes = words | plus: 115 | divided_by: 230 -%}
+{%- assign series = nil -%}
+{%- if page.series -%}{%- assign series = site.data.series[page.series] -%}{%- endif -%}
 <article class="post{% if page.article_class %} {{ page.article_class | escape }}{% endif %}">
   <header class="post-head">
     {%- if page.kicker %}
     <p class="post-kicker">{{ page.kicker | escape }}</p>
+    {%- elsif series %}
+    <p class="post-kicker">{{ series.title | escape }}</p>
     {%- endif %}
     <h1>{{ page.title | escape }}</h1>
     {%- if page.deck %}
@@ -28,6 +32,28 @@ layout: default
   <div class="post-content">
     {{ content }}
   </div>
+
+  {%- if series %}
+  {%- assign parts = site.posts | where: "series", page.series | sort: "date" %}
+  <aside class="series-box" aria-labelledby="series-title">
+    <p class="series-label">Series</p>
+    <h2 class="series-title" id="series-title">{{ series.title | escape }}</h2>
+    {%- if series.blurb %}
+    <p class="series-blurb">{{ series.blurb | escape }}</p>
+    {%- endif %}
+    <ol class="series-list">
+      {%- for part in parts %}
+      <li>
+        {%- if part.url == page.url -%}
+        <span aria-current="page">{{ part.title | escape }}</span><span class="series-here">You are here</span>
+        {%- else -%}
+        <a href="{{ part.url | relative_url }}">{{ part.title | escape }}</a>
+        {%- endif -%}
+      </li>
+      {%- endfor %}
+    </ol>
+  </aside>
+  {%- endif %}
 
   {%- unless page.neutral %}
   {%- if page.previous or page.next %}

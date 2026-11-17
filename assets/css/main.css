@@ -26,14 +26,14 @@
   --bg: #fcfbf9;
   --fg: #171716;
   --fg-2: #52514e;
-  --fg-3: #72716d;
+  --fg-3: #6a6965; /* 4.5:1 on --subtle and on tinted figure panels */
   --line: #eae8e3;
   --line-2: #d6d3cc;
   --subtle: #f4f2ee;
   --accent: #2563eb;
   --accent-soft: rgba(37, 99, 235, 0.12);
 
-  --hl-comment: #72716d;
+  --hl-comment: #6a6965;
   --hl-keyword: #171716;
   --hl-string: #2e6b3c;
   --hl-number: #1d4fa8;
@@ -533,6 +533,34 @@ main { padding-top: 28px; padding-bottom: 96px; }
 .footnotes { margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--line); font-size: 16px; color: var(--fg-2); }
 .footnotes ol { padding-left: 1.2em; }
 sup a.footnote { text-decoration: none; font-family: var(--sans); font-size: 0.75em; padding: 0 0.12em; }
+
+/* A series of related posts, listed at the end of each one. */
+.series-box {
+  margin: 64px 0 0;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.series-label { margin: 0 0 4px; font-size: 12.5px; letter-spacing: 0.02em; color: var(--fg-3); }
+.series-title {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+.series-blurb { margin: 0 0 12px; font-size: 14.5px; line-height: 1.5; color: var(--fg-2); }
+.series-list { margin: 0; padding-left: 1.4em; font-family: var(--serif); font-size: 17px; line-height: 1.4; }
+.series-list li { margin: 6px 0; padding-left: 2px; }
+.series-list li::marker { font-family: var(--sans); font-size: 13px; color: var(--fg-3); }
+.series-list a { text-decoration: none; }
+.series-list a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.series-list [aria-current] { font-weight: 500; }
+.series-here { margin-left: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--fg-3); }
+.series-box + .post-nav { margin-top: 40px; }
+
+/* Credits and permissions, set quietly at the end of a post. */
+.post-content p.credit { margin-top: 2.6em; font-size: 13px; line-height: 1.55; color: var(--fg-3); }
 
 .post-nav {
   display: grid;
