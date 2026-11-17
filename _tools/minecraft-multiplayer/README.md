@@ -31,9 +31,13 @@ http://localhost:4174/blogs/2026/10/26/one-world-two-players.html
 ```
 
 The same Node process serves the built article and its assets and upgrades `/ws`
-to the game connection. Jekyll on port4173 can also serve the article; the client
-then chooses port4174 for WebSocket connections. The service exposes `/health`.
-It does not require the official Minecraft runtime or assets.
+to the game connection. It adds a `minecraft-multiplayer-server` meta tag to the
+HTML it serves, which is how the article knows to use that `/ws`. A page served
+anywhere else (Jekyll on port 4173 or 4000, GitHub Pages) uses the in-page server
+below unless you pick this one: add `?server=ws://localhost:4174/ws` to the
+article's address, or enter that address under **Server connection** in step 1.
+The service exposes `/health`. It does not require the official Minecraft
+runtime or assets.
 
 For **two devices on the same network**, open the article using the host's LAN
 address instead of localhost. Create a world in the final figure and send its
@@ -51,6 +55,34 @@ with node_modules. Browser storage holds only the per-tab resume credential;
 the server owns world and player records. Clearing that browser credential
 creates a different player, while the room's saved world remains.
 
+## Without a server: the in-page mode
+
+GitHub Pages serves files only, so the published article cannot reach this
+process. Instead the page loads `assets/js/minecraft-multiplayer-server.js`, the
+same room logic and session protocol that `server.cjs` runs, and connects each
+client to it through a loopback socket. That socket implements the part of the
+WebSocket interface the client uses (`readyState`, `send`, `close`, and
+open/message/close events). Every message still crosses as JSON text in its own
+later task, never synchronously, through the same validation, ordered reply
+delay and 20 Hz clock, so prediction, the delay slider and races behave as they
+do over a network. The **Server connection** disclosure in step 1 names the mode
+in use ("In-page server (this tab)" or "Cave server at …").
+
+- Rooms are saved as the same versioned record in `localStorage`
+  (`minecraft-multi:room:<CODE>`; the twelve most recently saved are kept).
+  Save, disconnect, reconnect and reload resume a player as they do with the
+  server. Here the browser's storage is the server's disk.
+- The invitation opens the article in another tab or window of the same browser.
+  The tab holding a room serves it, and other tabs relay through
+  `BroadcastChannel`. A tab that closes saves first and tells its guests; the next
+  tab to reconnect restores the room from storage and serves it. Browsers
+  throttle timers in background tabs, so the holding tab drives its clock from a
+  small worker.
+- Another device cannot reach an in-page room. Opening such an invite elsewhere
+  says so and points here; the earlier figures start a new world instead. To play
+  across devices, run the server as above and enter its address under **Server
+  connection** (or open the article with `?server=ws://HOST:4174/ws`).
+
 ## Public hosting
 
 LAN invites are not public internet addresses. For public play, run this service
@@ -58,7 +90,8 @@ on a host reachable by both players, with HTTPS/WSS at its public domain, and
 persist its data directory. No public service is deployed by this repository.
 The article's **Server connection** disclosure accepts an alternate `wss://…/ws`
 endpoint; invites open the article served by that same host. GitHub Pages serves
-the static post but does not run its WebSocket server.
+the static post but does not run this WebSocket server; there the article uses
+the in-page mode above.
 
 A Dockerfile is included. Generate `_site` before building the image from the
 repository root:
@@ -76,18 +109,23 @@ Docker is not a prerequisite for the locally verified Node server.
 
 ## Implementation and boundaries
 
-- `server-core.cjs` owns room state, per-player inventory and pose, fixed50ms
-  input simulation, server-side mining progress and validated edits. The server
-  grants each action's inventory effects once, including an unsupported torch
-  when its support is removed. Only the host can reset the reference experiment.
-- `server.cjs` implements real WebSocket sessions, ordered artificial reply
-  delay, room presence, atomic JSON persistence and HTTP/static serving. It
-  acknowledges the exact snapshot written to disk, not a later live revision.
-  Origins, message length/rate, players and rooms are bounded.
+- `assets/js/minecraft-multiplayer-server.js` (re-exported by `server-core.cjs`)
+  owns room state, per-player inventory and pose, fixed50ms input simulation,
+  server-side mining progress and validated edits. The server grants each
+  action's inventory effects once, including an unsupported torch when its
+  support is removed. Only the host can reset the reference experiment. Its hub
+  owns the session protocol for both hosts: joins and resume tokens, message
+  validation and rate limits, ordered artificial reply delay and room presence.
+  The same file holds the in-page loopback transport, storage and tab relay.
+- `server.cjs` connects that hub to real `ws` WebSocket sessions and adds atomic
+  JSON persistence and HTTP/static serving. It acknowledges the exact snapshot
+  written to disk, not a later live revision. Origins, message length/rate,
+  players and rooms are bounded.
 - `minecraft-multiplayer-core.js` owns each browser's confirmed array, pending
   predictions, processed sequences, unacknowledged input replay and remote-pose
   interpolation. Block geometry is invalidated by edits, not pose snapshots.
-- `minecraft-multiplayer.js` connects real sockets and builds the article's
+- `minecraft-multiplayer.js` connects WebSockets or in-page loopback sockets
+  (see the in-page mode above) and builds the article's
   controls and playable views. The two on-page demo clients have separate
   identities/sockets; actual guests use a separate tab/browser/device. Resume
   credentials are stored only for the primary reader, never its demo companion.
@@ -109,7 +147,18 @@ chunk streaming, all block shapes, combat and crafting are outside this build.
 ```sh
 npm --prefix _tools/minecraft-multiplayer test
 PLAYWRIGHT_MODULE=/absolute/path/to/playwright node _tools/minecraft-multiplayer/browser-check.cjs
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright node _tools/minecraft-multiplayer/static-check.cjs
 ```
+
+Both browser checks read the built site from `_site` (set `SITE_DIR` to use
+another build). `static-check.cjs` serves it as plain files, as GitHub Pages
+does, and fails if the page opens any real WebSocket. It drives every figure
+against the in-page server: connection, second client, committed edits,
+prediction under a 600 ms reply delay and a refused early finish, a race that
+awards one cobblestone, remote movement, save/disconnect/reconnect/reload, a
+second tab joining through the invite, that tab taking the room over when the
+first closes, and a foreign invite. `page-server.test.cjs` covers the loopback
+ordering, storage and tab relay in Node.
 
 The browser check launches its own ephemeral real server and independent browser
 contexts, so it does not alter a reader's room. It verifies every progressive

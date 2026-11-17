@@ -3,7 +3,7 @@
 # Generate _site with Jekyll first to include the article. Persist /data.
 FROM node:24-alpine
 WORKDIR /app
-COPY assets/js/minecraft-story.js assets/js/minecraft-play-core.js assets/js/minecraft-build-core.js ./assets/js/
+COPY assets/js/minecraft-story.js assets/js/minecraft-play-core.js assets/js/minecraft-build-core.js assets/js/minecraft-multiplayer-server.js ./assets/js/
 COPY _tools/minecraft-multiplayer/package.json _tools/minecraft-multiplayer/package-lock.json ./_tools/minecraft-multiplayer/
 RUN cd _tools/minecraft-multiplayer && npm ci --omit=dev
 COPY _tools/minecraft-multiplayer/server.cjs _tools/minecraft-multiplayer/server-core.cjs ./_tools/minecraft-multiplayer/
