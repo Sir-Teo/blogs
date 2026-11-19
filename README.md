@@ -25,11 +25,13 @@ design lives in three places:
   page structure and the inline SVG schematic thumbnails on the index. Post
   headers and index rows show date, reading time, figure count, and any `links:`
   from front matter.
-- `assets/css/main.css`: every colour token (light and dark), typography,
-  figures and the shared figure controls (`.tabs`, `.btn`, `.check`, range
-  inputs).
-- `assets/js/site.js`: theme toggle, heading anchors, the contents rail on wide
-  screens, home index micro-figure interactions, and copy buttons on code blocks.
+- `assets/css/main.css`: every colour token (light and dark, including
+  `--accent`, `--amber`, `--good`, `--bad`), typography, figures, unified
+  methods disclosures, and the shared figure controls (`.fig-controls`,
+  `.tabs`, `.btn`, `.check`, range inputs).
+- `assets/js/site.js`: theme toggle, heading anchors, reading progress hairline,
+  contents rail on wide screens and collapsible contents on narrow screens, home
+  index micro-figure interactions, and copy buttons on code blocks.
 
 ### Figures
 
@@ -87,13 +89,14 @@ Bilibili, websites, and RSS each have a small icon that follows the current text
 
 ### Search
 
-The home page filters posts by title, summary, and full article text. Use the
-header's search icon from any page, or press `/` outside a form field. Search
-ignores case and accents, accepts punctuation between keywords, and matches
-every keyword in a query, including post tags and categories. Matching words
-are highlighted; matches in the article body show a short passage for context.
-Clear the field or press Escape to show all posts again. Queries are saved in
-`?q=` so results can be bookmarked or shared.
+The home page filters posts by series, title, summary, and full article text.
+Use the header's search icon from any other page, or press `/` outside a form
+field. Search ignores case and accents, accepts punctuation between keywords,
+and matches every keyword in a query, including post tags and categories.
+Matching words are highlighted; matches in the article body show a short passage
+for context. Clear the field or press Escape to show all posts again. Queries
+and series filters are saved in `?q=` and `?series=` so results can be
+bookmarked or shared.
 
 Jekyll generates `search.json` from published posts at build time; the browser
 loads it only when someone searches. If it cannot load, title and summary

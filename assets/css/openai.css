@@ -266,10 +266,6 @@
 .oai-readout .amber { color: var(--oai-amber); font-weight: 500; }
 .oai-error { padding: 18px; border: 1px solid var(--line-2); color: var(--fg-2); font: 14px/1.6 var(--sans); }
 
-.oai-methods summary { cursor: pointer; font: 500 15px/1.5 var(--sans); color: var(--fg-2); }
-.oai-methods[open] summary { color: var(--fg); margin-bottom: 0.8em; }
-.oai-methods { font-size: 15.5px; line-height: 1.65; color: var(--fg-2); border-top: 1px solid var(--line); padding-top: 1em; margin-top: 3em; }
-
 @media (max-width: 600px) {
   .oai .fig-num { width: 100%; margin-left: 0; }
   .oai-legend { font-size: 11px; gap: 4px 12px; }

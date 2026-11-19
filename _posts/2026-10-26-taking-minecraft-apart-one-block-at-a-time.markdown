@@ -3,7 +3,6 @@ layout: post
 title: "From an empty grid to a playable world"
 series: minecraft
 article_class: post-minecraft
-kicker: "How Minecraft works / Part 1"
 description: >-
   A look inside Minecraft Java Edition 26.3, from decompiled classes to a
   playable browser world with blocks, movement, lighting, and saved edits.

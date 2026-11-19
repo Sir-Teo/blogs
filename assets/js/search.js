@@ -8,6 +8,14 @@
   var input = form.querySelector('input');
   var clear = form.querySelector('.search-clear');
   var shortcut = form.querySelector('.search-shortcut');
+  var filters = document.querySelector('.post-filters');
+  var filterButtons = filters ? Array.prototype.slice.call(filters.querySelectorAll('button[data-series]')) : [];
+  var filterLabels = new Map(filterButtons.map(function (btn) {
+    var clone = btn.cloneNode(true);
+    clone.querySelectorAll('.tab-count').forEach(function (el) { el.remove(); });
+    return [btn.dataset.series, clone.textContent.trim()];
+  }));
+  var activeSeries = 'all';
   var status = document.getElementById('search-status');
   var empty = document.querySelector('.search-empty');
   var indexRequest = null;
@@ -115,6 +123,7 @@
     var summary = normalize(title + ' ' + excerpt);
     return {
       item: item,
+      series: item.dataset.series || 'standalone',
       url: item.querySelector('.post-index-link').getAttribute('href'),
       title: title,
       titleElement: titleElement,
@@ -126,13 +135,22 @@
     };
   });
 
+  function setSeries(series) {
+    activeSeries = filterLabels.has(series) ? series : 'all';
+    filterButtons.forEach(function (btn) {
+      btn.setAttribute('aria-pressed', btn.dataset.series === activeSeries ? 'true' : 'false');
+    });
+  }
+
   function render() {
     var query = input.value.trim();
     var terms = keywords(query);
     var count = 0;
 
     posts.forEach(function (post) {
-      var matches = terms.every(function (term) { return post.text.indexOf(term) !== -1; });
+      var seriesMatches = activeSeries === 'all' || post.series === activeSeries;
+      var textMatches = terms.every(function (term) { return post.text.indexOf(term) !== -1; });
+      var matches = seriesMatches && textMatches;
       post.item.hidden = !matches;
       if (matches) {
         count++;
@@ -145,13 +163,19 @@
 
     clear.hidden = !input.value;
     shortcut.hidden = !!input.value;
-    empty.hidden = !terms.length || count > 0 || !!indexRequest;
-    if (!terms.length) {
+    empty.hidden = (!terms.length && activeSeries === 'all') || count > 0 || !!indexRequest;
+    var label = filterLabels.get(activeSeries) || '';
+    if (!terms.length && activeSeries === 'all') {
       status.textContent = '';
     } else if (indexRequest) {
       status.textContent = 'Searching…';
+    } else if (!terms.length) {
+      status.textContent = activeSeries === 'standalone'
+        ? count + (count === 1 ? ' standalone post.' : ' standalone posts.')
+        : count + (count === 1 ? ' post' : ' posts') + ' in “' + label + '”.';
     } else {
-      status.textContent = count + (count === 1 ? ' post' : ' posts') + ' found for “' + query + '”.';
+      status.textContent = count + (count === 1 ? ' post' : ' posts') + ' found for “' + query + '”'
+        + (activeSeries !== 'all' ? (activeSeries === 'standalone' ? ' in standalone posts' : ' in “' + label + '”') : '') + '.';
       if (indexFailed) status.textContent += ' Article text is unavailable; searching titles and summaries.';
     }
   }
@@ -187,11 +211,21 @@
       var url = new URL(window.location.href);
       if (input.value.trim()) url.searchParams.set('q', input.value.trim());
       else url.searchParams.delete('q');
+      if (activeSeries !== 'all') url.searchParams.set('series', activeSeries);
+      else url.searchParams.delete('series');
       window.history.replaceState(null, '', url);
     }
     loadIndex();
     render();
   }
+
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var next = btn.dataset.series;
+      setSeries(next === activeSeries && next !== 'all' ? 'all' : next);
+      search(true);
+    });
+  });
 
   input.addEventListener('input', function () { search(true); });
   form.addEventListener('submit', function (event) {
@@ -210,12 +244,17 @@
     }
   });
   window.addEventListener('popstate', function () {
-    input.value = new URL(window.location.href).searchParams.get('q') || '';
+    var params = new URL(window.location.href).searchParams;
+    input.value = params.get('q') || '';
+    setSeries(params.get('series') || 'all');
     search(false);
   });
 
   form.hidden = false;
-  input.value = new URL(window.location.href).searchParams.get('q') || '';
+  if (filters) filters.hidden = false;
+  var initialParams = new URL(window.location.href).searchParams;
+  input.value = initialParams.get('q') || '';
+  setSeries(initialParams.get('series') || 'all');
   search(false);
   if (window.location.hash === '#post-search') input.focus();
 })();

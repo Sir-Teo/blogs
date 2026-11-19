@@ -6,24 +6,19 @@
   --manim-fg: #ececec;
   --manim-dim: #9aa4b2;
   --manim-line: rgba(255, 255, 255, 0.11);
-  --play-col: #2563eb;
-  --wait-col: #d97706;
-  --bad: #dc2626;
+  --play-col: var(--accent);
+  --wait-col: var(--amber);
   --ok: #16a34a;
 }
 :root[data-theme="dark"] {
-  --play-col: #6ea2ff;
-  --wait-col: #f59e0b;
-  --bad: #f87171;
+  --play-col: var(--accent);
+  --wait-col: var(--amber);
   --ok: #4ade80;
 }
 
 /* --------------------------------------------------------- figure frame */
-.fig-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-bottom: 14px; }
-.fig-controls .grow { flex: 1; }
-.fig-num { font-size: 13px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
 .fig-loading { font-size: 14px; color: var(--fg-3); }
-.fig-note { min-height: 1.5em; margin: 10px 0 0; font-size: 13px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+.fig-note { font-variant-numeric: tabular-nums; }
 .fig-note b { color: var(--fg); font-weight: 600; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg-3); }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -0.05em; }

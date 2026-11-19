@@ -14,16 +14,40 @@ layout: default
       <kbd class="search-shortcut" aria-hidden="true">/</kbd>
     </div>
   </form>
+  {%- assign standalone_count = 0 -%}
+  {%- for post in site.posts %}{% unless post.series %}{% assign standalone_count = standalone_count | plus: 1 %}{% endunless %}{% endfor -%}
+  <div class="post-filters tabs" role="group" aria-label="Filter posts by series" hidden>
+    <button type="button" data-series="all" aria-pressed="true">All <span class="tab-count">{{ site.posts.size }}</span></button>
+    {%- for pair in site.data.series -%}
+      {%- assign skey = pair[0] -%}
+      {%- assign sinfo = pair[1] -%}
+      {%- assign sparts = site.posts | where: "series", skey -%}
+      {%- if sparts.size > 0 %}
+    <button type="button" data-series="{{ skey | escape }}" aria-pressed="false">{{ sinfo.title | escape }} <span class="tab-count">{{ sparts.size }}</span></button>
+      {%- endif %}
+    {%- endfor -%}
+    {%- if standalone_count > 0 %}
+    <button type="button" data-series="standalone" aria-pressed="false">Standalone <span class="tab-count">{{ standalone_count }}</span></button>
+    {%- endif %}
+  </div>
   <p class="search-status" id="search-status" role="status" aria-live="polite" aria-atomic="true"></p>
-  <p class="search-empty" hidden>Try another keyword, or clear the search to see all posts.</p>
+  <p class="search-empty" hidden>Try another keyword, or clear the filter to see all posts.</p>
   <ol class="post-index" id="posts" reversed>
     {%- for post in site.posts %}
     {%- assign words = post.content | strip_html | number_of_words -%}
     {%- assign minutes = words | plus: 115 | divided_by: 230 | at_least: 1 -%}
     {%- assign figs = post.content | split: '<figure class="fig' | size | minus: 1 -%}
-    <li>
+    {%- assign sinfo = nil -%}
+    {%- if post.series -%}{%- assign sinfo = site.data.series[post.series] -%}{%- endif -%}
+    <li data-series="{{ post.series | default: 'standalone' | escape }}">
       {%- include post-thumb.html post=post -%}
       <div class="post-index-body">
+        {%- if sinfo %}
+        {%- assign sparts = site.posts | where: "series", post.series | sort: "date" -%}
+        {%- assign part_num = 0 -%}
+        {%- for sp in sparts %}{% if sp.url == post.url %}{% assign part_num = forloop.index %}{% endif %}{% endfor -%}
+        <p class="post-index-series">{{ sinfo.title | escape }}{% if sparts.size > 1 %} · Part {{ part_num }} of {{ sparts.size }}{% endif %}</p>
+        {%- endif %}
         <h2 class="post-index-head">
           <a class="post-index-link" href="{{ post.url | relative_url }}">
             <span class="post-index-title">{{ post.title | escape }}</span>

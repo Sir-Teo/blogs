@@ -3,14 +3,23 @@ layout: default
 ---
 {%- assign words = content | strip_html | number_of_words -%}
 {%- assign minutes = words | plus: 115 | divided_by: 230 -%}
+{%- assign figs = content | split: '<figure class="fig' | size | minus: 1 -%}
 {%- assign series = nil -%}
-{%- if page.series -%}{%- assign series = site.data.series[page.series] -%}{%- endif -%}
+{%- assign parts = nil -%}
+{%- assign part_num = 0 -%}
+{%- if page.series -%}
+  {%- assign series = site.data.series[page.series] -%}
+  {%- if series -%}
+    {%- assign parts = site.posts | where: "series", page.series | sort: "date" -%}
+    {%- for part in parts %}{% if part.url == page.url %}{% assign part_num = forloop.index %}{% endif %}{% endfor -%}
+  {%- endif -%}
+{%- endif -%}
 <article class="post{% if page.article_class %} {{ page.article_class | escape }}{% endif %}">
   <header class="post-head">
     {%- if page.kicker %}
-    <p class="post-kicker">{{ page.kicker | escape }}</p>
+    <p class="post-kicker">{% if series %}<a href="#series-title">{{ page.kicker | escape }}</a>{% else %}{{ page.kicker | escape }}{% endif %}</p>
     {%- elsif series %}
-    <p class="post-kicker">{{ series.title | escape }}</p>
+    <p class="post-kicker"><a href="#series-title">{{ series.title | escape }}{% if parts.size > 1 %} · Part {{ part_num }} of {{ parts.size }}{% endif %}</a></p>
     {%- endif %}
     <h1>{{ page.title | escape }}</h1>
     {%- if page.deck %}
@@ -18,11 +27,14 @@ layout: default
     {%- endif %}
     <p class="meta">
       <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
+      {%- if figs > 0 %}
+      <span>{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
+      {%- endif %}
       <span>{{ minutes | at_least: 1 }} min read</span>
       {%- if page.links %}
       <span class="meta-links">
         {%- for link in page.links %}
-        <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}<span aria-hidden="true"> ↗</span></a>
+        <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}</a>
         {%- endfor %}
       </span>
       {%- endif %}
@@ -34,7 +46,6 @@ layout: default
   </div>
 
   {%- if series %}
-  {%- assign parts = site.posts | where: "series", page.series | sort: "date" %}
   <aside class="series-box" aria-labelledby="series-title">
     <p class="series-label">Series</p>
     <h2 class="series-title" id="series-title">{{ series.title | escape }}</h2>
@@ -59,10 +70,10 @@ layout: default
   {%- if page.previous or page.next %}
   <nav class="post-nav" aria-label="More posts">
     {%- if page.previous %}
-    <a rel="prev" href="{{ page.previous.url | relative_url }}"><span>Older</span>{{ page.previous.title | escape }}</a>
+    <a rel="prev" href="{{ page.previous.url | relative_url }}"><span><i aria-hidden="true">← </i>Older</span>{{ page.previous.title | escape }}</a>
     {%- endif %}
     {%- if page.next %}
-    <a rel="next" href="{{ page.next.url | relative_url }}"><span>Newer</span>{{ page.next.title | escape }}</a>
+    <a rel="next" href="{{ page.next.url | relative_url }}"><span>Newer<i aria-hidden="true"> →</i></span>{{ page.next.title | escape }}</a>
     {%- endif %}
   </nav>
   {%- endif %}

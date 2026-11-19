@@ -1,8 +1,8 @@
 /* The article inherits the site's notebook typography; color encodes data. */
 .ts {
-  --ts-blue: #2563eb;
-  --ts-soft: #dbeafe;
-  --ts-amber: #b36b0a;
+  --ts-blue: var(--accent);
+  --ts-soft: var(--accent-soft);
+  --ts-amber: var(--amber);
   --ts-base: #8692a3;
   --ts-fill: #dce2eb;
   --ts-ink: var(--fg);
@@ -10,9 +10,9 @@
   font-variant-numeric: tabular-nums;
 }
 :root[data-theme="dark"] .ts {
-  --ts-blue: #7cafff;
-  --ts-soft: #1d3153;
-  --ts-amber: #efb85c;
+  --ts-blue: var(--accent);
+  --ts-soft: var(--accent-soft);
+  --ts-amber: var(--amber);
   --ts-base: #929eaf;
   --ts-fill: #3b4554;
 }
@@ -22,14 +22,13 @@
 .ts-tag { color: var(--fg-2); font: 10px/1.5 var(--mono); letter-spacing: .025em; white-space: nowrap; }
 .ts-controls { display: flex; flex-wrap: wrap; gap: 12px 25px; align-items: center; margin: 12px 0 20px; }
 .ts .tabs { gap: 4px 19px; }
-.ts .tabs button { min-height: 32px; color: var(--fg-2); }
-.ts .tabs button[aria-pressed="true"] { color: var(--ts-blue); border-bottom-color: var(--ts-blue); }
+.ts .tabs button { min-height: 32px; color: var(--fg-3); }
+.ts .tabs button:hover { color: var(--fg-2); }
+.ts .tabs button[aria-pressed="true"] { color: var(--fg); border-bottom-color: var(--fg); }
 .ts :is(button,select,input):focus-visible { outline: 2px solid var(--ts-blue); outline-offset: 4px; }
 .ts-slider { display: grid; grid-template-columns: auto minmax(60px,1fr) 70px; gap: 12px; align-items: center; flex: 1 1 250px; font-size: 13px; color: var(--fg-2); }
 .ts-slider output { text-align: right; font: 12px var(--mono); color: var(--fg); }
 .ts-slider input { width: 100%; }
-.ts-slider input::-webkit-slider-thumb { background: var(--ts-blue); }
-.ts-slider input::-moz-range-thumb { background: var(--ts-blue); }
 .ts-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 16px 0 22px; }
 .ts-stats.two { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .ts-stat { border-left: 1px solid var(--line-2); padding-left: 15px; }

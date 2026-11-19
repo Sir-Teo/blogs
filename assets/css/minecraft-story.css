@@ -1,6 +1,6 @@
 /* One block, one visual language. The notebook stays out of the main story. */
-.ms { --ms-amber:#c18b43; --ms-stone:#8e9da4; min-width:0; }
-:root[data-theme="dark"] .ms { --ms-amber:#e4b16a; --ms-stone:#83949d; }
+.ms { --ms-amber:var(--amber); --ms-stone:#8e9da4; min-width:0; }
+:root[data-theme="dark"] .ms { --ms-amber:var(--amber); --ms-stone:#83949d; }
 .ms-stage { position:relative; width:100%; }
 .ms canvas { display:block; width:100%; height:auto; touch-action:pan-y; }
 .ms canvas[tabindex] { cursor:grab; }

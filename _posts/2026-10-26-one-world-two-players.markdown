@@ -3,7 +3,6 @@ layout: post
 title: "One world, two players"
 series: minecraft
 article_class: post-minecraft post-minecraft-multi
-kicker: "How Minecraft works / Part 2"
 description: >-
   Trace multiplayer through the Minecraft 26.3 JAR, then build a real browser
   server: joining, shared edits, prediction, conflicts, movement, and saved worlds.

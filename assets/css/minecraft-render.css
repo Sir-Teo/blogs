@@ -1,6 +1,6 @@
 /* Rendering experiments: shared notebook typography, original teaching geometry. */
-.mc-render { --mr-blue:#497faa; --mr-amber:#c99048; --mr-green:#6e9981; }
-:root[data-theme="dark"] .mc-render { --mr-blue:#86b4dc; --mr-amber:#e7b670; --mr-green:#8dbca0; }
+.mc-render { --mr-blue:#497faa; --mr-amber:var(--amber); --mr-green:#6e9981; }
+:root[data-theme="dark"] .mc-render { --mr-blue:#86b4dc; --mr-amber:var(--amber); --mr-green:#8dbca0; }
 .mc-render .mr-head { display:flex; gap:18px; align-items:center; justify-content:space-between; margin-bottom:16px; }
 .mc-render .mr-head .btn { flex:none; white-space:nowrap; }
 .mc-render .mr-controls .btn { white-space:nowrap; }

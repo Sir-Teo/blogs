@@ -2,10 +2,10 @@
    restrained basketball palette for court hardwood, eras, and zone benchmarks. */
 
 :root {
-  --lbj-rival: #b8752a;
-  --lbj-teal: #0f766e;
+  --lbj-rival: var(--amber);
+  --lbj-teal: var(--good);
   --lbj-plum: #6d52b3;
-  --lbj-hot: #c53929;
+  --lbj-hot: var(--bad);
   --lbj-cold: #35639c;
   --lbj-peer: color-mix(in srgb, var(--fg-3) 72%, var(--bg));
   --lbj-loss: color-mix(in srgb, var(--fg-3) 30%, var(--subtle));
@@ -13,22 +13,22 @@
   --lbj-elim: color-mix(in srgb, var(--lbj-hot) 6%, var(--lbj-wash));
 
   --lbj-court-bg: #f7f2e8;
-  --lbj-court-key: rgba(184, 117, 42, 0.065);
+  --lbj-court-key: rgba(168, 85, 10, 0.065);
   --lbj-court-line: #c9bba5;
   --lbj-court-border: #e6ddce;
   --lbj-court-rim: #c54a2d;
 
   --lbj-era-0: #8f3d3d;
-  --lbj-era-1: #c53929;
-  --lbj-era-2: #b8752a;
+  --lbj-era-1: var(--bad);
+  --lbj-era-2: var(--amber);
   --lbj-era-3: #6d52b3;
 }
 
 :root[data-theme="dark"] {
-  --lbj-rival: #d99a4e;
-  --lbj-teal: #2dd4bf;
+  --lbj-rival: var(--amber);
+  --lbj-teal: var(--good);
   --lbj-plum: #a78bfa;
-  --lbj-hot: #ef5a44;
+  --lbj-hot: var(--bad);
   --lbj-cold: #5b8fd1;
   --lbj-peer: color-mix(in srgb, var(--fg-3) 78%, var(--bg));
   --lbj-loss: color-mix(in srgb, var(--fg-3) 34%, var(--subtle));
@@ -36,14 +36,14 @@
   --lbj-elim: color-mix(in srgb, var(--lbj-hot) 9%, var(--lbj-wash));
 
   --lbj-court-bg: #181613;
-  --lbj-court-key: rgba(217, 154, 78, 0.065);
+  --lbj-court-key: rgba(245, 185, 66, 0.065);
   --lbj-court-line: #3d372e;
   --lbj-court-border: #2a2620;
   --lbj-court-rim: #e06548;
 
   --lbj-era-0: #d88484;
-  --lbj-era-1: #ef6654;
-  --lbj-era-2: #d99a4e;
+  --lbj-era-1: var(--bad);
+  --lbj-era-2: var(--amber);
   --lbj-era-3: #a78bfa;
 }
 
@@ -588,22 +588,6 @@
 .lbj .lbj-compact-delta.lead { color: var(--accent); }
 
 /* -------------------------------------------------------- methods & mobile */
-.lbj-methods {
-  border-top: 1px solid var(--line-2);
-  margin: 48px 0 0;
-  color: var(--fg-2);
-  font-size: 14px;
-  line-height: 1.7;
-}
-.lbj-methods > summary {
-  padding: 14px 0;
-  color: var(--fg);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.lbj-methods p { margin-top: 14px; }
-
 .lbj-visually-hidden {
   position: absolute !important;
   width: 1px !important;

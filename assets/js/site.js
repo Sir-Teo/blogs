@@ -8,23 +8,24 @@
 
   // ---- Search shortcut ----------------------------------------------------
   var searchLink = document.querySelector('.search-toggle');
+  var searchInput = document.getElementById('post-search');
   if (searchLink) {
     searchLink.hidden = false;
-    function focusSearch(event) {
-      var input = document.getElementById('post-search');
-      if (input) {
-        event.preventDefault();
-        input.focus();
-      }
-    }
     searchLink.addEventListener('click', function (event) {
-      if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) focusSearch(event);
+      if (searchInput && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        searchInput.focus();
+      }
     });
+  }
+  if (searchInput || searchLink) {
     document.addEventListener('keydown', function (event) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.key !== '/') return;
       if (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
-      focusSearch(event);
-      if (!event.defaultPrevented) {
+      if (searchInput) {
+        event.preventDefault();
+        searchInput.focus();
+      } else if (searchLink) {
         event.preventDefault();
         window.location.href = searchLink.href;
       }
@@ -35,11 +36,19 @@
   function storedTheme() {
     try { return localStorage.getItem('theme'); } catch (e) { return null; }
   }
+  var toggle = document.querySelector('.theme-toggle');
+  function syncThemeButton(theme) {
+    if (!toggle) return;
+    var label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+  }
   function applyTheme(theme) {
     root.dataset.theme = theme;
+    syncThemeButton(theme);
     document.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } }));
   }
-  var toggle = document.querySelector('.theme-toggle');
+  syncThemeButton(root.dataset.theme || 'light');
   if (toggle) {
     toggle.addEventListener('click', function () {
       var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -87,42 +96,92 @@
       h.insertBefore(a, h.firstChild);
     });
 
-    // ---- Contents rail -----------------------------------------------------
+    // ---- Reading progress hairline -----------------------------------------
+    var progressBar = document.createElement('div');
+    progressBar.className = 'read-progress';
+    progressBar.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(progressBar);
+
+    // ---- Contents rail & narrow-screen disclosure --------------------------
+    var links = [];
     if (heads.length >= 3) {
+      var buildList = function () {
+        var ol = document.createElement('ol');
+        var listLinks = heads.map(function (h) {
+          var li = document.createElement('li');
+          li.className = h.tagName.toLowerCase();
+          var a = document.createElement('a');
+          a.href = '#' + h.id;
+          a.textContent = h.textContent.replace(/^#/, '').trim();
+          li.appendChild(a);
+          ol.appendChild(li);
+          return a;
+        });
+        return { ol: ol, links: listLinks };
+      };
+
+      var rail = buildList();
+      links = rail.links;
       var nav = document.createElement('nav');
       nav.className = 'toc';
       nav.setAttribute('aria-label', 'Contents');
-      var ol = document.createElement('ol');
-      var links = heads.map(function (h) {
-        var li = document.createElement('li');
-        li.className = h.tagName.toLowerCase();
-        var a = document.createElement('a');
-        a.href = '#' + h.id;
-        a.textContent = h.textContent.replace(/^#/, '').trim();
-        li.appendChild(a);
-        ol.appendChild(li);
-        return a;
-      });
-      nav.appendChild(ol);
+      var tocTitle = document.createElement('p');
+      tocTitle.className = 'toc-title';
+      tocTitle.textContent = 'Contents';
+      nav.appendChild(tocTitle);
+      nav.appendChild(rail.ol);
       document.body.appendChild(nav);
 
-      var current = -1;
-      var update = function () {
-        var i = -1;
-        for (var k = 0; k < heads.length; k++) if (heads[k].getBoundingClientRect().top < 140) i = k;
-        if (i === current) return;
-        if (current >= 0) links[current].classList.remove('active');
-        if (i >= 0) links[i].classList.add('active');
-        current = i;
-      };
-      var queued = false;
-      window.addEventListener('scroll', function () {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(function () { queued = false; update(); });
-      }, { passive: true });
-      update();
+      if (heads.length >= 4 && article.parentNode) {
+        var inline = document.createElement('details');
+        inline.className = 'toc-inline';
+        var summary = document.createElement('summary');
+        summary.textContent = 'Contents';
+        var count = document.createElement('span');
+        count.textContent = heads.length + ' sections';
+        summary.appendChild(count);
+        inline.appendChild(summary);
+        var inlineList = buildList();
+        inlineList.links.forEach(function (a) {
+          a.addEventListener('click', function () { inline.open = false; });
+        });
+        inline.appendChild(inlineList.ol);
+        article.parentNode.insertBefore(inline, article);
+      }
     }
+
+    var current = -1;
+    var updateScroll = function () {
+      var maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll > window.innerHeight * 0.4) {
+        var ratio = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+        progressBar.style.transform = 'scaleX(' + ratio.toFixed(4) + ')';
+        progressBar.classList.toggle('visible', window.scrollY > 120);
+      } else {
+        progressBar.classList.remove('visible');
+      }
+
+      if (!links.length) return;
+      var i = -1;
+      if (maxScroll > 0 && window.scrollY >= maxScroll - 24) {
+        i = heads.length - 1;
+      } else {
+        for (var k = 0; k < heads.length; k++) if (heads[k].getBoundingClientRect().top < 140) i = k;
+      }
+      if (i === current) return;
+      if (current >= 0) links[current].classList.remove('active');
+      if (i >= 0) links[i].classList.add('active');
+      current = i;
+    };
+    var queued = false;
+    var queueScroll = function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; updateScroll(); });
+    };
+    window.addEventListener('scroll', queueScroll, { passive: true });
+    window.addEventListener('resize', queueScroll, { passive: true });
+    updateScroll();
   }
 
   // ---- Home index micro-figures --------------------------------------------
@@ -151,8 +210,8 @@
       li.addEventListener('pointermove', function (e) {
         var r = li.getBoundingClientRect();
         var t = Math.max(-1, Math.min(1, ((e.clientX - r.left) / (r.width || 1) - 0.5) * 2));
-        li.style.setProperty('--scrub', (t * 6).toFixed(2) + 'px');
-        li.style.setProperty('--scrub-deg', (t * 10).toFixed(1) + 'deg');
+        li.style.setProperty('--scrub', (t * 5).toFixed(2) + 'px');
+        li.style.setProperty('--scrub-deg', (t * 9).toFixed(1) + 'deg');
       });
       li.addEventListener('pointerleave', function () {
         li.style.removeProperty('--scrub');
@@ -183,7 +242,11 @@
         var pre = block.querySelector('pre');
         navigator.clipboard.writeText(pre ? pre.innerText : '').then(function () {
           btn.textContent = 'Copied';
-          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+          btn.dataset.copied = 'true';
+          setTimeout(function () {
+            btn.textContent = 'Copy';
+            delete btn.dataset.copied;
+          }, 1500);
         }, function () {});
       });
       block.appendChild(btn);

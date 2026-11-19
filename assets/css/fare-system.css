@@ -1,6 +1,6 @@
 /* Editorial diagrams: shared data, explicit grain, no application chrome. */
-.fs { --fs-blue:var(--accent); --fs-amber:#a9691b; --fs-slate:#8190a4; --fs-band:rgba(45,99,230,.075); font-variant-numeric:tabular-nums; }
-[data-theme="dark"] .fs { --fs-amber:#e5b56c; --fs-slate:#9aa7ba; --fs-band:rgba(108,157,255,.11); }
+.fs { --fs-blue:var(--accent); --fs-amber:var(--amber); --fs-slate:#8190a4; --fs-band:color-mix(in srgb, var(--accent) 8%, transparent); font-variant-numeric:tabular-nums; }
+[data-theme="dark"] .fs { --fs-amber:var(--amber); --fs-slate:#9aa7ba; --fs-band:color-mix(in srgb, var(--accent) 11%, transparent); }
 .fs-technical { border-top:1px solid var(--line-2); padding-top:10px; min-width:0; font:12px/1.65 var(--sans); }
 .fs-overline { display:flex; justify-content:space-between; align-items:baseline; gap:8px 20px; margin-bottom:13px; color:var(--fg-2); font:11px/1.6 var(--sans); }
 .fs-overline strong { color:var(--fg); font-weight:600; letter-spacing:.01em; }
@@ -84,9 +84,6 @@
 .fs .fs-coverage { border-top:1px solid var(--line); }
 .fs-coverage thead th { padding-top:9px; }
 .fs-coverage th:first-child { width:31%; }
-.fs-methods { border-block:1px solid var(--line); padding-block:14px; margin-block:36px; font-size:13px; }
-.fs-methods summary { cursor:pointer; }
-.fs-methods[open] summary { margin-bottom:16px; }
 @media(max-width:700px) {
  .fs-pair { gap:18px; }
  .fs-storage-pair { grid-template-columns:1fr; gap:16px; }
@@ -142,8 +139,8 @@
 }
 
 /* Routed schematics and directly encoded data replace the former text tables. */
-.fs { --fs-teal:#167d70; --fs-violet:#8060bf; --fs-node:rgba(112,135,165,.055); --fs-node-line:rgba(112,135,165,.25); --fs-blue-soft:rgba(45,99,230,.07); --fs-teal-soft:rgba(22,125,112,.11); --fs-amber-soft:rgba(169,105,27,.12); }
-[data-theme="dark"] .fs { --fs-teal:#72cdb6; --fs-violet:#b5a0e2; --fs-node:rgba(148,169,199,.065); --fs-node-line:rgba(148,169,199,.28); --fs-blue-soft:rgba(108,157,255,.10); --fs-teal-soft:rgba(114,205,182,.13); --fs-amber-soft:rgba(229,181,108,.13); }
+.fs { --fs-teal:var(--good); --fs-violet:#8060bf; --fs-node:rgba(112,135,165,.055); --fs-node-line:rgba(112,135,165,.25); --fs-blue-soft:color-mix(in srgb, var(--accent) 8%, transparent); --fs-teal-soft:var(--good-soft); --fs-amber-soft:var(--amber-soft); }
+[data-theme="dark"] .fs { --fs-teal:var(--good); --fs-violet:#b5a0e2; --fs-node:rgba(148,169,199,.065); --fs-node-line:rgba(148,169,199,.28); --fs-blue-soft:color-mix(in srgb, var(--accent) 11%, transparent); --fs-teal-soft:var(--good-soft); --fs-amber-soft:var(--amber-soft); }
 .fs .fs-schematic { width:100%; max-width:none; height:auto; }
 .fs .fs-schema-small { display:none; }
 .fs-schematic text { fill:var(--fg); font:12px var(--sans); }
@@ -231,7 +228,7 @@
 .fs-schematic text.comp,.fs-schematic text.loss { fill:var(--fs-amber); }
 
 /* Product-level views: scoped market monitoring and a selected-flight review. */
-.fs-dashboard { border:1px solid var(--line-2); border-radius:9px; padding:19px 20px 17px; background:var(--bg); font:12px/1.5 var(--sans); min-width:0; box-shadow:0 8px 30px rgba(20,40,70,.035); }
+.fs-dashboard { border:1px solid var(--line-2); border-radius:8px; padding:19px 20px 17px; background:var(--bg); font:12px/1.5 var(--sans); min-width:0; box-shadow:0 8px 28px rgba(23,23,22,.035); }
 .dash-header { display:flex; justify-content:space-between; gap:12px 22px; align-items:center; padding-bottom:14px; }
 .dash-eyebrow { display:block; color:var(--fg-3); font:9px/1.5 var(--mono); letter-spacing:.055em; margin-bottom:5px; }
 .post-content .dash-header h3 { margin:0; font:600 21px/1.4 var(--sans); letter-spacing:-.03em; color:var(--fg); }

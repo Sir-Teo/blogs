@@ -1,9 +1,7 @@
 /* Visual tour glue: the site's figures, controls and one-column prose. */
-.mc-methods, .mc-model-details { margin:16px 0 26px; border-top:1px solid var(--line); font-size:13px; color:var(--fg-2); }
-.mc-methods > summary, .mc-model-details > summary { padding:10px 0; cursor:pointer; color:var(--fg-3); font-size:12px; }
-.mc-methods[open] > summary, .mc-model-details[open] > summary { color:var(--fg); }
-.mc-methods p { font-size:13px; line-height:1.7; }
-.mc-model-details { margin:10px 0 0; }
+.mc-model-details { margin:10px 0 0; border-top:1px solid var(--line); font-size:13px; color:var(--fg-2); }
+.mc-model-details > summary { padding:10px 0; cursor:pointer; color:var(--fg-3); font-size:12px; }
+.mc-model-details[open] > summary { color:var(--fg); }
 .mc-model-details p { margin:6px 0 10px; font-size:12px; line-height:1.6; }
 .mc-tour { min-width:0; }
 .mc-tour-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }

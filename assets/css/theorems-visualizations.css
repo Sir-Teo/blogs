@@ -12,19 +12,19 @@
   --font-mono: var(--mono);
 
   /* Canvas runtime palette (--c-*) read by assets/js/viz/core.js */
-  --c-ink: #18181b;
-  --c-muted: #64646a;
-  --c-faint: #a1a1aa;
-  --c-grid: #ececea;
-  --c-bg: #f8f8f7;
+  --c-ink: #171716;
+  --c-muted: #6a6965;
+  --c-faint: #a1a19c;
+  --c-grid: #eae8e3;
+  --c-bg: #fcfbf9;
   --c-panel: #ffffff;
   --c-accent: #2563eb;
   --c-blue: #2563eb;
-  --c-red: #dc2626;
+  --c-red: #c53030;
   --c-green: #16a34a;
-  --c-orange: #d97706;
+  --c-orange: #a8550a;
   --c-purple: #7c3aed;
-  --c-teal: #0d9488;
+  --c-teal: #0f766e;
   --c-pink: #db2777;
   --c-gold: #ca8a04;
   --c-gray: #71717a;
@@ -34,25 +34,25 @@
 }
 
 :root[data-theme="dark"] {
-  --panel: #141417;
-  --panel-2: #1c1c20;
+  --panel: #161513;
+  --panel-2: #1e1d1a;
   --ink: var(--fg);
   --ink-2: var(--fg-2);
   --ink-3: var(--fg-3);
 
-  --c-ink: #ececef;
-  --c-muted: #a1a1aa;
-  --c-faint: #52525b;
-  --c-grid: #232329;
-  --c-bg: #111114;
-  --c-panel: #151519;
+  --c-ink: #ededeb;
+  --c-muted: #a8a7a3;
+  --c-faint: #57554f;
+  --c-grid: #272623;
+  --c-bg: #121211;
+  --c-panel: #171614;
   --c-accent: #6ea2ff;
   --c-blue: #6ea2ff;
   --c-red: #f87171;
   --c-green: #4ade80;
-  --c-orange: #fbbf24;
+  --c-orange: #f5b942;
   --c-purple: #c084fc;
-  --c-teal: #2dd4bf;
+  --c-teal: #43d1a8;
   --c-pink: #f472b6;
   --c-gold: #facc15;
   --c-gray: #9ca3af;

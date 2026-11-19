@@ -209,10 +209,6 @@
 .duo-readout .amber { color: var(--duo-amber); font-weight: 500; }
 .duo-error { padding: 18px; border: 1px solid var(--line-2); color: var(--fg-2); font: 14px/1.6 var(--sans); }
 
-.duo-methods summary { cursor: pointer; font: 500 15px/1.5 var(--sans); color: var(--fg-2); }
-.duo-methods[open] summary { color: var(--fg); margin-bottom: 0.8em; }
-.duo-methods { font-size: 15.5px; line-height: 1.65; color: var(--fg-2); border-top: 1px solid var(--line); padding-top: 1em; margin-top: 3em; }
-
 @media (max-width: 600px) {
   .duo .fig-num { width: 100%; margin-left: 0; }
   .duo-legend { font-size: 11px; gap: 4px 12px; }

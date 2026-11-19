@@ -49,11 +49,18 @@ function card(origin, post) {
     text-wrap: balance; }
   .thumb { align-self: center; justify-self: end; width: 380px; }
   .thumb .post-thumb-wrap, .thumb svg { width: 380px !important; height: auto !important; display: block; }
+  .thumb svg :is(rect, line, path, circle, polygon) { vector-effect: non-scaling-stroke; }
+  .thumb svg .thumb-bg { stroke-width: 2px; }
+  .thumb svg .thumb-grid, .thumb svg .thumb-wire, .thumb svg .thumb-wire-dash { stroke-width: 2px; }
+  .thumb svg .thumb-ink, .thumb svg .thumb-ink-box, .thumb svg .thumb-stone-w { stroke-width: 2.5px; }
+  .thumb svg .thumb-flow { stroke-width: 3.5px; }
+  .thumb svg .thumb-flow-thin { stroke-width: 2.5px; }
+  .thumb svg .thumb-node-ring { stroke-width: 3px; }
   .foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: end;
     font: 24px/1 var(--sans); color: var(--fg-3); border-top: 2px solid var(--line); padding-top: 26px; }
   .foot b { font-weight: 500; color: var(--accent); }
 </style></head><body><div class="card">
-  <div class="site">Teo's blog${post.series ? ` <span>· ${esc(post.series)}</span>` : ''}</div>
+  <div class="site">Teo’s blog${post.series ? ` <span>· ${esc(post.series)}</span>` : ''}</div>
   <h1>${esc(post.title)}</h1>
   <div class="thumb">${post.thumb}</div>
   <div class="foot"><span>${esc(post.meta)}</span><b>teozeng.dev/blogs</b></div>
