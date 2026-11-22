@@ -2,6 +2,31 @@
 <div class="post-thumb-wrap" aria-hidden="true">
   {%- case slug -%}
 
+  {%- when 'walking-through-the-lean-proof-of-navier-stokes-blow-up' -%}
+  <!-- Navier-Stokes Lean proof: counter-rotating 19-arm spiral vortex paired with (T - t)^(-1/4) blow-up asymptote -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <g class="thumb-grid"><path d="M58 20H94 M58 34H94 M58 48H94"/></g>
+    <g class="thumb-wire">
+      <circle cx="31" cy="34" r="19"/>
+      <circle cx="31" cy="34" r="11"/>
+      <path d="M58 54H94"/>
+    </g>
+    <g class="thumb-wire-dash">
+      <path d="M88 12V54"/>
+    </g>
+    <g class="thumb-accent">
+      <circle class="thumb-soft" cx="31" cy="34" r="11"/>
+      <path class="thumb-flow-thin" d="M31 34 C34 25, 43 22, 49 27 M31 34 C40 37, 43 46, 38 52 M31 34 C28 43, 19 46, 13 41 M31 34 C22 31, 19 22, 24 16"/>
+      <circle class="thumb-halo" cx="31" cy="34" r="5"/>
+      <circle class="thumb-node-act" cx="31" cy="34" r="2.2"/>
+      <path class="thumb-soft" d="M60 54 C70 53, 79 49, 83 37 C85 30, 86.6 21, 87.4 14 L88 14 V54 Z"/>
+      <path class="thumb-flow" d="M60 51 C70 50, 79 46, 83 35 C85 28, 86.6 20, 87.4 14"/>
+      <circle class="thumb-halo" cx="87.4" cy="14" r="5"/>
+      <circle class="thumb-node-act" cx="87.4" cy="14" r="2.3"/>
+    </g>
+  </svg>
+
   {%- when 'walking-through-the-lean-proof-of-the-riemann-hypothesis' -%}
   <!-- Riemann Hypothesis Lean proof: critical strip with zeros on Re s = 1/2 paired with the √x balance V-curve -->
   <svg class="post-thumb" viewBox="0 0 104 68">
