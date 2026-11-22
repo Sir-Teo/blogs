@@ -2,6 +2,33 @@
 <div class="post-thumb-wrap" aria-hidden="true">
   {%- case slug -%}
 
+  {%- when 'walking-through-the-lean-proof-of-the-riemann-hypothesis' -%}
+  <!-- Riemann Hypothesis Lean proof: critical strip with zeros on Re s = 1/2 paired with the √x balance V-curve -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <g class="thumb-grid"><path d="M10 34H50 M58 20H94 M58 34H94 M58 48H94"/></g>
+    <g class="thumb-wire-dash">
+      <path d="M16 12V56 M46 12V56"/>
+      <path d="M60 16L90 52 M60 52L90 16"/>
+    </g>
+    <g class="thumb-wire">
+      <path d="M58 54H94"/>
+    </g>
+    <g class="thumb-accent">
+      <rect class="thumb-soft" x="16" y="12" width="30" height="44"/>
+      <path class="thumb-flow" d="M31 12V56"/>
+      <circle class="thumb-node-ring" cx="31" cy="19" r="2"/>
+      <circle class="thumb-node-act" cx="31" cy="27" r="2"/>
+      <circle class="thumb-halo" cx="31" cy="34" r="5.5"/>
+      <circle class="thumb-node-act" cx="31" cy="34" r="2.3"/>
+      <circle class="thumb-node-act" cx="31" cy="42" r="2"/>
+      <circle class="thumb-node-ring" cx="31" cy="50" r="2"/>
+      <path class="thumb-flow" d="M60 16L75 34L90 16"/>
+      <circle class="thumb-halo" cx="75" cy="34" r="5.5"/>
+      <circle class="thumb-node-act" cx="75" cy="34" r="2.4"/>
+    </g>
+  </svg>
+
   {%- when 'reading-my-own-openai-export' -%}
   <!-- OpenAI export: 46-month prompt bars + rising reasoning-share curve paired with branching turn tree -->
   <svg class="post-thumb" viewBox="0 0 104 68">

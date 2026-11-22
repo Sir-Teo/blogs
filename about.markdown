@@ -15,7 +15,7 @@ Most posts follow one project. The figures in them run that project's own code, 
 - **How Minecraft works.** [Part 1]({% post_url 2026-10-26-taking-minecraft-apart-one-block-at-a-time %}) rebuilds a playable world one system at a time; [Part 2]({% post_url 2026-10-26-one-world-two-players %}) lets a second player in.
 - **Tools at scale.** [A finance workspace with a trading desk of agents]({% post_url 2026-10-10-putting-a-trading-desk-behind-a-dashboard %}), [twenty-two hours of math films rendered from code]({% post_url 2026-10-18-rendering-twenty-two-hours-of-math-from-code %}), and [an atlas of 6,684 ideas]({% post_url 2026-10-18-drawing-six-thousand-ideas-in-one-dependency-graph %}).
 - **Reading my own data.** What [Duolingo]({% post_url 2026-11-09-reading-my-own-duolingo-export %}) and [OpenAI]({% post_url 2026-11-15-reading-my-own-openai-export %}) kept about me.
-- **Everything else.** [The case for LeBron James]({% post_url 2026-10-25-making-the-goat-case-for-lebron-james %}), and two posts on airline pricing: [a demand forecast]({% post_url 2026-10-26-telling-more-shoppers-from-earlier-shoppers %}) and [a pricing analysis product]({% post_url 2026-10-26-turning-millions-of-fare-searches-into-a-pricing-alert %}).
+- **Everything else.** [Walking through the Lean proof of the Riemann Hypothesis]({% post_url 2026-11-21-walking-through-the-lean-proof-of-the-riemann-hypothesis %}), [the case for LeBron James]({% post_url 2026-10-25-making-the-goat-case-for-lebron-james %}), and two posts on airline pricing: [a demand forecast]({% post_url 2026-10-26-telling-more-shoppers-from-earlier-shoppers %}) and [a pricing analysis product]({% post_url 2026-10-26-turning-millions-of-fare-searches-into-a-pricing-alert %}).
 
 ## How the posts are made
 
