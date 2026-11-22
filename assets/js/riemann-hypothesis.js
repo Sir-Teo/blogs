@@ -19,6 +19,7 @@
   const num = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtPath = s => esc(s).replace(/([/.])/g, '$1<wbr>');
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const IS_LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
@@ -1118,7 +1119,7 @@
             `</div>` +
             `<div class="rh-drawer-path">` +
               `<button type="button" data-jump-dir="${f.di}">← ${esc(d[8])} (${num(d[4])})</button>` +
-              `<span>${esc(f.dp || 'src/')}</span>` +
+              `<span>${fmtPath(f.dp || 'src/')}</span>` +
             `</div>` +
             (hosted.length
               ? `<div class="rh-drawer-sec"><span>Verified spine declarations (${hosted.length})</span></div>` +
@@ -1175,7 +1176,7 @@
               `<span class="rh-tag">${pct}% of proof</span>` +
               `<span class="rh-tag">${esc(tb.short)}</span>` +
             `</div>` +
-            `<p><code>${esc(pth || 'src/')}</code> holds <strong>${num(d[4])}</strong> direct Lean files` +
+            `<p><code>${fmtPath(pth || 'src/')}</code> holds <strong>${num(d[4])}</strong> direct Lean files` +
               (subCount > 0 ? ` across <strong>${num(subCount)}</strong> subdirectories.` : '.') + `</p>` +
             (children.length
               ? `<div class="rh-drawer-sec"><span>Subdirectories (${children.length})</span></div>` +

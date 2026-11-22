@@ -20,6 +20,7 @@
   const num = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const fmtPath = s => esc(s).replace(/([/.])/g, '$1<wbr>');
   const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function hexRgb(hex) {
@@ -839,7 +840,7 @@
             `</div>` +
             `<div class="ns-drawer-path">` +
               `<button type="button" data-jump-dir="${f[1]}">← ${esc(cl[7])} (${num(cl[2])})</button>` +
-              `<span>${esc(f[0])}</span>` +
+              `<span>${fmtPath(f[0])}</span>` +
             `</div>` +
             (hosted.length
               ? `<div class="ns-drawer-sec"><span>Verified spine declarations (${hosted.length})</span></div>` +
@@ -895,7 +896,7 @@
               `<span class="ns-tag">${pct}% of repo</span>` +
               `<span class="ns-tag">${esc(tb.short)}</span>` +
             `</div>` +
-            `<p><code>${esc(cl[8] || 'lean/')}</code> · <strong>${num(cl[2])}</strong> Lean modules across <strong>${num(cl[4])}</strong> lines of proof code.</p>` +
+            `<p><code>${fmtPath(cl[8] || 'lean/')}</code> · <strong>${num(cl[2])}</strong> Lean modules across <strong>${num(cl[4])}</strong> lines of proof code.</p>` +
             (children.length
               ? `<div class="ns-drawer-sec"><span>Sub-families (${children.length})</span></div>` +
                 `<div class="ns-drawer-links">${children.slice(0, 14).map(ch => `<button type="button" class="up" data-jump-dir="${ch}">${esc(clusters[ch][7])} (${clusters[ch][2]})</button>`).join('')}</div>`

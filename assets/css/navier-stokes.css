@@ -350,6 +350,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 2px;
 }
 
@@ -371,7 +372,7 @@
 .ns-tag.blue { color: var(--ns-blue); border-color: color-mix(in srgb, var(--ns-blue) 40%, transparent); }
 .ns-tag.amber { color: var(--ns-amber); border-color: color-mix(in srgb, var(--ns-amber) 40%, transparent); }
 
-.ns-drawer p { margin: 0 0 7px; color: var(--fg-2); }
+.ns-drawer p { margin: 0 0 7px; color: var(--fg-2); overflow-wrap: break-word; }
 .ns-drawer-path {
   display: flex;
   align-items: center;
@@ -381,7 +382,16 @@
   font: 10px/1.35 var(--mono);
   color: var(--fg-3);
 }
+.ns-drawer-path span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
 .ns-drawer-path button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 1.5px 6px;
   border-radius: 5px;
   border: 1px solid var(--line-2);
