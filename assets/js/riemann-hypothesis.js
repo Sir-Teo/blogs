@@ -163,6 +163,7 @@
         .replace('AbelianVariety', 'Abelian')
         .replace('GroundTheory', 'Ground')
         .replace('EtaleCohom', 'Etale')
+        .replace('Reciprocity', 'Reciproc.')
         .replace('Root & Misc', 'Root');
       return {
         am, ca, sa,
@@ -170,6 +171,7 @@
         rightSide: ca >= -0.05,
         fullLbl: `${tb.short} · ${fStr}`,
         shortLbl: `${compact} · ${fStr}`,
+        miniLbl: compact,
       };
     });
 
@@ -627,6 +629,7 @@
       fullscreen: false,
       drawerOpen: false,
       drawerWide: false,
+      sheetTall: false,
       codeTab: 'full',
       showAllLines: false,
       dirFilter: '',
@@ -802,11 +805,13 @@
     el.className = 'rh-body';
     el.innerHTML =
       `<div class="rh-stage">` +
-        `<canvas class="rh-canvas"></canvas>` +
+        `<canvas class="rh-canvas scroll-safe"></canvas>` +
         `<div class="rh-hud-tl"><b>175,187</b><span class="rh-meta-long"> files · <b>3,614</b> dirs</span> · <b>109</b><span class="rh-meta-long"> thms</span> → <span class="blue">12 lines</span></div>` +
         `<div class="rh-hud-tr">` +
           `<div class="rh-search-wrap">` +
+            `<button type="button" class="rh-search-toggle" data-open-search aria-label="Search Lean proofs">⌕ Search</button>` +
             `<input type="search" class="rh-search" placeholder="Search… (/)" aria-label="Search Lean theorems, directories, and files">` +
+            `<button type="button" class="rh-search-close" data-close-search aria-label="Close search">×</button>` +
             `<div class="rh-search-pop" hidden></div>` +
           `</div>` +
           `<button type="button" class="rh-cascade-btn" data-cascade aria-pressed="false" title="Replay inward proof collapse (Space)">▶ Cascade</button>` +
@@ -820,6 +825,13 @@
             `<button type="button" data-hud="fs" title="Fullscreen (F / Esc)">⤢</button>` +
           `</div>` +
         `</div>` +
+        `<div class="rh-mob-zoom" aria-label="Zoom controls">` +
+          `<button type="button" data-hud="zin" aria-label="Zoom in">+</button>` +
+          `<button type="button" data-hud="zout" aria-label="Zoom out">−</button>` +
+          `<button type="button" data-hud="full" hidden aria-label="Reset view">↺</button>` +
+        `</div>` +
+        `<div class="rh-gesture-toast" aria-hidden="true">Pinch to zoom · tap ⤢ for fullscreen</div>` +
+        `<div class="rh-sheet-scrim" hidden></div>` +
         `<aside class="rh-drawer" hidden aria-label="Lean 4 proof inspector"></aside>` +
         `<div class="rh-hud-bot">` +
           JUMPS.map(j =>
@@ -827,7 +839,8 @@
           ).join('') +
         `</div>` +
       `</div>` +
-      `<p class="rh-foot" aria-live="polite"></p>`;
+      `<p class="rh-foot" aria-live="polite"></p>` +
+      `<button type="button" class="rh-back-pill" hidden>↩ Back to article</button>`;
     fig.insertBefore(el, $('figcaption', fig));
     fig.classList.add('ready');
 
@@ -837,19 +850,49 @@
     const footEl = $('.rh-foot', el);
     const searchEl = $('.rh-search', el);
     const searchPop = $('.rh-search-pop', el);
+    const searchOpenBtn = $('[data-open-search]', el);
+    const searchCloseBtn = $('[data-close-search]', el);
     const cascadeBtn = $('[data-cascade]', el);
     const hudBtns = $('.rh-hud-btns', el);
+    const mobZoom = $('.rh-mob-zoom', el);
+    const mobResetBtn = $('[data-hud="full"]', mobZoom);
     const zoomRead = $('.rh-zoom-read', el);
+    const gestureToast = $('.rh-gesture-toast', el);
+    const scrimEl = $('.rh-sheet-scrim', el);
     const drawerEl = $('.rh-drawer', el);
     const hudBot = $('.rh-hud-bot', el);
+    const backPill = $('.rh-back-pill', el);
+
+    const isMobileSheet = () => window.innerWidth <= 720;
+    const isCoarsePtr = () => matchMedia('(pointer: coarse)').matches;
+    let touchUnlocked = false, toastTimer = 0;
+
+    function syncTouchAction() {
+      const relZ = S.cam.k / Math.max(0.01, S.baseK);
+      const offCenter = Math.hypot(S.cam.x, S.cam.y) > 28;
+      const freePan = S.fullscreen || touchUnlocked || relZ > 1.12 || !isCoarsePtr();
+      canvas.classList.toggle('scroll-safe', !freePan);
+      if (mobResetBtn) mobResetBtn.hidden = !(relZ > 1.12 || offCenter);
+    }
+
+    function flashGestureToast(msg) {
+      if (!gestureToast) return;
+      if (msg) gestureToast.textContent = msg;
+      gestureToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => gestureToast.classList.remove('show'), 1800);
+    }
 
     // ---- Cached Stage Geometry (zero getBoundingClientRect inside render!)
     let stageW = 800, stageH = 600, canvasDpr = 1;
 
     function computeHeight(w) {
-      if (S.fullscreen) return Math.max(360, Math.round(stageEl.clientHeight || window.innerHeight - 48));
+      if (S.fullscreen) {
+        const vvH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        return Math.max(320, Math.round(stageEl.clientHeight || vvH - 64));
+      }
       const vh = window.innerHeight || 800;
-      if (w < 600) return clamp(Math.round(w * 1.12), 420, Math.round(vh * 0.72));
+      if (w < 640) return clamp(Math.round(w * 1.18), 440, Math.round(vh * 0.68));
       return clamp(Math.round(w * 0.72), 480, Math.min(680, Math.round(vh * 0.76)));
     }
 
@@ -870,16 +913,16 @@
     }
     syncStageSize();
 
-    // ---- Camera math (responsive to side drawer on desktop AND bottom sheet on mobile!)
+    // ---- Camera math (responsive to side drawer on desktop AND fixed bottom sheet on mobile!)
     function drawerLayout(w, h) {
       if (!S.drawerOpen) return { rx: 0, ry: 0 };
-      if (w <= 720) return { rx: 0, ry: Math.round(h * 0.55) };
+      if (isMobileSheet()) return { rx: 0, ry: S.fullscreen && !S.sheetTall ? Math.round(h * 0.56) : 0 };
       return { rx: S.drawerWide ? Math.min(560, Math.round(w * 0.56)) + 20 : 356, ry: 0 };
     }
 
     function fitFullTarget(w, h) {
-      const padX = w < 640 ? 86 : 112;
-      const padT = 44, padB = 54;
+      const padX = w < 640 ? Math.round(clamp(w * 0.10, 32, 48)) : 112;
+      const padT = w < 640 ? 50 : 44, padB = w < 640 ? 54 : 54;
       const span = WRLD.r * 2;
       const k = Math.min((w - 2 * padX) / span, (h - padT - padB) / span);
       return { x: 0, y: (padB - padT) / (2 * k), k };
@@ -889,9 +932,11 @@
       const tgt = fitFullTarget(stageW, stageH);
       S.baseK = tgt.k;
       S.vel.x = 0; S.vel.y = 0;
+      touchUnlocked = false;
       if (!animate || reducedMotion()) { S.cam = { ...tgt }; S.camTarget = null; }
       else S.camTarget = tgt;
       S.camInited = true;
+      syncTouchAction();
     }
 
     function fitSelection(animate = true) {
@@ -972,10 +1017,12 @@
     // ---- Render Frosted Glass Full Lean 4 Proof Inspector Drawer
     function drawerHeaderHtml(titleText) {
       return (
+        `<div class="rh-sheet-grab" data-sheet-grab role="button" tabindex="0" aria-label="Drag to resize or close inspector"></div>` +
         `<div class="rh-drawer-head">` +
           `<div class="rh-drawer-title" title="${esc(titleText)}">${esc(titleText)}</div>` +
           `<div class="rh-drawer-acts">` +
             (S.history.length ? `<button type="button" class="rh-drawer-btn" data-drawer-back title="Back ([)">←</button>` : '') +
+            `<button type="button" class="rh-drawer-btn" data-drawer-tall aria-pressed="${S.sheetTall}" aria-label="${S.sheetTall ? 'Half sheet' : 'Expand sheet'}">${S.sheetTall ? '↓' : '↑'}</button>` +
             `<button type="button" class="rh-drawer-btn" data-drawer-wide aria-pressed="${S.drawerWide}" title="${S.drawerWide ? 'Compact drawer (W)' : 'Expand proof reader (W)'}">${S.drawerWide ? '⇥' : '⇤'}</button>` +
             `<button type="button" class="rh-drawer-btn" data-close-drawer aria-label="Close inspector">×</button>` +
           `</div>` +
@@ -1095,8 +1142,12 @@
     }
 
     function renderDrawer() {
+      const sheetMode = S.drawerOpen && isMobileSheet();
       drawerEl.hidden = !S.drawerOpen;
       drawerEl.classList.toggle('wide', S.drawerWide);
+      drawerEl.classList.toggle('sheet-tall', S.sheetTall);
+      if (scrimEl) scrimEl.hidden = !sheetMode;
+      document.body.style.overflow = (S.fullscreen || sheetMode) ? 'hidden' : '';
       const codeBtn = $('[data-hud="code"]', hudBtns);
       if (codeBtn) codeBtn.setAttribute('aria-pressed', String(S.drawerOpen));
       if (!S.drawerOpen) return;
@@ -1229,6 +1280,7 @@
         lastZoomTxt = zTxt;
         zoomRead.hidden = !zTxt;
         if (zTxt) zoomRead.textContent = zTxt;
+        syncTouchAction();
       }
 
       if (k >= 1.85) {
@@ -1688,27 +1740,29 @@
         haloText(ctx, lbl, sx, sy - 10, T.fg, T.bg, 'center', fnt);
       }
 
-      // Outer 12 Territory Labels
-      const rimR = (WRLD.rOut + 28) * k;
+      // Outer 12 Territory Labels (edge-clamped & compact on narrow phones!)
+      const narrowMob = w < 520;
       const compactRim = w < 640;
-      const tFontPx = clamp((compactRim ? 8.4 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
+      const rimR = (WRLD.rOut + (narrowMob ? 15 : 28)) * k;
+      const tFontPx = clamp((narrowMob ? 8.6 : compactRim ? 8.8 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
       const tFnt = `700 ${tFontPx.toFixed(1)}px ${T.sans}`;
       for (let ti = 0; ti < terrs.length; ti++) {
         const tm = terrMid[ti], col = terrCols[ti];
-        const lx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
-        const fullLbl = compactRim ? tm.shortLbl : tm.fullLbl;
+        const rx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
+        const fullLbl = (narrowMob && relZoom < 1.35) ? tm.miniLbl : compactRim ? tm.shortLbl : tm.fullLbl;
         const tw = measureW(tFnt, fullLbl);
-        const bx0 = tm.rightSide ? lx : lx - tw;
+        const rawX0 = tm.rightSide ? rx : rx - tw;
+        const bx0 = narrowMob ? clamp(rawX0, 6, Math.max(6, w - 6 - tw)) : rawX0;
         if (tryPlace(bx0, ly - tFontPx, bx0 + tw, ly + 3)) {
-          haloText(ctx, fullLbl, lx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, tm.rightSide ? 'left' : 'right', tFnt);
+          haloText(ctx, fullLbl, narrowMob ? bx0 : rx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, narrowMob ? 'left' : (tm.rightSide ? 'left' : 'right'), tFnt);
         }
       }
 
       // Top Mega-Clusters
-      const mFnt = `600 9px ${T.mono}`;
-      for (let m = 0; m < megaLabels.length; m++) {
+      const mFnt = `600 ${narrowMob ? 8.4 : 9}px ${T.mono}`;
+      const maxMega = narrowMob && relZoom < 1.25 ? 3 : (k < 0.52 ? 6 : megaLabels.length);
+      for (let m = 0; m < megaLabels.length && m < maxMega; m++) {
         const ml = megaLabels[m];
-        if (k < 0.52 && m >= 6) break;
         const sx = ml.x * k + ox, sy = ml.y * k + oy;
         const lbl = `${ml.label} ${(ml.files / 1000).toFixed(1)}k`;
         const tw = measureW(mFnt, lbl);
@@ -1786,13 +1840,22 @@
         drawTooltip(tx, ty, tb.label, `${num(tb.files)} .lean files (${tb.pct}%) · click to fly into sector`, w, H, T);
       }
 
-      // ---- 9. Update single-line inspector footer & drawer only when state changes
+      // ---- 9. Update single-line inspector footer (structured card on mobile!) & drawer
       if (updateDom || S.dirtyDom) {
         S.dirtyDom = false;
         cascadeBtn.setAttribute('aria-pressed', String(casActive));
         cascadeBtn.textContent = casActive ? '● Playing' : '▶ Cascade';
         const curId = hasThmSel ? thms[S.selThm].id : hasDirSel ? dirPath(S.selDir) : '';
-        all('[data-jump]', hudBot).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.jump === curId)));
+        let activeJumpBtn = null;
+        all('[data-jump]', hudBot).forEach(b => {
+          const on = b.dataset.jump === curId;
+          b.setAttribute('aria-pressed', String(on));
+          if (on) activeJumpBtn = b;
+        });
+        if (activeJumpBtn && hudBot.scrollWidth > hudBot.clientWidth + 4) {
+          const targetLeft = Math.max(0, activeJumpBtn.offsetLeft - hudBot.clientWidth / 2 + activeJumpBtn.offsetWidth / 2);
+          hudBot.scrollTo({ left: targetLeft, behavior: reducedMotion() ? 'auto' : 'smooth' });
+        }
 
         if (hasFileSel) {
           const f = S.selFile;
@@ -1801,28 +1864,35 @@
             ? `${num(entry.lines.length)} lines · ${entry.decls.length} decls · ${entry.imports.length} imports`
             : 'loading Lean 4 proof…';
           footEl.innerHTML =
-            `<span><strong>${esc(f.stem)}.lean</strong></span>` +
+            `<span class="rh-ft-title"><strong>${esc(f.stem)}.lean</strong></span>` +
             `<span class="ink">${esc(f.dp || 'src/')} · ${esc(stat)}</span>` +
-            `<span><a href="${esc(`${GH_BLOB}/${f.relPath}.lean`)}" target="_blank" rel="noopener">GitHub</a></span>` +
+            `<span class="rh-ft-meta">` +
+              `<span><a href="${esc(`${GH_BLOB}/${f.relPath}.lean`)}" target="_blank" rel="noopener">GitHub ↗</a></span>` +
+            `</span>` +
             `<button type="button" class="rh-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide proof ✕' : 'Read proof { }'}</button>`;
         } else if (hasThmSel) {
           const t = thms[S.selThm];
           footEl.innerHTML =
-            `<span><strong>${esc(t.t)}</strong></span>` +
+            `<span class="rh-ft-title"><strong>${esc(t.t)}</strong></span>` +
             `<span class="ink">${esc(t.g)}</span>` +
-            `<span><strong class="amber">${t.anc}</strong> prereqs → <strong class="blue">${t.desc}</strong> downstream</span>` +
-            (t.u ? `<span><a href="${esc(t.u)}" target="_blank" rel="noopener"><code>${esc(t.d)}</code></a></span>` : '') +
+            `<span class="rh-ft-meta">` +
+              `<span><strong class="amber">${t.anc}</strong> prereqs → <strong class="blue">${t.desc}</strong> downstream</span>` +
+              (t.u ? `<span><a href="${esc(t.u)}" target="_blank" rel="noopener"><code>${esc(t.d)}</code></a></span>` : '') +
+            `</span>` +
             `<button type="button" class="rh-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide proof ✕' : 'Lean proof { }'}</button>`;
         } else if (hasDirSel) {
           const d = dirs[S.selDir], pth = dirPath(S.selDir);
           const subCount = litDir.reduce((acc, v) => acc + (v ? 1 : 0), 0) - 1;
           const url = pth ? `${GH_TREE}/${pth}` : GH_TREE;
           footEl.innerHTML =
-            `<span><strong>${esc(pth || 'src/')}</strong></span>` +
-            `<span class="ink"><strong>${num(d[3])}</strong> .lean files (${num(d[4])} direct${subCount > 0 ? `, ${num(subCount)} sub-folders` : ''}) · click any zoomed star to read proof</span>` +
-            `<span><a href="${esc(url)}" target="_blank" rel="noopener">GitHub</a></span>` +
+            `<span class="rh-ft-title"><strong>${esc(pth || 'src/')}</strong></span>` +
+            `<span class="ink"><strong>${num(d[3])}</strong> .lean files (${num(d[4])} direct${subCount > 0 ? `, ${num(subCount)} sub-folders` : ''}) · tap any zoomed star for proof</span>` +
+            `<span class="rh-ft-meta">` +
+              `<span><a href="${esc(url)}" target="_blank" rel="noopener">GitHub ↗</a></span>` +
+            `</span>` +
             `<button type="button" class="rh-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide files ✕' : `Browse ${d[4] > 0 ? num(d[4]) + ' ' : ''}proofs { }`}</button>`;
         }
+        syncTouchAction();
         renderDrawer();
       }
     }
@@ -1844,9 +1914,9 @@
     }
 
     // --------------------------------------------------- picking & multi-touch
-    function pick(mx, my) {
+    function pick(mx, my, touch = false) {
       const { k, ox, oy } = view;
-      let bestT = -1, bestTD = 15;
+      let bestT = -1, bestTD = touch ? 26 : 15;
       for (let i = 0; i < NT; i++) {
         const d = Math.hypot(thms[i].x * k + ox - mx, thms[i].y * k + oy - my);
         if (d < bestTD) { bestTD = d; bestT = i; }
@@ -1854,7 +1924,7 @@
       if (bestT >= 0) return { type: 'thm', idx: bestT, di: -1, terr: -1 };
 
       if (S.fileImports.length) {
-        let bestImp = null, bestID = 12;
+        let bestImp = null, bestID = touch ? 22 : 12;
         for (let i = 0; i < S.fileImports.length; i++) {
           const imp = S.fileImports[i];
           const dist = Math.hypot(imp.x * k + ox - mx, imp.y * k + oy - my);
@@ -1865,7 +1935,7 @@
 
       const wx = (mx - ox) / k, wy = (my - oy) / k;
       if (k >= 1.85) {
-        const thr = 10 / k;
+        const thr = (touch ? 18 : 10) / k;
         let bestS = -1, bestSDi = -1, bestSD2 = thr * thr;
         for (let j = 0; j < nonEmptyDirs.length; j++) {
           const di = nonEmptyDirs[j], d = dirs[di];
@@ -1886,7 +1956,7 @@
         if (bestS >= 0) return { type: 'file', idx: bestS, di: bestSDi, terr: dirs[bestSDi][1] };
       }
 
-      let bestD = -1, bestDD = 12;
+      let bestD = -1, bestDD = touch ? 22 : 12;
       for (let i = 0; i < ND; i++) {
         const dist = Math.hypot(dirs[i][5] * k + ox - mx, dirs[i][6] * k + oy - my);
         if (dist < bestDD) { bestDD = dist; bestD = i; }
@@ -1910,79 +1980,128 @@
       return null;
     }
 
-    // Coalesced RAF input handling: zero per-event render thrash, smooth momentum pan + smooth trackpad zoom!
+    // Cooperative scroll-safe touch + native two-finger pinch+pan + double-tap + RAF coalesced mouse!
     const pointers = new Map();
-    let dragging = false, panMoved = false, lastPt = [0, 0], lastDragTs = 0, pinchDist = 0;
+    let dragging = false, panMoved = false, downPt = [0, 0], lastPt = [0, 0], lastDragTs = 0;
+    let pinchDist = 0, pinchMid = [0, 0], lastTapTs = 0, lastTapPt = [0, 0];
     let pendingHoverPt = null, hoverPrefetchTimer = 0;
 
+    // Prevent browser page-pinch when two fingers touch the canvas, while leaving 1-finger vertical scroll native!
+    canvas.addEventListener('touchstart', ev => {
+      if (ev.touches.length >= 2) {
+        ev.preventDefault();
+        touchUnlocked = true;
+        syncTouchAction();
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', ev => {
+      if (ev.touches.length >= 2) ev.preventDefault();
+    }, { passive: false });
+
     canvas.addEventListener('pointerdown', ev => {
-      canvas.setPointerCapture?.(ev.pointerId);
+      const isTouch = ev.pointerType === 'touch';
       const pt = ptOf(canvas, ev);
       pointers.set(ev.pointerId, pt);
       S.vel.x = 0; S.vel.y = 0; S.camTarget = null;
       if (pointers.size === 2) {
         const [p1, p2] = [...pointers.values()];
         pinchDist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+        pinchMid = [(p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5];
         panMoved = true;
+        touchUnlocked = true;
+        syncTouchAction();
       } else {
-        dragging = true; panMoved = false; lastPt = pt; lastDragTs = performance.now();
-        canvas.classList.add('dragging');
+        if (!isTouch || !canvas.classList.contains('scroll-safe')) {
+          canvas.setPointerCapture?.(ev.pointerId);
+        }
+        dragging = true; panMoved = false; downPt = pt; lastPt = pt; lastDragTs = performance.now();
+        if (!isTouch) canvas.classList.add('dragging');
       }
     });
 
     canvas.addEventListener('pointermove', ev => {
+      const isTouch = ev.pointerType === 'touch';
       const pt = ptOf(canvas, ev);
       if (pointers.has(ev.pointerId)) {
         pointers.set(ev.pointerId, pt);
         if (pointers.size === 2) {
           const [p1, p2] = [...pointers.values()];
           const d = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+          const mid = [(p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5];
+          // Simultaneous 2-finger pan + pinch zoom (native Maps feel!)
+          S.cam.x -= (mid[0] - pinchMid[0]) / S.cam.k;
+          S.cam.y -= (mid[1] - pinchMid[1]) / S.cam.k;
           if (pinchDist > 4 && d > 4) {
-            smoothZoomBy(d / pinchDist, (p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5, true);
+            smoothZoomBy(d / pinchDist, mid[0], mid[1], true);
+          } else {
+            requestDraw();
           }
           pinchDist = d;
+          pinchMid = mid;
           return;
         }
         if (dragging) {
+          if (isTouch && canvas.classList.contains('scroll-safe')) {
+            const tdx = pt[0] - downPt[0], tdy = pt[1] - downPt[1];
+            if (Math.hypot(tdx, tdy) > 10) panMoved = true;
+            if (Math.abs(tdx) > Math.abs(tdy) * 1.4 && Math.abs(tdx) > 26) {
+              flashGestureToast('Pinch to zoom · tap ⤢ for fullscreen');
+            }
+            return;
+          }
           const now = performance.now();
           const dt = Math.max(0.004, Math.min(0.05, (now - lastDragTs) / 1000));
           const dx = pt[0] - lastPt[0], dy = pt[1] - lastPt[1];
-          if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
-          const wx = -dx / S.cam.k, wy = -dy / S.cam.k;
-          S.cam.x += wx; S.cam.y += wy;
-          S.vel.x = S.vel.x * 0.55 + (wx / dt) * 0.45;
-          S.vel.y = S.vel.y * 0.55 + (wy / dt) * 0.45;
+          const slop = isTouch ? 10 : 3;
+          if (Math.hypot(pt[0] - downPt[0], pt[1] - downPt[1]) > slop) panMoved = true;
+          if (panMoved) {
+            const wx = -dx / S.cam.k, wy = -dy / S.cam.k;
+            S.cam.x += wx; S.cam.y += wy;
+            S.vel.x = S.vel.x * 0.55 + (wx / dt) * 0.45;
+            S.vel.y = S.vel.y * 0.55 + (wy / dt) * 0.45;
+            requestDraw();
+          }
           lastPt = pt; lastDragTs = now;
-          requestDraw();
           return;
         }
       }
-      pendingHoverPt = pt;
-      requestDraw();
+      if (!isTouch) {
+        pendingHoverPt = pt;
+        requestDraw();
+      }
     });
 
     const endPtr = ev => {
-      const wasClick = pointers.size === 1 && dragging && !panMoved;
+      const isTouch = ev.pointerType === 'touch';
+      const wasClick = pointers.size === 1 && dragging && !panMoved && ev.type === 'pointerup';
       const now = performance.now();
       pointers.delete(ev.pointerId);
       if (pointers.size < 2) pinchDist = 0;
       if (pointers.size === 0) {
         dragging = false;
         canvas.classList.remove('dragging');
-        // Zero velocity if user paused before releasing
         if (now - lastDragTs > 75 || reducedMotion()) { S.vel.x = 0; S.vel.y = 0; }
         else if (Math.hypot(S.vel.x, S.vel.y) > 20) requestDraw();
       }
       if (wasClick) {
         S.vel.x = 0; S.vel.y = 0;
-        const pk = pick(...ptOf(canvas, ev));
-        if (pk) {
+        const pt = ptOf(canvas, ev);
+        const pk = pick(pt[0], pt[1], isTouch);
+        const isDblTap = isTouch && (now - lastTapTs < 320) && Math.hypot(pt[0] - lastTapPt[0], pt[1] - lastTapPt[1]) < 32;
+        lastTapTs = isDblTap ? 0 : now;
+        lastTapPt = pt;
+
+        if (isDblTap) {
+          if (pk && pk.type === 'thm') { S.drawerOpen = true; selectTheorem(pk.idx, { fit: true }); }
+          else if (pk && pk.type === 'dir' && pk.idx >= 0) { S.drawerOpen = true; selectDirectory(pk.idx, { fit: true }); }
+          else { touchUnlocked = true; smoothZoomBy(2.1, pt[0], pt[1], false); syncTouchAction(); }
+        } else if (pk) {
           if (pk.type === 'thm') selectTheorem(pk.idx, { fit: false });
           else if (pk.type === 'file') {
             const info = starRelInfo(pk.idx, pk.di);
             if (info) selectFileStar(info, { openDrawer: true, fit: false });
           } else if (pk.type === 'terr' && pk.idx >= 0) {
-            // Single click on outer sector flies smoothly into that library!
+            touchUnlocked = true;
             selectDirectory(pk.idx, { fit: true });
           } else if (pk.idx >= 0) {
             selectDirectory(pk.idx, { fit: false });
@@ -2040,14 +2159,16 @@
     function setFullscreen(on) {
       S.fullscreen = on;
       fig.classList.toggle('rh-fullscreen', on);
-      document.body.style.overflow = on ? 'hidden' : '';
+      document.body.style.overflow = (on || (S.drawerOpen && isMobileSheet())) ? 'hidden' : '';
       const btn = $('[data-hud="fs"]', hudBtns);
       if (btn) btn.textContent = on ? '✕' : '⤢';
+      syncTouchAction();
       requestAnimationFrame(() => { syncStageSize(); fitFullNow(false); S.dirtyDom = true; requestDraw(); });
     }
 
     function toggleDrawer(force) {
       S.drawerOpen = force !== undefined ? force : !S.drawerOpen;
+      if (!S.drawerOpen) S.sheetTall = false;
       if (S.drawerOpen) {
         if (S.selType === 'dir' && S.selDir >= 0 && dirs[S.selDir][4] > 0) {
           ensureDirFiles(S.selDir).then(() => { S.dirtyDom = true; requestDraw(); });
@@ -2059,15 +2180,16 @@
 
     cascadeBtn.addEventListener('click', triggerCascade);
 
-    all('[data-hud]', hudBtns).forEach(b => b.addEventListener('click', () => {
-      const a = b.dataset.hud;
-      if (a === 'zin') smoothZoomBy(1.55);
-      else if (a === 'zout') smoothZoomBy(1 / 1.55);
-      else if (a === 'fit') { fitSelection(true); requestDraw(); }
+    function handleHudAction(a) {
+      if (a === 'zin') { touchUnlocked = true; smoothZoomBy(1.55); syncTouchAction(); }
+      else if (a === 'zout') { smoothZoomBy(1 / 1.55); syncTouchAction(); }
+      else if (a === 'fit') { touchUnlocked = true; fitSelection(true); syncTouchAction(); requestDraw(); }
       else if (a === 'full') { S.cascade = -1; S.cascadeFreeze = false; fitFullNow(true); S.dirtyDom = true; requestDraw(); }
       else if (a === 'code') toggleDrawer();
       else if (a === 'fs') setFullscreen(!S.fullscreen);
-    }));
+    }
+    all('[data-hud]', hudBtns).forEach(b => b.addEventListener('click', () => handleHudAction(b.dataset.hud)));
+    all('[data-hud]', mobZoom).forEach(b => b.addEventListener('click', () => handleHudAction(b.dataset.hud)));
 
     all('[data-jump]', hudBot).forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.jump, jt = b.dataset.jtype;
@@ -2078,6 +2200,55 @@
     footEl.addEventListener('click', ev => {
       if (ev.target.closest('[data-toggle-drawer]')) toggleDrawer();
     });
+
+    if (scrimEl) scrimEl.addEventListener('click', () => toggleDrawer(false));
+
+    // Native mobile bottom-sheet drag handle (swipe up = full 90dvh, swipe down = half/close, tap = toggle!)
+    let sheetDrag = null;
+    drawerEl.addEventListener('pointerdown', ev => {
+      const grab = ev.target.closest('[data-sheet-grab]');
+      if (!grab || !isMobileSheet()) return;
+      grab.setPointerCapture?.(ev.pointerId);
+      sheetDrag = { id: ev.pointerId, y0: ev.clientY, dy: 0, h0: drawerEl.getBoundingClientRect().height };
+      drawerEl.classList.add('sheet-dragging');
+    });
+    drawerEl.addEventListener('pointermove', ev => {
+      if (!sheetDrag || ev.pointerId !== sheetDrag.id) return;
+      const dy = ev.clientY - sheetDrag.y0;
+      sheetDrag.dy = dy;
+      if (dy < 0) {
+        drawerEl.style.transform = '';
+        drawerEl.style.height = clamp(sheetDrag.h0 - dy, 180, window.innerHeight * 0.92) + 'px';
+      } else if (S.sheetTall) {
+        const nextH = sheetDrag.h0 - dy;
+        if (nextH >= window.innerHeight * 0.45) {
+          drawerEl.style.transform = '';
+          drawerEl.style.height = nextH + 'px';
+        } else {
+          drawerEl.style.height = Math.round(window.innerHeight * 0.45) + 'px';
+          drawerEl.style.transform = `translateY(${Math.round(window.innerHeight * 0.45 - nextH)}px)`;
+        }
+      } else {
+        drawerEl.style.height = '';
+        drawerEl.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      }
+    });
+    const endSheetDrag = ev => {
+      if (!sheetDrag || ev.pointerId !== sheetDrag.id) return;
+      const { dy } = sheetDrag;
+      sheetDrag = null;
+      drawerEl.classList.remove('sheet-dragging');
+      drawerEl.style.height = '';
+      drawerEl.style.transform = '';
+      if (Math.abs(dy) < 10) { S.sheetTall = !S.sheetTall; renderDrawer(); }
+      else if (dy < -55) { S.sheetTall = true; renderDrawer(); }
+      else if (dy > 85) {
+        if (S.sheetTall && dy < 220) { S.sheetTall = false; renderDrawer(); }
+        else toggleDrawer(false);
+      }
+    };
+    drawerEl.addEventListener('pointerup', endSheetDrag);
+    drawerEl.addEventListener('pointercancel', endSheetDrag);
 
     // ---- Drawer interactive events + hover prefetch + live canvas spotlight!
     drawerEl.addEventListener('pointerover', ev => {
@@ -2115,6 +2286,7 @@
 
     drawerEl.addEventListener('click', ev => {
       if (ev.target.closest('[data-close-drawer]')) { toggleDrawer(false); return; }
+      if (ev.target.closest('[data-drawer-tall]')) { S.sheetTall = !S.sheetTall; renderDrawer(); return; }
       if (ev.target.closest('[data-drawer-wide]')) { S.drawerWide = !S.drawerWide; S.dirtyDom = true; requestDraw(); return; }
       if (ev.target.closest('[data-drawer-back]')) { goBack(); return; }
       const tabBtn = ev.target.closest('[data-code-tab]');
@@ -2242,10 +2414,15 @@
       }
     }
 
-    function activateSearchHit(h) {
-      if (!h) return;
+    function closeMobileSearch() {
+      stageEl.classList.remove('search-open');
       searchPop.hidden = true;
       searchEl.blur();
+    }
+
+    function activateSearchHit(h) {
+      if (!h) return;
+      closeMobileSearch();
       if (h.kind === 'thm') { S.drawerOpen = true; selectTheorem(h.idx); }
       else if (h.kind === 'dir') { S.drawerOpen = true; selectDirectory(h.idx); }
       else if (h.kind === 'file') {
@@ -2254,26 +2431,43 @@
       }
     }
 
+    if (searchOpenBtn) {
+      searchOpenBtn.addEventListener('click', () => {
+        stageEl.classList.add('search-open');
+        searchEl.focus();
+        if (searchEl.value.trim().length >= 2) runSearch(searchEl.value);
+      });
+    }
+    if (searchCloseBtn) {
+      searchCloseBtn.addEventListener('click', () => {
+        searchEl.value = '';
+        closeMobileSearch();
+      });
+    }
+
     searchEl.addEventListener('input', () => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => runSearch(searchEl.value), 70);
     });
     searchEl.addEventListener('focus', () => { if (searchEl.value.trim().length >= 2) runSearch(searchEl.value); });
     searchEl.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape') { closeMobileSearch(); return; }
       if (searchPop.hidden || !searchHits.length) return;
       if (ev.key === 'ArrowDown') { ev.preventDefault(); searchSel = (searchSel + 1) % searchHits.length; }
       else if (ev.key === 'ArrowUp') { ev.preventDefault(); searchSel = (searchSel - 1 + searchHits.length) % searchHits.length; }
       else if (ev.key === 'Enter') { ev.preventDefault(); activateSearchHit(searchHits[searchSel]); return; }
-      else if (ev.key === 'Escape') { searchPop.hidden = true; searchEl.blur(); return; }
       else return;
       all('[data-sh]', searchPop).forEach((b, i) => b.classList.toggle('active', i === searchSel));
     });
-    searchPop.addEventListener('mousedown', ev => {
+    searchPop.addEventListener('click', ev => {
       const b = ev.target.closest('[data-sh]');
       if (b) { ev.preventDefault(); activateSearchHit(searchHits[+b.dataset.sh]); }
     });
     document.addEventListener('pointerdown', ev => {
-      if (!ev.target.closest('.rh-search-wrap')) searchPop.hidden = true;
+      if (!ev.target.closest('.rh-search-wrap')) {
+        searchPop.hidden = true;
+        if (stageEl.classList.contains('search-open')) stageEl.classList.remove('search-open');
+      }
     });
 
     // Power-user keyboard navigation (/, Space, I, W, F, R/0, +/-, [, Esc)
@@ -2324,14 +2518,48 @@
       }
     };
 
-    // Resize, theme, and smart demand-driven 60-120fps RAF loop!
+    // Resize, visualViewport (mobile toolbar/rotation), theme, and smart demand-driven 60-120fps RAF loop!
     new ResizeObserver(() => {
       if (syncStageSize()) {
         if (!S.camInited) fitFullNow(false);
         else { S.baseK = fitFullTarget(stageW, stageH).k; }
+        syncTouchAction();
+        if (S.drawerOpen) renderDrawer();
         requestDraw();
       }
     }).observe(stageEl);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (S.fullscreen && syncStageSize()) requestDraw();
+      });
+    }
+
+    // "Back to article" floating return pill after jumping from inline prose links
+    let returnScrollY = null, returnArmed = false;
+    fig.showReturnPill = prevY => {
+      returnScrollY = prevY;
+      returnArmed = false;
+      if (backPill) backPill.hidden = false;
+    };
+    if (backPill) {
+      backPill.addEventListener('click', () => {
+        const y = returnScrollY;
+        returnScrollY = null;
+        returnArmed = false;
+        backPill.hidden = true;
+        if (y !== null) window.scrollTo({ top: y, behavior: reducedMotion() ? 'auto' : 'smooth' });
+      });
+      window.addEventListener('scroll', () => {
+        if (returnScrollY === null) return;
+        if (window.scrollY < returnScrollY - 220) returnArmed = true;
+        if (returnArmed && window.scrollY >= returnScrollY - 120) {
+          returnScrollY = null;
+          returnArmed = false;
+          backPill.hidden = true;
+        }
+      }, { passive: true });
+    }
 
     document.addEventListener('themechange', () => {
       refreshThemeCache();
@@ -2466,7 +2694,10 @@
     const a = ev.target.closest('a.act[href="#rh-mega"]');
     if (!a) return;
     ev.preventDefault();
+    const prevY = window.scrollY;
+    const figTop = rootFig.getBoundingClientRect().top + prevY;
     if (rootFig && rootFig.rhAction) rootFig.rhAction(a.dataset);
-    rootFig.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+    rootFig.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    if (prevY > figTop + 260 && rootFig.showReturnPill) rootFig.showReturnPill(prevY);
   });
 })();

@@ -48,7 +48,10 @@ $$
 In 1934, Jean Leray proposed looking for a singularity via a steady backward self-similar ansatz $$u(t, x) = (T - t)^{-1/2} U(x / \sqrt{T - t})$$. Sixty years later, Nečas, Růžička, and Šverák (1996) and Tsai (1998) proved that no nonzero steady profile $$U \in L^p(\mathbb{R}^3)$$ exists. The next simplest ansatz is **backward discretely self-similar (DSS)**: switch to logarithmic time $$s = \log(T / (T - t))$$ and rescaled space $$y = x / \sqrt{T - t}$$, write $$u_T^*(t, x) = (T - t)^{-1/2} W(s, y)$$, and allow $$W(s, y)$$ to be **periodic in $$s$$** with period $$S > 0$$ up to a linear isometry $$R \in O(3)$$:
 
 $$
-\partial_s W + \frac{1}{2} W + \frac{1}{2}(y \cdot \nabla) W - \Delta W + (W \cdot \nabla) W + \nabla q = 0, \qquad W(s + S, y) = R\, W(s, R^{-1} y).
+\begin{gathered}
+\partial_s W + \tfrac{1}{2} W + \tfrac{1}{2}(y \cdot \nabla) W - \Delta W + (W \cdot \nabla) W + \nabla q = 0, \\[4pt]
+W(s + S, y) = R\, W(s, R^{-1} y).
+\end{gathered}
 $$
 
 Rescaling time to $$\theta = s / S$$ turns the linear part into the operator $$T_S = \frac{1}{S}\partial_\theta + \frac{1}{2} + \frac{1}{2}(y \cdot \nabla) - \Delta$$. Because $$W(s, \cdot)$$ repeats after every factor $$\lambda = e^{-S}$$ in $$T - t$$, it sidesteps the Nečas–Růžička–Šverák Liouville barrier while keeping Type I decay $$\lvert W(s, y)\rvert \le C_W (1 + \lvert y\rvert)^{-1}$$ and Leray's blow-up rate $$\lVert\nabla u_T^*(t)\rVert_{L^2} \asymp (T - t)^{-1/4}$$.
@@ -64,7 +67,10 @@ The reason is subcriticality of $$\dot{H}^1_{\mathrm{div}}(\mathbb{R}^3)$$. Resc
 To produce finite-energy initial data on $$\mathbb{R}^3$$, <a class="act" href="#ns-mega" data-thm="mod-cutoff" data-fit="1"><code>Uniqueness.CutoffBounds</code></a> truncates the vector potential $$A(0)$$ of $$u^*(0)$$ at a large radius $$r$$, setting $$\bar{u}(0) = \operatorname{curl}(\eta(\cdot/r)A(0))$$. Applying the cutoff inside the curl keeps $$\operatorname{div} \bar{u}(0) = 0$$ while changing $$\dot{H}^1$$ by only $$O(r^{-1/2})$$, so the contraction finds a smooth compactly supported datum $$u_0 = \bar{u}(0) + \gamma$$ whose solution tracks $$u_1^*$$ up to $$t = 1$$ with
 
 $$
-\lVert\nabla(u(t) - u_1^*(t))\rVert_{L^2} \le C(1 - t)^{\kappa - 1/4}, \qquad c(1 - t)^{-1/4} \le \lVert\nabla u(t)\rVert_{L^2} \le C(1 - t)^{-1/4}.
+\begin{gathered}
+\lVert\nabla(u(t) - u_1^*(t))\rVert_{L^2} \le C(1 - t)^{\kappa - 1/4}, \\[4pt]
+c(1 - t)^{-1/4} \le \lVert\nabla u(t)\rVert_{L^2} \le C(1 - t)^{-1/4}.
+\end{gathered}
 $$
 
 On the torus $$\mathbb{T}^3$$, there is no exact periodic self-similar solution to linearize around. Instead, <a class="act" href="#ns-mega" data-thm="mod-torus-red" data-fit="1"><code>Torus.Reduction</code></a> rescales a large period-$$L$$ torus back to $$\mathbb{T}^3$$ with small blow-up time $$T = L^{-2}$$, cuts $$u^*$$ off at radius $$r = L/8$$, and tiles it periodically. Because the heat–Leray kernel on divergences decays like $$\lvert x\rvert^{-4}$$, the whole-space right inverse inverts the periodic linearization up to an $$O(L^{-1/2})$$ error removed by a Neumann series, while a Galilean frame change absorbs any linear pressure drift $$x \cdot a(t)$$ allowed by periodic velocities.

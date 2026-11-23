@@ -131,12 +131,18 @@
     const terrMid = terrs.map(tb => {
       const am = 0.5 * (tb.a0 + tb.a1);
       const ca = Math.cos(am), sa = Math.sin(am);
+      const compact = tb.short
+        .replace('CellReduct', 'CellRed')
+        .replace('Uniqueness', 'Uniq.')
+        .replace('Weak · Trans', 'Weak')
+        .replace('Root & Spec', 'Root');
       return {
         am, ca, sa,
         ca0: Math.cos(tb.a0), sa0: Math.sin(tb.a0),
         rightSide: ca >= -0.05,
         fullLbl: `${tb.short} · ${tb.files}`,
-        shortLbl: `${tb.short.replace('CellReduct', 'CellRed').replace('Weak · Trans', 'Weak').replace('Root & Spec', 'Root')} · ${tb.files}`,
+        shortLbl: `${compact} · ${tb.files}`,
+        miniLbl: compact,
       };
     });
 
@@ -379,6 +385,7 @@
       fullscreen: false,
       drawerOpen: false,
       drawerWide: false,
+      sheetTall: false,
       codeTab: 'full',
       showAllLines: false,
       dirFilter: '',
@@ -528,11 +535,13 @@
     el.className = 'ns-body';
     el.innerHTML =
       `<div class="ns-stage">` +
-        `<canvas class="ns-canvas"></canvas>` +
+        `<canvas class="ns-canvas scroll-safe"></canvas>` +
         `<div class="ns-hud-tl"><b>${num(A.meta.repoFiles)}</b><span class="ns-meta-long"> files · <b>${Math.round(A.meta.lines / 1000)}k</b> lines · <b>${num(A.meta.importEdges)}</b> imports</span> → <span class="blue">Solution.lean</span></div>` +
         `<div class="ns-hud-tr">` +
           `<div class="ns-search-wrap">` +
+            `<button type="button" class="ns-search-toggle" data-open-search aria-label="Search Lean proofs">⌕ Search</button>` +
             `<input type="search" class="ns-search" placeholder="Search… (/)" aria-label="Search Lean theorems, libraries, and files">` +
+            `<button type="button" class="ns-search-close" data-close-search aria-label="Close search">×</button>` +
             `<div class="ns-search-pop" hidden></div>` +
           `</div>` +
           `<button type="button" class="ns-cascade-btn" data-cascade aria-pressed="false" title="Replay inward proof collapse (Space)">▶ Cascade</button>` +
@@ -546,6 +555,13 @@
             `<button type="button" data-hud="fs" title="Fullscreen (F / Esc)">⤢</button>` +
           `</div>` +
         `</div>` +
+        `<div class="ns-mob-zoom" aria-label="Zoom controls">` +
+          `<button type="button" data-hud="zin" aria-label="Zoom in">+</button>` +
+          `<button type="button" data-hud="zout" aria-label="Zoom out">−</button>` +
+          `<button type="button" data-hud="full" hidden aria-label="Reset view">↺</button>` +
+        `</div>` +
+        `<div class="ns-gesture-toast" aria-hidden="true">Pinch to zoom · tap ⤢ for fullscreen</div>` +
+        `<div class="ns-sheet-scrim" hidden></div>` +
         `<aside class="ns-drawer" hidden aria-label="Lean 4 proof inspector"></aside>` +
         `<div class="ns-hud-bot">` +
           JUMPS.map(j =>
@@ -553,7 +569,8 @@
           ).join('') +
         `</div>` +
       `</div>` +
-      `<p class="ns-foot" aria-live="polite"></p>`;
+      `<p class="ns-foot" aria-live="polite"></p>` +
+      `<button type="button" class="ns-back-pill" hidden>↩ Back to article</button>`;
     fig.insertBefore(el, $('figcaption', fig));
     fig.classList.add('ready');
 
@@ -563,19 +580,49 @@
     const footEl = $('.ns-foot', el);
     const searchEl = $('.ns-search', el);
     const searchPop = $('.ns-search-pop', el);
+    const searchOpenBtn = $('[data-open-search]', el);
+    const searchCloseBtn = $('[data-close-search]', el);
     const cascadeBtn = $('[data-cascade]', el);
     const hudBtns = $('.ns-hud-btns', el);
+    const mobZoom = $('.ns-mob-zoom', el);
+    const mobResetBtn = $('[data-hud="full"]', mobZoom);
     const zoomRead = $('.ns-zoom-read', el);
+    const gestureToast = $('.ns-gesture-toast', el);
+    const scrimEl = $('.ns-sheet-scrim', el);
     const drawerEl = $('.ns-drawer', el);
     const hudBot = $('.ns-hud-bot', el);
+    const backPill = $('.ns-back-pill', el);
+
+    const isMobileSheet = () => window.innerWidth <= 720;
+    const isCoarsePtr = () => matchMedia('(pointer: coarse)').matches;
+    let touchUnlocked = false, toastTimer = 0;
+
+    function syncTouchAction() {
+      const relZ = S.cam.k / Math.max(0.01, S.baseK);
+      const offCenter = Math.hypot(S.cam.x, S.cam.y) > 28;
+      const freePan = S.fullscreen || touchUnlocked || relZ > 1.12 || !isCoarsePtr();
+      canvas.classList.toggle('scroll-safe', !freePan);
+      if (mobResetBtn) mobResetBtn.hidden = !(relZ > 1.12 || offCenter);
+    }
+
+    function flashGestureToast(msg) {
+      if (!gestureToast) return;
+      if (msg) gestureToast.textContent = msg;
+      gestureToast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => gestureToast.classList.remove('show'), 1800);
+    }
 
     // ---- Cached Stage Geometry
     let stageW = 800, stageH = 600, canvasDpr = 1;
 
     function computeHeight(w) {
-      if (S.fullscreen) return Math.max(360, Math.round(stageEl.clientHeight || window.innerHeight - 48));
+      if (S.fullscreen) {
+        const vvH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        return Math.max(320, Math.round(stageEl.clientHeight || vvH - 64));
+      }
       const vh = window.innerHeight || 800;
-      if (w < 600) return clamp(Math.round(w * 1.12), 420, Math.round(vh * 0.72));
+      if (w < 640) return clamp(Math.round(w * 1.18), 440, Math.round(vh * 0.68));
       return clamp(Math.round(w * 0.72), 480, Math.min(680, Math.round(vh * 0.76)));
     }
 
@@ -597,12 +644,12 @@
 
     function drawerLayout(w, h) {
       if (!S.drawerOpen) return { rx: 0, ry: 0 };
-      if (w <= 720) return { rx: 0, ry: Math.round(h * 0.55) };
+      if (isMobileSheet()) return { rx: 0, ry: S.fullscreen && !S.sheetTall ? Math.round(h * 0.56) : 0 };
       return { rx: S.drawerWide ? Math.min(560, Math.round(w * 0.56)) + 20 : 356, ry: 0 };
     }
 
     function fitFullTarget(w, h) {
-      const padX = w < 640 ? 84 : 108;
+      const padX = w < 640 ? Math.round(clamp(w * 0.10, 32, 48)) : 108;
       const padT = 50, padB = 54;
       const span = WRLD.r * 2;
       const k = Math.min((w - 2 * padX) / span, (h - padT - padB) / span);
@@ -612,9 +659,11 @@
     function fitFullNow(animate = false) {
       const tgt = fitFullTarget(stageW, stageH);
       S.baseK = tgt.k; S.vel.x = 0; S.vel.y = 0;
+      touchUnlocked = false;
       if (!animate || reducedMotion()) { S.cam = { ...tgt }; S.camTarget = null; }
       else S.camTarget = tgt;
       S.camInited = true;
+      syncTouchAction();
     }
 
     function fitSelection(animate = true) {
@@ -675,10 +724,12 @@
     // ---- Frosted Glass Lean 4 Proof Inspector Drawer
     function drawerHeaderHtml(titleText) {
       return (
+        `<div class="ns-sheet-grab" data-sheet-grab role="button" tabindex="0" aria-label="Drag to resize or close inspector"></div>` +
         `<div class="ns-drawer-head">` +
           `<div class="ns-drawer-title" title="${esc(titleText)}">${esc(titleText)}</div>` +
           `<div class="ns-drawer-acts">` +
             (S.history.length ? `<button type="button" class="ns-drawer-btn" data-drawer-back title="Back ([)">←</button>` : '') +
+            `<button type="button" class="ns-drawer-btn" data-drawer-tall aria-pressed="${S.sheetTall}" aria-label="${S.sheetTall ? 'Half sheet' : 'Expand sheet'}">${S.sheetTall ? '↓' : '↑'}</button>` +
             `<button type="button" class="ns-drawer-btn" data-drawer-wide aria-pressed="${S.drawerWide}" title="${S.drawerWide ? 'Compact drawer (W)' : 'Expand proof reader (W)'}">${S.drawerWide ? '⇥' : '⇤'}</button>` +
             `<button type="button" class="ns-drawer-btn" data-close-drawer aria-label="Close inspector">×</button>` +
           `</div>` +
@@ -817,8 +868,12 @@
     }
 
     function renderDrawer() {
+      const sheetMode = S.drawerOpen && isMobileSheet();
       drawerEl.hidden = !S.drawerOpen;
       drawerEl.classList.toggle('wide', S.drawerWide);
+      drawerEl.classList.toggle('sheet-tall', S.sheetTall);
+      if (scrimEl) scrimEl.hidden = !sheetMode;
+      document.body.style.overflow = (S.fullscreen || sheetMode) ? 'hidden' : '';
       const codeBtn = $('[data-hud="code"]', hudBtns);
       if (codeBtn) codeBtn.setAttribute('aria-pressed', String(S.drawerOpen));
       if (!S.drawerOpen) return;
@@ -945,6 +1000,7 @@
         lastZoomTxt = zTxt;
         zoomRead.hidden = !zTxt;
         if (zTxt) zoomRead.textContent = zTxt;
+        syncTouchAction();
       }
 
       const cas = S.cascade;
@@ -1387,27 +1443,29 @@
         haloText(ctx, lbl, sx, sy - 10, T.fg, T.bg, 'center', fnt);
       }
 
-      // Outer 12 Territory Labels
-      const rimR = (WRLD.rOut + 28) * k;
+      // Outer 12 Territory Labels (edge-clamped & compact on narrow phones!)
+      const narrowMob = w < 520;
       const compactRim = w < 640;
-      const tFontPx = clamp((compactRim ? 8.4 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
+      const rimR = (WRLD.rOut + (narrowMob ? 15 : 28)) * k;
+      const tFontPx = clamp((narrowMob ? 8.6 : compactRim ? 8.8 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
       const tFnt = `700 ${tFontPx.toFixed(1)}px ${T.sans}`;
       for (let ti = 0; ti < terrs.length; ti++) {
         const tm = terrMid[ti], col = terrCols[ti];
-        const lx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
-        const fullLbl = compactRim ? tm.shortLbl : tm.fullLbl;
+        const rx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
+        const fullLbl = (narrowMob && relZoom < 1.35) ? tm.miniLbl : compactRim ? tm.shortLbl : tm.fullLbl;
         const tw = measureW(tFnt, fullLbl);
-        const bx0 = tm.rightSide ? lx : lx - tw;
+        const rawX0 = tm.rightSide ? rx : rx - tw;
+        const bx0 = narrowMob ? clamp(rawX0, 6, Math.max(6, w - 6 - tw)) : rawX0;
         if (tryPlace(bx0, ly - tFontPx, bx0 + tw, ly + 3)) {
-          haloText(ctx, fullLbl, lx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, tm.rightSide ? 'left' : 'right', tFnt);
+          haloText(ctx, fullLbl, narrowMob ? bx0 : rx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, narrowMob ? 'left' : (tm.rightSide ? 'left' : 'right'), tFnt);
         }
       }
 
       // Top Prefix-Family Clusters inside the outer ring
-      const mFnt = `600 8.8px ${T.mono}`;
-      for (let m = 0; m < megaLabels.length; m++) {
+      const mFnt = `600 ${narrowMob ? 8.4 : 8.8}px ${T.mono}`;
+      const maxMega = narrowMob && relZoom < 1.25 ? 3 : (k < 0.52 ? 6 : megaLabels.length);
+      for (let m = 0; m < megaLabels.length && m < maxMega; m++) {
         const ml = megaLabels[m];
-        if (k < 0.52 && m >= 6) break;
         const sx = ml.x * k + ox, sy = ml.y * k + oy;
         const lbl = `${ml.label} (${ml.files})`;
         const tw = measureW(mFnt, lbl);
@@ -1483,38 +1541,54 @@
         drawTooltip(tx, ty, tb.label, `${num(tb.files)} .lean files (${tb.pct}%) · ${num(tb.lines)} lines · click to dive in`, w, H, T);
       }
 
-      // ---- 9. Update single-line inspector footer & drawer
+      // ---- 9. Update single-line inspector footer (structured card on mobile!) & drawer
       if (updateDom || S.dirtyDom) {
         S.dirtyDom = false;
         cascadeBtn.setAttribute('aria-pressed', String(casActive));
         cascadeBtn.textContent = casActive ? '● Playing' : '▶ Cascade';
         const curId = hasThmSel ? thms[S.selThm].id : hasDirSel && clusters[S.selDir][0] < 0 ? terrs[clusters[S.selDir][1]].id : '';
-        all('[data-jump]', hudBot).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.jump === curId)));
+        let activeJumpBtn = null;
+        all('[data-jump]', hudBot).forEach(b => {
+          const on = b.dataset.jump === curId;
+          b.setAttribute('aria-pressed', String(on));
+          if (on) activeJumpBtn = b;
+        });
+        if (activeJumpBtn && hudBot.scrollWidth > hudBot.clientWidth + 4) {
+          const targetLeft = Math.max(0, activeJumpBtn.offsetLeft - hudBot.clientWidth / 2 + activeJumpBtn.offsetWidth / 2);
+          hudBot.scrollTo({ left: targetLeft, behavior: reducedMotion() ? 'auto' : 'smooth' });
+        }
 
         if (hasFileSel) {
           const f = files[S.selFile], rel = fileRelPath(S.selFile), stem = fileStem(S.selFile);
           footEl.innerHTML =
-            `<span><strong>${esc(stem)}.lean</strong></span>` +
+            `<span class="ns-ft-title"><strong>${esc(stem)}.lean</strong></span>` +
             `<span class="ink">${esc(f[0])} · ${num(f[2])} lines · ${f[3]} thms · <strong class="amber">${f[7].length}</strong> imports · <strong class="blue">${fileCallers[S.selFile].length}</strong> callers</span>` +
-            `<span><a href="${esc(`${GH_BLOB}/${rel}.lean`)}" target="_blank" rel="noopener">GitHub</a></span>` +
+            `<span class="ns-ft-meta">` +
+              `<span><a href="${esc(`${GH_BLOB}/${rel}.lean`)}" target="_blank" rel="noopener">GitHub ↗</a></span>` +
+            `</span>` +
             `<button type="button" class="ns-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide proof ✕' : 'Read proof { }'}</button>`;
         } else if (hasThmSel) {
           const t = thms[S.selThm];
           footEl.innerHTML =
-            `<span><strong>${esc(t.t)}</strong></span>` +
+            `<span class="ns-ft-title"><strong>${esc(t.t)}</strong></span>` +
             `<span class="ink">${esc(t.g)}</span>` +
-            `<span><strong class="amber">${t.anc}</strong> prereqs → <strong class="blue">${t.desc}</strong> downstream</span>` +
-            (t.u ? `<span class="ns-decl-link"><a href="${esc(t.u)}" target="_blank" rel="noopener" title="${esc(t.d)}"><code>${esc(t.d)}</code></a></span>` : '') +
+            `<span class="ns-ft-meta">` +
+              `<span><strong class="amber">${t.anc}</strong> prereqs → <strong class="blue">${t.desc}</strong> downstream</span>` +
+              (t.u ? `<span class="ns-decl-link"><a href="${esc(t.u)}" target="_blank" rel="noopener" title="${esc(t.d)}"><code>${esc(t.d)}</code></a></span>` : '') +
+            `</span>` +
             `<button type="button" class="ns-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide proof ✕' : 'Lean proof { }'}</button>`;
         } else if (hasDirSel) {
           const cl = clusters[S.selDir];
           const url = cl[8] ? `${GH_TREE}/${cl[8]}` : GH_TREE;
           footEl.innerHTML =
-            `<span><strong>${esc(cl[7])}</strong></span>` +
-            `<span class="ink"><strong>${num(cl[2])}</strong> .lean files (${num(cl[4])} lines) · click any star to trace imports and read proof</span>` +
-            `<span><a href="${esc(url)}" target="_blank" rel="noopener">GitHub</a></span>` +
+            `<span class="ns-ft-title"><strong>${esc(cl[7])}</strong></span>` +
+            `<span class="ink"><strong>${num(cl[2])}</strong> .lean files (${num(cl[4])} lines) · tap any star to trace imports &amp; proof</span>` +
+            `<span class="ns-ft-meta">` +
+              `<span><a href="${esc(url)}" target="_blank" rel="noopener">GitHub ↗</a></span>` +
+            `</span>` +
             `<button type="button" class="ns-code-toggle" data-toggle-drawer aria-pressed="${S.drawerOpen}">${S.drawerOpen ? 'Hide files ✕' : `Browse ${num(cl[2])} proofs { }`}</button>`;
         }
+        syncTouchAction();
         renderDrawer();
       }
     }
@@ -1536,9 +1610,9 @@
     }
 
     // --------------------------------------------------- picking & multi-touch
-    function pick(mx, my) {
+    function pick(mx, my, touch = false) {
       const { k, ox, oy } = view;
-      let bestT = -1, bestTD = 15;
+      let bestT = -1, bestTD = touch ? 26 : 15;
       for (let i = 0; i < NT; i++) {
         const d = Math.hypot(thms[i].x * k + ox - mx, thms[i].y * k + oy - my);
         if (d < bestTD) { bestTD = d; bestT = i; }
@@ -1548,7 +1622,7 @@
       // Pick ANY of the 2,270 individual .lean stars (works even at moderate zoom k >= 0.75!)
       const wx = (mx - ox) / k, wy = (my - oy) / k;
       if (k >= 0.75 || S.selType === 'file') {
-        const thr = (k >= 1.2 ? 11 : 8) / k;
+        const thr = (touch ? (k >= 1.2 ? 19 : 14) : (k >= 1.2 ? 11 : 8)) / k;
         let bestF = -1, bestFD2 = thr * thr;
         for (let i = 0; i < NF; i++) {
           const dx = files[i][5] - wx;
@@ -1561,7 +1635,7 @@
         if (bestF >= 0) return { type: 'file', idx: bestF, terr: fileTerr[bestF] };
       }
 
-      let bestC = -1, bestCD = 13;
+      let bestC = -1, bestCD = touch ? 22 : 13;
       for (let i = 0; i < NC; i++) {
         const dist = Math.hypot(clusters[i][5] * k + ox - mx, clusters[i][6] * k + oy - my);
         if (dist < bestCD) { bestCD = dist; bestC = i; }
@@ -1586,55 +1660,93 @@
     }
 
     const pointers = new Map();
-    let dragging = false, panMoved = false, lastPt = [0, 0], lastDragTs = 0, pinchDist = 0;
+    let dragging = false, panMoved = false, downPt = [0, 0], lastPt = [0, 0], lastDragTs = 0;
+    let pinchDist = 0, pinchMid = [0, 0], lastTapTs = 0, lastTapPt = [0, 0];
     let pendingHoverPt = null, hoverPrefetchTimer = 0;
 
+    canvas.addEventListener('touchstart', ev => {
+      if (ev.touches.length >= 2) {
+        ev.preventDefault();
+        touchUnlocked = true;
+        syncTouchAction();
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', ev => {
+      if (ev.touches.length >= 2) ev.preventDefault();
+    }, { passive: false });
+
     canvas.addEventListener('pointerdown', ev => {
-      canvas.setPointerCapture?.(ev.pointerId);
+      const isTouch = ev.pointerType === 'touch';
       const pt = ptOf(canvas, ev);
       pointers.set(ev.pointerId, pt);
       S.vel.x = 0; S.vel.y = 0; S.camTarget = null;
       if (pointers.size === 2) {
         const [p1, p2] = [...pointers.values()];
         pinchDist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+        pinchMid = [(p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5];
         panMoved = true;
+        touchUnlocked = true;
+        syncTouchAction();
       } else {
-        dragging = true; panMoved = false; lastPt = pt; lastDragTs = performance.now();
-        canvas.classList.add('dragging');
+        if (!isTouch || !canvas.classList.contains('scroll-safe')) {
+          canvas.setPointerCapture?.(ev.pointerId);
+        }
+        dragging = true; panMoved = false; downPt = pt; lastPt = pt; lastDragTs = performance.now();
+        if (!isTouch) canvas.classList.add('dragging');
       }
     });
 
     canvas.addEventListener('pointermove', ev => {
+      const isTouch = ev.pointerType === 'touch';
       const pt = ptOf(canvas, ev);
       if (pointers.has(ev.pointerId)) {
         pointers.set(ev.pointerId, pt);
         if (pointers.size === 2) {
           const [p1, p2] = [...pointers.values()];
           const d = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
-          if (pinchDist > 4 && d > 4) smoothZoomBy(d / pinchDist, (p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5, true);
+          const mid = [(p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5];
+          S.cam.x -= (mid[0] - pinchMid[0]) / S.cam.k;
+          S.cam.y -= (mid[1] - pinchMid[1]) / S.cam.k;
+          if (pinchDist > 4 && d > 4) smoothZoomBy(d / pinchDist, mid[0], mid[1], true);
+          else requestDraw();
           pinchDist = d;
+          pinchMid = mid;
           return;
         }
         if (dragging) {
+          if (isTouch && canvas.classList.contains('scroll-safe')) {
+            const tdx = pt[0] - downPt[0], tdy = pt[1] - downPt[1];
+            if (Math.hypot(tdx, tdy) > 10) panMoved = true;
+            if (Math.abs(tdx) > Math.abs(tdy) * 1.4 && Math.abs(tdx) > 26) {
+              flashGestureToast('Pinch to zoom · tap ⤢ for fullscreen');
+            }
+            return;
+          }
           const now = performance.now();
           const dt = Math.max(0.004, Math.min(0.05, (now - lastDragTs) / 1000));
           const dx = pt[0] - lastPt[0], dy = pt[1] - lastPt[1];
-          if (Math.abs(dx) + Math.abs(dy) > 2) panMoved = true;
-          const wx = -dx / S.cam.k, wy = -dy / S.cam.k;
-          S.cam.x += wx; S.cam.y += wy;
-          S.vel.x = S.vel.x * 0.55 + (wx / dt) * 0.45;
-          S.vel.y = S.vel.y * 0.55 + (wy / dt) * 0.45;
+          const slop = isTouch ? 10 : 3;
+          if (Math.hypot(pt[0] - downPt[0], pt[1] - downPt[1]) > slop) panMoved = true;
+          if (panMoved) {
+            const wx = -dx / S.cam.k, wy = -dy / S.cam.k;
+            S.cam.x += wx; S.cam.y += wy;
+            S.vel.x = S.vel.x * 0.55 + (wx / dt) * 0.45;
+            S.vel.y = S.vel.y * 0.55 + (wy / dt) * 0.45;
+            requestDraw();
+          }
           lastPt = pt; lastDragTs = now;
-          requestDraw();
           return;
         }
       }
-      pendingHoverPt = pt;
-      requestDraw();
+      if (!isTouch) {
+        pendingHoverPt = pt;
+        requestDraw();
+      }
     });
 
     const endPtr = ev => {
-      const wasClick = pointers.size === 1 && dragging && !panMoved;
+      const isTouch = ev.pointerType === 'touch';
+      const wasClick = pointers.size === 1 && dragging && !panMoved && ev.type === 'pointerup';
       const now = performance.now();
       pointers.delete(ev.pointerId);
       if (pointers.size < 2) pinchDist = 0;
@@ -1646,11 +1758,20 @@
       }
       if (wasClick) {
         S.vel.x = 0; S.vel.y = 0;
-        const pk = pick(...ptOf(canvas, ev));
-        if (pk) {
+        const pt = ptOf(canvas, ev);
+        const pk = pick(pt[0], pt[1], isTouch);
+        const isDblTap = isTouch && (now - lastTapTs < 320) && Math.hypot(pt[0] - lastTapPt[0], pt[1] - lastTapPt[1]) < 32;
+        lastTapTs = isDblTap ? 0 : now;
+        lastTapPt = pt;
+
+        if (isDblTap) {
+          if (pk && pk.type === 'thm') { S.drawerOpen = true; selectTheorem(pk.idx, { fit: true }); }
+          else if (pk && pk.type === 'dir' && pk.idx >= 0) { S.drawerOpen = true; selectCluster(pk.idx, { fit: true }); }
+          else { touchUnlocked = true; smoothZoomBy(2.1, pt[0], pt[1], false); syncTouchAction(); }
+        } else if (pk) {
           if (pk.type === 'thm') selectTheorem(pk.idx, { fit: false });
           else if (pk.type === 'file') selectFile(pk.idx, { openDrawer: true, fit: false });
-          else if (pk.type === 'terr' && pk.idx >= 0) selectCluster(pk.idx, { fit: true });
+          else if (pk.type === 'terr' && pk.idx >= 0) { touchUnlocked = true; selectCluster(pk.idx, { fit: true }); }
           else if (pk.idx >= 0) selectCluster(pk.idx, { fit: false });
         }
       }
@@ -1696,29 +1817,32 @@
     function setFullscreen(on) {
       S.fullscreen = on;
       fig.classList.toggle('ns-fullscreen', on);
-      document.body.style.overflow = on ? 'hidden' : '';
+      document.body.style.overflow = (on || (S.drawerOpen && isMobileSheet())) ? 'hidden' : '';
       const btn = $('[data-hud="fs"]', hudBtns);
       if (btn) btn.textContent = on ? '✕' : '⤢';
+      syncTouchAction();
       requestAnimationFrame(() => { syncStageSize(); fitFullNow(false); S.dirtyDom = true; requestDraw(); });
     }
 
     function toggleDrawer(force) {
       S.drawerOpen = force !== undefined ? force : !S.drawerOpen;
+      if (!S.drawerOpen) S.sheetTall = false;
       if (S.drawerOpen) maybeLoadProof();
       S.dirtyDom = true; requestDraw();
     }
 
     cascadeBtn.addEventListener('click', triggerCascade);
 
-    all('[data-hud]', hudBtns).forEach(b => b.addEventListener('click', () => {
-      const a = b.dataset.hud;
-      if (a === 'zin') smoothZoomBy(1.55);
-      else if (a === 'zout') smoothZoomBy(1 / 1.55);
-      else if (a === 'fit') { fitSelection(true); requestDraw(); }
+    function handleHudAction(a) {
+      if (a === 'zin') { touchUnlocked = true; smoothZoomBy(1.55); syncTouchAction(); }
+      else if (a === 'zout') { smoothZoomBy(1 / 1.55); syncTouchAction(); }
+      else if (a === 'fit') { touchUnlocked = true; fitSelection(true); syncTouchAction(); requestDraw(); }
       else if (a === 'full') { S.cascade = -1; S.cascadeFreeze = false; fitFullNow(true); S.dirtyDom = true; requestDraw(); }
       else if (a === 'code') toggleDrawer();
       else if (a === 'fs') setFullscreen(!S.fullscreen);
-    }));
+    }
+    all('[data-hud]', hudBtns).forEach(b => b.addEventListener('click', () => handleHudAction(b.dataset.hud)));
+    all('[data-hud]', mobZoom).forEach(b => b.addEventListener('click', () => handleHudAction(b.dataset.hud)));
 
     all('[data-jump]', hudBot).forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.jump, jt = b.dataset.jtype;
@@ -1729,6 +1853,55 @@
     footEl.addEventListener('click', ev => {
       if (ev.target.closest('[data-toggle-drawer]')) toggleDrawer();
     });
+
+    if (scrimEl) scrimEl.addEventListener('click', () => toggleDrawer(false));
+
+    // Native mobile bottom-sheet drag handle (swipe up = full 90dvh, swipe down = half/close, tap = toggle!)
+    let sheetDrag = null;
+    drawerEl.addEventListener('pointerdown', ev => {
+      const grab = ev.target.closest('[data-sheet-grab]');
+      if (!grab || !isMobileSheet()) return;
+      grab.setPointerCapture?.(ev.pointerId);
+      sheetDrag = { id: ev.pointerId, y0: ev.clientY, dy: 0, h0: drawerEl.getBoundingClientRect().height };
+      drawerEl.classList.add('sheet-dragging');
+    });
+    drawerEl.addEventListener('pointermove', ev => {
+      if (!sheetDrag || ev.pointerId !== sheetDrag.id) return;
+      const dy = ev.clientY - sheetDrag.y0;
+      sheetDrag.dy = dy;
+      if (dy < 0) {
+        drawerEl.style.transform = '';
+        drawerEl.style.height = clamp(sheetDrag.h0 - dy, 180, window.innerHeight * 0.92) + 'px';
+      } else if (S.sheetTall) {
+        const nextH = sheetDrag.h0 - dy;
+        if (nextH >= window.innerHeight * 0.45) {
+          drawerEl.style.transform = '';
+          drawerEl.style.height = nextH + 'px';
+        } else {
+          drawerEl.style.height = Math.round(window.innerHeight * 0.45) + 'px';
+          drawerEl.style.transform = `translateY(${Math.round(window.innerHeight * 0.45 - nextH)}px)`;
+        }
+      } else {
+        drawerEl.style.height = '';
+        drawerEl.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      }
+    });
+    const endSheetDrag = ev => {
+      if (!sheetDrag || ev.pointerId !== sheetDrag.id) return;
+      const { dy } = sheetDrag;
+      sheetDrag = null;
+      drawerEl.classList.remove('sheet-dragging');
+      drawerEl.style.height = '';
+      drawerEl.style.transform = '';
+      if (Math.abs(dy) < 10) { S.sheetTall = !S.sheetTall; renderDrawer(); }
+      else if (dy < -55) { S.sheetTall = true; renderDrawer(); }
+      else if (dy > 85) {
+        if (S.sheetTall && dy < 220) { S.sheetTall = false; renderDrawer(); }
+        else toggleDrawer(false);
+      }
+    };
+    drawerEl.addEventListener('pointerup', endSheetDrag);
+    drawerEl.addEventListener('pointercancel', endSheetDrag);
 
     // ---- Drawer hover prefetch + live canvas spotlight + clicks
     drawerEl.addEventListener('pointerover', ev => {
@@ -1758,6 +1931,7 @@
 
     drawerEl.addEventListener('click', ev => {
       if (ev.target.closest('[data-close-drawer]')) { toggleDrawer(false); return; }
+      if (ev.target.closest('[data-drawer-tall]')) { S.sheetTall = !S.sheetTall; renderDrawer(); return; }
       if (ev.target.closest('[data-drawer-wide]')) { S.drawerWide = !S.drawerWide; S.dirtyDom = true; requestDraw(); return; }
       if (ev.target.closest('[data-drawer-back]')) { goBack(); return; }
       const tabBtn = ev.target.closest('[data-code-tab]');
@@ -1846,31 +2020,54 @@
         : `<div class="ns-search-empty">No matches for “${esc(q)}”</div>`;
     }
 
+    function closeMobileSearch() {
+      stageEl.classList.remove('search-open');
+      searchPop.hidden = true;
+      searchEl.blur();
+    }
+
     function activateSearchHit(h) {
       if (!h) return;
-      searchPop.hidden = true; searchEl.blur();
+      closeMobileSearch();
       if (h.kind === 'thm') { S.drawerOpen = true; selectTheorem(h.idx); }
       else if (h.kind === 'dir') { S.drawerOpen = true; selectCluster(h.idx); }
       else if (h.kind === 'file') selectFile(h.idx, { openDrawer: true, fit: true });
     }
 
+    if (searchOpenBtn) {
+      searchOpenBtn.addEventListener('click', () => {
+        stageEl.classList.add('search-open');
+        searchEl.focus();
+        if (searchEl.value.trim().length >= 2) runSearch(searchEl.value);
+      });
+    }
+    if (searchCloseBtn) {
+      searchCloseBtn.addEventListener('click', () => {
+        searchEl.value = '';
+        closeMobileSearch();
+      });
+    }
+
     searchEl.addEventListener('input', () => runSearch(searchEl.value));
     searchEl.addEventListener('focus', () => { if (searchEl.value.trim().length >= 2) runSearch(searchEl.value); });
     searchEl.addEventListener('keydown', ev => {
+      if (ev.key === 'Escape') { closeMobileSearch(); return; }
       if (searchPop.hidden || !searchHits.length) return;
       if (ev.key === 'ArrowDown') { ev.preventDefault(); searchSel = (searchSel + 1) % searchHits.length; }
       else if (ev.key === 'ArrowUp') { ev.preventDefault(); searchSel = (searchSel - 1 + searchHits.length) % searchHits.length; }
       else if (ev.key === 'Enter') { ev.preventDefault(); activateSearchHit(searchHits[searchSel]); return; }
-      else if (ev.key === 'Escape') { searchPop.hidden = true; searchEl.blur(); return; }
       else return;
       all('[data-sh]', searchPop).forEach((b, i) => b.classList.toggle('active', i === searchSel));
     });
-    searchPop.addEventListener('mousedown', ev => {
+    searchPop.addEventListener('click', ev => {
       const b = ev.target.closest('[data-sh]');
       if (b) { ev.preventDefault(); activateSearchHit(searchHits[+b.dataset.sh]); }
     });
     document.addEventListener('pointerdown', ev => {
-      if (!ev.target.closest('.ns-search-wrap')) searchPop.hidden = true;
+      if (!ev.target.closest('.ns-search-wrap')) {
+        searchPop.hidden = true;
+        if (stageEl.classList.contains('search-open')) stageEl.classList.remove('search-open');
+      }
     });
 
     // Keyboard shortcuts (/, Space, I, W, F, R/0, +/-, [, Esc)
@@ -1925,9 +2122,42 @@
       if (syncStageSize()) {
         if (!S.camInited) fitFullNow(false);
         else S.baseK = fitFullTarget(stageW, stageH).k;
+        syncTouchAction();
+        if (S.drawerOpen) renderDrawer();
         requestDraw();
       }
     }).observe(stageEl);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (S.fullscreen && syncStageSize()) requestDraw();
+      });
+    }
+
+    let returnScrollY = null, returnArmed = false;
+    fig.showReturnPill = prevY => {
+      returnScrollY = prevY;
+      returnArmed = false;
+      if (backPill) backPill.hidden = false;
+    };
+    if (backPill) {
+      backPill.addEventListener('click', () => {
+        const y = returnScrollY;
+        returnScrollY = null;
+        returnArmed = false;
+        backPill.hidden = true;
+        if (y !== null) window.scrollTo({ top: y, behavior: reducedMotion() ? 'auto' : 'smooth' });
+      });
+      window.addEventListener('scroll', () => {
+        if (returnScrollY === null) return;
+        if (window.scrollY < returnScrollY - 220) returnArmed = true;
+        if (returnArmed && window.scrollY >= returnScrollY - 120) {
+          returnScrollY = null;
+          returnArmed = false;
+          backPill.hidden = true;
+        }
+      }, { passive: true });
+    }
 
     document.addEventListener('themechange', () => {
       refreshThemeCache();
@@ -2050,7 +2280,10 @@
     const a = ev.target.closest('a.act[href="#ns-mega"]');
     if (!a) return;
     ev.preventDefault();
+    const prevY = window.scrollY;
+    const figTop = rootFig.getBoundingClientRect().top + prevY;
     if (rootFig && rootFig.nsAction) rootFig.nsAction(a.dataset);
-    rootFig.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+    rootFig.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    if (prevY > figTop + 260 && rootFig.showReturnPill) rootFig.showReturnPill(prevY);
   });
 })();
