@@ -462,6 +462,21 @@
   cursor: pointer;
 }
 .ns-drawer-path button:hover { border-color: var(--ns-blue); color: var(--ns-blue); }
+.ns-sib-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+.ns-sib-nav .ns-sib-pos {
+  font: 600 9.5px/1.2 var(--mono);
+  color: var(--fg-3);
+  padding: 0 3px;
+}
+.ns-sib-nav button {
+  padding: 1.5px 6px;
+  min-width: 24px;
+}
 
 .ns-code-bar {
   display: flex;

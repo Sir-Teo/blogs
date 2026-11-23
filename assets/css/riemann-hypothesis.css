@@ -467,6 +467,21 @@
   cursor: pointer;
 }
 .rh-drawer-path button:hover { border-color: var(--rh-blue); color: var(--rh-blue); }
+.rh-sib-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+.rh-sib-nav .rh-sib-pos {
+  font: 600 9.5px/1.2 var(--mono);
+  color: var(--fg-3);
+  padding: 0 3px;
+}
+.rh-sib-nav button {
+  padding: 1.5px 6px;
+  min-width: 24px;
+}
 
 /* Code toolbar & numbered syntax-highlighted Lean 4 proof viewer */
 .rh-code-bar {

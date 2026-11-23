@@ -30,17 +30,32 @@
       : (((r & 255) << 24) | ((g & 255) << 16) | ((b & 255) << 8) | (aa & 255)) >>> 0;
   }
 
+  const rgbCache = new Map();
+  const alphaCache = new Map();
+
   function hexRgb(hex) {
+    let hit = rgbCache.get(hex);
+    if (hit) return hit;
     const h = (hex || '#6ea8ff').replace('#', '');
-    return h.length === 3
+    hit = h.length === 3
       ? [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]
       : [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    rgbCache.set(hex, hit);
+    return hit;
   }
 
   function alpha(hex, a) {
     if (!hex || !hex.startsWith('#')) return hex;
-    const [r, g, b] = hexRgb(hex);
-    return `rgba(${r},${g},${b},${a})`;
+    const q = (a * 200 + 0.5) | 0;
+    const k = hex + '|' + q;
+    let hit = alphaCache.get(k);
+    if (hit === undefined) {
+      const [r, g, b] = hexRgb(hex);
+      hit = `rgba(${r},${g},${b},${(q / 200).toFixed(3)})`;
+      if (alphaCache.size > 1200) alphaCache.clear();
+      alphaCache.set(k, hit);
+    }
+    return hit;
   }
 
   function readTokens() {
@@ -222,10 +237,11 @@
     const nonEmptyDirs = [];
     for (let i = 0; i < ND; i++) if (dirs[i][4] > 0) nonEmptyDirs.push(i);
 
-    // ---- Generate ALL 175,187 real .lean file stars deterministically (~11ms)
+    // ---- Generate ALL 175,187 real .lean file stars + O(1) starDir + 64x64 CSR Spatial Hash Grid (~16ms total!)
     const starX = new Float32Array(NS);
     const starY = new Float32Array(NS);
     const starT = new Uint8Array(NS);
+    const starDir = new Uint16Array(NS);
     const dirStarStart = new Int32Array(ND);
     const dirStarEnd = new Int32Array(ND);
 
@@ -236,6 +252,9 @@
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+
+    const SGRID_N = 64, SGRID_MIN = -745, SGRID_INV = SGRID_N / 1490;
+    const sGridOff = new Int32Array(SGRID_N * SGRID_N + 1);
 
     let sPtr = 0;
     for (let i = 0; i < ND; i++) {
@@ -250,14 +269,31 @@
           const gr = (rand() + rand() + rand() - 1.5) * 0.78;
           const a = ang + ga * sa;
           const r = clamp(rad + gr * sr, WRLD.rIn - 8, WRLD.rOut + 14);
-          starX[sPtr] = r * Math.cos(a);
-          starY[sPtr] = r * Math.sin(a);
+          const sx = r * Math.cos(a), sy = r * Math.sin(a);
+          starX[sPtr] = sx;
+          starY[sPtr] = sy;
           starT[sPtr] = ti;
+          starDir[sPtr] = i;
+          const gx = clamp(((sx - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+          const gy = clamp(((sy - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+          sGridOff[gy * SGRID_N + gx + 1]++;
           sPtr++;
         }
       }
       dirStarEnd[i] = sPtr;
     }
+    for (let c = 1; c < sGridOff.length; c++) sGridOff[c] += sGridOff[c - 1];
+    const sGridIds = new Int32Array(sPtr);
+    {
+      const cur = new Int32Array(sGridOff);
+      for (let i = 0; i < sPtr; i++) {
+        const gx = clamp(((starX[i] - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gy = clamp(((starY[i] - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        sGridIds[cur[gy * SGRID_N + gx]++] = i;
+      }
+    }
+    const placedBuf = new Float32Array(1024); // zero-allocation label collision buffer
+    let shardVer = 0;
 
     // ---- Lazy Spatial Size-Capped Filename Shard Loader (s0.txt .. s17.txt)
     const shardLoaded = new Array(NUM_SHARDS).fill(false);
@@ -296,6 +332,8 @@
         .then(txt => {
           decodeShard(txt);
           shardLoaded[sid] = true;
+          shardVer++;
+          if (typeof requestDraw === 'function') requestDraw();
           return true;
         })
         .catch(() => { shardPromise[sid] = null; return false; });
@@ -310,14 +348,7 @@
     }
 
     function starToDir(starIdx) {
-      let lo = 0, hi = ND - 1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        if (starIdx < dirStarStart[mid]) hi = mid - 1;
-        else if (starIdx >= dirStarEnd[mid]) lo = mid + 1;
-        else return mid;
-      }
-      return -1;
+      return (starIdx >= 0 && starIdx < sPtr) ? starDir[starIdx] : -1;
     }
 
     function starRelInfo(starIdx, diHint = -1) {
@@ -394,6 +425,7 @@
           const parsed = parseLeanSource(txt);
           leanCache.set(relPath, parsed);
           if (onDone) onDone(parsed);
+          else if (S.hovType === 'file' && typeof requestDraw === 'function') requestDraw();
         })
         .catch(err => {
           leanCache.set(relPath, { status: 'err', err: String(err.message || err) });
@@ -403,7 +435,7 @@
 
     // ---- Cached Theme Palette (zero per-frame getComputedStyle!)
     let cachedT = null, terrCols = [], terrRgb = [], terrCol32Lit = [], terrCol32Dim = [], stratColMap = {};
-    let liveImg = null, liveBuf32 = null, liveW = 0, liveH = 0, liveKey = '';
+    let liveImg = null, liveBuf32 = null, liveW = 0, liveH = 0, liveKey = '', sceneKey = '';
     const twCache = new Map();
 
     function refreshThemeCache() {
@@ -415,7 +447,9 @@
       terrCol32Dim = terrRgb.map(([r, g, b]) => rgba32(r, g, b, 0.16));
       stratColMap = { arith: cachedT.amber, est: cachedT.blue, ana: cachedT.good, dest: cachedT.blue };
       twCache.clear();
+      alphaCache.clear();
       liveKey = '';
+      sceneKey = '';
     }
     refreshThemeCache();
 
@@ -469,27 +503,33 @@
 
       const wx0 = (0 - ox) / k - 8, wx1 = (w - ox) / k + 8;
       const wy0 = (0 - oy) / k - 8, wy1 = (H - oy) / k + 8;
-      const bigDot = k >= 4.2;
+      const gx0 = clamp(((wx0 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+      const gx1 = clamp(((wx1 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+      const gy0 = clamp(((wy0 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+      const gy1 = clamp(((wy1 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+      const bigDot = k >= 3.0;
       const limX = w - (bigDot ? 1 : 0), limY = H - (bigDot ? 1 : 0);
 
-      for (let j = 0; j < nonEmptyDirs.length; j++) {
-        const di = nonEmptyDirs[j], d = dirs[di];
-        const pad = d[11] + 24;
-        if (d[5] + pad < wx0 || d[5] - pad > wx1 || d[6] + pad < wy0 || d[6] - pad > wy1) continue;
-        const ti = d[1];
-        const c32 = (!hasDirSel || litDir[di]) ? terrCol32Lit[ti] : terrCol32Dim[ti];
-        const a = dirStarStart[di], b = dirStarEnd[di];
-        for (let i = a; i < b; i++) {
-          const sx = (starX[i] * k + ox) | 0;
-          if (sx < 0 || sx >= limX) continue;
-          const sy = (starY[i] * k + oy) | 0;
-          if (sy < 0 || sy >= limY) continue;
-          const off = sy * w + sx;
-          liveBuf32[off] = c32;
-          if (bigDot) {
-            liveBuf32[off + 1] = c32;
-            liveBuf32[off + w] = c32;
-            liveBuf32[off + w + 1] = c32;
+      // Iterate ONLY visible spatial grid cells (O(visible) instead of scanning 2,800+ dirs!)
+      for (let gy = gy0; gy <= gy1; gy++) {
+        const row = gy * SGRID_N;
+        for (let gx = gx0; gx <= gx1; gx++) {
+          const c = row + gx;
+          for (let p = sGridOff[c], e = sGridOff[c + 1]; p < e; p++) {
+            const i = sGridIds[p];
+            const sx = (starX[i] * k + ox) | 0;
+            if (sx < 0 || sx >= limX) continue;
+            const sy = (starY[i] * k + oy) | 0;
+            if (sy < 0 || sy >= limY) continue;
+            const ti = starT[i];
+            const c32 = (!hasDirSel || litDir[starDir[i]]) ? terrCol32Lit[ti] : terrCol32Dim[ti];
+            const off = sy * w + sx;
+            liveBuf32[off] = c32;
+            if (bigDot) {
+              liveBuf32[off + 1] = c32;
+              liveBuf32[off + w] = c32;
+              liveBuf32[off + w + 1] = c32;
+            }
           }
         }
       }
@@ -752,6 +792,7 @@
     function selectTheorem(idx, { fit = true, animate = true, record = true } = {}) {
       if (record) pushHistory();
       S.cascade = -1; S.cascadeFreeze = false; S.vel.x = 0; S.vel.y = 0; S.peekPt = null;
+      S.hovType = null; S.hovIdx = -1; S.hovDir = -1; S.hovTerr = -1;
       S.selType = 'thm'; S.selThm = idx; S.selDir = -1; S.selStar = -1; S.selFile = null;
       S.selLine = parseLineFromUrl(thms[idx].u);
       S.codeTab = 'full'; S.showAllLines = false;
@@ -767,6 +808,7 @@
     function selectDirectory(di, { fit = true, animate = true, record = true } = {}) {
       if (record) pushHistory();
       S.cascade = -1; S.cascadeFreeze = false; S.vel.x = 0; S.vel.y = 0; S.peekPt = null;
+      S.hovType = null; S.hovIdx = -1; S.hovDir = -1; S.hovTerr = -1;
       S.selType = 'dir'; S.selDir = di; S.selThm = -1; S.selStar = -1; S.selFile = null;
       S.selLine = 0; S.dirFilter = ''; S.dirLimit = 80; S.fileImports = []; S.importReqSeq++;
       rebuildMask();
@@ -783,6 +825,7 @@
       if (!info) return;
       if (record) pushHistory();
       S.cascade = -1; S.cascadeFreeze = false; S.vel.x = 0; S.vel.y = 0; S.peekPt = null;
+      S.hovType = null; S.hovIdx = -1; S.hovDir = -1; S.hovTerr = -1;
       S.selType = 'file'; S.selStar = info.starIdx; S.selDir = info.di; S.selThm = -1; S.selFile = info;
       S.selLine = line; S.codeTab = 'full'; S.showAllLines = false;
       if (openDrawer) S.drawerOpen = true;
@@ -847,6 +890,9 @@
     const stageEl = $('.rh-stage', el);
     const canvas = $('.rh-canvas', el);
     const ctx = canvas.getContext('2d', { alpha: false });
+    const sceneCanvas = document.createElement('canvas');
+    const sceneCtx = sceneCanvas.getContext('2d', { alpha: false });
+    let cachedPhotons = [];
     const footEl = $('.rh-foot', el);
     const searchEl = $('.rh-search', el);
     const searchPop = $('.rh-search-pop', el);
@@ -905,9 +951,12 @@
       if (canvas.width !== Math.round(nw * dpr) || canvas.height !== Math.round(nh * dpr)) {
         canvas.width = Math.round(nw * dpr);
         canvas.height = Math.round(nh * dpr);
+        sceneCanvas.width = canvas.width;
+        sceneCanvas.height = canvas.height;
         canvas.style.width = nw + 'px';
         canvas.style.height = nh + 'px';
         liveKey = '';
+        sceneKey = '';
       }
       return changed;
     }
@@ -1015,11 +1064,12 @@
     }
 
     // ---- Render Frosted Glass Full Lean 4 Proof Inspector Drawer
+    const fmtTitle = s => esc(s).replace(/\.lean$/, '<wbr>.lean').replace(/([a-z])([A-Z])/g, '$1<wbr>$2');
     function drawerHeaderHtml(titleText) {
       return (
         `<div class="rh-sheet-grab" data-sheet-grab role="button" tabindex="0" aria-label="Drag to resize or close inspector"></div>` +
         `<div class="rh-drawer-head">` +
-          `<div class="rh-drawer-title" title="${esc(titleText)}">${esc(titleText)}</div>` +
+          `<div class="rh-drawer-title" title="${esc(titleText)}">${fmtTitle(titleText)}</div>` +
           `<div class="rh-drawer-acts">` +
             (S.history.length ? `<button type="button" class="rh-drawer-btn" data-drawer-back title="Back ([)">←</button>` : '') +
             `<button type="button" class="rh-drawer-btn" data-drawer-tall aria-pressed="${S.sheetTall}" aria-label="${S.sheetTall ? 'Half sheet' : 'Expand sheet'}">${S.sheetTall ? '↓' : '↑'}</button>` +
@@ -1156,6 +1206,16 @@
         const f = S.selFile, d = dirs[f.di], tb = terrs[d[1]];
         const entry = leanCache.get(f.relPath);
         const hosted = thmsByMod.get(f.modName) || [];
+        const fns = dirFiles[f.di];
+        const totalSibs = fns ? fns.length : d[4];
+        const pos = f.starIdx - dirStarStart[f.di];
+        const hasSibs = totalSibs > 1 && pos >= 0 && pos < totalSibs;
+        const prevStar = hasSibs ? dirStarStart[f.di] + ((pos - 1 + totalSibs) % totalSibs) : -1;
+        const nextStar = hasSibs ? dirStarStart[f.di] + ((pos + 1) % totalSibs) : -1;
+        if (hasSibs && fns) {
+          const nextStem = fns[(pos + 1) % totalSibs];
+          if (nextStem) loadLeanFile(f.dp ? `${f.dp}/${nextStem}` : nextStem); // zero-wait sibling prefetch!
+        }
         const ghUrl = `${GH_BLOB}/${f.relPath}.lean${S.selLine ? `#L${S.selLine}` : ''}`;
         const sec = proofCodeSectionHtml(f.relPath, '', S.selLine, ghUrl);
         drawerEl.innerHTML =
@@ -1165,11 +1225,20 @@
               `<span class="rh-tag amber">Lean 4 file</span>` +
               `<span class="rh-tag">${esc(tb.short)}</span>` +
               (entry && entry.status === 'ok'
-                ? `<span class="rh-tag">${num(entry.lines.length)} lines</span><span class="rh-tag good">${entry.decls.length} decls</span>`
+                ? `<span class="rh-tag">${num(entry.lines.length)} lines</span>` +
+                  `<span class="rh-tag good">${entry.decls.length} decls</span>` +
+                  `<span class="rh-tag blue">${entry.imports.length}↑${entry.extImports.length ? ` · ${entry.extImports.length} ext` : ''}</span>`
                 : '') +
             `</div>` +
             `<div class="rh-drawer-path">` +
               `<button type="button" data-jump-dir="${f.di}">← ${esc(d[8])} (${num(d[4])})</button>` +
+              (hasSibs
+                ? `<span class="rh-sib-nav">` +
+                    `<button type="button" data-open-star="${prevStar}" data-open-di="${f.di}" title="Previous file in folder (,)">‹</button>` +
+                    `<span class="rh-sib-pos">${pos + 1}/${num(totalSibs)}</span>` +
+                    `<button type="button" data-open-star="${nextStar}" data-open-di="${f.di}" title="Next file in folder (.)">›</button>` +
+                  `</span>`
+                : '') +
               `<span>${fmtPath(f.dp || 'src/')}</span>` +
             `</div>` +
             (hosted.length
@@ -1255,13 +1324,553 @@
     }
 
     // --------------------------------------------------------- master render
+    // Two-layer architecture: static scene cached into sceneCanvas (batched draw calls + CSR spatial grid +
+    // zero-alloc label boxes), while dynamic photons, pulsing reticles & 3-line point cards draw on top in < 0.2ms!
     let view = { w: 800, h: 600, k: 0.4, ox: 400, oy: 300 };
     let lastZoomTxt = '';
+
+    function renderStaticScene(sc, w, H, k, ox, oy, T, relZoom, cas, casActive, waveR, waveH, hasThmSel, hasDirSel, hasFileSel) {
+      sc.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
+      const toSX = x => x * k + ox;
+      const toSY = y => y * k + oy;
+
+      const wx0 = (0 - ox) / k - 20, wx1 = (w - ox) / k + 20;
+      const wy0 = (0 - oy) / k - 20, wy1 = (H - oy) / k + 20;
+      if (k >= 1.25) preloadVisibleShards(wx0, wx1, wy0, wy1);
+
+      // ---- 0. Deep radial cosmos backdrop
+      sc.fillStyle = T.bg;
+      sc.fillRect(0, 0, w, H);
+      const cx0 = ox, cy0 = oy;
+      const bgGlow = sc.createRadialGradient(cx0, cy0, 8 * k, cx0, cy0, 760 * k);
+      bgGlow.addColorStop(0, alpha(T.blue, T.dark ? 0.11 : 0.05));
+      bgGlow.addColorStop(0.45, alpha(T.blue, T.dark ? 0.03 : 0.014));
+      bgGlow.addColorStop(1, alpha(T.blue, 0));
+      sc.fillStyle = bgGlow;
+      sc.fillRect(0, 0, w, H);
+
+      const { ancThm, descThm, litDir, hostDir } = mask;
+
+      let placedN = 0;
+      function tryPlace(x0, y0, x1, y1) {
+        if (placedN >= 256 || x1 < 4 || x0 > w - 4 || y1 < 34 || y0 > H - 40) return false;
+        for (let i = 0; i < placedN; i++) {
+          const o = i << 2;
+          if (x0 < placedBuf[o + 2] + 3 && x1 > placedBuf[o] - 3 && y0 < placedBuf[o + 3] + 2 && y1 > placedBuf[o + 1] - 2) return false;
+        }
+        const o = placedN << 2;
+        placedBuf[o] = x0; placedBuf[o + 1] = y0; placedBuf[o + 2] = x1; placedBuf[o + 3] = y1;
+        placedN++;
+        return true;
+      }
+
+      // ---- 1. Swiss Astronomical Astrolabe Rings, 72 Degree Ticks & 12 Sector Arcs
+      const rings = [
+        [38, 0.24, null],
+        [128, 0.10, [2, 4]],
+        [236, 0.08, [2, 5]],
+        [WRLD.rCore, 0.24, [3, 4]],
+        [WRLD.rIn - 6, 0.16, null],
+        [WRLD.rOut + 14, 0.22, null],
+      ];
+      sc.lineWidth = 0.85;
+      for (let ri = 0; ri < rings.length; ri++) {
+        const [rr, op, dash] = rings[ri];
+        const rk = rr * k;
+        if (cx0 + rk < -10 || cx0 - rk > w + 10 || cy0 + rk < -10 || cy0 - rk > H + 10) continue;
+        sc.save();
+        if (dash) sc.setLineDash(dash);
+        sc.strokeStyle = alpha(T.fg3, T.dark ? op : op * 0.9);
+        sc.beginPath(); sc.arc(cx0, cy0, rk, 0, Math.PI * 2); sc.stroke();
+        sc.restore();
+      }
+
+      if (k < 2.2) {
+        sc.beginPath();
+        const tickR0 = (WRLD.rOut + 14) * k;
+        const tickScale = clamp(k / 0.4, 0.7, 1.4);
+        for (let deg = 0; deg < 360; deg += 5) {
+          const a = (deg * Math.PI) / 180;
+          const ca = Math.cos(a), sa = Math.sin(a);
+          const len = (deg % 30 === 0 ? 7 : 3.5) * tickScale;
+          sc.moveTo(cx0 + tickR0 * ca, cy0 + tickR0 * sa);
+          sc.lineTo(cx0 + (tickR0 + len) * ca, cy0 + (tickR0 + len) * sa);
+        }
+        sc.strokeStyle = alpha(T.fg3, T.dark ? 0.24 : 0.22);
+        sc.lineWidth = 0.75;
+        sc.stroke();
+      }
+
+      if (k > 0.34 && k < 3.2) {
+        sc.font = `600 8px ${T.mono}`;
+        sc.textAlign = 'center';
+        const moatR = (WRLD.rCore + 12) * k;
+        const whispers = [
+          [0, -1, 'ARITHMETIC SUPPLY', T.amber],
+          [0.7431, 0.6691, 'THE ESTIMATE · √x', T.blue],
+          [-0.7431, 0.6691, 'ANALYTIC ENGINE', T.good],
+        ];
+        for (let i = 0; i < 3; i++) {
+          const [ca, sa, txt, col] = whispers[i];
+          const lx = cx0 + moatR * ca, ly = cy0 + moatR * sa;
+          if (lx > 20 && lx < w - 20 && ly > 36 && ly < H - 44) {
+            sc.fillStyle = alpha(col, T.dark ? 0.56 : 0.62);
+            sc.fillText(txt, lx, ly + 3);
+          }
+        }
+      }
+
+      const rInK = (WRLD.rIn - 6) * k, rOutK = (WRLD.rOut + 14) * k, rArcK = (WRLD.rOut + 18) * k;
+      for (let ti = 0; ti < terrs.length; ti++) {
+        const tb = terrs[ti], tm = terrMid[ti], col = terrCols[ti];
+        const isSelTerr = (hasDirSel && dirs[S.selDir][1] === ti) || (hasFileSel && dirs[S.selFile.di][1] === ti);
+        const isHovTerr = S.hovTerr === ti;
+        sc.beginPath();
+        sc.arc(cx0, cy0, rOutK, tb.a0, tb.a1);
+        sc.arc(cx0, cy0, rInK, tb.a1, tb.a0, true);
+        sc.closePath();
+        sc.fillStyle = alpha(col, isSelTerr || isHovTerr ? (T.dark ? 0.095 : 0.068) : (T.dark ? 0.026 : 0.020));
+        sc.fill();
+
+        sc.beginPath();
+        sc.arc(cx0, cy0, rArcK, tb.a0, tb.a1);
+        sc.strokeStyle = alpha(col, isSelTerr || isHovTerr ? 1.0 : (hasDirSel ? 0.26 : 0.76));
+        sc.lineWidth = isSelTerr || isHovTerr ? 3.5 : 2.2;
+        sc.stroke();
+
+        sc.beginPath();
+        sc.moveTo(cx0 + rInK * tm.ca0, cy0 + rInK * tm.sa0);
+        sc.lineTo(cx0 + rOutK * tm.ca0, cy0 + rOutK * tm.sa0);
+        sc.strokeStyle = alpha(T.line2, T.dark ? 0.42 : 0.52);
+        sc.lineWidth = 0.75;
+        sc.stroke();
+      }
+
+      // ---- 2. TWO-LAYER ASTROPHOTOGRAPHY: Nebula Bloom + ALL 175,187 REAL .LEAN FILE STARS!
+      const bx = toSX(-BAKE_R), by = toSY(-BAKE_R), bw = 2 * BAKE_R * k;
+      const starDim = hasDirSel ? 0.22 : hasFileSel ? 0.52 : (casActive && cas < 0.45 ? 0.78 : 1.0);
+
+      sc.save();
+      sc.globalAlpha = hasDirSel ? 0.25 : hasFileSel ? 0.45 : 1.0;
+      sc.drawImage(nebCanvas, bx, by, bw, bw);
+      sc.restore();
+
+      if (k < 2.15) {
+        sc.save();
+        sc.globalAlpha = starDim;
+        sc.drawImage(starCanvas, bx, by, bw, bw);
+        sc.restore();
+        if (hasDirSel) sc.drawImage(selStarCanvas, bx, by, bw, bw);
+      } else {
+        // Direct Uint32Array cached viewport star layer via CSR spatial grid (~0.4ms render!)
+        renderLiveStarsCached(w, H, k, ox, oy, hasDirSel, litDir, T);
+        sc.drawImage(liveCanvas, 0, 0, w, H);
+      }
+
+      // ---- 3. Polar Phylogenetic Directory Branches + Directory Hubs
+      const treeDim = hasDirSel || hasFileSel ? 0.16 : 0.56;
+      const treeLW = clamp(0.62 * Math.sqrt(k / 0.4), 0.42, 1.3);
+      for (let ti = 0; ti < terrs.length; ti++) {
+        const col = terrCols[ti], list = dirsByTerr[ti];
+        const boosted = S.hovTerr === ti ? 1.55 : 1.0;
+        sc.beginPath();
+        for (let j = 0; j < list.length; j++) {
+          const i = list[j], d = dirs[i], pi = d[0];
+          if (pi < 0) continue;
+          const p = dirs[pi];
+          const x0 = p[5] * k + ox, y0 = p[6] * k + oy, x1 = d[5] * k + ox, y1 = d[6] * k + oy;
+          if ((x0 < -20 && x1 < -20) || (x0 > w + 20 && x1 > w + 20) || (y0 < -20 && y1 < -20) || (y0 > H + 20 && y1 > H + 20)) continue;
+          sc.moveTo(x0, y0); sc.lineTo(x1, y1);
+        }
+        sc.strokeStyle = alpha(col, Math.min(0.65, (T.dark ? 0.25 : 0.19) * treeDim * boosted));
+        sc.lineWidth = treeLW;
+        sc.stroke();
+
+        if (k > 0.58) {
+          sc.beginPath();
+          const hr = clamp(1.3 * Math.pow(k / 0.8, 0.3), 1.0, 2.8);
+          for (let j = 0; j < list.length; j++) {
+            const i = list[j], d = dirs[i];
+            if (litDir[i] || hostDir[i]) continue;
+            const sx = d[5] * k + ox, sy = d[6] * k + oy;
+            if (sx < -6 || sx > w + 6 || sy < -6 || sy > H + 6) continue;
+            sc.moveTo(sx + hr, sy); sc.arc(sx, sy, hr, 0, Math.PI * 2);
+          }
+          sc.fillStyle = alpha(col, (T.dark ? 0.55 : 0.44) * treeDim);
+          sc.fill();
+        }
+      }
+
+      if (hasDirSel) {
+        const selCol = terrCols[dirs[S.selDir][1]];
+        sc.beginPath();
+        for (let i = 0; i < ND; i++) {
+          if (!litDir[i]) continue;
+          const d = dirs[i], pi = d[0];
+          if (pi >= 0 && litDir[pi]) { sc.moveTo(dirs[pi][5] * k + ox, dirs[pi][6] * k + oy); sc.lineTo(d[5] * k + ox, d[6] * k + oy); }
+        }
+        sc.strokeStyle = alpha(selCol, 0.88); sc.lineWidth = 1.35; sc.stroke();
+        const sd = dirs[S.selDir], sx = sd[5] * k + ox, sy = sd[6] * k + oy;
+        const g = sc.createRadialGradient(sx, sy, 2, sx, sy, 24);
+        g.addColorStop(0, alpha(selCol, 0.58)); g.addColorStop(1, alpha(selCol, 0));
+        sc.fillStyle = g; sc.beginPath(); sc.arc(sx, sy, 24, 0, Math.PI * 2); sc.fill();
+        sc.beginPath(); sc.arc(sx, sy, 5.5, 0, Math.PI * 2); sc.fillStyle = selCol; sc.fill();
+        sc.strokeStyle = T.bg; sc.lineWidth = 1.8; sc.stroke();
+      }
+
+      // ---- 4. Luminous Host Bridge Fibers
+      const casBridgeGlow = casActive ? Math.max(0, 1 - Math.abs(cas - 0.39) * 5.2) : 0;
+      sc.beginPath();
+      for (let i = 0; i < NT; i++) {
+        const t = thms[i];
+        if (t.di < 0) continue;
+        const onCone = (hasThmSel && (i === S.selThm || ancThm[i] || descThm[i])) || ((hasDirSel || hasFileSel) && descThm[i]);
+        if (onCone && !casActive) continue;
+        const d = dirs[t.di];
+        const ax = d[5] * k + ox, ay = d[6] * k + oy, bx0 = t.x * k + ox, by0 = t.y * k + oy;
+        const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.25;
+        const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.25;
+        sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, bx0, by0);
+      }
+      sc.strokeStyle = casBridgeGlow > 0.05
+        ? alpha(T.amber, 0.10 + casBridgeGlow * 0.55)
+        : alpha(T.fg3, T.dark ? 0.085 : 0.068);
+      sc.lineWidth = 0.65 + casBridgeGlow * 1.1;
+      sc.stroke();
+
+      if (!casActive) {
+        for (let i = 0; i < NT; i++) {
+          const t = thms[i];
+          if (t.di < 0) continue;
+          const isPrimary = hasThmSel && i === S.selThm;
+          const isAnc = hasThmSel && ancThm[i];
+          const isDesc = (hasThmSel || hasDirSel || hasFileSel) && descThm[i];
+          if (!isPrimary && !isAnc && !isDesc) continue;
+          const d = dirs[t.di];
+          const ax = d[5] * k + ox, ay = d[6] * k + oy, bx0 = t.x * k + ox, by0 = t.y * k + oy;
+          const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.25;
+          const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.25;
+          const col = isPrimary ? T.blue : isAnc ? T.amber : T.blue;
+          sc.save();
+          if (!isPrimary) sc.setLineDash([2.5, 3]);
+          sc.beginPath(); sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, bx0, by0);
+          sc.strokeStyle = alpha(col, isPrimary ? 0.78 : 0.28);
+          sc.lineWidth = isPrimary ? 1.7 : 0.9;
+          sc.stroke(); sc.restore();
+          sc.beginPath(); sc.arc(ax, ay, isPrimary ? 5.2 : 3.2, 0, Math.PI * 2);
+          sc.fillStyle = col; sc.fill(); sc.strokeStyle = T.bg; sc.lineWidth = 1.2; sc.stroke();
+        }
+      }
+
+      // ---- 4B. LIVE CROSS-COSMOS FILE IMPORT ARCS (batched!)
+      const photons = [];
+      if (!casActive && S.fileImports.length) {
+        let srcX = 0, srcY = 0, hasSrc = false;
+        if (hasFileSel) { srcX = toSX(S.selFile.x); srcY = toSY(S.selFile.y); hasSrc = true; }
+        else if (hasThmSel && S.drawerOpen) { srcX = toSX(thms[S.selThm].x); srcY = toSY(thms[S.selThm].y); hasSrc = true; }
+        if (hasSrc) {
+          sc.beginPath();
+          for (let i = 0; i < S.fileImports.length; i++) {
+            const imp = S.fileImports[i];
+            const ax = imp.x * k + ox, ay = imp.y * k + oy;
+            const mx = (ax + srcX) * 0.5 + (cx0 - (ax + srcX) * 0.5) * 0.22;
+            const my = (ay + srcY) * 0.5 + (cy0 - (ay + srcY) * 0.5) * 0.22;
+            sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, srcX, srcY);
+            photons.push([ax, ay, mx, my, srcX, srcY, 0]);
+          }
+          sc.strokeStyle = alpha(T.amber, T.dark ? 0.22 : 0.16); sc.lineWidth = 4.2; sc.stroke();
+          sc.strokeStyle = alpha(T.amber, 0.88); sc.lineWidth = 1.35; sc.stroke();
+
+          sc.beginPath();
+          for (let i = 0; i < S.fileImports.length; i++) {
+            const imp = S.fileImports[i], ax = imp.x * k + ox, ay = imp.y * k + oy;
+            sc.moveTo(ax + 4.2, ay); sc.arc(ax, ay, 4.2, 0, Math.PI * 2);
+          }
+          sc.fillStyle = T.amber; sc.fill();
+          sc.strokeStyle = T.bg; sc.lineWidth = 1.3; sc.stroke();
+        }
+      }
+
+      // ---- 5. All 113 Verified Call Arcs (BATCHED into ~5 GPU stroke calls!)
+      if (casActive) {
+        for (let ei = 0; ei < edges.length; ei++) {
+          const [u, v] = edges[ei], a = thms[u], b = thms[v];
+          const ax = a.x * k + ox, ay = a.y * k + oy, bx0 = b.x * k + ox, by0 = b.y * k + oy;
+          if ((ax < -40 && bx0 < -40) || (ax > w + 40 && bx0 > w + 40) || (ay < -40 && by0 < -40) || (ay > H + 40 && by0 > H + 40)) continue;
+          const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.26;
+          const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.26;
+          const lit = a.h >= waveH - 0.5;
+          const fresh = Math.max(0, 1 - Math.abs(a.h - waveH) * 0.55);
+          if (lit) {
+            const col = fresh > 0.3 ? T.blue : T.amber;
+            sc.beginPath(); sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, bx0, by0);
+            sc.strokeStyle = alpha(col, 0.14 + fresh * 0.28); sc.lineWidth = 4.2 + fresh * 2; sc.stroke();
+            sc.strokeStyle = alpha(col, 0.75 + fresh * 0.25); sc.lineWidth = 1.5 + fresh * 0.7; sc.stroke();
+            if (fresh > 0.15) photons.push([ax, ay, mx, my, bx0, by0, fresh > 0.3 ? 1 : 0]);
+          } else {
+            sc.beginPath(); sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, bx0, by0);
+            sc.strokeStyle = alpha(T.fg3, 0.12); sc.lineWidth = 0.75; sc.stroke();
+          }
+        }
+      } else {
+        const upArcs = [], dnArcs = [];
+        sc.beginPath();
+        for (let ei = 0; ei < edges.length; ei++) {
+          const [u, v] = edges[ei], a = thms[u], b = thms[v];
+          const ax = a.x * k + ox, ay = a.y * k + oy, bx0 = b.x * k + ox, by0 = b.y * k + oy;
+          if ((ax < -40 && bx0 < -40) || (ax > w + 40 && bx0 > w + 40) || (ay < -40 && by0 < -40) || (ay > H + 40 && by0 > H + 40)) continue;
+          const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.26;
+          const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.26;
+          const isUp = hasThmSel && ((v === S.selThm && ancThm[u]) || (ancThm[v] && ancThm[u]));
+          const isDn = (hasThmSel && ((u === S.selThm && descThm[v]) || (descThm[u] && descThm[v]))) ||
+                       ((hasDirSel || hasFileSel) && descThm[u] && descThm[v]);
+          if (isUp) {
+            upArcs.push(ax, ay, mx, my, bx0, by0);
+            photons.push([ax, ay, mx, my, bx0, by0, 0]);
+          } else if (isDn) {
+            dnArcs.push(ax, ay, mx, my, bx0, by0);
+            photons.push([ax, ay, mx, my, bx0, by0, 1]);
+          } else {
+            sc.moveTo(ax, ay); sc.quadraticCurveTo(mx, my, bx0, by0);
+          }
+        }
+        sc.strokeStyle = alpha(T.fg3, T.dark ? 0.22 : 0.17); sc.lineWidth = 0.85; sc.stroke();
+
+        const strokeBatch = (arr, col, glowA, coreA, glowW, coreW) => {
+          if (!arr.length) return;
+          sc.beginPath();
+          for (let i = 0; i < arr.length; i += 6) {
+            sc.moveTo(arr[i], arr[i + 1]); sc.quadraticCurveTo(arr[i + 2], arr[i + 3], arr[i + 4], arr[i + 5]);
+          }
+          if (glowW > 0) { sc.strokeStyle = alpha(col, glowA); sc.lineWidth = glowW; sc.stroke(); }
+          sc.strokeStyle = alpha(col, coreA); sc.lineWidth = coreW; sc.stroke();
+        };
+        strokeBatch(upArcs, T.amber, T.dark ? 0.18 : 0.14, 0.90, 4.6, 1.6);
+        strokeBatch(dnArcs, T.blue, T.dark ? 0.18 : 0.14, 0.90, 4.6, 1.6);
+      }
+
+      cachedPhotons = photons;
+      S.lastPhotons = photons.length;
+
+      // ---- 6. All 109 Verified Lean Declarations + Blazing Main.lean Core Singularity
+      const thmScale = clamp(Math.pow(k / 0.40, 0.30), 0.84, 1.75);
+      for (let i = 0; i < NT; i++) {
+        const t = thms[i];
+        const sx = t.x * k + ox, sy = t.y * k + oy;
+        if (sx < -24 || sx > w + 24 || sy < -24 || sy > H + 24) continue;
+        const isMain = t.id === 'main-rh', isExp = t.k === 'export';
+        const isSel = !casActive && hasThmSel && i === S.selThm;
+        const isAnc = !casActive && hasThmSel && ancThm[i];
+        const isDesc = !casActive && (hasThmSel || hasDirSel || hasFileSel) && descThm[i];
+        const casLit = casActive && t.h >= waveH - 0.5;
+        const casPeak = casActive ? Math.max(0, 1 - Math.abs(t.h - waveH) * 0.65) : 0;
+        const onCone = isSel || isAnc || isDesc || casLit;
+        const col = isMain || isExp ? T.blue : casPeak > 0.35 ? T.blue : isSel ? T.blue : (isAnc || casLit) ? T.amber : isDesc ? T.blue : stratColMap[t.s] || T.fg2;
+        const r = (isMain ? 8.5 : isExp ? 5.2 : isSel ? 6.4 : casPeak > 0.35 ? 5.8 : onCone ? 4.4 : 3.4) * thmScale;
+
+        if (isMain) {
+          const boost = casActive && cas > 0.88 ? 1 + (cas - 0.88) * 10 : 1;
+          const corona = sc.createRadialGradient(sx, sy, 2, sx, sy, r * 4.8 * Math.min(1.8, boost));
+          corona.addColorStop(0, alpha(T.blue, T.dark ? 0.70 : 0.45));
+          corona.addColorStop(0.4, alpha(T.blue, T.dark ? 0.24 : 0.14));
+          corona.addColorStop(1, alpha(T.blue, 0));
+          sc.fillStyle = corona; sc.beginPath(); sc.arc(sx, sy, r * 4.8 * Math.min(1.8, boost), 0, Math.PI * 2); sc.fill();
+        } else if (isSel || isExp || casPeak > 0.35) {
+          sc.fillStyle = alpha(col, 0.22);
+          sc.beginPath(); sc.arc(sx, sy, r * 2.4, 0, Math.PI * 2); sc.fill();
+        }
+
+        sc.beginPath(); sc.arc(sx, sy, r, 0, Math.PI * 2);
+        sc.fillStyle = isMain ? (T.dark ? '#ffffff' : T.blue) : (isSel || isExp || onCone ? col : T.bg);
+        sc.fill();
+        sc.lineWidth = isMain ? 2.5 : isSel ? 2.0 : onCone ? 1.3 : 1.1;
+        sc.strokeStyle = isMain ? T.blue : (isSel || isExp || onCone ? T.bg : alpha(col, hasThmSel || hasDirSel || hasFileSel ? 0.40 : 0.84));
+        sc.stroke();
+      }
+
+      // ---- 6B. Cinematic Cascade Wavefront Ring & Dual Q.E.D. Shockwave
+      if (casActive) {
+        if (cas < 0.90 && waveR > 10) {
+          const wr = waveR * k;
+          const r0 = Math.max(0, wr - 22), r1 = wr + 22;
+          const peak = clamp((wr - r0) / Math.max(1, r1 - r0), 0.05, 0.95);
+          const waveCol = cas < 0.42 ? T.amber : T.blue;
+          const wg = sc.createRadialGradient(cx0, cy0, r0, cx0, cy0, r1);
+          wg.addColorStop(0, alpha(waveCol, 0));
+          wg.addColorStop(peak, alpha(waveCol, T.dark ? 0.48 : 0.36));
+          wg.addColorStop(1, alpha(waveCol, 0));
+          sc.strokeStyle = wg; sc.lineWidth = 26;
+          sc.beginPath(); sc.arc(cx0, cy0, wr, 0, Math.PI * 2); sc.stroke();
+          sc.strokeStyle = alpha(T.dark ? '#ffffff' : waveCol, 0.88);
+          sc.lineWidth = 1.6;
+          sc.beginPath(); sc.arc(cx0, cy0, wr, 0, Math.PI * 2); sc.stroke();
+        }
+        if (cas >= 0.86) {
+          const p = clamp((cas - 0.86) / 0.14, 0, 1);
+          const shockR = (14 + p * 360) * k;
+          const echoR = (10 + Math.max(0, p - 0.18) * 260) * k;
+          sc.strokeStyle = alpha(T.blue, (1 - p) * 0.92);
+          sc.lineWidth = 3.2 * (1 - p) + 0.9;
+          sc.beginPath(); sc.arc(cx0, cy0, shockR, 0, Math.PI * 2); sc.stroke();
+          if (p > 0.18) {
+            sc.strokeStyle = alpha(T.amber, (1 - p) * 0.65);
+            sc.lineWidth = 1.6 * (1 - p) + 0.5;
+            sc.beginPath(); sc.arc(cx0, cy0, echoR, 0, Math.PI * 2); sc.stroke();
+          }
+          haloText(sc, 'Q.E.D. · 4 kernels · 3 axioms', cx0, cy0 + 28 * thmScale, T.blue, T.bg, 'center', `700 11px ${T.mono}`);
+        }
+      }
+
+      // ---- 7. Crisp Collision-Free Labels (zero-allocation placedBuf + deep-zoom .lean star labels!)
+      if (hasFileSel) {
+        const sx = toSX(S.selFile.x), sy = toSY(S.selFile.y);
+        const lbl = `${S.selFile.stem}.lean`, fnt = `700 10.5px ${T.mono}`;
+        const tw = measureW(fnt, lbl);
+        tryPlace(sx - tw / 2, sy - 24, sx + tw / 2, sy - 10);
+        tryPlace(sx - 18, sy - 7, sx + 18, sy + 18); // reserve pulsing reticle space below label
+        haloText(sc, lbl, sx, sy - 14, T.fg, T.bg, 'center', fnt);
+        const impFnt = `600 8.8px ${T.mono}`;
+        for (let i = 0; i < S.fileImports.length && i < 8; i++) {
+          const imp = S.fileImports[i], ix = toSX(imp.x), iy = toSY(imp.y);
+          const itw = measureW(impFnt, imp.stem);
+          if (tryPlace(ix - itw / 2, iy + 6, ix + itw / 2, iy + 17)) {
+            haloText(sc, imp.stem, ix, iy + 15, T.amber, T.bg, 'center', impFnt);
+          }
+        }
+      } else if (hasThmSel) {
+        const t = thms[S.selThm], sx = toSX(t.x), sy = toSY(t.y);
+        const lbl = t.id === 'main-rh' ? 'Main.lean · 12 lines' : (LANDMARK_THMS.get(t.id) || t.d.split('.').slice(-1)[0]);
+        const fnt = `700 11px ${T.sans}`, tw = measureW(fnt, lbl);
+        const ly = t.id === 'main-rh' ? sy - 16 : sy - 11;
+        tryPlace(sx - tw / 2, ly - 11, sx + tw / 2, ly + 2);
+        haloText(sc, lbl, sx, ly, T.fg, T.bg, 'center', fnt);
+      } else if (hasDirSel) {
+        const d = dirs[S.selDir], sx = toSX(d[5]), sy = toSY(d[6]);
+        const lbl = `${d[8]} (${num(d[3])})`, fnt = `700 11px ${T.sans}`, tw = measureW(fnt, lbl);
+        tryPlace(sx - tw / 2, sy - 20, sx + tw / 2, sy - 7);
+        haloText(sc, lbl, sx, sy - 10, T.fg, T.bg, 'center', fnt);
+      }
+
+      // Outer 12 Territory Labels (edge-clamped & compact on narrow phones!)
+      const narrowMob = w < 520;
+      const compactRim = w < 640;
+      const rimR = (WRLD.rOut + (narrowMob ? 15 : 28)) * k;
+      const tFontPx = clamp((narrowMob ? 8.6 : compactRim ? 8.8 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
+      const tFnt = `700 ${tFontPx.toFixed(1)}px ${T.sans}`;
+      for (let ti = 0; ti < terrs.length; ti++) {
+        const tm = terrMid[ti], col = terrCols[ti];
+        const rx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
+        const fullLbl = (narrowMob && relZoom < 1.35) ? tm.miniLbl : compactRim ? tm.shortLbl : tm.fullLbl;
+        const tw = measureW(tFnt, fullLbl);
+        const rawX0 = tm.rightSide ? rx : rx - tw;
+        const bx0 = narrowMob ? clamp(rawX0, 6, Math.max(6, w - 6 - tw)) : rawX0;
+        if (tryPlace(bx0, ly - tFontPx, bx0 + tw, ly + 3)) {
+          haloText(sc, fullLbl, narrowMob ? bx0 : rx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, narrowMob ? 'left' : (tm.rightSide ? 'left' : 'right'), tFnt);
+        }
+      }
+
+      // Top Mega-Clusters
+      const mFnt = `600 ${narrowMob ? 8.4 : 9}px ${T.mono}`;
+      const maxMega = narrowMob && relZoom < 1.25 ? 3 : (k < 0.52 ? 6 : megaLabels.length);
+      for (let m = 0; m < megaLabels.length && m < maxMega; m++) {
+        const ml = megaLabels[m];
+        const sx = ml.x * k + ox, sy = ml.y * k + oy;
+        const lbl = `${ml.label} ${(ml.files / 1000).toFixed(1)}k`;
+        const tw = measureW(mFnt, lbl);
+        const inwardRight = sx < cx0;
+        const lx = inwardRight ? sx + 11 : sx - 11;
+        const bx0 = inwardRight ? lx : lx - tw;
+        if (tryPlace(bx0, sy - 6, bx0 + tw, sy + 6)) {
+          haloText(sc, lbl, lx, sy + 3, alpha(T.fg, T.dark ? 0.90 : 0.84), T.bg, inwardRight ? 'left' : 'right', mFnt);
+        }
+      }
+
+      // Landmark theorems
+      for (const [id, lbl] of LANDMARK_THMS) {
+        const idx = thmById.get(id);
+        if (idx === undefined || (hasThmSel && idx === S.selThm)) continue;
+        const t = thms[idx], sx = t.x * k + ox, sy = t.y * k + oy;
+        const onCone = (hasThmSel && (ancThm[idx] || descThm[idx])) || ((hasDirSel || hasFileSel) && descThm[idx]);
+        const fnt = `${id === 'main-rh' || onCone ? '600' : '500'} ${id === 'main-rh' ? 10.5 : 9.2}px ${T.sans}`;
+        const tw = measureW(fnt, lbl);
+        const ly = sy + 14;
+        if (tryPlace(sx - tw / 2, ly - 10, sx + tw / 2, ly + 2)) {
+          haloText(sc, lbl, sx, ly, id === 'main-rh' ? T.blue : onCone ? T.fg2 : alpha(T.fg3, 0.82), T.bg, 'center', fnt);
+        }
+      }
+
+      // Deep-zoom semantic LOD labels (theorems, directories & individual .lean stars!)
+      if (k > 0.78) {
+        const lodFnt = `500 9.2px ${T.sans}`;
+        for (let i = 0; i < NT; i++) {
+          if (hasThmSel && i === S.selThm) continue;
+          const t = thms[i], sx = t.x * k + ox, sy = t.y * k + oy;
+          if (sx < 8 || sx > w - 8 || sy < 30 || sy > H - 40) continue;
+          const lbl = t.d.split('.').slice(-1)[0], tw = measureW(lodFnt, lbl);
+          if (tryPlace(sx - tw / 2, sy + 5, sx + tw / 2, sy + 16)) {
+            haloText(sc, lbl, sx, sy + 14, T.fg2, T.bg, 'center', lodFnt);
+          }
+        }
+      }
+      if (k > 1.35 && k < 4.5) {
+        const dFnt = `500 8.8px ${T.mono}`;
+        const cap = k > 3.0 ? 48 : 80;
+        let shown = 0;
+        for (let j = 0; j < ND && shown < cap; j++) {
+          const i = dirsBySize[j], d = dirs[i];
+          if (hasDirSel && i === S.selDir) continue;
+          if (k < 2.8 && d[3] < 35) break;
+          const sx = d[5] * k + ox, sy = d[6] * k + oy;
+          if (sx < 8 || sx > w - 8 || sy < 30 || sy > H - 42) continue;
+          const lbl = d[8], tw = measureW(dFnt, lbl);
+          if (tryPlace(sx - tw / 2, sy + 5, sx + tw / 2, sy + 15)) {
+            haloText(sc, lbl, sx, sy + 13, alpha(T.fg2, 0.88), T.bg, 'center', dFnt);
+            shown++;
+          }
+        }
+      }
+      // Deep-zoom individual .lean star labels via CSR spatial grid (bounded O(visible), crisp & airy!)
+      if (k >= 2.35) {
+        const sFnt = `500 8.5px ${T.mono}`;
+        const gx0 = clamp(((wx0 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gx1 = clamp(((wx1 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gy0 = clamp(((wy0 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gy1 = clamp(((wy1 - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const cap = k >= 4.2 ? 52 : 34;
+        let shown = 0;
+        for (let gy = gy0; gy <= gy1 && shown < cap; gy++) {
+          const row = gy * SGRID_N;
+          for (let gx = gx0; gx <= gx1 && shown < cap; gx++) {
+            const c = row + gx;
+            const p0 = sGridOff[c], p1 = sGridOff[c + 1];
+            const step = (p1 - p0) > 16 ? ((p1 - p0) / 16) | 0 : 1;
+            for (let p = p0; p < p1 && shown < cap; p += step) {
+              const i = sGridIds[p];
+              if (hasFileSel && i === S.selStar) continue;
+              const di = starDir[i];
+              if (hasDirSel && !litDir[di]) continue;
+              const fns = dirFiles[di];
+              if (!fns) continue;
+              const sx = starX[i] * k + ox, sy = starY[i] * k + oy;
+              if (sx < 14 || sx > w - 14 || sy < 36 || sy > H - 44) continue;
+              const stem = fns[i - dirStarStart[di]];
+              if (!stem) continue;
+              const lbl = stem.length > 28 ? stem.slice(0, 26) + '…' : stem;
+              const tw = measureW(sFnt, lbl);
+              if (sx - tw / 2 < 8 || sx + tw / 2 > w - 8) continue;
+              if (tryPlace(sx - tw / 2 - 6, sy + 4, sx + tw / 2 + 6, sy + 18)) {
+                haloText(sc, lbl, sx, sy + 13, alpha(T.fg2, litDir[di] ? 0.92 : 0.82), T.bg, 'center', sFnt);
+                shown++;
+              }
+            }
+          }
+        }
+      }
+    }
 
     function render(updateDom = false) {
       const T = cachedT;
       const w = stageW, H = stageH;
-      ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
       if (!S.camInited) fitFullNow(false);
 
       ensureBaked(T);
@@ -1283,373 +1892,106 @@
         syncTouchAction();
       }
 
-      if (k >= 1.85) {
-        preloadVisibleShards((0 - ox) / k - 20, (w - ox) / k + 20, (0 - oy) / k - 20, (H - oy) / k + 20);
-      }
-
       const cas = S.cascade;
       const casActive = cas >= 0;
       const waveR = casActive ? Math.max(0, 705 * (1 - clamp(cas / 0.90, 0, 1))) : -1;
       const waveH = casActive ? MAX_H * (1 - clamp((cas - 0.40) / 0.50, 0, 1)) : -1;
-
-      // ---- 0. Deep radial cosmos backdrop
-      ctx.fillStyle = T.bg;
-      ctx.fillRect(0, 0, w, H);
-      const cx0 = toSX(0), cy0 = toSY(0);
-      const bgGlow = ctx.createRadialGradient(cx0, cy0, 8 * k, cx0, cy0, 760 * k);
-      bgGlow.addColorStop(0, alpha(T.blue, T.dark ? 0.11 : 0.05));
-      bgGlow.addColorStop(0.45, alpha(T.blue, T.dark ? 0.03 : 0.014));
-      bgGlow.addColorStop(1, alpha(T.blue, 0));
-      ctx.fillStyle = bgGlow;
-      ctx.fillRect(0, 0, w, H);
-
-      const { ancThm, descThm, litDir, hostDir } = mask;
       const hasThmSel = S.selType === 'thm' && S.selThm >= 0;
       const hasDirSel = S.selType === 'dir' && S.selDir >= 0;
       const hasFileSel = S.selType === 'file' && !!S.selFile;
 
-      const placed = [];
-      function tryPlace(x0, y0, x1, y1) {
-        if (x1 < 4 || x0 > w - 4 || y1 < 34 || y0 > H - 40) return false;
-        for (let i = 0; i < placed.length; i++) {
-          const b = placed[i];
-          if (x0 < b[2] + 3 && x1 > b[0] - 3 && y0 < b[3] + 2 && y1 > b[1] - 2) return false;
+      // 1. Rebuild cached static scene ONLY when camera, selection, sector-hover, shards, imports, cascade, or theme change!
+      //    (Zero rebuilds while sweeping hover across any of the 175,187 individual stars or 109 theorems!)
+      const sKey = `${w}x${H}x${canvasDpr}|${T.dark ? 1 : 0}|${S.cam.x.toFixed(2)},${S.cam.y.toFixed(2)},${k.toFixed(5)}|` +
+        `${S.selType}:${S.selThm}:${S.selDir}:${S.selStar}|${S.hovTerr}|` +
+        `${S.drawerOpen ? 1 : 0}|${S.importReqSeq}:${S.fileImports.length}|${shardVer}|` +
+        `${casActive ? cas.toFixed(3) : -1}`;
+      if (sKey !== sceneKey) {
+        sceneKey = sKey;
+        renderStaticScene(sceneCtx, w, H, k, ox, oy, T, relZoom, cas, casActive, waveR, waveH, hasThmSel, hasDirSel, hasFileSel);
+      }
+
+      // 2. Single GPU texture blit of cached static scene (< 0.1ms!)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(sceneCanvas, 0, 0);
+      ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
+
+      // 3. Zero-rebuild dynamic hover reticles, theorem hover edges & drawer spotlight (< 0.2ms!)
+      const hovFile = !casActive && S.hovType === 'file' && S.hovIdx >= 0 ? S.hovIdx : -1;
+      const hovThm = !casActive && S.hovType === 'thm' && S.hovIdx >= 0 ? S.hovIdx : -1;
+      if (hovFile >= 0) {
+        const sx = starX[hovFile] * k + ox, sy = starY[hovFile] * k + oy;
+        ctx.beginPath(); ctx.arc(sx, sy, 8.2, 0, Math.PI * 2);
+        ctx.strokeStyle = alpha(T.dark ? '#ffffff' : T.blue, 0.94); ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx, sy, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = T.dark ? '#ffffff' : T.blue; ctx.fill();
+      } else if (hovThm >= 0) {
+        const thmScale = clamp(Math.pow(k / 0.40, 0.30), 0.84, 1.75);
+        const hUp = [], hDn = [];
+        for (let ei = 0; ei < edges.length; ei++) {
+          const [u, v] = edges[ei];
+          if (u !== hovThm && v !== hovThm) continue;
+          const a = thms[u], b = thms[v];
+          const ax = a.x * k + ox, ay = a.y * k + oy, bx0 = b.x * k + ox, by0 = b.y * k + oy;
+          const mx = (ax + bx0) * 0.5 + (ox - (ax + bx0) * 0.5) * 0.26;
+          const my = (ay + by0) * 0.5 + (oy - (ay + by0) * 0.5) * 0.26;
+          (v === hovThm ? hUp : hDn).push(ax, ay, mx, my, bx0, by0);
         }
-        placed.push([x0, y0, x1, y1]);
-        return true;
-      }
-
-      // ---- 1. Swiss Astronomical Astrolabe Rings, 72 Degree Ticks & 12 Sector Arcs
-      const rings = [
-        [38, 0.24, null],
-        [128, 0.10, [2, 4]],
-        [236, 0.08, [2, 5]],
-        [WRLD.rCore, 0.24, [3, 4]],
-        [WRLD.rIn - 6, 0.16, null],
-        [WRLD.rOut + 14, 0.22, null],
-      ];
-      ctx.lineWidth = 0.85;
-      for (let ri = 0; ri < rings.length; ri++) {
-        const [rr, op, dash] = rings[ri];
-        const rk = rr * k;
-        if (cx0 + rk < -10 || cx0 - rk > w + 10 || cy0 + rk < -10 || cy0 - rk > H + 10) continue;
-        ctx.save();
-        if (dash) ctx.setLineDash(dash);
-        ctx.strokeStyle = alpha(T.fg3, T.dark ? op : op * 0.9);
-        ctx.beginPath(); ctx.arc(cx0, cy0, rk, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
-      }
-
-      if (k < 2.2) {
-        ctx.beginPath();
-        const tickR0 = (WRLD.rOut + 14) * k;
-        const tickScale = clamp(k / 0.4, 0.7, 1.4);
-        for (let deg = 0; deg < 360; deg += 5) {
-          const a = (deg * Math.PI) / 180;
-          const ca = Math.cos(a), sa = Math.sin(a);
-          const len = (deg % 30 === 0 ? 7 : 3.5) * tickScale;
-          ctx.moveTo(cx0 + tickR0 * ca, cy0 + tickR0 * sa);
-          ctx.lineTo(cx0 + (tickR0 + len) * ca, cy0 + (tickR0 + len) * sa);
-        }
-        ctx.strokeStyle = alpha(T.fg3, T.dark ? 0.24 : 0.22);
-        ctx.lineWidth = 0.75;
-        ctx.stroke();
-      }
-
-      if (k > 0.34 && k < 3.2) {
-        ctx.font = `600 8px ${T.mono}`;
-        ctx.textAlign = 'center';
-        const moatR = (WRLD.rCore + 12) * k;
-        const whispers = [
-          [0, -1, 'ARITHMETIC SUPPLY', T.amber],
-          [0.7431, 0.6691, 'THE ESTIMATE · √x', T.blue],
-          [-0.7431, 0.6691, 'ANALYTIC ENGINE', T.good],
-        ];
-        for (let i = 0; i < 3; i++) {
-          const [ca, sa, txt, col] = whispers[i];
-          const lx = cx0 + moatR * ca, ly = cy0 + moatR * sa;
-          if (lx > 20 && lx < w - 20 && ly > 36 && ly < H - 44) {
-            ctx.fillStyle = alpha(col, T.dark ? 0.56 : 0.62);
-            ctx.fillText(txt, lx, ly + 3);
-          }
-        }
-      }
-
-      const rInK = (WRLD.rIn - 6) * k, rOutK = (WRLD.rOut + 14) * k, rArcK = (WRLD.rOut + 18) * k;
-      for (let ti = 0; ti < terrs.length; ti++) {
-        const tb = terrs[ti], tm = terrMid[ti], col = terrCols[ti];
-        const isSelTerr = (hasDirSel && dirs[S.selDir][1] === ti) || (hasFileSel && dirs[S.selFile.di][1] === ti);
-        const isHovTerr = S.hovTerr === ti;
-        ctx.beginPath();
-        ctx.arc(cx0, cy0, rOutK, tb.a0, tb.a1);
-        ctx.arc(cx0, cy0, rInK, tb.a1, tb.a0, true);
-        ctx.closePath();
-        ctx.fillStyle = alpha(col, isSelTerr || isHovTerr ? (T.dark ? 0.095 : 0.068) : (T.dark ? 0.026 : 0.020));
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(cx0, cy0, rArcK, tb.a0, tb.a1);
-        ctx.strokeStyle = alpha(col, isSelTerr || isHovTerr ? 1.0 : (hasDirSel ? 0.26 : 0.76));
-        ctx.lineWidth = isSelTerr || isHovTerr ? 3.5 : 2.2;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(cx0 + rInK * tm.ca0, cy0 + rInK * tm.sa0);
-        ctx.lineTo(cx0 + rOutK * tm.ca0, cy0 + rOutK * tm.sa0);
-        ctx.strokeStyle = alpha(T.line2, T.dark ? 0.42 : 0.52);
-        ctx.lineWidth = 0.75;
-        ctx.stroke();
-      }
-
-      // ---- 2. TWO-LAYER ASTROPHOTOGRAPHY: Nebula Bloom + ALL 175,187 REAL .LEAN FILE STARS!
-      const bx = toSX(-BAKE_R), by = toSY(-BAKE_R), bw = 2 * BAKE_R * k;
-      const starDim = hasDirSel ? 0.22 : hasFileSel ? 0.52 : (casActive && cas < 0.45 ? 0.78 : 1.0);
-
-      ctx.save();
-      ctx.globalAlpha = hasDirSel ? 0.25 : hasFileSel ? 0.45 : 1.0;
-      ctx.drawImage(nebCanvas, bx, by, bw, bw);
-      ctx.restore();
-
-      if (k < 2.15) {
-        ctx.save();
-        ctx.globalAlpha = starDim;
-        ctx.drawImage(starCanvas, bx, by, bw, bw);
-        ctx.restore();
-        if (hasDirSel) ctx.drawImage(selStarCanvas, bx, by, bw, bw);
-      } else {
-        // Direct Uint32Array cached viewport star layer (~0.6ms render, ~0.12ms cached!)
-        renderLiveStarsCached(w, H, k, ox, oy, hasDirSel, litDir, T);
-        ctx.drawImage(liveCanvas, 0, 0, w, H);
-      }
-
-      // ---- 3. Polar Phylogenetic Directory Branches + Directory Hubs
-      const treeDim = hasDirSel || hasFileSel ? 0.16 : 0.56;
-      const treeLW = clamp(0.62 * Math.sqrt(k / 0.4), 0.42, 1.3);
-      for (let ti = 0; ti < terrs.length; ti++) {
-        const col = terrCols[ti], list = dirsByTerr[ti];
-        const boosted = S.hovTerr === ti ? 1.55 : 1.0;
-        ctx.beginPath();
-        for (let j = 0; j < list.length; j++) {
-          const i = list[j], d = dirs[i], pi = d[0];
-          if (pi < 0) continue;
-          const p = dirs[pi];
-          const x0 = p[5] * k + ox, y0 = p[6] * k + oy, x1 = d[5] * k + ox, y1 = d[6] * k + oy;
-          if ((x0 < -20 && x1 < -20) || (x0 > w + 20 && x1 > w + 20) || (y0 < -20 && y1 < -20) || (y0 > H + 20 && y1 > H + 20)) continue;
-          ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
-        }
-        ctx.strokeStyle = alpha(col, Math.min(0.65, (T.dark ? 0.25 : 0.19) * treeDim * boosted));
-        ctx.lineWidth = treeLW;
-        ctx.stroke();
-
-        if (k > 0.58) {
+        const drawH = (arr, col) => {
+          if (!arr.length) return;
           ctx.beginPath();
-          const hr = clamp(1.3 * Math.pow(k / 0.8, 0.3), 1.0, 2.8);
-          for (let j = 0; j < list.length; j++) {
-            const i = list[j], d = dirs[i];
-            if (litDir[i] || hostDir[i]) continue;
-            const sx = d[5] * k + ox, sy = d[6] * k + oy;
-            if (sx < -6 || sx > w + 6 || sy < -6 || sy > H + 6) continue;
-            ctx.moveTo(sx + hr, sy); ctx.arc(sx, sy, hr, 0, Math.PI * 2);
+          for (let i = 0; i < arr.length; i += 6) {
+            ctx.moveTo(arr[i], arr[i + 1]); ctx.quadraticCurveTo(arr[i + 2], arr[i + 3], arr[i + 4], arr[i + 5]);
           }
-          ctx.fillStyle = alpha(col, (T.dark ? 0.55 : 0.44) * treeDim);
-          ctx.fill();
-        }
-      }
-
-      if (hasDirSel) {
-        const selCol = terrCols[dirs[S.selDir][1]];
-        ctx.beginPath();
-        for (let i = 0; i < ND; i++) {
-          if (!litDir[i]) continue;
-          const d = dirs[i], pi = d[0];
-          if (pi >= 0 && litDir[pi]) { ctx.moveTo(dirs[pi][5] * k + ox, dirs[pi][6] * k + oy); ctx.lineTo(d[5] * k + ox, d[6] * k + oy); }
-        }
-        ctx.strokeStyle = alpha(selCol, 0.88); ctx.lineWidth = 1.35; ctx.stroke();
-        const sd = dirs[S.selDir], sx = sd[5] * k + ox, sy = sd[6] * k + oy;
-        const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24);
-        g.addColorStop(0, alpha(selCol, 0.58)); g.addColorStop(1, alpha(selCol, 0));
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, 24, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, Math.PI * 2); ctx.fillStyle = selCol; ctx.fill();
-        ctx.strokeStyle = T.bg; ctx.lineWidth = 1.8; ctx.stroke();
-      }
-
-      // ---- 4. Luminous Host Bridge Fibers
-      const casBridgeGlow = casActive ? Math.max(0, 1 - Math.abs(cas - 0.39) * 5.2) : 0;
-      ctx.beginPath();
-      for (let i = 0; i < NT; i++) {
-        const t = thms[i];
-        if (t.di < 0) continue;
-        const onCone = (hasThmSel && (i === S.selThm || ancThm[i] || descThm[i])) || ((hasDirSel || hasFileSel) && descThm[i]);
-        if (onCone && !casActive) continue;
-        const d = dirs[t.di];
-        const ax = d[5] * k + ox, ay = d[6] * k + oy, bx0 = t.x * k + ox, by0 = t.y * k + oy;
-        const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.25;
-        const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.25;
-        ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-      }
-      ctx.strokeStyle = casBridgeGlow > 0.05
-        ? alpha(T.amber, 0.10 + casBridgeGlow * 0.55)
-        : alpha(T.fg3, T.dark ? 0.085 : 0.068);
-      ctx.lineWidth = 0.65 + casBridgeGlow * 1.1;
-      ctx.stroke();
-
-      if (!casActive) {
-        for (let i = 0; i < NT; i++) {
-          const t = thms[i];
-          if (t.di < 0) continue;
-          const isPrimary = hasThmSel && i === S.selThm;
-          const isAnc = hasThmSel && ancThm[i];
-          const isDesc = (hasThmSel || hasDirSel || hasFileSel) && descThm[i];
-          if (!isPrimary && !isAnc && !isDesc) continue;
-          const d = dirs[t.di];
-          const ax = d[5] * k + ox, ay = d[6] * k + oy, bx0 = t.x * k + ox, by0 = t.y * k + oy;
-          const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.25;
-          const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.25;
-          const col = isPrimary ? T.blue : isAnc ? T.amber : T.blue;
-          ctx.save();
-          if (!isPrimary) ctx.setLineDash([2.5, 3]);
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-          ctx.strokeStyle = alpha(col, isPrimary ? 0.78 : 0.28);
-          ctx.lineWidth = isPrimary ? 1.7 : 0.9;
-          ctx.stroke(); ctx.restore();
-          ctx.beginPath(); ctx.arc(ax, ay, isPrimary ? 5.2 : 3.2, 0, Math.PI * 2);
-          ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = T.bg; ctx.lineWidth = 1.2; ctx.stroke();
-        }
-      }
-
-      // ---- 4B. LIVE CROSS-COSMOS FILE IMPORT ARCS
-      const photons = [];
-      if (!casActive && S.fileImports.length) {
-        let srcX = 0, srcY = 0, hasSrc = false;
-        if (hasFileSel) { srcX = toSX(S.selFile.x); srcY = toSY(S.selFile.y); hasSrc = true; }
-        else if (hasThmSel && S.drawerOpen) { srcX = toSX(thms[S.selThm].x); srcY = toSY(thms[S.selThm].y); hasSrc = true; }
-        if (hasSrc) {
-          for (let i = 0; i < S.fileImports.length; i++) {
-            const imp = S.fileImports[i];
-            const ax = imp.x * k + ox, ay = imp.y * k + oy;
-            const mx = (ax + srcX) * 0.5 + (cx0 - (ax + srcX) * 0.5) * 0.22;
-            const my = (ay + srcY) * 0.5 + (cy0 - (ay + srcY) * 0.5) * 0.22;
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, srcX, srcY);
-            ctx.strokeStyle = alpha(T.amber, T.dark ? 0.22 : 0.16); ctx.lineWidth = 4.2; ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, srcX, srcY);
-            ctx.strokeStyle = alpha(T.amber, 0.88); ctx.lineWidth = 1.35; ctx.stroke();
-            photons.push([ax, ay, mx, my, srcX, srcY, T.amber]);
-
-            ctx.beginPath(); ctx.arc(ax, ay, 4.2, 0, Math.PI * 2);
-            ctx.fillStyle = T.amber; ctx.fill();
-            ctx.strokeStyle = T.bg; ctx.lineWidth = 1.3; ctx.stroke();
-          }
-        }
-      }
-
-      // ---- 5. All 113 Verified Call Arcs
-      const hovThm = S.hovType === 'thm' ? S.hovIdx : -1;
-      for (let ei = 0; ei < edges.length; ei++) {
-        const [u, v] = edges[ei];
-        const a = thms[u], b = thms[v];
-        const ax = a.x * k + ox, ay = a.y * k + oy, bx0 = b.x * k + ox, by0 = b.y * k + oy;
-        if ((ax < -40 && bx0 < -40) || (ax > w + 40 && bx0 > w + 40) || (ay < -40 && by0 < -40) || (ay > H + 40 && by0 > H + 40)) continue;
-        const mx = (ax + bx0) * 0.5 + (cx0 - (ax + bx0) * 0.5) * 0.26;
-        const my = (ay + by0) * 0.5 + (cy0 - (ay + by0) * 0.5) * 0.26;
-
-        if (casActive) {
-          const lit = a.h >= waveH - 0.5;
-          const fresh = Math.max(0, 1 - Math.abs(a.h - waveH) * 0.55);
-          if (lit) {
-            const col = fresh > 0.3 ? T.blue : T.amber;
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-            ctx.strokeStyle = alpha(col, 0.14 + fresh * 0.28); ctx.lineWidth = 4.2 + fresh * 2; ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-            ctx.strokeStyle = alpha(col, 0.75 + fresh * 0.25); ctx.lineWidth = 1.5 + fresh * 0.7; ctx.stroke();
-            if (fresh > 0.15) photons.push([ax, ay, mx, my, bx0, by0, col]);
-          } else {
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-            ctx.strokeStyle = alpha(T.fg3, 0.12); ctx.lineWidth = 0.75; ctx.stroke();
-          }
-          continue;
-        }
-
-        const isUp = hasThmSel && ((v === S.selThm && ancThm[u]) || (ancThm[v] && ancThm[u]));
-        const isDn = (hasThmSel && ((u === S.selThm && descThm[v]) || (descThm[u] && descThm[v]))) ||
-                     ((hasDirSel || hasFileSel) && descThm[u] && descThm[v]);
-        const isHovEdge = hovThm >= 0 && (u === hovThm || v === hovThm);
-
-        if (isUp || isDn) {
-          const col = isUp ? T.amber : T.blue;
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-          ctx.strokeStyle = alpha(col, T.dark ? 0.18 : 0.14); ctx.lineWidth = 4.6; ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-          ctx.strokeStyle = alpha(col, 0.90); ctx.lineWidth = 1.6; ctx.stroke();
-          photons.push([ax, ay, mx, my, bx0, by0, col]);
-        } else if (isHovEdge) {
-          const col = v === hovThm ? T.amber : T.blue;
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-          ctx.strokeStyle = alpha(col, 0.72); ctx.lineWidth = 1.45; ctx.stroke();
-        } else {
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo(mx, my, bx0, by0);
-          ctx.strokeStyle = alpha(T.fg3, T.dark ? 0.22 : 0.17);
-          ctx.lineWidth = 0.85; ctx.stroke();
-        }
-      }
-
-      // Fast zero-allocation animated photons (2 circles instead of 60 radial gradients!)
-      S.lastPhotons = photons.length;
-      const coreCol = T.dark ? '#ffffff' : T.bg;
-      for (let i = 0; i < photons.length; i++) {
-        const [ax, ay, mx, my, bx0, by0, col] = photons[i];
-        const t = (S.phase + (i % 7) * 0.143) % 1;
-        const [px, py] = quadPt(ax, ay, mx, my, bx0, by0, t);
-        if (px < -10 || px > w + 10 || py < -10 || py > H + 10) continue;
-        ctx.fillStyle = alpha(col, 0.30);
-        ctx.beginPath(); ctx.arc(px, py, 4.8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = col;
-        ctx.beginPath(); ctx.arc(px, py, 2.3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = coreCol;
-        ctx.beginPath(); ctx.arc(px, py, 1.15, 0, Math.PI * 2); ctx.fill();
-      }
-
-      // ---- 6. All 109 Verified Lean Declarations + Blazing Main.lean Core Singularity
-      const thmScale = clamp(Math.pow(k / 0.40, 0.30), 0.84, 1.75);
-      for (let i = 0; i < NT; i++) {
-        const t = thms[i];
-        const sx = t.x * k + ox, sy = t.y * k + oy;
-        if (sx < -24 || sx > w + 24 || sy < -24 || sy > H + 24) continue;
-        const isMain = t.id === 'main-rh', isExp = t.k === 'export';
-        const isSel = !casActive && hasThmSel && i === S.selThm;
-        const isHov = i === hovThm;
-        const isAnc = !casActive && hasThmSel && ancThm[i];
-        const isDesc = !casActive && (hasThmSel || hasDirSel || hasFileSel) && descThm[i];
-        const casLit = casActive && t.h >= waveH - 0.5;
-        const casPeak = casActive ? Math.max(0, 1 - Math.abs(t.h - waveH) * 0.65) : 0;
-        const onCone = isSel || isAnc || isDesc || casLit;
-        const col = isMain || isExp ? T.blue : casPeak > 0.35 ? T.blue : isSel ? T.blue : (isAnc || casLit) ? T.amber : isDesc ? T.blue : stratColMap[t.s] || T.fg2;
-        const r = (isMain ? 8.5 : isExp ? 5.2 : isSel ? 6.4 : casPeak > 0.35 ? 5.8 : onCone ? 4.4 : 3.4) * thmScale;
-
-        if (isMain) {
-          const boost = casActive && cas > 0.88 ? 1 + (cas - 0.88) * 10 : 1;
-          const corona = ctx.createRadialGradient(sx, sy, 2, sx, sy, r * 4.8 * Math.min(1.8, boost));
-          corona.addColorStop(0, alpha(T.blue, T.dark ? 0.70 : 0.45));
-          corona.addColorStop(0.4, alpha(T.blue, T.dark ? 0.24 : 0.14));
-          corona.addColorStop(1, alpha(T.blue, 0));
-          ctx.fillStyle = corona; ctx.beginPath(); ctx.arc(sx, sy, r * 4.8 * Math.min(1.8, boost), 0, Math.PI * 2); ctx.fill();
-        } else if (isSel || isExp || casPeak > 0.35) {
-          ctx.fillStyle = alpha(col, 0.22);
-          ctx.beginPath(); ctx.arc(sx, sy, r * 2.4, 0, Math.PI * 2); ctx.fill();
-        }
-        if (isHov && !isSel) {
+          ctx.strokeStyle = alpha(col, 0.82); ctx.lineWidth = 1.55; ctx.stroke();
+        };
+        drawH(hUp, T.amber); drawH(hDn, T.blue);
+        if (!hasThmSel || hovThm !== S.selThm) {
+          const t = thms[hovThm], sx = toSX(t.x), sy = toSY(t.y);
+          const r = (t.id === 'main-rh' ? 8.5 : t.k === 'export' ? 5.2 : 4.4) * thmScale;
           ctx.beginPath(); ctx.arc(sx, sy, r + 4.8, 0, Math.PI * 2);
-          ctx.strokeStyle = alpha(col, 0.85); ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.strokeStyle = alpha(T.blue, 0.88); ctx.lineWidth = 1.6; ctx.stroke();
         }
-
-        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fillStyle = isMain ? (T.dark ? '#ffffff' : T.blue) : (isSel || isExp || onCone ? col : T.bg);
-        ctx.fill();
-        ctx.lineWidth = isMain ? 2.5 : isSel ? 2.0 : onCone ? 1.3 : 1.1;
-        ctx.strokeStyle = isMain ? T.blue : (isSel || isExp || onCone ? T.bg : alpha(col, hasThmSel || hasDirSel || hasFileSel ? 0.40 : 0.84));
-        ctx.stroke();
+      }
+      if (S.peekPt) {
+        const sx = toSX(S.peekPt.x), sy = toSY(S.peekPt.y);
+        if (sx > -20 && sx < w + 20 && sy > -20 && sy < H + 20) {
+          ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI * 2);
+          ctx.strokeStyle = alpha(T.amber, 0.92); ctx.lineWidth = 1.8; ctx.stroke();
+          if (S.peekPt.label) haloText(ctx, S.peekPt.label, sx, sy - 16, T.amber, T.bg, 'center', `700 10px ${T.mono}`);
+        }
       }
 
-      // ---- 6A. Selected, Hovered & Drawer-Peek Reticles!
+      // 4. Batched animated photons (6 GPU fill calls total!)
+      const coreCol = T.dark ? '#ffffff' : T.bg;
+      if (cachedPhotons.length) {
+        const ambPts = [], bluPts = [];
+        for (let i = 0; i < cachedPhotons.length; i++) {
+          const p = cachedPhotons[i];
+          const t = (S.phase + (i % 7) * 0.143) % 1;
+          const mt = 1 - t;
+          const px = mt * mt * p[0] + 2 * mt * t * p[2] + t * t * p[4];
+          const py = mt * mt * p[1] + 2 * mt * t * p[3] + t * t * p[5];
+          if (px < -10 || px > w + 10 || py < -10 || py > H + 10) continue;
+          (p[6] === 0 ? ambPts : bluPts).push(px, py);
+        }
+        const drawPhotonBatch = (pts, col) => {
+          if (!pts.length) return;
+          ctx.beginPath();
+          for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i] + 4.8, pts[i + 1]); ctx.arc(pts[i], pts[i + 1], 4.8, 0, Math.PI * 2); }
+          ctx.fillStyle = alpha(col, 0.30); ctx.fill();
+          ctx.beginPath();
+          for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i] + 2.3, pts[i + 1]); ctx.arc(pts[i], pts[i + 1], 2.3, 0, Math.PI * 2); }
+          ctx.fillStyle = col; ctx.fill();
+          ctx.beginPath();
+          for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i] + 1.15, pts[i + 1]); ctx.arc(pts[i], pts[i + 1], 1.15, 0, Math.PI * 2); }
+          ctx.fillStyle = coreCol; ctx.fill();
+        };
+        drawPhotonBatch(ambPts, T.amber);
+        drawPhotonBatch(bluPts, T.blue);
+      }
+
+      // 5. Pulsing active file-star reticle
       if (hasFileSel) {
         const sx = toSX(S.selFile.x), sy = toSY(S.selFile.y);
         const pulse = 1 + 0.16 * Math.sin(S.phase * Math.PI * 4);
@@ -1661,188 +2003,46 @@
         ctx.fillStyle = T.dark ? '#ffffff' : T.blue; ctx.fill();
         ctx.strokeStyle = T.blue; ctx.lineWidth = 1.6; ctx.stroke();
       }
-      if (S.hovType === 'file' && S.hovIdx >= 0) {
-        const sx = starX[S.hovIdx] * k + ox, sy = starY[S.hovIdx] * k + oy;
-        ctx.beginPath(); ctx.arc(sx, sy, 7.5, 0, Math.PI * 2);
-        ctx.strokeStyle = alpha(T.dark ? '#ffffff' : T.blue, 0.9); ctx.lineWidth = 1.4; ctx.stroke();
-        ctx.beginPath(); ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = T.dark ? '#ffffff' : T.blue; ctx.fill();
-      }
-      if (S.peekPt) {
-        const sx = toSX(S.peekPt.x), sy = toSY(S.peekPt.y);
-        if (sx > -20 && sx < w + 20 && sy > -20 && sy < H + 20) {
-          ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI * 2);
-          ctx.strokeStyle = alpha(T.amber, 0.92); ctx.lineWidth = 1.8; ctx.stroke();
-          if (S.peekPt.label) haloText(ctx, S.peekPt.label, sx, sy - 16, T.amber, T.bg, 'center', `700 10px ${T.mono}`);
-        }
-      }
 
-      // ---- 6B. Cinematic Cascade Wavefront Ring & Dual Q.E.D. Shockwave
-      if (casActive) {
-        if (cas < 0.90 && waveR > 10) {
-          const wr = waveR * k;
-          const r0 = Math.max(0, wr - 22), r1 = wr + 22;
-          const peak = clamp((wr - r0) / Math.max(1, r1 - r0), 0.05, 0.95);
-          const waveCol = cas < 0.42 ? T.amber : T.blue;
-          const wg = ctx.createRadialGradient(cx0, cy0, r0, cx0, cy0, r1);
-          wg.addColorStop(0, alpha(waveCol, 0));
-          wg.addColorStop(peak, alpha(waveCol, T.dark ? 0.48 : 0.36));
-          wg.addColorStop(1, alpha(waveCol, 0));
-          ctx.strokeStyle = wg;
-          ctx.lineWidth = 26;
-          ctx.beginPath(); ctx.arc(cx0, cy0, wr, 0, Math.PI * 2); ctx.stroke();
-          ctx.strokeStyle = alpha(T.dark ? '#ffffff' : waveCol, 0.88);
-          ctx.lineWidth = 1.6;
-          ctx.beginPath(); ctx.arc(cx0, cy0, wr, 0, Math.PI * 2); ctx.stroke();
-        }
-        if (cas >= 0.86) {
-          const p = clamp((cas - 0.86) / 0.14, 0, 1);
-          const shockR = (14 + p * 360) * k;
-          const echoR = (10 + Math.max(0, p - 0.18) * 260) * k;
-          ctx.strokeStyle = alpha(T.blue, (1 - p) * 0.92);
-          ctx.lineWidth = 3.2 * (1 - p) + 0.9;
-          ctx.beginPath(); ctx.arc(cx0, cy0, shockR, 0, Math.PI * 2); ctx.stroke();
-          if (p > 0.18) {
-            ctx.strokeStyle = alpha(T.amber, (1 - p) * 0.65);
-            ctx.lineWidth = 1.6 * (1 - p) + 0.5;
-            ctx.beginPath(); ctx.arc(cx0, cy0, echoR, 0, Math.PI * 2); ctx.stroke();
-          }
-          haloText(ctx, 'Q.E.D. · 4 kernels · 3 axioms', cx0, cy0 + 28 * thmScale, T.blue, T.bg, 'center', `700 11px ${T.mono}`);
-        }
-      }
-
-      // ---- 7. Crisp Collision-Free Labels (cached widths!)
-      if (hasFileSel) {
-        const sx = toSX(S.selFile.x), sy = toSY(S.selFile.y);
-        const lbl = `${S.selFile.stem}.lean`, fnt = `700 10.5px ${T.mono}`;
-        const tw = measureW(fnt, lbl);
-        tryPlace(sx - tw / 2, sy - 24, sx + tw / 2, sy - 10);
-        haloText(ctx, lbl, sx, sy - 14, T.fg, T.bg, 'center', fnt);
-        const impFnt = `600 8.8px ${T.mono}`;
-        for (let i = 0; i < S.fileImports.length && i < 8; i++) {
-          const imp = S.fileImports[i], ix = toSX(imp.x), iy = toSY(imp.y);
-          const itw = measureW(impFnt, imp.stem);
-          if (tryPlace(ix - itw / 2, iy + 6, ix + itw / 2, iy + 17)) {
-            haloText(ctx, imp.stem, ix, iy + 15, T.amber, T.bg, 'center', impFnt);
-          }
-        }
-      } else if (hasThmSel) {
-        const t = thms[S.selThm], sx = toSX(t.x), sy = toSY(t.y);
-        const lbl = t.id === 'main-rh' ? 'Main.lean · 12 lines' : (LANDMARK_THMS.get(t.id) || t.d.split('.').slice(-1)[0]);
-        const fnt = `700 11px ${T.sans}`, tw = measureW(fnt, lbl);
-        const ly = t.id === 'main-rh' ? sy - 16 : sy - 11;
-        tryPlace(sx - tw / 2, ly - 11, sx + tw / 2, ly + 2);
-        haloText(ctx, lbl, sx, ly, T.fg, T.bg, 'center', fnt);
-      } else if (hasDirSel) {
-        const d = dirs[S.selDir], sx = toSX(d[5]), sy = toSY(d[6]);
-        const lbl = `${d[8]} (${num(d[3])})`, fnt = `700 11px ${T.sans}`, tw = measureW(fnt, lbl);
-        tryPlace(sx - tw / 2, sy - 20, sx + tw / 2, sy - 7);
-        haloText(ctx, lbl, sx, sy - 10, T.fg, T.bg, 'center', fnt);
-      }
-
-      // Outer 12 Territory Labels (edge-clamped & compact on narrow phones!)
-      const narrowMob = w < 520;
-      const compactRim = w < 640;
-      const rimR = (WRLD.rOut + (narrowMob ? 15 : 28)) * k;
-      const tFontPx = clamp((narrowMob ? 8.6 : compactRim ? 8.8 : 9.6) * Math.pow(k / 0.40, 0.2), 8.2, 12.2);
-      const tFnt = `700 ${tFontPx.toFixed(1)}px ${T.sans}`;
-      for (let ti = 0; ti < terrs.length; ti++) {
-        const tm = terrMid[ti], col = terrCols[ti];
-        const rx = cx0 + rimR * tm.ca, ly = cy0 + rimR * tm.sa;
-        const fullLbl = (narrowMob && relZoom < 1.35) ? tm.miniLbl : compactRim ? tm.shortLbl : tm.fullLbl;
-        const tw = measureW(tFnt, fullLbl);
-        const rawX0 = tm.rightSide ? rx : rx - tw;
-        const bx0 = narrowMob ? clamp(rawX0, 6, Math.max(6, w - 6 - tw)) : rawX0;
-        if (tryPlace(bx0, ly - tFontPx, bx0 + tw, ly + 3)) {
-          haloText(ctx, fullLbl, narrowMob ? bx0 : rx, ly + 3, alpha(col, T.dark ? 0.96 : 0.92), T.bg, narrowMob ? 'left' : (tm.rightSide ? 'left' : 'right'), tFnt);
-        }
-      }
-
-      // Top Mega-Clusters
-      const mFnt = `600 ${narrowMob ? 8.4 : 9}px ${T.mono}`;
-      const maxMega = narrowMob && relZoom < 1.25 ? 3 : (k < 0.52 ? 6 : megaLabels.length);
-      for (let m = 0; m < megaLabels.length && m < maxMega; m++) {
-        const ml = megaLabels[m];
-        const sx = ml.x * k + ox, sy = ml.y * k + oy;
-        const lbl = `${ml.label} ${(ml.files / 1000).toFixed(1)}k`;
-        const tw = measureW(mFnt, lbl);
-        const inwardRight = sx < cx0;
-        const lx = inwardRight ? sx + 11 : sx - 11;
-        const bx0 = inwardRight ? lx : lx - tw;
-        if (tryPlace(bx0, sy - 6, bx0 + tw, sy + 6)) {
-          haloText(ctx, lbl, lx, sy + 3, alpha(T.fg, T.dark ? 0.90 : 0.84), T.bg, inwardRight ? 'left' : 'right', mFnt);
-        }
-      }
-
-      // Landmark theorems
-      for (const [id, lbl] of LANDMARK_THMS) {
-        const idx = thmById.get(id);
-        if (idx === undefined || (hasThmSel && idx === S.selThm)) continue;
-        const t = thms[idx], sx = t.x * k + ox, sy = t.y * k + oy;
-        const onCone = (hasThmSel && (ancThm[idx] || descThm[idx])) || ((hasDirSel || hasFileSel) && descThm[idx]);
-        const fnt = `${id === 'main-rh' || onCone ? '600' : '500'} ${id === 'main-rh' ? 10.5 : 9.2}px ${T.sans}`;
-        const tw = measureW(fnt, lbl);
-        const ly = sy + 14;
-        if (tryPlace(sx - tw / 2, ly - 10, sx + tw / 2, ly + 2)) {
-          haloText(ctx, lbl, sx, ly, id === 'main-rh' ? T.blue : onCone ? T.fg2 : alpha(T.fg3, 0.82), T.bg, 'center', fnt);
-        }
-      }
-
-      // Deep-zoom semantic LOD labels
-      if (k > 0.78) {
-        const lodFnt = `500 9.2px ${T.sans}`;
-        for (let i = 0; i < NT; i++) {
-          if (hasThmSel && i === S.selThm) continue;
-          const t = thms[i], sx = t.x * k + ox, sy = t.y * k + oy;
-          if (sx < 8 || sx > w - 8 || sy < 30 || sy > H - 40) continue;
-          const lbl = t.d.split('.').slice(-1)[0], tw = measureW(lodFnt, lbl);
-          if (tryPlace(sx - tw / 2, sy + 5, sx + tw / 2, sy + 16)) {
-            haloText(ctx, lbl, sx, sy + 14, T.fg2, T.bg, 'center', lodFnt);
-          }
-        }
-      }
-      if (k > 1.35) {
-        const dFnt = `500 8.8px ${T.mono}`;
-        const cap = k > 3.5 ? 200 : 80;
-        let shown = 0;
-        for (let j = 0; j < ND && shown < cap; j++) {
-          const i = dirsBySize[j], d = dirs[i];
-          if (hasDirSel && i === S.selDir) continue;
-          if (k < 2.8 && d[3] < 35) break;
-          const sx = d[5] * k + ox, sy = d[6] * k + oy;
-          if (sx < 8 || sx > w - 8 || sy < 30 || sy > H - 42) continue;
-          const lbl = d[8], tw = measureW(dFnt, lbl);
-          if (tryPlace(sx - tw / 2, sy + 5, sx + tw / 2, sy + 15)) {
-            haloText(ctx, lbl, sx, sy + 13, alpha(T.fg2, 0.88), T.bg, 'center', dFnt);
-            shown++;
-          }
-        }
-      }
-
-      // ---- 8. Floating hover tooltip
+      // 6. Rich 3-Line Per-Point Hover Telemetry Card (drawer-aware & theme-native!)
+      const pl = (n, s) => `${num(n)} ${s}${n === 1 ? '' : 's'}`;
       if (S.hovType === 'thm' && S.hovIdx >= 0) {
         const t = thms[S.hovIdx];
-        drawTooltip(toSX(t.x), toSY(t.y), t.t, `${t.d} · ${t.anc} prereqs → ${t.desc} downstream`, w, H, T);
+        drawPointCard(toSX(t.x), toSY(t.y), t.t, t.tier || t.k, T.blue,
+          `${pl(t.anc, 'prereq')} → ${t.desc} downstream · depth ${t.h}`, `${t.d} · click for Lean 4 proof`, w, H, T);
       } else if (S.hovType === 'file' && S.hovIdx >= 0) {
-        const info = starRelInfo(S.hovIdx, S.hovDir);
+        const di = S.hovDir >= 0 ? S.hovDir : starToDir(S.hovIdx);
+        const d = di >= 0 ? dirs[di] : null, tb = d ? terrs[d[1]] : null, col = d ? terrCols[d[1]] : T.blue;
+        const info = starRelInfo(S.hovIdx, di);
+        const pos = di >= 0 ? S.hovIdx - dirStarStart[di] + 1 : 0;
         if (info) {
-          drawTooltip(toSX(info.x), toSY(info.y), `${info.stem}.lean`,
-            `${info.dp || 'src/'} · click to read Lean 4 proof`, w, H, T);
+          const entry = leanCache.get(info.relPath);
+          const l2 = entry && entry.status === 'ok'
+            ? `${pl(entry.lines.length, 'line')} · ${pl(entry.decls.length, 'decl')} · ${pl(entry.imports.length, 'import')}`
+            : `${d[8]} · file #${num(pos)} of ${num(d[4])}`;
+          drawPointCard(toSX(info.x), toSY(info.y), `${info.stem}.lean`, tb.short, col,
+            l2, `${info.dp || 'src/'} · click for Lean 4 proof`, w, H, T);
+        } else {
+          drawPointCard(toSX(starX[S.hovIdx]), toSY(starY[S.hovIdx]),
+            d ? `${d[8]} · star #${num(pos)}` : 'Lean 4 star', tb ? tb.short : '', col,
+            `Loading filename shard (${num(d ? d[4] : 0)} files)…`, `${d ? (dirPath(di) || 'src/') : 'src/'} · click to open proof`, w, H, T);
         }
       } else if (S.hovType === 'dir' && S.hovIdx >= 0) {
-        const d = dirs[S.hovIdx];
-        drawTooltip(toSX(d[5]), toSY(d[6]), dirPath(S.hovIdx) || 'src/ (root)',
-          `${num(d[3])} .lean files (${num(d[4])} direct) · click to dive & browse`, w, H, T);
+        const d = dirs[S.hovIdx], tb = terrs[d[1]], col = terrCols[d[1]];
+        drawPointCard(toSX(d[5]), toSY(d[6]), d[8], tb.short, col,
+          `${pl(d[3], '.lean file')} (${num(d[4])} direct)`, `${dirPath(S.hovIdx) || 'src/'} · click to dive & browse`, w, H, T);
       } else if (S.hovTerr >= 0) {
-        const tb = terrs[S.hovTerr], tm = terrMid[S.hovTerr];
-        const tx = cx0 + (WRLD.rOut - 40) * k * tm.ca;
-        const ty = cy0 + (WRLD.rOut - 40) * k * tm.sa;
-        drawTooltip(tx, ty, tb.label, `${num(tb.files)} .lean files (${tb.pct}%) · click to fly into sector`, w, H, T);
+        const tb = terrs[S.hovTerr], tm = terrMid[S.hovTerr], col = terrCols[S.hovTerr];
+        const tx = ox + (WRLD.rOut - 40) * k * tm.ca;
+        const ty = oy + (WRLD.rOut - 40) * k * tm.sa;
+        drawPointCard(tx, ty, tb.label, `${tb.pct}%`, col,
+          `${pl(tb.files, '.lean file')} in sector`, `Click to fly into ${tb.short}`, w, H, T);
       }
 
-      // ---- 9. Update single-line inspector footer (structured card on mobile!) & drawer
+      // ---- 6. Update single-line inspector footer (structured card on mobile!) & drawer
       if (updateDom || S.dirtyDom) {
         S.dirtyDom = false;
+        const { litDir } = mask;
         cascadeBtn.setAttribute('aria-pressed', String(casActive));
         cascadeBtn.textContent = casActive ? '● Playing' : '▶ Cascade';
         const curId = hasThmSel ? thms[S.selThm].id : hasDirSel ? dirPath(S.selDir) : '';
@@ -1897,23 +2097,49 @@
       }
     }
 
-    function drawTooltip(sx, sy, line1, line2, w, H, T) {
-      const f1 = `600 10.5px ${T.sans}`, f2 = `500 9.5px ${T.mono}`;
-      const w1 = measureW(f1, line1), w2 = measureW(f2, line2);
-      const bw = Math.min(w - 20, Math.max(w1, w2) + 18), bh = 36;
-      const bx = clamp(sx + 12, 8, w - bw - 8);
-      const by = sy - bh - 12 < 42 ? sy + 14 : sy - bh - 12;
+    function drawPointCard(sx, sy, title, badge, badgeCol, line2, line3, w, H, T) {
+      const { rx } = drawerLayout(w, H);
+      const availRight = Math.max(220, w - rx - 8);
+      const f1 = `600 11px ${T.sans}`, fb = `700 8.5px ${T.mono}`, f2 = `600 9.6px ${T.mono}`, f3 = `500 9.2px ${T.mono}`;
+      const wt = measureW(f1, title), wb = badge ? measureW(fb, badge) + 12 : 0;
+      const w2 = measureW(f2, line2), w3 = line3 ? measureW(f3, line3) : 0;
+      const bw = Math.min(availRight - 10, Math.max(wt + wb + (badge ? 8 : 0), w2, w3) + 20);
+      const bh = line3 ? 52 : 38;
+      const bx = clamp(sx + 14, 8, Math.max(8, availRight - bw));
+      const by = sy - bh - 14 < 44 ? Math.min(H - bh - 46, sy + 16) : sy - bh - 14;
       ctx.save();
-      ctx.shadowColor = T.dark ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.16)';
-      ctx.shadowBlur = 14; ctx.fillStyle = T.fg;
-      rrect(ctx, bx, by, bw, bh, 6); ctx.fill(); ctx.restore();
-      ctx.textAlign = 'left'; ctx.fillStyle = T.bg;
-      ctx.font = f1; ctx.fillText(line1, bx + 9, by + 15, bw - 18);
-      ctx.fillStyle = alpha(T.bg, 0.78);
-      ctx.font = f2; ctx.fillText(line2, bx + 9, by + 29, bw - 18);
+      ctx.shadowColor = T.dark ? 'rgba(0,0,0,0.68)' : 'rgba(15,23,42,0.16)';
+      ctx.shadowBlur = T.dark ? 16 : 18;
+      ctx.fillStyle = T.dark ? '#17171c' : '#ffffff';
+      rrect(ctx, bx, by, bw, bh, 8); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = alpha(badgeCol || T.blue, T.dark ? 0.45 : 0.36);
+      ctx.lineWidth = 1;
+      rrect(ctx, bx + 0.5, by + 0.5, bw - 1, bh - 1, 8); ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = T.dark ? '#f4f4f0' : '#18181b';
+      ctx.font = f1;
+      ctx.fillText(title, bx + 10, by + 16, bw - wb - 24);
+      if (badge) {
+        const px = bx + bw - wb - 8, py = by + 6;
+        ctx.fillStyle = alpha(badgeCol || T.blue, T.dark ? 0.22 : 0.13);
+        rrect(ctx, px, py, wb, 14, 999); ctx.fill();
+        ctx.fillStyle = badgeCol || T.blue;
+        ctx.font = fb; ctx.textAlign = 'center';
+        ctx.fillText(badge, px + wb / 2, py + 10);
+        ctx.textAlign = 'left';
+      }
+      ctx.fillStyle = T.dark ? 'rgba(244,244,240,0.86)' : 'rgba(24,24,27,0.84)';
+      ctx.font = f2;
+      ctx.fillText(line2, bx + 10, by + 31, bw - 20);
+      if (line3) {
+        ctx.fillStyle = T.dark ? 'rgba(244,244,240,0.58)' : 'rgba(24,24,27,0.56)';
+        ctx.font = f3;
+        ctx.fillText(line3, bx + 10, by + 44, bw - 20);
+      }
     }
 
-    // --------------------------------------------------- picking & multi-touch
+    // --------------------------------------------------- O(1) CSR spatial grid picking & multi-touch
     function pick(mx, my, touch = false) {
       const { k, ox, oy } = view;
       let bestT = -1, bestTD = touch ? 26 : 15;
@@ -1934,26 +2160,33 @@
       }
 
       const wx = (mx - ox) / k, wy = (my - oy) / k;
-      if (k >= 1.85) {
-        const thr = (touch ? 18 : 10) / k;
-        let bestS = -1, bestSDi = -1, bestSD2 = thr * thr;
-        for (let j = 0; j < nonEmptyDirs.length; j++) {
-          const di = nonEmptyDirs[j], d = dirs[di];
-          if (!dirFiles[di]) continue;
-          const reach = d[11] + 28;
-          const dx0 = d[5] - wx, dy0 = d[6] - wy;
-          if (dx0 * dx0 + dy0 * dy0 > reach * reach) continue;
-          const a = dirStarStart[di], b = dirStarEnd[di];
-          for (let i = a; i < b; i++) {
-            const dx = starX[i] - wx;
-            if (dx > thr || dx < -thr) continue;
-            const dy = starY[i] - wy;
-            if (dy > thr || dy < -thr) continue;
-            const d2 = dx * dx + dy * dy;
-            if (d2 < bestSD2) { bestSD2 = d2; bestS = i; bestSDi = di; }
+      if (k >= 1.0 || (S.selType === 'dir' && k >= 0.72) || S.selType === 'file') {
+        const pxThr = touch ? (k >= 1.8 ? 20 : 14) : (k >= 1.8 ? 11 : 8);
+        const thr = pxThr / k;
+        const gx0 = clamp(((wx - thr - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gx1 = clamp(((wx + thr - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gy0 = clamp(((wy - thr - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        const gy1 = clamp(((wy + thr - SGRID_MIN) * SGRID_INV) | 0, 0, SGRID_N - 1);
+        let bestS = -1, bestSD2 = thr * thr;
+        for (let gy = gy0; gy <= gy1; gy++) {
+          const row = gy * SGRID_N;
+          for (let gx = gx0; gx <= gx1; gx++) {
+            const c = row + gx;
+            for (let p = sGridOff[c], e = sGridOff[c + 1]; p < e; p++) {
+              const i = sGridIds[p];
+              const dx = starX[i] - wx;
+              if (dx > thr || dx < -thr) continue;
+              const dy = starY[i] - wy;
+              if (dy > thr || dy < -thr) continue;
+              const d2 = dx * dx + dy * dy;
+              if (d2 < bestSD2) { bestSD2 = d2; bestS = i; }
+            }
           }
         }
-        if (bestS >= 0) return { type: 'file', idx: bestS, di: bestSDi, terr: dirs[bestSDi][1] };
+        if (bestS >= 0) {
+          const di = starDir[bestS];
+          return { type: 'file', idx: bestS, di, terr: starT[bestS] };
+        }
       }
 
       let bestD = -1, bestDD = touch ? 22 : 12;
@@ -2100,6 +2333,12 @@
           else if (pk.type === 'file') {
             const info = starRelInfo(pk.idx, pk.di);
             if (info) selectFileStar(info, { openDrawer: true, fit: false });
+            else if (pk.di >= 0) {
+              ensureDirFiles(pk.di).then(() => {
+                const i2 = starRelInfo(pk.idx, pk.di);
+                if (i2) selectFileStar(i2, { openDrawer: true, fit: false });
+              });
+            }
           } else if (pk.type === 'terr' && pk.idx >= 0) {
             touchUnlocked = true;
             selectDirectory(pk.idx, { fit: true });
@@ -2339,8 +2578,15 @@
       }
       const os = ev.target.closest('[data-open-star]');
       if (os) {
-        const info = starRelInfo(+os.dataset.openStar, +os.dataset.openDi);
+        const sIdx = +os.dataset.openStar, di = +os.dataset.openDi;
+        const info = starRelInfo(sIdx, di);
         if (info) selectFileStar(info, { openDrawer: true, fit: true });
+        else if (di >= 0) {
+          ensureDirFiles(di).then(() => {
+            const i2 = starRelInfo(sIdx, di);
+            if (i2) selectFileStar(i2, { openDrawer: true, fit: true });
+          });
+        }
         return;
       }
       if (ev.target.closest('[data-more-files]')) {
@@ -2489,6 +2735,17 @@
       else if (ev.key === '+' || ev.key === '=') { ev.preventDefault(); smoothZoomBy(1.45); }
       else if (ev.key === '-' || ev.key === '_') { ev.preventDefault(); smoothZoomBy(1 / 1.45); }
       else if ((ev.key === '[' || ev.key === 'Backspace') && S.history.length) { ev.preventDefault(); goBack(); }
+      else if ((ev.key === ',' || ev.key === '.') && S.selType === 'file' && S.selFile) {
+        ev.preventDefault();
+        const di = S.selFile.di, fns = dirFiles[di];
+        const n = fns ? fns.length : dirs[di][4];
+        if (n > 1) {
+          const pos = S.selFile.starIdx - dirStarStart[di];
+          const nextStar = dirStarStart[di] + ((pos + (ev.key === '.' ? 1 : -1) + n) % n);
+          const info = starRelInfo(nextStar, di);
+          if (info) selectFileStar(info, { openDrawer: S.drawerOpen, fit: true });
+        }
+      }
     });
 
     // Inline prose & harness dispatcher
@@ -2566,7 +2823,7 @@
       requestDraw();
     });
 
-    let rafId = 0, lastTs = 0;
+    let rafId = 0, lastTs = 0, lastIdleDraw = 0;
 
     function requestDraw() {
       S.needsDraw = true;
@@ -2595,18 +2852,28 @@
         if (nt !== S.hovType || ni !== S.hovIdx || ndi !== S.hovDir || ntr !== S.hovTerr) {
           S.hovType = nt; S.hovIdx = ni; S.hovDir = ndi; S.hovTerr = ntr;
           S.needsDraw = true;
-          // Gentle hover prefetch for individual stars!
+          // Gentle hover prefetch for individual stars (auto-loads shard if needed!)
           clearTimeout(hoverPrefetchTimer);
           if (nt === 'file' && ni >= 0) {
             const info = starRelInfo(ni, ndi);
-            if (info) hoverPrefetchTimer = setTimeout(() => loadLeanFile(info.relPath), 110);
+            if (info) {
+              hoverPrefetchTimer = setTimeout(() => loadLeanFile(info.relPath), 110);
+            } else if (ndi >= 0) {
+              ensureDirFiles(ndi).then(() => {
+                if (S.hovType === 'file' && S.hovIdx === ni) {
+                  const i2 = starRelInfo(ni, ndi);
+                  if (i2) loadLeanFile(i2.relPath);
+                  requestDraw();
+                }
+              });
+            }
           }
         }
         canvas.style.cursor = pk ? 'pointer' : 'grab';
       }
 
       // Smooth exponential camera target tween (zoom & landmark glides)
-      let animating = false;
+      let activeAnim = false;
       if (S.camTarget) {
         const t = 1 - Math.exp(-dt * 14);
         S.cam.x += (S.camTarget.x - S.cam.x) * t;
@@ -2615,7 +2882,7 @@
         if (Math.abs(S.camTarget.k - S.cam.k) < 0.0008 && Math.hypot(S.camTarget.x - S.cam.x, S.camTarget.y - S.cam.y) < 0.35) {
           S.cam = { ...S.camTarget }; S.camTarget = null;
         } else {
-          animating = true;
+          activeAnim = true;
         }
         S.needsDraw = true;
       }
@@ -2626,7 +2893,7 @@
         S.cam.y += S.vel.y * dt;
         const decay = Math.exp(-dt * 9.5);
         S.vel.x *= decay; S.vel.y *= decay;
-        animating = true;
+        activeAnim = true;
         S.needsDraw = true;
       } else if (!dragging) {
         S.vel.x = 0; S.vel.y = 0;
@@ -2636,16 +2903,18 @@
       if (S.cascade >= 0 && !S.cascadeFreeze) {
         S.cascade += dt / 5.4;
         if (S.cascade >= 1.0) { S.cascade = -1; S.dirtyDom = true; }
-        else animating = true;
+        else activeAnim = true;
         S.needsDraw = true;
       }
 
-      // Photons animate smoothly only when visible & motion enabled
+      // Full 60-120fps during active camera/cascade/hover; battery-friendly 30fps static-scene blit when idle!
       const hasPhotons = !reducedMotion() && (S.lastPhotons > 0 || S.selType === 'file' || S.cascade >= 0);
       if (hasPhotons) {
         S.phase = (S.phase + dt * 0.22) % 1;
-        S.needsDraw = true;
-        animating = true;
+        if (activeAnim || S.needsDraw || S.dirtyDom || (ts - lastIdleDraw >= 32)) {
+          S.needsDraw = true;
+          lastIdleDraw = ts;
+        }
       }
 
       if (S.needsDraw || S.dirtyDom) {
@@ -2653,7 +2922,7 @@
         render(S.dirtyDom);
       }
 
-      if (animating || pendingHoverPt) {
+      if (activeAnim || hasPhotons || pendingHoverPt) {
         rafId = requestAnimationFrame(tick);
       }
     }
