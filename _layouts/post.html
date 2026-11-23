@@ -14,35 +14,42 @@ layout: default
     {%- for part in parts %}{% if part.url == page.url %}{% assign part_num = forloop.index %}{% endif %}{% endfor -%}
   {%- endif -%}
 {%- endif -%}
-<article class="post{% if page.article_class %} {{ page.article_class | escape }}{% endif %}">
-  <header class="post-head">
+<article class="post-article{% if page.article_class %} {{ page.article_class | escape }}{% endif %}">
+  <header class="post-heading post-head">
     {%- if page.kicker %}
     <p class="post-kicker">{% if series %}<a href="#series-title">{{ page.kicker | escape }}</a>{% else %}{{ page.kicker | escape }}{% endif %}</p>
     {%- elsif series %}
     <p class="post-kicker"><a href="#series-title">{{ series.title | escape }}{% if parts.size > 1 %} · Part {{ part_num }} of {{ parts.size }}{% endif %}</a></p>
     {%- endif %}
-    <h1>{{ page.title | escape }}</h1>
+    <h1 class="post-title">{{ page.title | escape }}</h1>
     {%- if page.deck %}
-    <p class="post-deck">{{ page.deck | escape }}</p>
+    <p class="post-subtitle post-deck">{{ page.deck | escape }}</p>
     {%- endif %}
-    <p class="meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %-d, %Y" }}</time>
-      {%- if figs > 0 %}
-      <span>{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
-      {%- endif %}
-      <span>{{ minutes | at_least: 1 }} min read</span>
+    <div class="publish-metadata">
+      {%- unless page.neutral %}
+      <p class="post-author">{{ site.author.name | default: "Teo" | escape }}</p>
+      {%- endunless %}
+      <p class="meta post-date-meta">
+        <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
+        {%- if figs > 0 %}
+        <span>{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
+        {%- endif %}
+        <span>{{ minutes | at_least: 1 }} min read</span>
+      </p>
       {%- if page.links %}
-      <span class="meta-links">
+      <p class="post-header-links meta-links">
         {%- for link in page.links %}
-        <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}</a>
+        <a href="{{ link.url }}">{{ link.title | escape }}</a>
         {%- endfor %}
-      </span>
+      </p>
       {%- endif %}
-    </p>
+    </div>
   </header>
 
-  <div class="post-content">
-    {{ content }}
+  <div class="post-content-shell">
+    <div class="post-content content">
+      {{ content }}
+    </div>
   </div>
 
   {%- if series %}
@@ -67,15 +74,26 @@ layout: default
   {%- endif %}
 
   {%- unless page.neutral %}
-  {%- if page.previous or page.next %}
-  <nav class="post-nav" aria-label="More posts">
-    {%- if page.previous %}
-    <a rel="prev" href="{{ page.previous.url | relative_url }}"><span><i aria-hidden="true">← </i>Older</span>{{ page.previous.title | escape }}</a>
-    {%- endif %}
-    {%- if page.next %}
-    <a rel="next" href="{{ page.next.url | relative_url }}"><span>Newer<i aria-hidden="true"> →</i></span>{{ page.next.title | escape }}</a>
-    {%- endif %}
+  <nav class="paginator post-nav" aria-label="More posts">
+    <div class="paginator-prev">
+      {%- if page.previous %}
+      <a rel="prev" href="{{ page.previous.url | relative_url }}">
+        <span class="paginator-label">&larr; Previous</span>
+        <span class="paginator-title">{{ page.previous.title | escape }}</span>
+      </a>
+      {%- endif %}
+    </div>
+    <div class="paginator-top">
+      <a href="#top">Back to top</a>
+    </div>
+    <div class="paginator-next">
+      {%- if page.next %}
+      <a rel="next" href="{{ page.next.url | relative_url }}">
+        <span class="paginator-label">Next &rarr;</span>
+        <span class="paginator-title">{{ page.next.title | escape }}</span>
+      </a>
+      {%- endif %}
+    </div>
   </nav>
-  {%- endif %}
   {%- endunless %}
 </article>

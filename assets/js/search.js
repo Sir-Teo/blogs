@@ -1,14 +1,16 @@
-// Filter the existing index, loading article text only when a reader searches.
+// On-demand index search and series filter. Stays hidden by default so the blog
+// index remains clean and minimal; opens via '/' or ?q= / ?series= URL params.
 (function () {
   'use strict';
 
-  var form = document.querySelector('.post-search');
-  if (!form) return;
+  var drawer = document.getElementById('search-drawer');
+  var form = drawer ? drawer.querySelector('.post-search') : null;
+  if (!drawer || !form) return;
 
   var input = form.querySelector('input');
   var clear = form.querySelector('.search-clear');
-  var shortcut = form.querySelector('.search-shortcut');
-  var filters = document.querySelector('.post-filters');
+  var closeBtn = form.querySelector('.search-close');
+  var filters = drawer.querySelector('.post-filters');
   var filterButtons = filters ? Array.prototype.slice.call(filters.querySelectorAll('button[data-series]')) : [];
   var filterLabels = new Map(filterButtons.map(function (btn) {
     var clone = btn.cloneNode(true);
@@ -17,7 +19,7 @@
   }));
   var activeSeries = 'all';
   var status = document.getElementById('search-status');
-  var empty = document.querySelector('.search-empty');
+  var empty = drawer.querySelector('.search-empty');
   var indexRequest = null;
   var indexLoaded = false;
   var indexFailed = false;
@@ -28,7 +30,6 @@
   }
 
   function keywords(query) {
-    // Treat punctuation as separators while preserving names such as C++ and C#.
     return normalize(query).split(/[^\p{L}\p{N}+#]+/u).filter(Boolean);
   }
 
@@ -37,7 +38,6 @@
       element.textContent = text;
       return;
     }
-    // Map folded characters back to their original positions, including accents.
     var folded = '';
     var starts = [];
     var ends = [];
@@ -83,7 +83,6 @@
   }
 
   function snippet(post, terms) {
-    // Explain matches found deeper in an article with a short passage around one.
     var bodyTerms = terms.filter(function (term) { return post.summary.indexOf(term) === -1; });
     if (!bodyTerms.length || !post.content) return post.excerpt;
     var folded = normalize(post.content);
@@ -95,15 +94,14 @@
       var nextSpace = post.content.indexOf(' ', start);
       if (nextSpace !== -1 && nextSpace - start < 25) start = nextSpace + 1;
     }
-    var end = Math.min(post.content.length, start + 240);
+    var end = Math.min(post.content.length, start + 220);
     if (end < post.content.length) {
       var lastSpace = post.content.lastIndexOf(' ', end);
-      if (lastSpace > start + 180) end = lastSpace;
+      if (lastSpace > start + 160) end = lastSpace;
     }
     return (start ? '…' : '') + post.content.slice(start, end) + (end < post.content.length ? '…' : '');
   }
 
-  // Decode entities in Jekyll's stripped HTML without inserting it into the page.
   var decoder = document.createElement('textarea');
   function decode(text) {
     decoder.innerHTML = text;
@@ -114,11 +112,12 @@
     var titleElement = item.querySelector('.post-index-title');
     var excerptElement = item.querySelector('.post-index-excerpt');
     var title = titleElement.textContent;
-    var excerpt = excerptElement ? excerptElement.textContent : '';
+    var excerpt = excerptElement ? (excerptElement.dataset.excerpt || excerptElement.textContent || '') : '';
     if (!excerptElement) {
       excerptElement = document.createElement('p');
       excerptElement.className = 'post-index-excerpt';
-      item.querySelector('.post-index-body').insertBefore(excerptElement, item.querySelector('.post-index-meta'));
+      excerptElement.hidden = true;
+      item.querySelector('.post-index-body').appendChild(excerptElement);
     }
     var summary = normalize(title + ' ' + excerpt);
     return {
@@ -142,6 +141,27 @@
     });
   }
 
+  function openDrawer(focusInput) {
+    drawer.hidden = false;
+    if (focusInput) {
+      requestAnimationFrame(function () {
+        input.focus();
+      });
+    }
+  }
+
+  function closeDrawer() {
+    input.value = '';
+    setSeries('all');
+    search(true);
+    drawer.hidden = true;
+    if (window.location.hash === '#post-search') {
+      var url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(null, '', url);
+    }
+  }
+
   function render() {
     var query = input.value.trim();
     var terms = keywords(query);
@@ -155,14 +175,18 @@
       if (matches) {
         count++;
         highlight(post.titleElement, post.title, terms);
-        var excerpt = terms.length ? snippet(post, terms) : post.excerpt;
-        post.excerptElement.hidden = !excerpt;
-        highlight(post.excerptElement, excerpt, terms);
+        if (terms.length) {
+          var text = snippet(post, terms);
+          post.excerptElement.hidden = !text;
+          highlight(post.excerptElement, text, terms);
+        } else {
+          post.excerptElement.hidden = true;
+          post.excerptElement.textContent = '';
+        }
       }
     });
 
     clear.hidden = !input.value;
-    shortcut.hidden = !!input.value;
     empty.hidden = (!terms.length && activeSeries === 'all') || count > 0 || !!indexRequest;
     var label = filterLabels.get(activeSeries) || '';
     if (!terms.length && activeSeries === 'all') {
@@ -219,6 +243,23 @@
     render();
   }
 
+  document.addEventListener('keydown', function (event) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key === '/' && !event.target.isContentEditable && !/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) {
+      event.preventDefault();
+      openDrawer(true);
+    } else if (event.key === 'Escape' && !drawer.hidden) {
+      event.preventDefault();
+      if (input.value) {
+        input.value = '';
+        search(true);
+        input.focus();
+      } else {
+        closeDrawer();
+      }
+    }
+  });
+
   filterButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var next = btn.dataset.series;
@@ -237,24 +278,27 @@
     search(true);
     input.focus();
   });
-  input.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-      input.value = '';
-      search(true);
-    }
-  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeDrawer);
+  }
   window.addEventListener('popstate', function () {
     var params = new URL(window.location.href).searchParams;
-    input.value = params.get('q') || '';
-    setSeries(params.get('series') || 'all');
+    var q = params.get('q') || '';
+    var s = params.get('series') || 'all';
+    input.value = q;
+    setSeries(s);
+    if (q || s !== 'all') openDrawer(false);
     search(false);
   });
 
-  form.hidden = false;
-  if (filters) filters.hidden = false;
   var initialParams = new URL(window.location.href).searchParams;
-  input.value = initialParams.get('q') || '';
-  setSeries(initialParams.get('series') || 'all');
-  search(false);
-  if (window.location.hash === '#post-search') input.focus();
+  var initQ = initialParams.get('q') || '';
+  var initSeries = initialParams.get('series') || 'all';
+  var wantsHash = window.location.hash === '#post-search';
+  input.value = initQ;
+  setSeries(initSeries);
+  if (initQ || initSeries !== 'all' || wantsHash) {
+    openDrawer(wantsHash);
+    search(false);
+  }
 })();

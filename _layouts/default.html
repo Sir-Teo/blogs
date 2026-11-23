@@ -3,16 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>
-    // Apply the stored or system theme before first paint.
-    (function () {
-      var t = null;
-      try { t = localStorage.getItem('theme'); } catch (e) {}
-      if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      document.documentElement.dataset.theme = t;
-    })();
-  </script>
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="light">
   {%- if page.neutral %}
   <title>{{ page.title | escape }}</title>
   <meta name="description" content="{{ page.description | strip_newlines | escape }}">
@@ -20,7 +11,10 @@
   {%- seo -%}
   {%- feed_meta %}
   {%- endif %}
-  <link rel="icon" href="{% if page.neutral %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Ecircle%7Bfill:%23171716%7D@media(prefers-color-scheme:dark)%7Bcircle%7Bfill:%23ededeb%7D%7D%3C/style%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3C/svg%3E{% else %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cstyle%3Erect%7Bfill:%23171716%7Dpath%7Bfill:%23fcfbf9%7D@media(prefers-color-scheme:dark)%7Brect%7Bfill:%23ededeb%7Dpath%7Bfill:%23121211%7D%7D%3C/style%3E%3Crect x='1' y='1' width='14' height='14' rx='3.5'/%3E%3Cpath d='M4.2 4.6h7.6v1.45H8.85V12H7.15V6.05H4.2z'/%3E%3C/svg%3E{% endif %}">
+  <link rel="icon" href="{% if page.neutral %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5' fill='%23282828'/%3E%3C/svg%3E{% else %}data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='3.5' fill='%23282828'/%3E%3Cpath d='M4.2 4.6h7.6v1.45H8.85V12H7.15V6.05H4.2z' fill='%23ffffff'/%3E%3C/svg%3E{% endif %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap">
   <link rel="preload" as="font" type="font/woff2" href="{{ '/assets/fonts/newsreader-latin.woff2' | relative_url }}" crossorigin>
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
   {%- if page.layout == 'post' or page.math %}
@@ -38,46 +32,90 @@
   <script defer src="{{ src | relative_url }}"></script>
   {%- endfor %}
 </head>
-<body>
+<body id="top">
   <a class="skip" href="#main">Skip to content</a>
-  <header class="site-header">
+
+  <header class="site-header" id="site-header">
     <a class="site-name" href="{{ '/' | relative_url }}">{% if page.neutral %}Research notes{% else %}{{ site.title | escape }}{% endif %}</a>
-    <nav class="site-nav" aria-label="Site">
-      {%- unless page.neutral %}
+    {%- unless page.neutral %}
+    <nav class="top-nav" aria-label="Site">
+      <a href="{{ '/' | relative_url }}"{% if page.layout == 'home' or page.layout == 'post' %} aria-current="page"{% endif %}>Writing</a>
       <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
-      <a class="nav-github" href="https://github.com/{{ site.github_username }}" aria-label="GitHub" title="GitHub">{%- include link-icon.html name='github' -%}<span class="link-label">GitHub</span></a>
-      {%- endunless %}
-      {%- unless page.layout == 'home' %}
-      <a class="search-toggle" href="{{ '/' | relative_url }}#post-search" aria-label="Search posts" title="Search posts (/)" hidden>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
-      </a>
-      {%- endunless %}
-      <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 0 0 14z"/></svg>
-      </button>
+      <a href="https://github.com/{{ site.github_username }}">GitHub</a>
+      <a href="https://www.youtube.com/@teozeng3999">YouTube</a>
+      <a href="https://teozeng.dev">teozeng.dev</a>
     </nav>
+    <button class="hamburger" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    {%- endunless %}
   </header>
 
-  <main id="main">
-    {{ content }}
-  </main>
-
-  <footer class="site-footer">
-    {%- if page.neutral %}
-    <div class="footer-links">
-      <a href="{{ '/' | relative_url }}">All notes</a>
-    </div>
-    {%- else %}
-    <div class="footer-links">
-      {%- unless page.layout == 'home' %}
-      <a href="{{ '/' | relative_url }}">Writing</a>
-      {%- endunless %}
+  {%- unless page.neutral %}
+  <div class="mobile-menu-overlay" id="mobile-menu" hidden>
+    <nav class="mobile-nav" aria-label="Mobile">
+      <a href="{{ '/' | relative_url }}"{% if page.layout == 'home' or page.layout == 'post' %} aria-current="page"{% endif %}>Writing</a>
       <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
-      <a href="https://github.com/{{ site.github_username }}">{%- include link-icon.html name='github' -%}GitHub</a>
-      <a href="{{ '/feed.xml' | relative_url }}">{%- include link-icon.html name='rss' -%}RSS</a>
-    </div>
-    <p class="footer-note">{{ site.title | escape }}</p>
-    {%- endif %}
-  </footer>
+      <a href="https://github.com/{{ site.github_username }}">GitHub</a>
+      <a href="https://www.youtube.com/@teozeng3999">YouTube</a>
+      <a href="https://teozeng.dev">teozeng.dev</a>
+    </nav>
+  </div>
+  {%- endunless %}
+
+  <div id="wrapper">
+    <main id="main" class="{% if page.layout == 'home' %}index list section-blog{% elsif page.layout == 'post' %}post{% else %}index page-shell{% endif %}">
+      {{ content }}
+    </main>
+
+    <footer id="footer" class="site-footer{% if page.neutral %} site-footer-neutral{% endif %}">
+      {%- if page.neutral %}
+      <div class="footer-neutral-bar">
+        <a href="{{ '/' | relative_url }}">All notes</a>
+      </div>
+      {%- else %}
+      <div class="footer-columns">
+        <div class="footer-col">
+          <h2>Writing</h2>
+          <ul>
+            <li><a href="{{ '/' | relative_url }}">All posts</a></li>
+            <li><a href="{{ '/about/' | relative_url }}">About</a></li>
+            <li><a href="{{ '/feed.xml' | relative_url }}">RSS feed</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2>Series</h2>
+          <ul>
+            {%- for pair in site.data.series %}
+            <li><a href="{{ '/' | relative_url }}?series={{ pair[0] | uri_escape }}">{{ pair[1].title | escape }}</a></li>
+            {%- endfor %}
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2>Recent</h2>
+          <ul>
+            {%- for post in site.posts limit: 4 %}
+            <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
+            {%- endfor %}
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2>Connect</h2>
+          <ul>
+            <li><a href="https://teozeng.dev">teozeng.dev</a></li>
+            <li><a href="https://github.com/{{ site.github_username }}">GitHub</a></li>
+            <li><a href="https://www.youtube.com/@teozeng3999">YouTube</a></li>
+            {%- if site.email %}
+            <li><a href="mailto:{{ site.email }}">Email</a></li>
+            {%- endif %}
+          </ul>
+        </div>
+      </div>
+      <p class="footer-copyright">{{ site.title | escape }} &copy; {{ site.time | date: "%Y" }}</p>
+      {%- endif %}
+    </footer>
+  </div>
 </body>
 </html>

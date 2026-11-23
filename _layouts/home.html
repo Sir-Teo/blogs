@@ -5,72 +5,64 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 %}
-  <form class="post-search" role="search" data-index-url="{{ '/search.json' | relative_url }}" hidden>
-    <label class="visually-hidden" for="post-search">Search posts</label>
-    <div class="post-search-field">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
-      <input id="post-search" type="search" name="q" placeholder="Search {{ site.posts.size }} posts…" autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false" aria-controls="posts" aria-describedby="search-status">
-      <button class="search-clear" type="button" hidden>Clear</button>
-      <kbd class="search-shortcut" aria-hidden="true">/</kbd>
-    </div>
-  </form>
-  {%- assign standalone_count = 0 -%}
-  {%- for post in site.posts %}{% unless post.series %}{% assign standalone_count = standalone_count | plus: 1 %}{% endunless %}{% endfor -%}
-  <div class="post-filters tabs" role="group" aria-label="Filter posts by series" hidden>
-    <button type="button" data-series="all" aria-pressed="true">All <span class="tab-count">{{ site.posts.size }}</span></button>
-    {%- for pair in site.data.series -%}
-      {%- assign skey = pair[0] -%}
-      {%- assign sinfo = pair[1] -%}
-      {%- assign sparts = site.posts | where: "series", skey -%}
-      {%- if sparts.size > 0 %}
-    <button type="button" data-series="{{ skey | escape }}" aria-pressed="false">{{ sinfo.title | escape }} <span class="tab-count">{{ sparts.size }}</span></button>
+  <div class="search-drawer" id="search-drawer" hidden>
+    <form class="post-search" role="search" data-index-url="{{ '/search.json' | relative_url }}">
+      <label class="visually-hidden" for="post-search">Search posts</label>
+      <div class="post-search-field">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg>
+        <input id="post-search" type="search" name="q" placeholder="Search {{ site.posts.size }} posts…" autocomplete="off" autocapitalize="off" enterkeyhint="search" spellcheck="false" aria-controls="posts" aria-describedby="search-status">
+        <button class="search-clear" type="button" hidden>Clear</button>
+        <button class="search-close" type="button" aria-label="Close search">Esc</button>
+      </div>
+    </form>
+    {%- assign standalone_count = 0 -%}
+    {%- for post in site.posts %}{% unless post.series %}{% assign standalone_count = standalone_count | plus: 1 %}{% endunless %}{% endfor -%}
+    <div class="post-filters tabs" role="group" aria-label="Filter posts by series">
+      <button type="button" data-series="all" aria-pressed="true">All <span class="tab-count">{{ site.posts.size }}</span></button>
+      {%- for pair in site.data.series -%}
+        {%- assign skey = pair[0] -%}
+        {%- assign sinfo = pair[1] -%}
+        {%- assign sparts = site.posts | where: "series", skey -%}
+        {%- if sparts.size > 0 %}
+      <button type="button" data-series="{{ skey | escape }}" aria-pressed="false">{{ sinfo.title | escape }} <span class="tab-count">{{ sparts.size }}</span></button>
+        {%- endif %}
+      {%- endfor -%}
+      {%- if standalone_count > 0 %}
+      <button type="button" data-series="standalone" aria-pressed="false">Standalone <span class="tab-count">{{ standalone_count }}</span></button>
       {%- endif %}
-    {%- endfor -%}
-    {%- if standalone_count > 0 %}
-    <button type="button" data-series="standalone" aria-pressed="false">Standalone <span class="tab-count">{{ standalone_count }}</span></button>
-    {%- endif %}
+    </div>
+    <p class="search-status" id="search-status" role="status" aria-live="polite" aria-atomic="true"></p>
+    <p class="search-empty" hidden>No matching posts. Try another keyword or clear the filter.</p>
   </div>
-  <p class="search-status" id="search-status" role="status" aria-live="polite" aria-atomic="true"></p>
-  <p class="search-empty" hidden>Try another keyword, or clear the filter to see all posts.</p>
-  <ol class="post-index" id="posts" reversed>
+
+  <ol class="post-group post-index" id="posts" reversed>
     {%- for post in site.posts %}
     {%- assign words = post.content | strip_html | number_of_words -%}
     {%- assign minutes = words | plus: 115 | divided_by: 230 | at_least: 1 -%}
     {%- assign figs = post.content | split: '<figure class="fig' | size | minus: 1 -%}
     {%- assign sinfo = nil -%}
     {%- if post.series -%}{%- assign sinfo = site.data.series[post.series] -%}{%- endif -%}
+    {%- assign sparts = nil -%}
+    {%- assign part_num = 0 -%}
+    {%- if sinfo -%}
+      {%- assign sparts = site.posts | where: "series", post.series | sort: "date" -%}
+      {%- for sp in sparts %}{% if sp.url == post.url %}{% assign part_num = forloop.index %}{% endif %}{% endfor -%}
+    {%- endif -%}
     <li data-series="{{ post.series | default: 'standalone' | escape }}">
-      {%- include post-thumb.html post=post -%}
-      <div class="post-index-body">
-        {%- if sinfo %}
-        {%- assign sparts = site.posts | where: "series", post.series | sort: "date" -%}
-        {%- assign part_num = 0 -%}
-        {%- for sp in sparts %}{% if sp.url == post.url %}{% assign part_num = forloop.index %}{% endif %}{% endfor -%}
-        <p class="post-index-series">{{ sinfo.title | escape }}{% if sparts.size > 1 %} · Part {{ part_num }} of {{ sparts.size }}{% endif %}</p>
-        {%- endif %}
-        <h2 class="post-index-head">
-          <a class="post-index-link" href="{{ post.url | relative_url }}">
-            <span class="post-index-title">{{ post.title | escape }}</span>
-          </a>
-        </h2>
-        {%- if post.excerpt %}
-        <p class="post-index-excerpt">{{ post.excerpt | strip_html | normalize_whitespace }}</p>
-        {%- endif %}
-        <p class="meta post-index-meta">
-          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
-          {%- if figs > 0 %}
-          <span class="post-index-figs">{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %}</span>
+      <a class="post-item-link post-index-link" href="{{ post.url | relative_url }}">
+        <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
+        <div class="post-info post-index-body">
+          <h2 class="post-title post-index-title">{{ post.title | escape }}</h2>
+          <p class="author-date post-index-meta">
+            {%- if sinfo %}{{ sinfo.title | escape }}{% if sparts.size > 1 %} · Part {{ part_num }} of {{ sparts.size }}{% endif %} · {% endif -%}
+            {%- if figs > 0 %}{{ figs }} {% if figs == 1 %}figure{% else %}figures{% endif %} · {% endif -%}
+            {{ minutes }} min read
+          </p>
+          {%- if post.excerpt %}
+          <p class="post-index-excerpt" data-excerpt="{{ post.excerpt | strip_html | normalize_whitespace | escape }}" hidden></p>
           {%- endif %}
-          <span>{{ minutes }} min read</span>
-          {%- if post.links %}
-          <span class="meta-links">
-            {%- for link in post.links %}
-            <a href="{{ link.url }}">{%- include link-icon.html url=link.url -%}{{ link.title | escape }}</a>
-            {%- endfor %}
-          </span>
-          {%- endif %}
-        </p>
-      </div>
+        </div>
+      </a>
     </li>
     {%- endfor %}
   </ol>

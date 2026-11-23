@@ -4,35 +4,11 @@ layout: default
 title: Page not found
 ---
 <article class="page not-found">
-  <header class="post-head">
-    <p class="post-kicker">404</p>
-    <h1>Page not found</h1>
+  <header class="page-heading">
+    <h1 class="blog-page-title">Page not found</h1>
   </header>
-  <div class="post-content">
-    <figure class="not-found-fig" aria-hidden="true">
-      <svg class="post-thumb" viewBox="0 0 208 68">
-        <rect class="thumb-bg" x="0.5" y="0.5" width="207" height="67" rx="6"/>
-        <g class="thumb-grid">
-          <line x1="16" y1="20" x2="192" y2="20"/>
-          <line x1="16" y1="34" x2="192" y2="34"/>
-          <line x1="16" y1="48" x2="192" y2="48"/>
-        </g>
-        <path class="thumb-wire" d="M22 34 H72 C84 34, 84 20, 96 20 H116"/>
-        <path class="thumb-wire-dash" d="M116 20 H148 C160 20, 160 34, 172 34 H186"/>
-        <path class="thumb-wire" d="M72 34 C84 34, 84 48, 96 48 H134"/>
-        <circle class="thumb-nodes" cx="22" cy="34" r="2.2"/>
-        <circle class="thumb-nodes" cx="72" cy="34" r="2.2"/>
-        <circle class="thumb-nodes" cx="134" cy="48" r="2.2"/>
-        <g class="thumb-accent">
-          <path class="thumb-flow" d="M22 34 H72 C84 34, 84 20, 96 20 H116"/>
-          <circle class="thumb-node-ring" cx="116" cy="20" r="3"/>
-          <circle class="thumb-halo" cx="186" cy="34" r="7" style="opacity:1;transform:scale(1)"/>
-          <circle class="thumb-node-ring" cx="186" cy="34" r="3.5"/>
-          <path class="thumb-flow-thin" d="M183.5 31.5 L188.5 36.5 M188.5 31.5 L183.5 36.5"/>
-        </g>
-      </svg>
-    </figure>
-    <p>Nothing lives at this address. Head <a href="{{ '/' | relative_url }}">back to the index</a>, press <code>/</code> to search, or start with a recent post:</p>
+  <div class="post-content content">
+    <p>Nothing lives at this address. Head <a href="{{ '/' | relative_url }}">back to the index</a>, or start with a recent post:</p>
     <ul class="not-found-list">
       {%- for post in site.posts limit: 3 %}
       <li><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></li>
