@@ -2,6 +2,34 @@
 <div class="post-thumb-wrap" aria-hidden="true">
   {%- case slug -%}
 
+  {%- when 'inside-inkling-2-mini' -%}
+  <!-- Inkling 2 Mini: prelude -> 3x looped middle core with cross-pass message arc -> coda paired with rising loop-depth curve vs flat recall -->
+  <svg class="post-thumb" viewBox="0 0 104 68">
+    <rect class="thumb-bg" x="0.5" y="0.5" width="103" height="67" rx="6"/>
+    <g class="thumb-grid"><path d="M58 20H94 M58 34H94 M58 48H94"/></g>
+    <g class="thumb-wire">
+      <rect x="11" y="23" width="6" height="22" rx="1.5"/>
+      <rect x="23" y="19" width="14" height="30" rx="2"/>
+      <rect x="43" y="23" width="6" height="22" rx="1.5"/>
+      <path d="M17 34H23 M37 34H43 M58 54H94"/>
+    </g>
+    <g class="thumb-wire-dash">
+      <path d="M59 47 L92 46"/>
+    </g>
+    <g class="thumb-accent">
+      <rect class="thumb-soft" x="23" y="19" width="14" height="30" rx="2"/>
+      <path class="thumb-flow" d="M30 19 C30 9, 41 9, 41 19 C41 25, 39 27, 37 27"/>
+      <path class="thumb-flow-thin" d="M30 49 C30 58, 19 58, 19 49 C19 43, 21 41, 23 41"/>
+      <circle class="thumb-halo" cx="30" cy="34" r="5"/>
+      <circle class="thumb-node-act" cx="30" cy="34" r="2.2"/>
+      <path class="thumb-soft" d="M60 54 L68 42 L76 28 L84 22 L92 17 V54 Z"/>
+      <path class="thumb-flow" d="M60 53 L68 42 L76 28 L84 22 L92 17"/>
+      <circle class="thumb-halo" cx="76" cy="28" r="4.8"/>
+      <circle class="thumb-node-act" cx="76" cy="28" r="2.2"/>
+      <circle class="thumb-node-ring" cx="92" cy="17" r="2"/>
+    </g>
+  </svg>
+
   {%- when 'walking-through-the-lean-proof-of-navier-stokes-blow-up' -%}
   <!-- Navier-Stokes Lean proof: counter-rotating 19-arm spiral vortex paired with (T - t)^(-1/4) blow-up asymptote -->
   <svg class="post-thumb" viewBox="0 0 104 68">

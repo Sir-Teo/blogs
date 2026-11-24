@@ -1,0 +1,1819 @@
+{
+  "meta": {
+    "model": "thinkingmachines/Inkling-2-Mini",
+    "varloopModel": "thinkingmachines/TML-d24-varloop-research",
+    "releaseDate": "2026-11-20",
+    "license": "Apache 2.0",
+    "downloads72h": {
+      "unslothGGUF": 1292888,
+      "ggmlGGUF": 497658,
+      "official": 41888,
+      "mlx4bit": 13578
+    },
+    "transformersUrl": "https://github.com/huggingface/transformers/blob/main/src/transformers/models/inkling2_loop/modeling_inkling2_loop.py"
+  },
+  "arch": {
+    "hiddenSize": 2304,
+    "numLayers": 24,
+    "coreStart": 6,
+    "coreEnd": 18,
+    "defaultPasses": 3,
+    "gateRank": 64,
+    "vocabSize": 201024,
+    "unpaddedVocabSize": 200058,
+    "maxContext": 1048576,
+    "numHeads": 24,
+    "numKvHeads": 8,
+    "headDim": 128,
+    "slidingWindow": 1024,
+    "dRel": 16,
+    "relExtent": 1024,
+    "sconvKernel": 4,
+    "logScaleFloor": 8192,
+    "logScaleAlpha": 0.1,
+    "qkL2Clip": 22.6274,
+    "relL2Clip": 8.0,
+    "nExperts": 128,
+    "nExpertsBeforePrune": 384,
+    "topK": 8,
+    "expertInter": 1152,
+    "routeScale": 8.0,
+    "mlpGateSoftcap": 4.0,
+    "mlpUpSoftcap": 25.0,
+    "finalLogitSoftcap": 30.0,
+    "dsparkTapVisits": [
+      5,
+      23,
+      41,
+      48
+    ],
+    "dsparkLayers": 3,
+    "dsparkBlockSize": 8,
+    "visionLayers": 23,
+    "visionHidden": 1024,
+    "visionPatch": 20,
+    "checkpointBytes": 19525870752,
+    "mtpBytes": 640000000,
+    "params": {
+      "totalB": 26.4,
+      "uniqueActiveB": 3.4,
+      "effectiveActive3B": 5.4,
+      "perExtraPassB": 1.0,
+      "moeTotalB": 24.46,
+      "attnRouterB": 0.65,
+      "controllersM": 28.31,
+      "embedUnembedB": 0.93,
+      "visionB": 0.29
+    },
+    "layers": [
+      {
+        "id": 0,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 0,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 1,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 2,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 3,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 4,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 5,
+        "block": 1,
+        "role": "Prelude",
+        "attn": "global",
+        "kvConv": "dynamic",
+        "attnResQ": 3,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": true
+      },
+      {
+        "id": 6,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 7,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 8,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 9,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 10,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 11,
+        "block": 2,
+        "role": "Core B2",
+        "attn": "global",
+        "kvConv": "dynamic",
+        "attnResQ": 3,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": true
+      },
+      {
+        "id": 12,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 13,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 14,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 15,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 16,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 17,
+        "block": 3,
+        "role": "Core B3",
+        "attn": "global",
+        "kvConv": "dynamic",
+        "attnResQ": 3,
+        "isLoop": true,
+        "precision": "NVFP4",
+        "blockEnd": true
+      },
+      {
+        "id": 18,
+        "block": 4,
+        "role": "Coda",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 19,
+        "block": 4,
+        "role": "Coda",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "NVFP4",
+        "blockEnd": false
+      },
+      {
+        "id": 20,
+        "block": 4,
+        "role": "Coda",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "MXFP8",
+        "blockEnd": false
+      },
+      {
+        "id": 21,
+        "block": 4,
+        "role": "Coda",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "MXFP8",
+        "blockEnd": false
+      },
+      {
+        "id": 22,
+        "block": 4,
+        "role": "Coda",
+        "attn": "sliding",
+        "kvConv": "static",
+        "attnResQ": 1,
+        "isLoop": false,
+        "precision": "MXFP8",
+        "blockEnd": false
+      },
+      {
+        "id": 23,
+        "block": 4,
+        "role": "Coda",
+        "attn": "global",
+        "kvConv": "dynamic",
+        "attnResQ": 3,
+        "isLoop": false,
+        "precision": "MXFP8",
+        "blockEnd": true
+      }
+    ]
+  },
+  "varloop": [
+    {
+      "name": "DeepSWE v1.1 (mini-swe-agent v2.4.6)",
+      "cat": "Coding",
+      "unit": "%",
+      "lower": false,
+      "mini": 48.2,
+      "passes": [
+        0.7,
+        28.3,
+        47.4,
+        46.9,
+        48.2
+      ],
+      "delta15": 47.5
+    },
+    {
+      "name": "SWEBench Pro v2 (Hard) (mini-swe-agent v2.4.6)",
+      "cat": "Coding",
+      "unit": "%",
+      "lower": false,
+      "mini": 77.9,
+      "passes": [
+        39.7,
+        69.1,
+        78.9,
+        76.0,
+        78.4
+      ],
+      "delta15": 38.7
+    },
+    {
+      "name": "SWEBench Multilingual (bash only)",
+      "cat": "Coding",
+      "unit": "%",
+      "lower": false,
+      "mini": 73.7,
+      "passes": [
+        40.8,
+        68.5,
+        71.8,
+        72.8,
+        72.0
+      ],
+      "delta15": 31.2
+    },
+    {
+      "name": "SWEBench Verified (bash only)",
+      "cat": "Coding",
+      "unit": "%",
+      "lower": false,
+      "mini": 79.2,
+      "passes": [
+        56.3,
+        76.5,
+        78.7,
+        79.3,
+        79.6
+      ],
+      "delta15": 23.3
+    },
+    {
+      "name": "SWEBench Multimodal v2 (mini-swe-agent (vals))",
+      "cat": "Coding",
+      "unit": "%",
+      "lower": false,
+      "mini": 37.9,
+      "passes": [
+        23.1,
+        32.9,
+        34.8,
+        35.4,
+        36.0
+      ],
+      "delta15": 12.9
+    },
+    {
+      "name": "PMPP-Hard (AUC, 0\u201310h) (pi v0.83.0)",
+      "cat": "Coding",
+      "unit": "AUC",
+      "lower": false,
+      "mini": 455.8,
+      "passes": [
+        49.5,
+        315.3,
+        401.8,
+        437.2,
+        424.0
+      ],
+      "delta15": 374.5
+    },
+    {
+      "name": "BrowseComp (original, no context management)",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 76.0,
+      "passes": [
+        29.4,
+        53.8,
+        65.7,
+        69.4,
+        71.0
+      ],
+      "delta15": 41.6
+    },
+    {
+      "name": "DeepSearchQA (with compaction)",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 85.3,
+      "passes": [
+        58.5,
+        74.8,
+        78.9,
+        83.4,
+        83.0
+      ],
+      "delta15": 24.5
+    },
+    {
+      "name": "MCP Atlas (Public)",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 82.7,
+      "passes": [
+        70.0,
+        77.6,
+        79.4,
+        79.7,
+        80.0
+      ],
+      "delta15": 10.0
+    },
+    {
+      "name": "JobBench",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 49.6,
+      "passes": [
+        22.8,
+        55.1,
+        63.8,
+        61.8,
+        63.3
+      ],
+      "delta15": 40.5
+    },
+    {
+      "name": "EnterpriseOps-Gym (LangChain ReAct loop)",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 36.7,
+      "passes": [
+        25.7,
+        34.4,
+        36.6,
+        36.5,
+        37.6
+      ],
+      "delta15": 11.9
+    },
+    {
+      "name": "Diligence Bench (Loop)",
+      "cat": "Search & Agent",
+      "unit": "%",
+      "lower": false,
+      "mini": 31.7,
+      "passes": [
+        16.1,
+        22.2,
+        27.9,
+        29.4,
+        32.3
+      ],
+      "delta15": 16.2
+    },
+    {
+      "name": "GDP.pdf",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 16.8,
+      "passes": [
+        4.6,
+        11.2,
+        19.6,
+        18.0,
+        20.0
+      ],
+      "delta15": 15.4
+    },
+    {
+      "name": "PerceptionBench",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 57.5,
+      "passes": [
+        45.5,
+        51.3,
+        53.9,
+        53.7,
+        52.7
+      ],
+      "delta15": 7.2
+    },
+    {
+      "name": "MMMU Pro (Standard 10)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 74.9,
+      "passes": [
+        63.6,
+        69.8,
+        71.4,
+        72.1,
+        73.2
+      ],
+      "delta15": 9.6
+    },
+    {
+      "name": "OmniDocBench v1.6",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 92.8,
+      "passes": [
+        86.6,
+        90.5,
+        92.1,
+        91.8,
+        92.5
+      ],
+      "delta15": 5.9
+    },
+    {
+      "name": "BabyVision (original)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 53.4,
+      "passes": [
+        32.7,
+        44.9,
+        50.3,
+        50.3,
+        49.2
+      ],
+      "delta15": 16.5
+    },
+    {
+      "name": "BabyVision (with Python)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 88.8,
+      "passes": [
+        67.2,
+        84.1,
+        88.9,
+        88.8,
+        89.5
+      ],
+      "delta15": 22.3
+    },
+    {
+      "name": "ScreenSpot Pro (original)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 76.5,
+      "passes": [
+        54.4,
+        66.0,
+        72.0,
+        73.4,
+        73.1
+      ],
+      "delta15": 18.7
+    },
+    {
+      "name": "ScreenSpot Pro (with Python)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 87.7,
+      "passes": [
+        80.7,
+        86.5,
+        87.7,
+        87.2,
+        88.1
+      ],
+      "delta15": 7.4
+    },
+    {
+      "name": "Charxiv RQ (original)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 80.6,
+      "passes": [
+        75.0,
+        78.3,
+        79.9,
+        79.2,
+        80.4
+      ],
+      "delta15": 5.4
+    },
+    {
+      "name": "Charxiv RQ (with Python)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 88.3,
+      "passes": [
+        84.7,
+        87.7,
+        87.6,
+        89.3,
+        87.9
+      ],
+      "delta15": 3.2
+    },
+    {
+      "name": "Chartography (original)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 22.1,
+      "passes": [
+        14.5,
+        17.8,
+        21.6,
+        21.4,
+        22.6
+      ],
+      "delta15": 8.1
+    },
+    {
+      "name": "Chartography (with Python)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 72.5,
+      "passes": [
+        49.1,
+        69.1,
+        72.3,
+        73.7,
+        72.3
+      ],
+      "delta15": 23.2
+    },
+    {
+      "name": "ZeroBench (main) (original)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 17.0,
+      "passes": [
+        9.0,
+        13.0,
+        19.0,
+        18.0,
+        17.0
+      ],
+      "delta15": 8.0
+    },
+    {
+      "name": "ZeroBench (main) (with Python)",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 34.0,
+      "passes": [
+        16.0,
+        31.0,
+        40.0,
+        35.0,
+        37.0
+      ],
+      "delta15": 21.0
+    },
+    {
+      "name": "Humanity\u2019s Sixth Sense",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 23.8,
+      "passes": [
+        22.4,
+        24.8,
+        25.5,
+        26.5,
+        27.0
+      ],
+      "delta15": 4.6
+    },
+    {
+      "name": "MathVision",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 89.0,
+      "passes": [
+        74.8,
+        84.9,
+        86.6,
+        87.8,
+        88.1
+      ],
+      "delta15": 13.3
+    },
+    {
+      "name": "MuirBench",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 77.5,
+      "passes": [
+        73.6,
+        76.1,
+        77.1,
+        76.4,
+        77.8
+      ],
+      "delta15": 4.2
+    },
+    {
+      "name": "BVB",
+      "cat": "Vision",
+      "unit": "%",
+      "lower": false,
+      "mini": 68.4,
+      "passes": [
+        58.1,
+        64.4,
+        68.5,
+        69.2,
+        69.5
+      ],
+      "delta15": 11.4
+    },
+    {
+      "name": "HLE-Diamond",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 15.2,
+      "passes": [
+        6.3,
+        8.5,
+        9.5,
+        9.7,
+        11.1
+      ],
+      "delta15": 4.8
+    },
+    {
+      "name": "HLE (text only)",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 30.7,
+      "passes": [
+        10.5,
+        20.0,
+        24.9,
+        25.4,
+        25.9
+      ],
+      "delta15": 15.4
+    },
+    {
+      "name": "GPQA Diamond",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 86.6,
+      "passes": [
+        69.6,
+        79.2,
+        84.2,
+        81.9,
+        83.1
+      ],
+      "delta15": 13.5
+    },
+    {
+      "name": "Apex 2025",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 34.4,
+      "passes": [
+        3.1,
+        10.4,
+        19.8,
+        15.6,
+        18.8
+      ],
+      "delta15": 15.7
+    },
+    {
+      "name": "ComplexConstraints v1.1 (openhands v1.45.0)",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 33.4,
+      "passes": [
+        4.5,
+        26.0,
+        37.9,
+        39.6,
+        38.9
+      ],
+      "delta15": 34.4
+    },
+    {
+      "name": "SimpleQA Verified",
+      "cat": "Factuality",
+      "unit": "%",
+      "lower": false,
+      "mini": 8.4,
+      "passes": [
+        6.3,
+        6.5,
+        7.3,
+        6.8,
+        6.7
+      ],
+      "delta15": 0.4
+    },
+    {
+      "name": "AA-Omniscience v1.1 (Public) (accuracy)",
+      "cat": "Factuality",
+      "unit": "%",
+      "lower": false,
+      "mini": 21.3,
+      "passes": [
+        15.5,
+        16.3,
+        18.4,
+        18.0,
+        17.4
+      ],
+      "delta15": 1.9
+    },
+    {
+      "name": "AA-Omniscience v1.1 (Public) (non-hallucination rate)",
+      "cat": "Factuality",
+      "unit": "%",
+      "lower": false,
+      "mini": 64.6,
+      "passes": [
+        79.3,
+        85.0,
+        84.0,
+        85.7,
+        85.9
+      ],
+      "delta15": 6.6
+    },
+    {
+      "name": "SimpleVQA",
+      "cat": "Factuality",
+      "unit": "%",
+      "lower": false,
+      "mini": 45.4,
+      "passes": [
+        39.0,
+        41.8,
+        42.4,
+        42.9,
+        41.3
+      ],
+      "delta15": 2.3
+    },
+    {
+      "name": "WorldVQA",
+      "cat": "Factuality",
+      "unit": "%",
+      "lower": false,
+      "mini": 15.2,
+      "passes": [
+        11.3,
+        13.0,
+        14.2,
+        14.3,
+        13.5
+      ],
+      "delta15": 2.2
+    },
+    {
+      "name": "AA-LCR v1.1",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 80.0,
+      "passes": [
+        55.5,
+        73.5,
+        74.8,
+        75.5,
+        76.8
+      ],
+      "delta15": 21.3
+    },
+    {
+      "name": "LongBench v2",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 66.9,
+      "passes": [
+        50.6,
+        61.8,
+        66.5,
+        66.2,
+        66.4
+      ],
+      "delta15": 15.8
+    },
+    {
+      "name": "GraphWalks BFS (256K)",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 69.7,
+      "passes": [
+        21.1,
+        54.5,
+        63.2,
+        64.3,
+        64.9
+      ],
+      "delta15": 43.8
+    },
+    {
+      "name": "GraphWalks BFS (1M)",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 50.0,
+      "passes": [
+        5.7,
+        39.4,
+        52.1,
+        56.2,
+        57.8
+      ],
+      "delta15": 52.1
+    },
+    {
+      "name": "MRCR v2 (8-needle 256K\u2013512K)",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 46.4,
+      "passes": [
+        26.2,
+        65.2,
+        89.2,
+        93.4,
+        92.1
+      ],
+      "delta15": 65.9
+    },
+    {
+      "name": "MRCR v2 (8-needle 512K\u20131M)",
+      "cat": "Long Context",
+      "unit": "%",
+      "lower": false,
+      "mini": 37.7,
+      "passes": [
+        20.6,
+        49.7,
+        72.3,
+        81.4,
+        79.9
+      ],
+      "delta15": 59.3
+    },
+    {
+      "name": "ARC-AGI-1 (Public)",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 90.5,
+      "passes": [
+        29.5,
+        59.3,
+        71.5,
+        72.6,
+        75.3
+      ],
+      "delta15": 45.8
+    },
+    {
+      "name": "ARC-AGI-2 (Public)",
+      "cat": "Reasoning",
+      "unit": "%",
+      "lower": false,
+      "mini": 51.3,
+      "passes": [
+        0.8,
+        12.2,
+        22.1,
+        20.3,
+        27.1
+      ],
+      "delta15": 26.3
+    },
+    {
+      "name": "FORTRESS (adversarial) (Public)",
+      "cat": "Safety",
+      "unit": "%",
+      "lower": false,
+      "mini": 89.5,
+      "passes": [
+        89.0,
+        90.4,
+        90.0,
+        89.9,
+        89.4
+      ],
+      "delta15": 0.4
+    },
+    {
+      "name": "FORTRESS (benign) (Public)",
+      "cat": "Safety",
+      "unit": "%",
+      "lower": false,
+      "mini": 96.4,
+      "passes": [
+        95.0,
+        95.9,
+        95.3,
+        95.7,
+        95.0
+      ],
+      "delta15": 0.0
+    },
+    {
+      "name": "StrongREJECT (none)",
+      "cat": "Safety",
+      "unit": "%",
+      "lower": false,
+      "mini": 97.8,
+      "passes": [
+        98.8,
+        98.4,
+        98.2,
+        99.4,
+        98.4
+      ],
+      "delta15": -0.4
+    },
+    {
+      "name": "PatchEval",
+      "cat": "Safety",
+      "unit": "%",
+      "lower": false,
+      "mini": 60.9,
+      "passes": [
+        55.7,
+        73.9,
+        73.9,
+        75.2,
+        73.5
+      ],
+      "delta15": 17.8
+    },
+    {
+      "name": "Destructive actions (Internal) \u2193",
+      "cat": "Safety",
+      "unit": "%",
+      "lower": true,
+      "mini": 10.2,
+      "passes": [
+        26.6,
+        16.4,
+        7.8,
+        3.1,
+        7.0
+      ],
+      "delta15": -19.6
+    }
+  ],
+  "nhop": {
+    "hops": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "random": 20.0,
+    "series": [
+      {
+        "passes": 1,
+        "acc": [
+          91.6,
+          64.9,
+          33.6,
+          15.5,
+          17.0,
+          19.6,
+          23.1,
+          29.2,
+          19.4,
+          19.6
+        ]
+      },
+      {
+        "passes": 2,
+        "acc": [
+          100.0,
+          98.6,
+          70.9,
+          30.9,
+          20.1,
+          20.0,
+          21.2,
+          24.0,
+          20.4,
+          21.4
+        ]
+      },
+      {
+        "passes": 3,
+        "acc": [
+          100.0,
+          99.4,
+          95.1,
+          65.9,
+          33.5,
+          23.8,
+          21.8,
+          22.1,
+          19.4,
+          20.0
+        ]
+      },
+      {
+        "passes": 5,
+        "acc": [
+          100.0,
+          99.6,
+          98.6,
+          88.1,
+          58.9,
+          32.1,
+          23.6,
+          22.5,
+          23.2,
+          21.2
+        ]
+      },
+      {
+        "passes": 10,
+        "acc": [
+          100.0,
+          99.5,
+          99.2,
+          89.2,
+          64.4,
+          43.4,
+          28.5,
+          29.5,
+          20.8,
+          24.5
+        ]
+      }
+    ]
+  },
+  "thinkFast": [
+    {
+      "label": "1 pass",
+      "passes": 1,
+      "sec": 16,
+      "lo": 0.2,
+      "hi": 25.2,
+      "model": "varloop"
+    },
+    {
+      "label": "2 passes",
+      "passes": 2,
+      "sec": 26,
+      "lo": 1.3,
+      "hi": 37.8,
+      "model": "varloop"
+    },
+    {
+      "label": "3 passes",
+      "passes": 3,
+      "sec": 37,
+      "lo": 3.6,
+      "hi": 51.6,
+      "model": "varloop"
+    },
+    {
+      "label": "5 passes",
+      "passes": 5,
+      "sec": 42,
+      "lo": 4.8,
+      "hi": 56.4,
+      "model": "varloop"
+    },
+    {
+      "label": "10 passes",
+      "passes": 10,
+      "sec": 40,
+      "lo": 4.8,
+      "hi": 52.8,
+      "model": "varloop"
+    },
+    {
+      "label": "Mini (3\u00d7)",
+      "passes": 3,
+      "sec": 41,
+      "lo": 3.0,
+      "hi": 59.4,
+      "model": "mini"
+    }
+  ],
+  "tokenEff": {
+    "gpqa": [
+      {
+        "name": "1 pass",
+        "pts": [
+          [
+            5343,
+            61.4
+          ],
+          [
+            6204,
+            63.3
+          ],
+          [
+            9006,
+            66.4
+          ],
+          [
+            11896,
+            67.8
+          ],
+          [
+            12083,
+            71.4
+          ]
+        ]
+      },
+      {
+        "name": "2 passes",
+        "pts": [
+          [
+            3029,
+            73.2
+          ],
+          [
+            3064,
+            74.4
+          ],
+          [
+            5087,
+            77.5
+          ],
+          [
+            6791,
+            80.7
+          ],
+          [
+            7962,
+            81.5
+          ]
+        ]
+      },
+      {
+        "name": "3 passes",
+        "pts": [
+          [
+            2337,
+            77.5
+          ],
+          [
+            2649,
+            77.3
+          ],
+          [
+            4557,
+            80.0
+          ],
+          [
+            6196,
+            81.3
+          ],
+          [
+            7053,
+            82.0
+          ]
+        ]
+      },
+      {
+        "name": "5 passes",
+        "pts": [
+          [
+            2082,
+            74.4
+          ],
+          [
+            2319,
+            77.3
+          ],
+          [
+            4306,
+            81.8
+          ],
+          [
+            5942,
+            84.1
+          ],
+          [
+            7157,
+            82.8
+          ]
+        ]
+      },
+      {
+        "name": "Inkling 2 Mini",
+        "pts": [
+          [
+            1599,
+            78.0
+          ],
+          [
+            1887,
+            77.5
+          ],
+          [
+            5638,
+            83.3
+          ],
+          [
+            13287,
+            87.0
+          ],
+          [
+            16342,
+            86.1
+          ]
+        ]
+      }
+    ],
+    "deepswe": [
+      {
+        "name": "1 pass",
+        "pts": [
+          [
+            78859,
+            0.0
+          ],
+          [
+            73349,
+            0.2
+          ],
+          [
+            74103,
+            0.2
+          ],
+          [
+            76607,
+            0.0
+          ],
+          [
+            73840,
+            0.0
+          ]
+        ]
+      },
+      {
+        "name": "2 passes",
+        "pts": [
+          [
+            54598,
+            20.5
+          ],
+          [
+            59431,
+            20.4
+          ],
+          [
+            77348,
+            26.8
+          ],
+          [
+            105142,
+            26.8
+          ],
+          [
+            130256,
+            29.9
+          ]
+        ]
+      },
+      {
+        "name": "3 passes",
+        "pts": [
+          [
+            46283,
+            32.5
+          ],
+          [
+            49500,
+            38.1
+          ],
+          [
+            79662,
+            42.6
+          ],
+          [
+            118100,
+            40.9
+          ],
+          [
+            151774,
+            43.2
+          ]
+        ]
+      },
+      {
+        "name": "5 passes",
+        "pts": [
+          [
+            44017,
+            35.6
+          ],
+          [
+            48395,
+            38.1
+          ],
+          [
+            85385,
+            40.8
+          ],
+          [
+            123903,
+            45.8
+          ],
+          [
+            159133,
+            49.5
+          ]
+        ]
+      },
+      {
+        "name": "Inkling 2 Mini",
+        "pts": [
+          [
+            32902,
+            28.8
+          ],
+          [
+            35303,
+            29.3
+          ],
+          [
+            87893,
+            44.2
+          ],
+          [
+            110250,
+            42.2
+          ],
+          [
+            110660,
+            44.6
+          ]
+        ]
+      }
+    ]
+  },
+  "cotStats": [
+    {
+      "passes": 1,
+      "tokens": 3703,
+      "wordsPerSent": 8.9,
+      "dictPct": 94.6,
+      "uncertainty": 9.7
+    },
+    {
+      "passes": 3,
+      "tokens": 1731,
+      "wordsPerSent": 8.7,
+      "dictPct": 94.5,
+      "uncertainty": 3.9
+    },
+    {
+      "passes": 5,
+      "tokens": 1661,
+      "wordsPerSent": 8.7,
+      "dictPct": 94.4,
+      "uncertainty": 3.6
+    }
+  ],
+  "linuxArena": [
+    {
+      "label": "Qwen3.8-27B",
+      "toolsOnly": 20.5,
+      "withCot": 0.4
+    },
+    {
+      "label": "Inkling 2 Small",
+      "toolsOnly": 3.2,
+      "withCot": 0.5
+    },
+    {
+      "label": "Mini (helpful-only)",
+      "toolsOnly": 3.9,
+      "withCot": 1.3
+    },
+    {
+      "label": "Varloop (1 pass)",
+      "toolsOnly": 1.0,
+      "withCot": 0.3
+    },
+    {
+      "label": "Varloop (2 passes)",
+      "toolsOnly": 2.5,
+      "withCot": 0.4
+    },
+    {
+      "label": "Varloop (3 passes)",
+      "toolsOnly": 4.0,
+      "withCot": 0.6
+    },
+    {
+      "label": "Varloop (4 passes)",
+      "toolsOnly": 2.8,
+      "withCot": 0.3
+    },
+    {
+      "label": "Varloop (5 passes)",
+      "toolsOnly": 5.0,
+      "withCot": 0.0
+    }
+  ],
+  "frontier": {
+    "deepswe": [
+      {
+        "name": "Ripple-65B (Preview)",
+        "tps": 4.7,
+        "score": 44.3
+      },
+      {
+        "name": "Gemma 4 31B",
+        "tps": 10.0,
+        "score": 0.3
+      },
+      {
+        "name": "Muse Glimmer",
+        "tps": 10.2,
+        "score": 4.4
+      },
+      {
+        "name": "Qwen3.8-27B",
+        "tps": 11.4,
+        "score": 42.2
+      },
+      {
+        "name": "Inkling 2 Mini",
+        "tps": 54.4,
+        "score": 48.2,
+        "highlight": true
+      },
+      {
+        "name": "Gemma 4 26B A4B",
+        "tps": 80.8,
+        "score": 0.0
+      },
+      {
+        "name": "Recursive Flint",
+        "tps": 122.8,
+        "score": 10.81
+      }
+    ],
+    "sweProHard": [
+      {
+        "name": "Ripple-65B (Preview)",
+        "tps": 4.7,
+        "score": 79.1
+      },
+      {
+        "name": "Gemma 4 31B",
+        "tps": 10.0,
+        "score": 14.2
+      },
+      {
+        "name": "Muse Glimmer",
+        "tps": 10.2,
+        "score": 44.3
+      },
+      {
+        "name": "Qwen3.8-27B",
+        "tps": 11.4,
+        "score": 73.8
+      },
+      {
+        "name": "Qwen3.6-27B",
+        "tps": 11.4,
+        "score": 37.25
+      },
+      {
+        "name": "Inkling 2 Mini",
+        "tps": 54.4,
+        "score": 77.9,
+        "highlight": true
+      },
+      {
+        "name": "Gemma 4 26B A4B",
+        "tps": 80.8,
+        "score": 11.8
+      },
+      {
+        "name": "Qwen3.6-35B-A3B",
+        "tps": 102.3,
+        "score": 28.1
+      }
+    ]
+  },
+  "vllmBench": [
+    {
+      "label": "1 pass",
+      "passes": 1,
+      "shared": false,
+      "b1ms": 1.51,
+      "b32ms": 3.81,
+      "kvCapK": 352
+    },
+    {
+      "label": "2 passes",
+      "passes": 2,
+      "shared": false,
+      "b1ms": 2.67,
+      "b32ms": 5.92,
+      "kvCapK": 233
+    },
+    {
+      "label": "3 passes",
+      "passes": 3,
+      "shared": false,
+      "b1ms": 3.85,
+      "b32ms": 8.11,
+      "kvCapK": 175
+    },
+    {
+      "label": "3 passes (shared KV)",
+      "passes": 3,
+      "shared": true,
+      "b1ms": 3.86,
+      "b32ms": 8.1,
+      "kvCapK": 194
+    }
+  ],
+  "ipw": [
+    {
+      "name": "Inkling 2 Mini (MXFP8, low)",
+      "score": 0.703,
+      "highlight": true
+    },
+    {
+      "name": "Qwen3.6-35B-A3B (NVFP4)",
+      "score": 0.43
+    },
+    {
+      "name": "Gemma-4-26B-A4B (NVFP4)",
+      "score": 0.159
+    },
+    {
+      "name": "Qwen3.5-27B (INT4)",
+      "score": 0.036
+    }
+  ],
+  "goodfire": {
+    "d2027RmsNorm": 32.4,
+    "d2027SqNormSharePct": 45.6,
+    "layer13Readers": [
+      {
+        "reader": "u_Q",
+        "d2027Pct": 17,
+        "top5Pct": 60
+      },
+      {
+        "reader": "u_V",
+        "d2027Pct": 19,
+        "top5Pct": 62
+      },
+      {
+        "reader": "u_K",
+        "d2027Pct": 11,
+        "top5Pct": 32
+      },
+      {
+        "reader": "u_MoE",
+        "d2027Pct": 6,
+        "top5Pct": 30
+      }
+    ],
+    "writerTotal": 3538944,
+    "readerTotal": 104,
+    "depthReaders": 56,
+    "crossReaders": 48,
+    "topPairsAbove030": 3490
+  },
+  "codeSnippets": {
+    "messageGate": {
+      "startLine": 79,
+      "endLine": 96,
+      "code": "class Inkling2LoopMessageGate(nn.Module):\n    \"\"\"Mixes hidden states and message as  `(1 - forget_gate) * hidden_states + message_gate * message`\"\"\"\n\n    def __init__(self, config: Inkling2LoopTextConfig):\n        super().__init__()\n        self.norm = Inkling2LoopUnweightedRMSNorm(eps=config.rms_norm_eps)\n        self.down_proj = nn.Linear(2 * config.hidden_size, config.loop_gate_rank, bias=False)\n        self.forget_gate_proj = nn.Linear(config.loop_gate_rank, config.hidden_size, bias=False, dtype=torch.float32)\n        self.message_gate_proj = nn.Linear(config.loop_gate_rank, config.hidden_size, bias=False, dtype=torch.float32)\n\n    def forward(self, hidden_states: torch.Tensor, message: torch.Tensor) -> torch.Tensor:\n        hidden_states, message = hidden_states.float(), message.float()\n        gate_hidden_states = torch.cat([self.norm(hidden_states), self.norm(message)], dim=-1)\n        gate_hidden_states = self.down_proj(gate_hidden_states.to(self.down_proj.weight.dtype)).float()\n\n        forget_gate = torch.tanh(self.forget_gate_proj(gate_hidden_states))\n        message_gate = torch.tanh(self.message_gate_proj(gate_hidden_states))\n        return (1 - forget_gate) * hidden_states + message_gate * message"
+    },
+    "messageAttnRes": {
+      "startLine": 145,
+      "endLine": 173,
+      "code": "class Inkling2LoopMessageAttentionResidual(nn.Module):\n    \"\"\"Retrieves messages from the block states of the previous block using learned queries.\"\"\"\n\n    def __init__(self, config: Inkling2LoopTextConfig):\n        super().__init__()\n        # one query per message (query, key, value and mlp) for each loop layer\n        shape = (config.loop_layer_index_end - config.loop_layer_index_start, 4, config.hidden_size)\n        self.query = nn.Parameter(torch.zeros(*shape, dtype=torch.float32))\n        self.norm = Inkling2LoopUnweightedRMSNorm()\n        self.config = config\n        self.num_key_value_groups = 1\n        self.is_causal = False\n\n    def forward(\n        self, block_states: torch.Tensor, partial_block_states: torch.Tensor, loop_layer_idx: int\n    ) -> torch.Tensor:\n        stacked_states = torch.cat([block_states, partial_block_states.unsqueeze(-2)], dim=-2).float()\n        stacked_states = self.norm(stacked_states)\n\n        hidden_size = stacked_states.shape[-1]\n        query_states = self.query[loop_layer_idx].float()\n        query_states = query_states.expand(*stacked_states.shape[:-2], -1, -1)\n        attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(\n            self.config._attn_implementation, eager_attention_forward\n        )\n        attn_output, _ = attention_interface(\n            self, query_states, stacked_states, stacked_states, None, scaling=hidden_size**-0.5\n        )\n        return attn_output.transpose(1, 2)"
+    },
+    "relPosBias": {
+      "startLine": 239,
+      "endLine": 270,
+      "code": "class Inkling2LoopRelativePositionBias(nn.Module):\n    \"\"\"\n    Hidden-states conditioned relative position bias. `linear` and `norm` give each token per-head `relative_states`\n    that mix the trained bank of bias-vs-distance profiles in `proj` into one bias value per backward distance. The\n    bias is zero outside `0 <= distance < rel_extent`. With `log_scaling`, the relative states are also scaled by\n    `Inkling2LoopLogScale`.\n    \"\"\"\n\n    # trf-ignore: TRF029 (num_heads depends on the attention layer type)\n    def __init__(self, config: Inkling2LoopTextConfig, num_heads: int, rel_extent: int, log_scaling: bool):\n        super().__init__()\n        self.num_heads = num_heads\n        self.rel_extent = rel_extent\n        self.linear = nn.Linear(config.hidden_size, num_heads * config.d_rel, bias=False)\n        self.norm = (\n            Inkling2LoopLogScaledL2Clip(config, num_heads, config.d_rel, config.rel_l2_clip_threshold)\n            if log_scaling\n            else Inkling2LoopScaledL2Clip(num_heads, config.d_rel, config.rel_l2_clip_threshold)\n        )\n        self.proj = nn.Parameter(torch.empty(config.d_rel, rel_extent))\n\n    def forward(\n        self, hidden_states: torch.Tensor, relative_distance: torch.Tensor, position_ids: torch.Tensor\n    ) -> torch.Tensor:\n        relative_states = self.linear(hidden_states).view(*hidden_states.shape[:-1], self.num_heads, -1)\n        relative_states = self.norm(relative_states, position_ids)\n\n        # relative_states: [batch, q_len, num_heads, d_rel] -> bias: [batch, num_heads, q_len, kv_len]\n        rel_logits = (relative_states @ self.proj).transpose(1, 2)\n        gather_index = relative_distance.clamp(0, self.rel_extent - 1).expand(*rel_logits.shape[:2], -1, -1)\n        position_bias = rel_logits.gather(-1, gather_index)\n        return position_bias.masked_fill((relative_distance < 0) | (relative_distance >= self.rel_extent), 0.0)"
+    },
+    "dynShortConv": {
+      "startLine": 396,
+      "endLine": 455,
+      "code": "class Inkling2LoopDynamicShortConvolution(nn.Module):\n    \"\"\"\n    Short causal convolution whose taps are the sum of static per-channel weights and per-token weights projected from\n    `dynamic_input`, shared within each key/value head. Used for keys and values in the full-attention layers.\n    \"\"\"\n\n    def __init__(\n        self, hidden_size: int, input_size: int, num_heads: int, conv_kernel_size: int, layer_idx: int, conv_idx: int\n    ):\n        super().__init__()\n        self.layer_idx = layer_idx\n        self.conv_idx = conv_idx\n        self.conv_kernel_size = conv_kernel_size\n        self.num_heads = num_heads\n        # tap index is the backward distance: `static_weight[0]` weights the current token\n        self.static_weight = nn.Parameter(torch.zeros(conv_kernel_size, hidden_size))\n        self.weight_proj = nn.Linear(input_size, num_heads * conv_kernel_size, bias=False)\n\n    @deprecate_kwarg(\"past_key_values\", \"5.40.0\", new_name=\"cache\")\n    def forward(\n        self,\n        hidden_states: torch.Tensor,\n        dynamic_input: torch.Tensor,\n        cache: Cache | None = None,\n        conv_mask: torch.Tensor | None = None,\n        cache_offset: int = 0,\n        **kwargs: Unpack[TransformersKwargs],\n    ):\n        r\"\"\"\n        cache_offset (`int`, *optional*, defaults to 0):\n            Offset added to `layer_idx` to get the cache layer holding the state of this call.\n        \"\"\"\n        input_dtype = hidden_states.dtype\n        batch_size, seq_len, hidden_size = hidden_states.shape\n        dynamic_weights = self.weight_proj(dynamic_input).float()\n        dynamic_weights = dynamic_weights.view(batch_size, seq_len, self.num_heads, 1, self.conv_kernel_size)\n        weights = self.static_weight.float().T.view(self.num_heads, -1, self.conv_kernel_size) + dynamic_weights\n\n        hidden_states = hidden_states.float()\n        residual = hidden_states\n        context = apply_mask_to_padding_states(hidden_states, conv_mask).transpose(1, 2)\n        if cache is not None:\n            context = cache.update_conv_state(\n                context,\n                self.layer_idx + cache_offset,\n                state_idx=self.conv_idx,\n                conv_kernel_size=self.conv_kernel_size,\n            )\n        context = F.pad(context, (self.conv_kernel_size - 1, 0))[..., -(seq_len + self.conv_kernel_size - 1) :]\n        # windows[..., lag] is the token `lag` steps back\n        windows = context.unfold(-1, self.conv_kernel_size, 1).flip(-1).transpose(1, 2)\n        windows = windows.reshape(batch_size, seq_len, self.num_heads, -1, self.conv_kernel_size)\n        if (seq_idx := kwargs.get(\"seq_idx\")) is not None:\n            seq_idx = seq_idx.to(windows.device)\n            context_seq_idx = torch.cat([seq_idx[:, :1].expand(-1, self.conv_kernel_size - 1), seq_idx], dim=1)\n            window_seq_idx = context_seq_idx.unfold(-1, self.conv_kernel_size, 1).flip(-1)\n            windows = windows * (window_seq_idx == seq_idx[..., None])[:, :, None, None, :]\n        hidden_states = (windows * weights).sum(-1).reshape(batch_size, seq_len, hidden_size)\n        hidden_states = (hidden_states + residual) / math.sqrt(2 * self.conv_kernel_size + 1)\n        return hidden_states.to(input_dtype)"
+    },
+    "gatedOutProj": {
+      "startLine": 531,
+      "endLine": 543,
+      "code": "class Inkling2LoopGatedOutputProjection(nn.Module):\n    \"\"\"Output projection of the attention layers, applied after gating the attention output with a sigmoid of the layer input.\"\"\"\n\n    # trf-ignore: TRF029 (num_heads and head_dim depend on the attention layer type)\n    def __init__(self, config: Inkling2LoopTextConfig, num_heads: int, head_dim: int):\n        super().__init__()\n        self.gate_proj = nn.Linear(config.hidden_size, num_heads * head_dim, bias=False)\n        self.linear = nn.Linear(num_heads * head_dim, config.hidden_size, bias=False)\n\n    def forward(self, attn_output: torch.Tensor, hidden_states: torch.Tensor) -> torch.Tensor:\n        gate = torch.sigmoid(self.gate_proj(hidden_states).float())\n        attn_output = (attn_output.float() * gate).to(attn_output.dtype)\n        return self.linear(attn_output)"
+    },
+    "softcapSwiGLU": {
+      "startLine": 760,
+      "endLine": 771,
+      "code": "class Inkling2LoopSoftcappedSwiGLU(nn.Module):\n    \"\"\"SwiGLU where the sigmoid sees the raw gate and the softcaps only bound the linear gate factor and `up`.\"\"\"\n\n    def __init__(self, config: Inkling2LoopTextConfig):\n        super().__init__()\n        self.gate_softcap = Inkling2LoopSoftcap(config.mlp_gate_softcap)\n        self.up_softcap = Inkling2LoopSoftcap(config.mlp_up_softcap)\n\n    def forward(self, gate: torch.Tensor, up: torch.Tensor) -> torch.Tensor:\n        input_dtype = gate.dtype\n        gate, up = gate.float(), up.float()\n        return (self.gate_softcap(gate) * torch.sigmoid(gate) * self.up_softcap(up)).to(input_dtype)"
+    },
+    "blockAttnRes": {
+      "startLine": 828,
+      "endLine": 853,
+      "code": "class Inkling2LoopBlockAttentionResidual(nn.Module):\n    def __init__(self, config: Inkling2LoopTextConfig, num_queries: int = 1):\n        super().__init__()\n        shape = (config.hidden_size,) if num_queries == 1 else (num_queries, config.hidden_size)\n        self.query = nn.Parameter(torch.zeros(*shape, dtype=torch.float32))\n        self.norm = Inkling2LoopUnweightedRMSNorm()\n        self.config = config\n        self.num_key_value_groups = 1\n        self.is_causal = False\n\n    def forward(self, block_states: torch.Tensor, partial_block_states: torch.Tensor) -> tuple[torch.Tensor, ...]:\n        stacked_states = torch.cat([block_states, partial_block_states.unsqueeze(-2)], dim=-2).float()\n        stacked_states = self.norm(stacked_states)\n\n        hidden_size = stacked_states.shape[-1]\n        # (batch, seq_len, num_queries, hidden_size), the same queries at every position\n        query_states = self.query.float().view(-1, hidden_size).expand(*stacked_states.shape[:-2], -1, -1)\n\n        attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(\n            self.config._attn_implementation, eager_attention_forward\n        )\n\n        attn_output, _ = attention_interface(\n            self, query_states, stacked_states, stacked_states, None, scaling=hidden_size**-0.5\n        )\n        return attn_output.transpose(1, 2).unbind(-2)"
+    },
+    "slidingLoop": {
+      "startLine": 937,
+      "endLine": 997,
+      "code": "    def forward(\n        self,\n        hidden_states: torch.Tensor,\n        block_states: torch.Tensor,\n        messages: torch.Tensor | None = None,\n        attention_mask: torch.Tensor | None = None,\n        relative_distance: torch.Tensor | None = None,\n        conv_mask: torch.Tensor | None = None,\n        cache: Cache | None = None,\n        cache_offset: int = 0,\n        **kwargs: Unpack[TransformersKwargs],\n    ) -> torch.Tensor:\n        r\"\"\"\n        messages (`torch.Tensor` of shape `(batch_size, sequence_length, 4, hidden_size)`, *optional*):\n            Messages of the previous pass through the loop layers for the query, key, value and MLP inputs, in the\n            passes after the first.\n        cache_offset (`int`, *optional*, defaults to 0):\n            Offset added to `layer_idx` to get the cache layer holding the keys, values and convolution states of\n            this call.\n        \"\"\"\n        dtype = hidden_states.dtype\n        block_residual = hidden_states\n        hidden_states = self.attention_input(block_states, hidden_states)[0]\n\n        if messages is None:\n            query_hidden_states = key_hidden_states = value_hidden_states = self.input_layernorm(hidden_states)\n        else:\n            query_message, key_message, value_message, mlp_message = messages.unbind(-2)\n            query_hidden_states = self.input_layernorm(self.q_message_gate(hidden_states, query_message))\n            key_hidden_states = self.input_layernorm(self.k_message_gate(hidden_states, key_message))\n            value_hidden_states = self.input_layernorm(self.v_message_gate(hidden_states, value_message))\n\n        hidden_states, _ = self.self_attn(\n            hidden_states=query_hidden_states.to(dtype),\n            key_hidden_states=key_hidden_states.to(dtype),\n            value_hidden_states=value_hidden_states.to(dtype),\n            attention_mask=attention_mask,\n            relative_distance=relative_distance,\n            conv_mask=conv_mask,\n            cache=cache,\n            cache_offset=cache_offset,\n            **kwargs,\n        )\n        hidden_states = self.post_attention_convolution(\n            hidden_states, cache=cache, conv_mask=conv_mask, cache_offset=cache_offset, **kwargs\n        )\n\n        residual = hidden_states = hidden_states.float()\n        if self.is_block_boundary:\n            block_states = torch.cat([block_states, block_residual.unsqueeze(-2)], dim=-2)\n        else:\n            residual = hidden_states = block_residual.float() + hidden_states\n\n        hidden_states = self.mlp_input(block_states, hidden_states)[0]\n        if messages is not None:\n            hidden_states = self.mlp_message_gate(hidden_states, mlp_message)\n        hidden_states = self.mlp(self.post_attention_layernorm(hidden_states).to(dtype))\n        hidden_states = self.post_mlp_convolution(\n            hidden_states, cache=cache, conv_mask=conv_mask, cache_offset=cache_offset, **kwargs\n        )\n        return (residual + hidden_states).to(dtype)"
+    },
+    "fullLoop": {
+      "startLine": 1091,
+      "endLine": 1149,
+      "code": "    def forward(\n        self,\n        hidden_states: torch.Tensor,\n        block_states: torch.Tensor,\n        messages: torch.Tensor | None = None,\n        attention_mask: torch.Tensor | None = None,\n        relative_distance: torch.Tensor | None = None,\n        conv_mask: torch.Tensor | None = None,\n        cache: Cache | None = None,\n        cache_offset: int = 0,\n        **kwargs: Unpack[TransformersKwargs],\n    ) -> torch.Tensor:\n        r\"\"\"\n        messages (`torch.Tensor` of shape `(batch_size, sequence_length, 4, hidden_size)`, *optional*):\n            Messages of the previous pass through the loop layers for the query, key, value and MLP inputs, in the\n            passes after the first.\n        cache_offset (`int`, *optional*, defaults to 0):\n            Offset added to `layer_idx` to get the cache layer holding the keys, values and convolution states of\n            this call.\n        \"\"\"\n        dtype = hidden_states.dtype\n        block_residual = hidden_states\n        query_hidden_states, key_hidden_states, value_hidden_states = self.attention_input(block_states, hidden_states)\n\n        if messages is not None:\n            query_message, key_message, value_message, mlp_message = messages.unbind(-2)\n            query_hidden_states = self.q_message_gate(query_hidden_states, query_message)\n            key_hidden_states = self.k_message_gate(key_hidden_states, key_message)\n            value_hidden_states = self.v_message_gate(value_hidden_states, value_message)\n\n        hidden_states, _ = self.self_attn(\n            hidden_states=self.q_input_layernorm(query_hidden_states).to(dtype),\n            key_hidden_states=self.k_input_layernorm(key_hidden_states).to(dtype),\n            value_hidden_states=self.v_input_layernorm(value_hidden_states).to(dtype),\n            attention_mask=attention_mask,\n            relative_distance=relative_distance,\n            conv_mask=conv_mask,\n            cache=cache,\n            cache_offset=cache_offset,\n            **kwargs,\n        )\n        hidden_states = self.post_attention_convolution(\n            hidden_states, cache=cache, conv_mask=conv_mask, cache_offset=cache_offset, **kwargs\n        )\n\n        residual = hidden_states = hidden_states.float()\n        if self.is_block_boundary:\n            block_states = torch.cat([block_states, block_residual.unsqueeze(-2)], dim=-2)\n        else:\n            residual = hidden_states = block_residual.float() + hidden_states\n\n        hidden_states = self.mlp_input(block_states, hidden_states)[0]\n        if messages is not None:\n            hidden_states = self.mlp_message_gate(hidden_states, mlp_message)\n        hidden_states = self.mlp(self.post_attention_layernorm(hidden_states).to(dtype))\n        hidden_states = self.post_mlp_convolution(\n            hidden_states, cache=cache, conv_mask=conv_mask, cache_offset=cache_offset, **kwargs\n        )\n        return (residual + hidden_states).to(dtype)"
+    },
+    "topKRouter": {
+      "startLine": 1152,
+      "endLine": 1172,
+      "code": "class Inkling2LoopTopKRouter(nn.Module):\n    def __init__(self, config: Inkling2LoopTextConfig):\n        super().__init__()\n        self.top_k = config.num_experts_per_tok\n        self.num_experts = config.num_local_experts\n        self.hidden_dim = config.hidden_size\n        self.weight = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, dtype=torch.float32))\n        self.score_fn = ACT2FN[config.scoring_func]\n        self.routed_scaling_factor = config.routed_scaling_factor\n        self.e_score_correction_bias = nn.Buffer(torch.zeros(self.num_experts, dtype=torch.float32))\n\n    def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:\n        # routing runs in fp32, as in the original\n        hidden_states = hidden_states.float()\n        flat = hidden_states.reshape(-1, self.hidden_dim)\n        logits = F.linear(flat, self.weight)\n        scores = self.score_fn(logits)\n        indices = torch.topk(scores + self.e_score_correction_bias, self.top_k, dim=-1, sorted=False).indices\n        weights = scores.gather(1, indices)\n        weights = weights / (weights.sum(dim=-1, keepdim=True) + 1e-20)\n        return logits, weights * self.routed_scaling_factor, indices"
+    },
+    "textLoopForward": {
+      "startLine": 1378,
+      "endLine": 1447,
+      "code": "        pre_loop_hidden_states, pre_loop_block_states = hidden_states, block_states\n        num_pre_loop_blocks = pre_loop_block_states.shape[-2]\n\n        # First pass over loop layers\n        for decoder_layer in self.layers[loop_start:loop_end]:\n            new_hidden_states = decoder_layer(\n                hidden_states,\n                block_states,\n                attention_mask=causal_mask_mapping[decoder_layer.attention_type],\n                relative_distance=relative_distance_mapping[decoder_layer.attention_type],\n                conv_mask=causal_mask_mapping[\"linear_attention\"],\n                cache=cache,\n                position_ids=position_ids,\n                **kwargs,\n            )\n            if decoder_layer.is_block_boundary:\n                block_states = torch.cat([block_states.to(hidden_states.device), hidden_states.unsqueeze(-2)], dim=-2)\n            hidden_states = new_hidden_states\n\n        # Remaining passes restart from the pre loop states and receive messages from the previous pass\n        for loop_idx in range(1, self.config.loop_num_passes):\n            # +1 to skip the states appended by the first loop pass\n            previous_block_states = block_states[..., num_pre_loop_blocks + 1 :, :]\n            previous_hidden_states = hidden_states\n            hidden_states, block_states = pre_loop_hidden_states, pre_loop_block_states\n\n            # Each pass uses its own copies of the loop cache layers, appended after the model's layers\n            cache_offset = self.config.num_hidden_layers + (loop_idx - 1) * num_loop_layers - loop_start\n            for loop_layer_idx, decoder_layer in enumerate(self.layers[loop_start:loop_end]):\n                messages = self.message_input(previous_block_states, previous_hidden_states, loop_layer_idx)\n                new_hidden_states = decoder_layer(\n                    hidden_states,\n                    block_states,\n                    messages,\n                    attention_mask=causal_mask_mapping[decoder_layer.attention_type],\n                    relative_distance=relative_distance_mapping[decoder_layer.attention_type],\n                    conv_mask=causal_mask_mapping[\"linear_attention\"],\n                    cache=cache,\n                    cache_offset=cache_offset,\n                    position_ids=position_ids,\n                    **kwargs,\n                )\n                if decoder_layer.is_block_boundary:\n                    block_states = torch.cat(\n                        [block_states.to(hidden_states.device), hidden_states.unsqueeze(-2)], dim=-2\n                    )\n                hidden_states = new_hidden_states\n\n        # Post loop layers\n        for decoder_layer in self.layers[loop_end:]:\n            new_hidden_states = decoder_layer(\n                hidden_states,\n                block_states,\n                attention_mask=causal_mask_mapping[decoder_layer.attention_type],\n                relative_distance=relative_distance_mapping[decoder_layer.attention_type],\n                conv_mask=causal_mask_mapping[\"linear_attention\"],\n                cache=cache,\n                position_ids=position_ids,\n                **kwargs,\n            )\n            if decoder_layer.is_block_boundary:\n                block_states = torch.cat([block_states.to(hidden_states.device), hidden_states.unsqueeze(-2)], dim=-2)\n            hidden_states = new_hidden_states\n\n        hidden_states = self.final_input(block_states, hidden_states)[0]\n        hidden_states = self.norm(hidden_states).to(inputs_embeds.dtype)\n        return MoeModelOutputWithPast(\n            last_hidden_state=hidden_states,\n            cache=cache,\n        )"
+    }
+  }
+}
