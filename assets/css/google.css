@@ -1,0 +1,275 @@
+/* Minimalist editorial 2D + 3D visualizations for the Google export post.
+   Built directly on main.css warm paper/ink tokens: restrained cobalt, deep teal,
+   and warm ochre on open paper with hairline rules and tactile zero-box chrome. */
+
+.goog {
+  --g-blue: var(--accent);
+  --g-soft: var(--accent-soft);
+  --g-amber: var(--th-amber);
+  --g-amber-soft: var(--th-amber-soft);
+  --g-teal: #1d6f72;
+  --g-teal-soft: color-mix(in srgb, #1d6f72 15%, var(--bg));
+  --g-fill: color-mix(in srgb, var(--fg-3) 22%, var(--bg));
+  --g-fill-strong: color-mix(in srgb, var(--fg-2) 56%, var(--bg));
+  --g-bar: color-mix(in srgb, var(--accent) 44%, var(--bg));
+  --g-empty: color-mix(in srgb, var(--line) 76%, var(--bg));
+
+  position: relative;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="dark"] .goog {
+  --g-teal: #49b3b8;
+  --g-fill: color-mix(in srgb, var(--fg-3) 28%, var(--bg));
+  --g-fill-strong: color-mix(in srgb, var(--fg-2) 58%, var(--bg));
+  --g-bar: color-mix(in srgb, var(--accent) 48%, var(--bg));
+  --g-empty: color-mix(in srgb, var(--line) 82%, var(--bg));
+}
+
+.goog [hidden] { display: none !important; }
+
+/* ----------------------------------------------------- minimalist chrome */
+.goog-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.goog-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 14px;
+  margin: 0;
+  font: 12px/1.45 var(--sans);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.goog-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.goog-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--g-fill-strong);
+  flex: none;
+}
+.goog-legend .blue i { background: var(--g-blue); }
+.goog-legend .teal i { background: var(--g-teal); }
+.goog-legend .amber i { background: var(--g-amber); }
+.goog-legend .ink i { background: var(--fg-2); }
+.goog-legend .hollow i {
+  background: var(--bg);
+  border: 1.5px solid var(--g-blue);
+}
+
+.goog-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+.goog-actions button {
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg-2);
+  font: 500 11.5px/1.5 var(--sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 0.14s, border-color 0.14s, background 0.14s;
+  white-space: nowrap;
+}
+.goog-actions button:hover {
+  color: var(--fg);
+  border-color: var(--line-2);
+  background: var(--subtle);
+}
+.goog-actions button[aria-pressed="true"] {
+  color: var(--g-blue);
+  border-color: color-mix(in srgb, var(--g-blue) 48%, var(--line));
+  background: var(--g-soft);
+}
+.goog-actions button.accent {
+  color: var(--g-blue);
+  border-color: color-mix(in srgb, var(--g-blue) 36%, var(--line));
+}
+.goog-actions button.accent[aria-pressed="true"] {
+  color: var(--bg);
+  background: var(--g-blue);
+  border-color: var(--g-blue);
+}
+
+.goog-subpills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: -2px 0 8px;
+}
+.goog-subpills button {
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--fg-3);
+  font: 11.5px/1.45 var(--sans);
+  cursor: pointer;
+  transition: color 0.14s, border-color 0.14s, background 0.14s;
+}
+.goog-subpills button:hover { color: var(--fg-2); }
+.goog-subpills button[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: var(--line-2);
+  background: var(--subtle);
+}
+
+/* ----------------------------------------------------- 3D paper stages */
+.goog-3d-stage {
+  position: relative;
+  width: 100%;
+  height: 368px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.goog-3d-stage:active { cursor: grabbing; }
+.goog-3d-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.goog-3d-hint {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  pointer-events: none;
+  font: 10.5px/1.3 var(--mono);
+  color: var(--fg-3);
+  opacity: 0.72;
+}
+
+.goog-scrub-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.goog-scrub-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--g-blue);
+  height: 3px;
+  cursor: pointer;
+}
+.goog-scrub-row span {
+  font: 11px/1 var(--mono);
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------- SVG drafting */
+.goog-chart {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+.goog-view:focus-visible {
+  outline: 1px solid var(--g-blue);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.goog-chart text {
+  fill: var(--fg-3);
+  font: 10.5px var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+.goog-chart text.ink { fill: var(--fg-2); }
+.goog-chart text.strong { fill: var(--fg); font-weight: 600; }
+.goog-chart text.mono { font: 10px var(--mono); fill: var(--fg-3); }
+.goog-chart text.small { font-size: 9.8px; }
+.goog-chart text.blue { fill: var(--g-blue); font-weight: 600; }
+.goog-chart text.amber { fill: var(--g-amber); font-weight: 600; }
+.goog-chart text.teal { fill: var(--g-teal); font-weight: 600; }
+.goog-chart text.halo {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.goog-chart .grid { stroke: var(--line); stroke-width: 0.85; }
+.goog-chart .axis { stroke: var(--line-2); stroke-width: 1; }
+.goog-chart .bench { stroke: var(--fg-3); stroke-width: 0.9; stroke-dasharray: 2.5 3; opacity: 0.65; }
+.goog-chart .bar { fill: var(--g-fill); transition: opacity 0.12s; }
+.goog-chart .bar.on { fill: var(--g-blue); }
+.goog-chart .bar.teal { fill: var(--g-teal); }
+.goog-chart .bar.amber { fill: var(--g-amber); }
+.goog-chart .area-amber { fill: var(--g-amber-soft); pointer-events: none; }
+.goog-chart .step { fill: none; stroke: var(--fg-3); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+.goog-chart .step.blue { stroke: var(--g-blue); stroke-width: 1.8; }
+.goog-chart .step.amber { stroke: var(--g-amber); stroke-width: 1.65; }
+.goog-chart .brush-band { fill: var(--g-soft); stroke: var(--g-blue); stroke-width: 0.9; stroke-opacity: 0.4; }
+.goog-chart .cursor { stroke: var(--fg-2); stroke-width: 0.9; stroke-dasharray: 2.5 2.5; pointer-events: none; }
+.goog-chart .dot { fill: var(--bg); stroke: var(--fg-3); stroke-width: 1.25; }
+.goog-chart .dot.blue { fill: var(--g-blue); stroke: var(--g-blue); }
+.goog-chart .dot.teal { fill: var(--g-teal); stroke: var(--g-teal); }
+.goog-chart .dot.amber { fill: var(--g-amber); stroke: var(--g-amber); }
+.goog-chart .dot.ink { fill: var(--fg-2); stroke: var(--fg-2); }
+.goog-chart .ring { fill: none; stroke: var(--line); stroke-width: 0.85; }
+.goog-chart .ring-arc { fill: none; stroke: var(--g-amber); stroke-width: 1.5; stroke-dasharray: 3 2.5; }
+.goog-chart .arc-hop { fill: none; stroke-linecap: round; pointer-events: none; }
+.goog-chart .bubble { transition: opacity 0.15s, stroke-width 0.15s; cursor: pointer; }
+.goog-chart .groove { fill: none; stroke-linecap: round; cursor: pointer; transition: opacity 0.15s; }
+.goog-chart .geo-lens { fill: color-mix(in srgb, var(--g-blue) 9%, transparent); stroke: color-mix(in srgb, var(--g-blue) 28%, transparent); stroke-width: 0.9; }
+.goog-chart .geo-lens.amber { fill: color-mix(in srgb, var(--g-amber) 12%, transparent); stroke: color-mix(in srgb, var(--g-amber) 36%, transparent); }
+.goog-chart .panel-box { fill: color-mix(in srgb, var(--subtle) 42%, var(--bg)); stroke: var(--line); stroke-width: 0.9; }
+.goog-chart .panel-box.active { fill: color-mix(in srgb, var(--g-soft) 32%, var(--bg)); stroke: var(--g-blue); stroke-width: 1.15; }
+.goog-chart .hit { fill: transparent; cursor: crosshair; }
+
+/* ----------------------------------------------------- whisper readout */
+.goog-readout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  align-items: baseline;
+  min-height: 1.6em;
+  margin: 8px 0 0 !important;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font: 12px/1.5 var(--sans);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.goog-readout strong { color: var(--fg); font-weight: 600; }
+.goog-readout .ink { color: var(--fg-2); }
+.goog-readout .blue { color: var(--g-blue); font-weight: 500; }
+.goog-readout .teal { color: var(--g-teal); font-weight: 500; }
+.goog-readout .amber { color: var(--g-amber); font-weight: 500; }
+.goog-error { padding: 18px; border: 1px solid var(--line-2); color: var(--fg-2); font: 14px/1.6 var(--sans); }
+
+@media (max-width: 600px) {
+  .goog-3d-stage { height: 300px; }
+  .goog-3d-hint { display: none; }
+  .goog-legend { font-size: 11px; gap: 4px 10px; }
+}
+@media (pointer: coarse) {
+  .goog-actions button,
+  .goog-subpills button { min-height: 36px; }
+}
+@media print {
+  .goog-actions, .goog-scrub-row { display: none; }
+  .goog-body { break-inside: avoid; }
+}
