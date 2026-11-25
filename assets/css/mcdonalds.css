@@ -1,0 +1,291 @@
+/* Seven single-form minimalist interactive visualizations for "Reading my own McDonald's export".
+   Zero chrome bloat: one hairline header, one unobstructed interactive stage, one hairline readout. */
+
+figure.fig.mcd {
+  --m-blue: var(--accent);
+  --m-teal: #1d6f63;
+  --m-amber: #b36b14;
+  --m-red: #b53a2d;
+  --m-paper: rgba(24, 24, 23, 0.028);
+  --m-fill: rgba(24, 24, 23, 0.09);
+  --m-fill-strong: rgba(24, 24, 23, 0.24);
+  --m-select: rgba(27, 89, 200, 0.11);
+  --m-shadow: 0 2px 10px rgba(24, 24, 23, 0.05);
+  margin: 1.85rem 0 2.15rem;
+}
+
+:root[data-theme="dark"] figure.fig.mcd {
+  --m-teal: #49b6a4;
+  --m-amber: #e2a24a;
+  --m-red: #e56b5d;
+  --m-paper: rgba(255, 255, 255, 0.032);
+  --m-fill: rgba(255, 255, 255, 0.10);
+  --m-fill-strong: rgba(255, 255, 255, 0.26);
+  --m-select: rgba(122, 167, 255, 0.16);
+  --m-shadow: 0 2px 12px rgba(0, 0, 0, 0.34);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) figure.fig.mcd {
+    --m-teal: #49b6a4;
+    --m-amber: #e2a24a;
+    --m-red: #e56b5d;
+    --m-paper: rgba(255, 255, 255, 0.032);
+    --m-fill: rgba(255, 255, 255, 0.10);
+    --m-fill-strong: rgba(255, 255, 255, 0.26);
+    --m-select: rgba(122, 167, 255, 0.16);
+    --m-shadow: 0 2px 12px rgba(0, 0, 0, 0.34);
+  }
+}
+
+.mcd-body { display: block; min-height: var(--reserve, 340px); }
+figure.fig.mcd.ready .mcd-body { min-height: 0; }
+figure.fig.mcd [hidden] { display: none !important; }
+
+/* Single hairline editorial header */
+.mcd-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.9rem;
+  padding-bottom: 0.55rem;
+  margin-bottom: 0.52rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.mcd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem 0.9rem;
+  font: 400 0.76rem/1.3 var(--sans);
+  color: var(--fg-2);
+}
+.mcd-legend span { display: inline-flex; align-items: center; gap: 0.36rem; white-space: nowrap; }
+.mcd-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3); flex: none; }
+.mcd-legend .blue i { background: var(--m-blue); }
+.mcd-legend .teal i { background: var(--m-teal); }
+.mcd-legend .amber i { background: var(--m-amber); }
+.mcd-legend .red i { background: var(--m-red); }
+.mcd-legend .ink i { background: var(--fg); }
+.mcd-legend .hollow i { background: var(--bg); border: 1.5px solid var(--fg-2); }
+
+/* Minimalist pill actions (at most 1–3 per figure) */
+.mcd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin-left: auto; }
+.mcd-actions button {
+  font: 500 0.72rem/1 var(--sans);
+  padding: 0.4rem 0.66rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.mcd-actions button:hover { color: var(--fg); border-color: var(--fg-3); }
+.mcd-actions button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.mcd-actions button.accent { border-color: color-mix(in srgb, var(--m-blue) 45%, var(--line)); color: var(--m-blue); }
+.mcd-actions button.accent[aria-pressed="true"] { background: var(--m-blue); color: #fff; border-color: var(--m-blue); }
+.mcd-actions button.red-act { border-color: color-mix(in srgb, var(--m-red) 45%, var(--line)); color: var(--m-red); }
+.mcd-actions button.red-act[aria-pressed="true"] { background: var(--m-red); color: #fff; border-color: var(--m-red); }
+.mcd-actions button:focus-visible, .mcd-subpills button:focus-visible { outline: 2px solid var(--m-blue); outline-offset: 2px; }
+
+.mcd-subpills { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0 0 0.5rem; }
+.mcd-subpills button {
+  font: 500 0.7rem/1 var(--sans);
+  padding: 0.32rem 0.58rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--m-paper);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+.mcd-subpills button:hover { color: var(--fg); border-color: var(--line-2); }
+.mcd-subpills button[aria-pressed="true"] { background: var(--m-select); color: var(--m-blue); border-color: color-mix(in srgb, var(--m-blue) 45%, transparent); }
+
+/* Unobstructed stage */
+.mcd-stage { position: relative; width: 100%; outline: none; }
+
+svg.mcd-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+svg.mcd-chart.brushable { touch-action: none; cursor: crosshair; }
+
+svg.mcd-chart text { font: 400 11px/1 var(--sans); fill: var(--fg-2); }
+svg.mcd-chart text.mono { font-family: var(--mono); font-size: 10.5px; }
+svg.mcd-chart text.small { font-size: 10px; fill: var(--fg-3); }
+svg.mcd-chart text.ink { fill: var(--fg); }
+svg.mcd-chart text.strong { font-weight: 600; fill: var(--fg); }
+svg.mcd-chart text.title { font: 600 11.5px/1 var(--sans); fill: var(--fg); }
+svg.mcd-chart text.blue { fill: var(--m-blue); font-weight: 600; }
+svg.mcd-chart text.teal { fill: var(--m-teal); font-weight: 600; }
+svg.mcd-chart text.amber { fill: var(--m-amber); font-weight: 600; }
+svg.mcd-chart text.red { fill: var(--m-red); font-weight: 600; }
+svg.mcd-chart text.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 3.4px; stroke-linejoin: round; }
+
+svg.mcd-chart .grid { stroke: var(--line); stroke-width: 0.85; shape-rendering: crispEdges; }
+svg.mcd-chart .axis { stroke: var(--line-2); stroke-width: 1.05; shape-rendering: crispEdges; }
+svg.mcd-chart .bench { stroke: var(--fg-3); stroke-width: 1; stroke-dasharray: 3.5 3.5; }
+svg.mcd-chart .bench.red { stroke: var(--m-red); opacity: 0.78; }
+svg.mcd-chart .bench.blue { stroke: var(--m-blue); opacity: 0.72; }
+svg.mcd-chart .cursor { stroke: var(--fg); stroke-width: 1.05; stroke-dasharray: 2.5 2.5; opacity: 0.45; pointer-events: none; }
+svg.mcd-chart .brush-band { fill: var(--m-blue); opacity: 0.11; pointer-events: none; }
+svg.mcd-chart .brush-edge { stroke: var(--m-blue); stroke-width: 1.3; stroke-dasharray: 3 2; pointer-events: none; }
+svg.mcd-chart .hit { fill: transparent; cursor: pointer; }
+
+svg.mcd-chart .bar.blue { fill: var(--m-blue); }
+svg.mcd-chart .bar.teal { fill: var(--m-teal); }
+svg.mcd-chart .bar.amber { fill: var(--m-amber); }
+svg.mcd-chart .bar.red { fill: var(--m-red); }
+svg.mcd-chart .bar.ink { fill: var(--fg); }
+svg.mcd-chart .bar.soft { fill: var(--m-fill-strong); }
+
+svg.mcd-chart .line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.mcd-chart .line.blue { stroke: var(--m-blue); }
+svg.mcd-chart .line.teal { stroke: var(--m-teal); }
+svg.mcd-chart .line.red { stroke: var(--m-red); }
+svg.mcd-chart .zone-band { pointer-events: none; }
+svg.mcd-chart .zone-band.lo { fill: var(--m-teal); opacity: 0.09; }
+svg.mcd-chart .zone-band.hi { fill: var(--m-red); opacity: 0.08; }
+
+.mcd-tray-item { cursor: pointer; transition: transform 150ms ease, opacity 150ms ease; }
+
+/* 3D Canvas Stage (shared by 3D Helix, 3D Atlas, 3D Kolmogorov Manifold) */
+.mcd-canvas-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  cursor: grab;
+  touch-action: none;
+  background: radial-gradient(ellipse at 50% 48%, var(--m-paper) 0%, transparent 74%);
+}
+.mcd-canvas-wrap:active { cursor: grabbing; }
+.mcd-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+.mcd-canvas-hint {
+  position: absolute; right: 8px; bottom: 6px;
+  font: 400 0.68rem/1 var(--mono); color: var(--fg-3); pointer-events: none; opacity: 0.85;
+}
+
+/* Slim minimalist timeline scrubber (matches google.css) */
+.mcd-scrub-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.42rem;
+  font: 400 0.72rem/1.3 var(--mono);
+  color: var(--fg-2);
+}
+.mcd-scrub-row input[type="range"] { flex: 1 1 160px; min-width: 120px; accent-color: var(--m-blue); cursor: pointer; }
+
+/* Figure 5: Slim live coupon strip */
+.mcd-coupon-strip {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.85rem;
+  margin-bottom: 0.55rem;
+  padding: 0.58rem 0.95rem;
+  border: 1.5px dashed var(--line-2);
+  border-radius: 8px;
+  background: var(--m-paper);
+  box-shadow: var(--m-shadow);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.mcd-coupon-strip::before,
+.mcd-coupon-strip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  transform: translateY(-50%);
+}
+.mcd-coupon-strip::before { left: -6px; }
+.mcd-coupon-strip::after { right: -6px; }
+.mcd-coupon-strip.is-low { border-color: color-mix(in srgb, var(--m-teal) 55%, var(--line)); background: color-mix(in srgb, var(--m-teal) 5%, var(--bg)); }
+.mcd-coupon-strip.is-hm { border-color: color-mix(in srgb, var(--m-red) 55%, var(--line)); background: color-mix(in srgb, var(--m-red) 5%, var(--bg)); }
+.mcd-coupon-strip .c-left { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+.mcd-coupon-strip .c-eye { font: 600 0.65rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--fg-3); }
+.mcd-coupon-strip.is-low .c-eye { color: var(--m-teal); }
+.mcd-coupon-strip.is-hm .c-eye { color: var(--m-red); }
+.mcd-coupon-strip .c-title { font: 600 0.88rem/1.25 var(--sans); color: var(--fg); }
+.mcd-coupon-strip .c-slug { font: 400 0.66rem/1.2 var(--mono); color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
+.mcd-coupon-strip .c-right { text-align: right; padding-left: 0.8rem; border-left: 1px dashed var(--line-2); }
+.mcd-coupon-strip .c-num { font: 700 1.4rem/1 var(--mono); color: var(--fg); display: block; }
+.mcd-coupon-strip.is-low .c-num { color: var(--m-teal); }
+.mcd-coupon-strip.is-hm .c-num { color: var(--m-red); }
+.mcd-coupon-strip .c-delta { font: 600 0.64rem/1.2 var(--mono); color: var(--fg-3); }
+.mcd-coupon-strip.is-hm .c-delta { color: var(--m-red); }
+@media (max-width: 520px) {
+  .mcd-coupon-strip .c-right {
+    width: 100%; display: flex; justify-content: space-between; align-items: baseline;
+    border-left: none; border-top: 1px dashed var(--line-2); padding-left: 0; padding-top: 0.42rem; text-align: left;
+  }
+}
+
+/* Figure 6: Wireframe iPhone + Synchronized Oscilloscope */
+.mcd-kiosk-grid {
+  display: grid;
+  grid-template-columns: 222px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+@media (max-width: 680px) { .mcd-kiosk-grid { grid-template-columns: 1fr; } }
+.mcd-phone {
+  display: flex; flex-direction: column;
+  border: 1.5px solid var(--line-2); border-radius: 22px;
+  padding: 0.55rem 0.6rem 0.6rem;
+  background: var(--bg); box-shadow: var(--m-shadow); min-height: 222px;
+}
+.mcd-phone-notch { width: 56px; height: 10px; border-radius: 999px; background: var(--line-2); margin: 0 auto 0.4rem; }
+.mcd-phone-status { display: flex; justify-content: space-between; font: 500 0.64rem/1 var(--mono); color: var(--fg-3); margin-bottom: 0.4rem; }
+.mcd-phone-screen {
+  flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.34rem;
+  border: 1px solid var(--line); border-radius: 11px; padding: 0.56rem;
+  background: var(--m-paper); font: 400 0.7rem/1.32 var(--sans); color: var(--fg); cursor: pointer;
+}
+.mcd-phone-screen.is-error { border-color: color-mix(in srgb, var(--m-red) 60%, transparent); background: color-mix(in srgb, var(--m-red) 7%, var(--bg)); }
+.mcd-phone-screen.is-pay { border-color: color-mix(in srgb, var(--m-teal) 58%, transparent); background: color-mix(in srgb, var(--m-teal) 7%, var(--bg)); }
+.mcd-phone-screen.is-scan { border-color: color-mix(in srgb, var(--m-blue) 52%, transparent); background: color-mix(in srgb, var(--m-blue) 6%, var(--bg)); }
+.mcd-phone-badge { align-self: flex-start; font: 600 0.62rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.4rem; border-radius: 4px; background: var(--m-fill); color: var(--fg-2); }
+.mcd-phone-screen.is-error .mcd-phone-badge { background: var(--m-red); color: #fff; }
+.mcd-phone-screen.is-pay .mcd-phone-badge { background: var(--m-teal); color: #fff; }
+.mcd-phone-screen.is-scan .mcd-phone-badge { background: var(--m-blue); color: #fff; }
+.mcd-phone-ev { font: 600 0.76rem/1.22 var(--sans); color: var(--fg); word-break: break-word; }
+.mcd-phone-detail { font: 400 0.68rem/1.35 var(--mono); color: var(--fg-2); word-break: break-word; }
+.mcd-phone-tap { margin-top: auto; padding-top: 0.25rem; font: 500 0.61rem/1 var(--mono); color: var(--fg-3); text-align: right; letter-spacing: 0.03em; }
+.mcd-phone-qr { display: grid; grid-template-columns: repeat(5, 8px); gap: 2px; margin: 0.14rem auto 0; padding: 4px; border: 1px solid var(--line-2); border-radius: 4px; background: var(--bg); }
+.mcd-phone-qr i { display: block; width: 8px; height: 8px; background: var(--fg); opacity: 0.85; }
+.mcd-phone-qr i.w { background: transparent; }
+
+/* Single hairline readout footer */
+.mcd-readout {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+  gap: 0.25rem 0.9rem; margin: 0.52rem 0 0; padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  font: 400 0.79rem/1.45 var(--sans); color: var(--fg-2); min-height: 1.55em;
+}
+.mcd-readout strong { color: var(--fg); font-weight: 600; }
+.mcd-readout .blue { color: var(--m-blue); font-weight: 600; }
+.mcd-readout .teal { color: var(--m-teal); font-weight: 600; }
+.mcd-readout .amber { color: var(--m-amber); font-weight: 600; }
+.mcd-readout .red { color: var(--m-red); font-weight: 600; }
+.mcd-readout .ink { color: var(--fg); }
+
+/* Methods disclosure */
+details.mcd-methods { margin-top: 2rem; padding-top: 0.85rem; border-top: 1px solid var(--line); font: 400 0.86rem/1.6 var(--sans); color: var(--fg-2); }
+details.mcd-methods summary { cursor: pointer; font-weight: 600; color: var(--fg); }
+details.mcd-methods p { margin: 0.65rem 0 0; }
